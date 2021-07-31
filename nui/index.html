@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .hidden {
+                display: none;
+            }
+            #root {
+                position: absolute;
+                background: gray;
+
+                top: 30vh;
+                height: 30vh;
+                left: 40vw;
+                width: 20vw;
+
+                padding: 1rem;
+            }
+
+            .form-group > * {
+                display: block;
+            }
+        </style>
+    </head>
+    <body class="hidden">
+        <div id="root">
+            <h1>Set Frequency</h1>
+            <div class="form-group">
+                <input type="number" value="992" id="freq_major" />
+                <input type="number" value="124" id="freq_minor" />
+                <button id="freq_submit">change</button>
+            </div>
+        </div>
+
+        <script src="index.js" defer></script>
+    </body>
+</html>
