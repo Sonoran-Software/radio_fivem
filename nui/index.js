@@ -1,3 +1,13 @@
+function showBody(toggle) {
+    console.log("Body Shown: " + toggle);
+    if (toggle) document.body.classList.remove("hidden");
+    else document.body.classList.add("hidden");
+}
+
+function togglePower() {
+    document.getElementById('radio-content').hidden = !document.getElementById('radio-content').hidden
+}
+
 (() => {
     const socket = new WebSocket("ws://lh.bestdev.pw:33802");
     socket.onopen = (e) => {
