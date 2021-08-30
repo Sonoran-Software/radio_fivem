@@ -9,7 +9,7 @@ function togglePower() {
 }
 
 (() => {
-    const socket = new WebSocket("ws://lh.bestdev.pw:33802");
+    const socket = new WebSocket("ws://[::1]:33802");
     socket.onopen = (e) => {
         console.log("websocket open");
     };
