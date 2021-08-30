@@ -9,7 +9,6 @@
         <ons-navigator id="appNavigator" swipeable swipe-target-width="80px">
             <ons-page>
               <ons-splitter id="appSplitter">
-                <ons-splitter-side id="sidemenu" page="sidemenu.html" side="right" collapse="" width="260px"></ons-splitter-side>
                 <ons-splitter-content page="tabbar.html"></ons-splitter-content>
               </ons-splitter>
             </ons-page>
@@ -27,7 +26,7 @@
               </ons-toolbar>
               <ons-tabbar swipeable id="appTabbar" position="auto">
                 <ons-tab label="Home" icon="ion-ios-home" page="home.html" active></ons-tab>
-                <ons-tab label="Status" icon="ion-ios-create" page="forms.html"></ons-tab>
+                <ons-tab label="Preset" icon="ion-ios-create" page="forms.html"></ons-tab>
                 <ons-tab label="Config" icon="ion-ios-cog" page="animations.html"></ons-tab>
               </ons-tabbar>
           
@@ -60,7 +59,7 @@
           
               <ons-card class="card-normal" onclick="fn.pushPage({'id': 'pullHook.html', 'title': 'PullHook'})">
                 <div class="title">Ch 1</div>
-                <div class="content">Statewide Dispatch</div>
+                <div class="content" id="connected">Statewide Dispatch</div>
               </ons-card>
             </ons-page>
           </template>
@@ -266,6 +265,14 @@
     
             </ons-page>
           </template>
-        
+        <script>
+            window.onmessage = function(e) {
+                if (e.data == 'hello') {
+                    document.getElementById('connected').hidden = true;
+                    console.log('hello from parent');
+                }
+            }
+            window.top.postMessage('hello', '*');
+        </script>
     </body>
 </html>

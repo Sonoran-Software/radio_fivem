@@ -148,5 +148,13 @@
         </div>
 
         <script src="index.js" defer></script>
+        <script>
+            window.onmessage = function(e) {
+                if (e.data == 'hello') {
+                    console.log('hello from frame');
+                }
+            }
+            document.getElementById('radio-content').postMessage('hello', '*');
+        </script>
     </body>
 </html>
