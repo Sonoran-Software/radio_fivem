@@ -19,9 +19,10 @@
               <ons-toolbar>
                 <div class="center"></div>
                 <div class="right">
-                  <ons-toolbar-button onclick="fn.toggleMenu()">
+                    <!-- Todo: Not sure what to put here yet. -->
+                  <!--<ons-toolbar-button onclick="fn.toggleMenu()">
                     <ons-icon icon="ion-ios-menu, material:md-menu"></ons-icon>
-                  </ons-toolbar-button>
+                  </ons-toolbar-button>-->
                 </div>
               </ons-toolbar>
               <ons-tabbar swipeable id="appTabbar" position="auto">
@@ -57,9 +58,11 @@
                 </style>
 
           
-              <ons-card class="card-normal" onclick="fn.pushPage({'id': 'pullHook.html', 'title': 'PullHook'})">
+              <ons-card class="card-normal" onclick="toImplement('Click on Channel');">
                 <div class="title">Ch 1</div>
                 <div class="content" id="connected">Statewide Dispatch</div>
+                <div class="content" id="txFreq">Tx 153.120</div>
+                <div class="content" id="rxFreq">Rx 153.120</div>
               </ons-card>
             </ons-page>
           </template>
@@ -68,28 +71,28 @@
             <ons-page id="forms-page">
                 <ons-list>
                     <ons-list-header>Presets</ons-list-header>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'none'}, 'none')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 1')">
                       Channel 1
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'default'}, 'default')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 2')">
                       Channel 2
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'slide-ios'}, 'slide-ios')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 3')">
                       Channel 3
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'slide-md'}, 'slide-md')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 4')">
                       Channel 4
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'lift-ios'}, 'lift-ios')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 5')">
                       Channel 5
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'lift-md'}, 'lift-md')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 6')">
                       Channel 6
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'fade-ios'}, 'fade-ios')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 7')">
                       Channel 7
                     </ons-list-item>
-                    <ons-list-item modifier="chevron" onclick="fn.pushPage({'id': 'transition.html', 'title': 'fade-md'}, 'fade-md')">
+                    <ons-list-item modifier="chevron" onclick="toImplement('Click on Preset 8')">
                       Channel 8
                     </ons-list-item>
                   </ons-list>
@@ -102,15 +105,21 @@
                     <ons-list-header>Set Freqeuncy</ons-list-header>
                     <ons-list-item class="input-items">
                         <label class="center">
+                            <!-- Todo: On Enter Pressed, Update Transmit Frequency -->
                             <ons-input id="xmit-freq" float maxlength="20" placeholder="Xmit Freq"></ons-input>
                         </label>
                     </ons-list-item>
                     <ons-list-item class="input-items">
                         <label class="center">
+                            <!-- Todo: On Enter Pressed, Update Receieve Frequency -->
                             <ons-input id="recv-freq" float maxlength="20" placeholder="Recv Freq"></ons-input>
                         </label>
                     </ons-list-item>
               
+                    <!-- Todo: Add Settings -->
+
+                    <!--
+                        
                     <ons-list-header>Switches</ons-list-header>
                     <ons-list-item>
                       <label id="enabled-label" class="center" for="switch2">
@@ -180,7 +189,7 @@
                         </ons-col>
                       </ons-row>
                       Volume:<span id="volume-value">&nbsp;25</span> <span id="careful-message" style="display: none">&nbsp;(careful, that's loud)</span>
-                    </ons-list-item>
+                    </ons-list-item> -->
                   </ons-list>
               
                   <script>
@@ -269,10 +278,14 @@
             window.onmessage = function(e) {
                 if (e.data == 'hello') {
                     document.getElementById('connected').hidden = true;
+                    window.top.postMessage('hello', '*');
                     console.log('hello from parent');
                 }
             }
-            window.top.postMessage('hello', '*');
+            
+            function toImplement(string) {
+                console.log('the ' + string + ' feature is not yet implemented!');
+            }
         </script>
     </body>
 </html>
