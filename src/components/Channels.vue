@@ -2,7 +2,7 @@
     <div class="screen">
         <div class="sc-header">
             <div class="back" v-on:click="$emit('set-screen', '')">
-                &#9664;
+                <i class="fas fa-arrow-left"></i>
             </div>
             <div class="title">
                 Channels
@@ -14,16 +14,10 @@
         <div class="sc-body">
             <div class="sc-row">
                 <div class="sc-row-label">Custom</div>
-                <div class="sc-row-icon">&#11106;</div>
+                <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
             </div>
-            <div class="sc-row">
-                Preset 2
-            </div>
-            <div class="sc-row">
-                Preset 3
-            </div>
-            <div class="sc-row">
-                Preset 4
+            <div class="sc-row" v-for="preset in myPresets" :key="preset.name">
+                {{ preset.name }}
             </div>
         </div>
     </div>
@@ -127,6 +121,11 @@ export default {
     components: {},
     data() {
         return {
+            myPresets: [
+                { name: "Preset 1" },
+                { name: "Preset 2" },
+                { name: "Preset 3" }
+            ],
             myStatus: "Available",
             myZone: "Zone 1",
             myChannel: "Channel 1"
