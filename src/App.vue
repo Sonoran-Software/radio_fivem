@@ -11,11 +11,20 @@
                         <input type="button" class="ctrl ctrl-power" v-on:click="radioPower = !radioPower" />
                     </div>
                     <div class="radio-screen">
-                        <Screen v-if="radioPower" id="radio-content" />
+                        <div class="radio-content" v-if="radioPower">
+                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
+                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" />
+                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
+                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" />
+                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
+                        </div>
                         <!-- <iframe id="radio-content" class="radio-content" src="screen.html" width="100%"></iframe> -->
                     </div>
                     <div class="radio-buttons">
-                        <input type="button" class="ctrl ctrl-home" onclick="document.getElementById('radio-content').contentWindow.location.reload();" />
+                        <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
                     </div>
                 </div>
             </div>
@@ -24,35 +33,82 @@
 </template>
 
 <script>
-import Screen from './components/Screen.vue'
-
-
-
-    //   if (eventType !== undefined && typeof this['on' + eventType] === 'function') {
-    //     this['on' + eventType](event.data)
-    //   } else if (event.data.show !== undefined) {
-    //     // Toggle phone
-    //     store.commit('SET_PHONE_VISIBILITY', event.data.show)
-    //   }
+import Home from './components/Home.vue'
+import Channels from './components/Channels.vue'
+import Message from './components/Message.vue'
+import NewMessage from './components/NewMessage.vue'
+import ScanList from './components/ScanList.vue'
+import Settings from './components/Settings.vue'
+import Contacts from './components/Contacts.vue'
+import Messages from './components/Messages.vue'
 
 export default {
     components: {
-        Screen
+        Home,
+        Channels,
+        Message,
+        NewMessage,
+        ScanList,
+        Settings,
+        Contacts,
+        Messages
     },
     data: () => {
         return {
             showRadio: false,
             radioPower: false,
+            currScreen: ""
         }
+    },
+    created() {
+        window.addEventListener('keyup', (event) => {
+            console.log(event.code);
+            switch (event.code) {
+                case "Escape":
+                    this.postClient({ type: 'hide'});
+
+                    break;
+            
+                default:
+                    break;
+            }
+        })
     },
     mounted() {
         window.addEventListener('message', (event) => {
             const eventType = event.data.event;
             console.log(event);
-            if (event.data.type === 'show') {
-                this.showRadio = true;
+            switch (event.data.type) {
+                case 'setVisible':
+                    this.showRadio = event.data.visibility;
+                    break;
+                default:
+                    break;
             }
         });
+    },
+    methods: {
+        postClient(data, route = "/data") {
+            const url = new URL(route, `https://SonoranRadio`);
+            const res = fetch(url.toString(), {
+                method: "POST",
+                body: JSON.stringify(data),
+            }).then((res) => {
+                if (res.status !== 200)
+                    return console.error(`failed request with code: ${res.status}`);
+
+                const msg = res.json().then((data) => {
+                    if (data !== "OK") console.error(`failed request with message: ${data}`);
+                }).catch((err) => console.log(err));
+
+            }).catch((err) => {
+                console.log(err);
+            });
+        },
+        setScreen(name) {
+            console.log(name);
+            this.currScreen = name;
+        }
     }
 };
 </script>
@@ -61,6 +117,7 @@ export default {
 .hidden {
     display: none;
 }
+
 
 .radio-body {
     background-repeat: round;

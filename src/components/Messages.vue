@@ -1,7 +1,7 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            [] 19:25
+            Messages
         </div>
         <div class="sc-body">
             <div class="sc-status">
@@ -9,7 +9,7 @@
                     My Status
                 </div>
                 <div class="content">
-                    En Route
+                    {{ myStatus }}
                 </div>
             </div>
             <div class="sc-spacer">
@@ -17,10 +17,10 @@
             <div class="sc-container">
                 <div class="sc-channel">
                     <div class="header">
-                        East Zone
+                        {{ myZone }}
                     </div>
                     <div class="content">
-                        Patrol 1
+                        {{ myChannel }}
                     </div>
                 </div>
             </div>
@@ -60,6 +60,7 @@
         </div>
     </div>
 </template>
+
 
 <style scoped>
 .screen {
@@ -136,9 +137,6 @@
     justify-content: space-around;
     font-size: 14px;
 }
-.sc-btn-all {
-
-}
 </style>
 
 <script>
@@ -148,7 +146,9 @@ export default {
     components: {},
     data() {
         return {
-            
+            myStatus: "Available",
+            myZone: "Zone 1",
+            myChannel: "Channel 1"
         }
     },
     mounted() {

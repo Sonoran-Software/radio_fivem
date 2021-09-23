@@ -1,6 +1,12 @@
-RegisterCommand('vue', function()
-    SendNUIMessage({type = 'show'})
-    SetNuiFocus(true, true)
+local radActive = false
+
+RegisterCommand('radio', function()
+    radActive = not radActive
+    SendNUIMessage({
+        type = 'setVisible',
+        visibility = radActive
+    })
+    SetNuiFocus(radActive, radActive)
 end)
 
 Citizen.CreateThread(function()
@@ -12,5 +18,18 @@ end)
 
 RegisterCommand('hello', function()
     SendNUIMessage({type = 'hello'})
-    SetNuiFocus(true, true)
+end)
+
+RegisterNUICallback('data', function(data, cb)
+    print('data:' .. json.encode(data))
+    if data.type == 'hide' then
+        SendNUIMessage({
+            type = 'setVisible',
+            visibility = false
+        })
+        radActive = false
+        SetNuiFocus(false, false)
+    end
+
+    cb('OK')
 end)
