@@ -14,6 +14,8 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(5000)
     end
+    -- For Development Only
+    print('Sonoran Radio Started!')
 end)
 
 RegisterCommand('hello', function()
