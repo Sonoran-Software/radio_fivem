@@ -7,26 +7,14 @@
             <div class="title">
                 Scan List
             </div>
-            <div class="add">
+            <div class="add" v-on:click="$emit('add-scanned', '')">
                 &plus;
             </div>
         </div>
         <div class="sc-body">
-            <div class="sc-row">
-                <div class="sc-row-label">Channel 1</div>
-                <div class="sc-row-icon">&times;</div>
-            </div>
-            <div class="sc-row">
-                <div class="sc-row-label">Channel 1</div>
-                <div class="sc-row-icon">&times;</div>
-            </div>
-            <div class="sc-row">
-                <div class="sc-row-label">Channel 1</div>
-                <div class="sc-row-icon">&times;</div>
-            </div>
-            <div class="sc-row">
-                <div class="sc-row-label">Channel 1</div>
-                <div class="sc-row-icon">&times;</div>
+            <div class="sc-row" v-for="freq in $store.state.scanned" :key="freq.id">
+                <div class="sc-row-label">{{freq[0]}}.{{freq[1]}}</div>
+                <div class="sc-row-icon" v-on:click="$emit('del-scanned', freq)">&times;</div>
             </div>
         </div>
     </div>

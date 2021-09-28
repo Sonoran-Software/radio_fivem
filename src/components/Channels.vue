@@ -16,8 +16,10 @@
                 <div class="sc-row-label">Custom</div>
                 <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
             </div>
-            <div class="sc-row" v-for="preset in myPresets" :key="preset.name">
-                {{ preset.name }}
+            <div class="sc-row" v-for="preset in $store.state.presets" :key="preset.display_name" v-on:click="$emit('set-frequency','')">
+                {{ preset.display_name }} <br />
+                {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }} <br />
+                {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }} 
             </div>
         </div>
     </div>
@@ -118,6 +120,7 @@
 import vue from 'vue';
 
 export default {
+    props: ["presets"],
     components: {},
     data() {
         return {

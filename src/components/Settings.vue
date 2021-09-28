@@ -1,66 +1,27 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            Settings
+            <div class="back" v-on:click="$emit('set-screen', '')">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <div class="title">
+                Settings
+            </div>
+            <div class="search" style="visibility: hidden !important;">
+                &#128269;
+            </div>
         </div>
         <div class="sc-body">
-            <div class="sc-status">
-                <div class="header">
-                    My Status
-                </div>
-                <div class="content">
-                    {{ myStatus }}
-                </div>
+            <div class="sc-row">
+                <div class="sc-row-label">Custom</div>
+                <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
             </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-container">
-                <div class="sc-channel">
-                    <div class="header">
-                        {{ myZone }}
-                    </div>
-                    <div class="content">
-                        {{ myChannel }}
-                    </div>
-                </div>
-            </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-buttons">
-                <div class="sc-button1">
-                    Scan Lists
-                </div>
-                <div class="sc-button2">
-                    Contacts
-                </div>
-                <div class="sc-button3">
-                    More
-                </div>
-            </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-message">
-                <div class="sc-msg-content">
-                    <div class="sc-sender">
-                        Clark, Robert
-                    </div>
-                    <div class="sc-content">
-                        On my way
-                    </div>
-                </div>
-                <div class="sc-msg-buttons">
-                    <div class="sc-btn-new">
-                        New
-                    </div>
-                    <div class="sc-btn-all">
-                        All
-                    </div>
-                </div>
+            <div class="sc-row" v-for="setting in mySettings" :key="setting.name">
+                {{ setting.name }}
             </div>
         </div>
     </div>
 </template>
-
 
 <style scoped>
 .screen {
@@ -146,6 +107,11 @@ export default {
     components: {},
     data() {
         return {
+            myPresets: [
+                { name: "Setting 1" },
+                { name: "Setting 2" },
+                { name: "Setting 3" }
+            ],
             myStatus: "Available",
             myZone: "Zone 1",
             myChannel: "Channel 1"

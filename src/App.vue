@@ -13,12 +13,12 @@
                     <div class="radio-screen">
                         <div class="radio-content" v-if="radioPower">
                             <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
-                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" />
+                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
                             <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
                             <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
                             <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" />
+                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" />
                             <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
                         </div>
                         <!-- <iframe id="radio-content" class="radio-content" src="screen.html" width="100%"></iframe> -->
@@ -56,13 +56,14 @@ export default {
     data: () => {
         return {
             showRadio: false,
-            radioPower: false,
+            radioPower: true,
             currScreen: ""
         }
     },
     created() {
+        this.setupSocket();
         window.addEventListener('keyup', (event) => {
-            console.log(event.code);
+            //console.log(event.code);
             switch (event.code) {
                 case "Escape":
                     this.postClient({ type: 'hide'});
@@ -77,10 +78,37 @@ export default {
     mounted() {
         window.addEventListener('message', (event) => {
             const eventType = event.data.event;
-            console.log(event);
+            //console.log(event);
             switch (event.data.type) {
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
+                    break;
+                case 'setPos':
+                    try {
+                        let message = JSON.stringify({
+                            type: "update_position",
+                            to_cid: 1,
+                            position: [
+                                event.data.position[0],
+                                event.data.position[1],
+                                event.data.position[2]
+                            ]
+                        })
+                        message = {
+                            type: "update_position",
+                            to_cid: 1,
+                            position: [
+                                event.data.position[0],
+                                event.data.position[1],
+                                event.data.position[2]
+                            ]
+                        }
+                        // Causing Errors
+                        this.sendToSocket(message);
+                    } catch (e) {
+                        console.error("Failed to update posistion");
+                        console.error(e);
+                    }
                     break;
                 default:
                     break;
@@ -90,7 +118,7 @@ export default {
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://SonoranRadio`);
-            const res = fetch(url.toString(), {
+            fetch(url.toString(), {
                 method: "POST",
                 body: JSON.stringify(data),
             }).then((res) => {
@@ -105,10 +133,128 @@ export default {
                 console.log(err);
             });
         },
+        addScanned(event) {
+            console.log(event);
+            this.$store.state.scanned.push(this.$store.state.currFreq.recv);
+            this.sendToSocket({
+                type: "set_frequencies_scanned",
+                freqs: this.$store.state.scanned
+            })
+        },
+        delScanned(event) {
+            let freq = event.toString().split(",");
+            console.log();
+            let freqs = [];
+            this.$store.state.scanned.forEach(el => {
+                if (el[0] == freq[0] && el[1] == freq[1]) {
+                    console.log("Removed scanned freq: "  +freq[0] + "." + freq[1]);
+                } else {
+                    freqs.push(el);
+                }
+            });
+            this.$store.state.scanned = freqs;
+            this.sendToSocket({
+                type: "set_frequencies_scanned",
+                freqs: freqs
+            })
+        },
+        setFrequency(event) {
+            console.log("Setting Frequency: " + event);
+        },
         setScreen(name) {
-            console.log(name);
+            //console.log(name);
             this.currScreen = name;
-        }
+        },
+        setupSocket() {
+            console.log("Establishing Websocket connection...");
+            this.connection = new WebSocket("ws://[::1]:33802");
+            this.connection.onmessage = this.socketMessage;
+            this.connection.onopen = this.socketOpen;
+            this.connection.onclose = this.socketClose;
+        },
+        socketMessage(event) {
+            if (event.data) {
+                let data = JSON.parse(event.data);
+                console.log("Received " + data.type + " message:");
+                switch (data.type) {
+                    case "recv_controller_data":
+                        let currstate = data.data.state;
+                        this.$store.state.statusText = "Connected";
+                        this.$store.state.currFreq.name = "Custom Frequency";
+                        this.$store.state.currFreq.recv = currstate.freq_recv;
+                        this.$store.state.currFreq.xmit = currstate.freq_xmit;
+                        this.$store.state.scanned = [];
+                        currstate.freq_scan.forEach(el => {
+                            this.$store.state.scanned.push([el[0], el[1]]);
+                        })
+                        let presetarr = data.data.config.profiles;
+                        this.$store.state.presets = [];
+                        presetarr.forEach(el => {
+                            this.$store.state.presets.push({
+                                display_name: el.display_name,
+                                freq_recv: el.freq_recv,
+                                freq_xmit: el.freq_xmit
+                            })
+                        });
+                        break;
+                    case "frequencies_updated":
+                        this.$store.state.statusText = "Freq. Updated";
+                        this.$store.state.currFreq.recv = data.freq_recv
+                        this.$store.state.currFreq.xmit = data.freq_xmit;
+                        break;
+                    case "frequencies_scanned_updated":
+                        this.$store.state.scanned = [];
+                        data.freqs.forEach(el => {
+                            this.$store.state.scanned.push([el[0], el[1]]);
+
+                        })
+                    default:
+                        break;
+                }
+                this.myPresets.forEach(el => {
+                    this.$store.state.currFreq.name = "Custom Frequency";
+                    try {
+                        if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
+                            el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
+                            el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
+                            el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
+                                this.$store.state.currFreq.name = el.display_name;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                })
+
+                /**
+                 * Received Events:
+                 *  - RECV_CONTROLLERS
+                 *  - RECV_CONTROLLER_DATA
+                 *  - CHANNEL_CLIENTS_CHANGED
+                 *  - CONTROLLER_CREATED
+                 *  - CONTROLLER_DESTROYED
+                 *  - CONFIG_CHANGED
+                 */
+                console.log(data);
+            } else {
+                console.error("Empty Message from Socket!");
+            }
+        },
+        socketOpen(event) {
+            console.log(event);
+            console.log("Socket connection established!");
+            console.log("Requesting Controllers");
+            //this.sendToSocket({ "type" : "get_controllers" });
+            this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
+        },
+        socketClose(event) {
+            console.log(event);
+            console.log("Socket connection lost, reconnecting...");
+            this.setupSocket();
+        },
+        sendToSocket(data) {
+            console.log("Sending Message to Socket");
+            this.connection.send(JSON.stringify(data));
+        },
     }
 };
 </script>
@@ -118,6 +264,41 @@ export default {
     display: none;
 }
 
+.radio-open {
+    -webkit-animation: radio-open 1s;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+@keyframes radio-open {
+    0% {
+        position: absolute;
+        transform: translate3d(0, 100vh, 0);
+    }
+    100% {
+        position: absolute;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.radio-close {
+    -webkit-animation: radio-close 1s;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+@keyframes radio-close {
+    0% {
+        position: absolute;
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        position: absolute;
+        transform: translate3d(0, 100vh, 0);
+    }
+}
 
 .radio-body {
     background-repeat: round;

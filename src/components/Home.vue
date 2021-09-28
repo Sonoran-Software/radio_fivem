@@ -6,10 +6,10 @@
         <div class="sc-body">
             <div class="sc-status">
                 <div class="header">
-                    My Name
+                    My Status
                 </div>
                 <div class="content">
-                    {{ myName }}
+                    {{ $store.state.statusText }}
                 </div>
             </div>
             <div class="sc-spacer">
@@ -17,25 +17,28 @@
             <div class="sc-container">
                 <div class="sc-channel" v-on:click="$emit('set-screen', 'channels')">
                     <div class="header">
-                        {{ freqPreset }}
+                        {{ $store.state.currFreq.name }}
                     </div>
                     <div class="content">
-                        Xmit: {{ freqRecv }} <br>
-                        Recv: {{ freqXmit }}
+                        Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br>
+                        Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }}
                     </div>
                 </div>
             </div>
             <div class="sc-spacer">
             </div>
             <div class="sc-buttons">
-                <div class="sc-button1" v-on:click="$emit('set-screen', 'scanlist')">
-                    Scan List
+                <div class="sc-button" v-on:click="$emit('set-screen', 'scanlist')">
+                    <i class="fas fa-file-medical-alt"></i>
+                    <span class="sc-button-label">Scan List</span>
                 </div>
-                <div class="sc-button2" v-on:click="$emit('set-screen', 'contacts')">
-                    Contacts
+                <div class="sc-button" v-on:click="$emit('set-screen', 'contacts')">
+                    <i class="fas fa-address-book"></i>
+                    <span class="sc-button-label">Contacts</span>
                 </div>
-                <div class="sc-button3" v-on:click="$emit('set-screen', 'settings')">
-                    Setup
+                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')">
+                    <i class="fas fa-cog"></i>
+                    <span class="sc-button-label">Setup</span>
                 </div>
             </div>
             <div class="sc-spacer">
@@ -50,11 +53,13 @@
                     </div>
                 </div>
                 <div class="sc-msg-buttons">
-                    <div class="sc-btn-new" v-on:click="$emit('set-screen', 'newmessage')">
-                        New
+                    <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'newmessage')">
+                        <i class="fas fa-address-book"></i>
+                        <span class="sc-button-label">New</span>
                     </div>
-                    <div class="sc-btn-all" v-on:click="$emit('set-screen', 'messages')">
-                        All
+                    <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'messages')">
+                        <i class="fas fa-address-book"></i>
+                        <span class="sc-button-label">All</span>
                     </div>
                 </div>
             </div>
@@ -120,6 +125,14 @@
     flex-wrap: nowrap;
     align-items: flex-end;
 }
+.sc-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.sc-button i {
+    font-size: 20px;
+}
 .sc-sender {
     font-size: 14px;
 }
@@ -138,19 +151,26 @@
     justify-content: space-around;
     font-size: 14px;
 }
+.sc-msg-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.sc-msg-button i {
+    font-size: 20px;
+}
 </style>
 
 <script>
 import vue from 'vue';
 
 export default {
+    props: [
+        "config"
+    ],
     components: {},
     data() {
         return {
-            myName: "Available",
-            freqPreset: "Custom Frequency",
-            freqXmit: "64.30",
-            freqRecv: "64.30"
         }
     },
     mounted() {
