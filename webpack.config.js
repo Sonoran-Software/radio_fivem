@@ -11,7 +11,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
  * WARNING: DO NOT enable this unless you are truly developing
  * the resource. This will dramatically increase bundle sizes.
  */
-const DEV = true;
+const DEV = false;
 
 module.exports = {
     mode: DEV ? "development" : "production",
