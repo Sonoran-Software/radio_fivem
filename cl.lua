@@ -12,6 +12,12 @@ end)
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
     while true do
+        local ped = GetPlayerPed(-1)
+        if DoesEntityExist(ped) then
+            local pos = GetEntityCoords(ped)
+            local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
+            SendNUIMessage({type = 'setPos', position = posArr })
+        end
         Citizen.Wait(5000)
     end
     -- For Development Only
