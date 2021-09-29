@@ -20,8 +20,8 @@
                         {{ $store.state.currFreq.name }}
                     </div>
                     <div class="content">
-                        Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br>
-                        Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }}
+                        Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
+                        Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }}
                     </div>
                 </div>
             </div>

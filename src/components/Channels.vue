@@ -18,7 +18,7 @@
             </div>
             <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name" v-on:click="setFrequency(preset.freq_xmit, preset.freq_recv)">
                 <div class="sc-ch-header">{{ preset.display_name }}</div>
-                <div class="sc-ch-freq">Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }} <br /> Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }} </div>
+                <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
         </div>
     </div>

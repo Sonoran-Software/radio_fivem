@@ -13,8 +13,8 @@
         </div>
         <div class="sc-body">
             <div class="sc-row">
-                <div class="sc-row-label">Xmit:&nbsp;</div><input type="text" v-model="xmitInput" class="sc-row-input"/>
                 <div class="sc-row-label">Recv:&nbsp;</div><input type="text" v-model="recvInput" class="sc-row-input"/>
+                <div class="sc-row-label">Xmit:&nbsp;</div><input type="text" v-model="xmitInput" class="sc-row-input"/>
                 <input type="button" class="sc-row-button" value="Set Frequency" v-on:click="setFrequency()">
             </div>
         </div>
