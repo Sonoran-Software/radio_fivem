@@ -61,6 +61,34 @@
     </div>
 </template>
 
+<script>
+import vue from 'vue';
+
+export default {
+    components: {},
+    data() {
+        return {
+            myStatus: "Available",
+            myZone: "Zone 1",
+            myChannel: "Channel 1"
+        }
+    },
+    mounted() {
+        window.addEventListener('message', (event) => {
+            const eventType = event.data.event;
+            console.log(event);
+            if (event.data.type === 'hello') {
+                console.log('world!');
+                this.showRadio = true;
+            }
+        });
+    },
+    methods: {
+
+    }
+
+}
+</script>
 
 <style scoped>
 .screen {
@@ -138,32 +166,3 @@
     font-size: 14px;
 }
 </style>
-
-<script>
-import vue from 'vue';
-
-export default {
-    components: {},
-    data() {
-        return {
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
-        }
-    },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
-    methods: {
-
-    }
-
-}
-</script>

@@ -1,7 +1,7 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            [] 19:25
+            Sonoran Radio [] 19:25
         </div>
         <div class="sc-body">
             <div class="sc-status">
@@ -32,18 +32,18 @@
                     <i class="fas fa-file-medical-alt"></i>
                     <span class="sc-button-label">Scan List</span>
                 </div>
-                <div class="sc-button" v-on:click="$emit('set-screen', 'contacts')">
+                <div class="sc-button" v-on:click="$emit('set-screen', 'contacts')" style="display: none;">
                     <i class="fas fa-address-book"></i>
                     <span class="sc-button-label">Contacts</span>
                 </div>
-                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')">
+                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')" style="display: none;">
                     <i class="fas fa-cog"></i>
                     <span class="sc-button-label">Setup</span>
                 </div>
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-message">
+            <div class="sc-message" style="display: none;">
                 <div class="sc-msg-content">
                     <div class="sc-sender">
                         Clark, Robert
@@ -67,6 +67,34 @@
     </div>
 </template>
 
+<script>
+import vue from 'vue';
+
+export default {
+    props: [
+        "config"
+    ],
+    components: {},
+    data() {
+        return {
+        }
+    },
+    mounted() {
+        window.addEventListener('message', (event) => {
+            const eventType = event.data.event;
+            console.log(event);
+            if (event.data.type === 'hello') {
+                console.log('world!');
+                this.showRadio = true;
+            }
+        });
+    },
+    methods: {
+
+    }
+
+}
+</script>
 
 <style scoped>
 .screen {
@@ -160,32 +188,3 @@
     font-size: 20px;
 }
 </style>
-
-<script>
-import vue from 'vue';
-
-export default {
-    props: [
-        "config"
-    ],
-    components: {},
-    data() {
-        return {
-        }
-    },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
-    methods: {
-
-    }
-
-}
-</script>

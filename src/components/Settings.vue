@@ -23,6 +23,40 @@
     </div>
 </template>
 
+<script>
+import vue from 'vue';
+
+export default {
+    components: {},
+    data() {
+        return {
+            myPresets: [
+                { name: "Setting 1" },
+                { name: "Setting 2" },
+                { name: "Setting 3" }
+            ],
+            myStatus: "Available",
+            myZone: "Zone 1",
+            myChannel: "Channel 1"
+        }
+    },
+    mounted() {
+        window.addEventListener('message', (event) => {
+            const eventType = event.data.event;
+            console.log(event);
+            if (event.data.type === 'hello') {
+                console.log('world!');
+                this.showRadio = true;
+            }
+        });
+    },
+    methods: {
+
+    }
+
+}
+</script>
+
 <style scoped>
 .screen {
     background-color: rgba(122,160,207,1);
@@ -99,37 +133,3 @@
     font-size: 14px;
 }
 </style>
-
-<script>
-import vue from 'vue';
-
-export default {
-    components: {},
-    data() {
-        return {
-            myPresets: [
-                { name: "Setting 1" },
-                { name: "Setting 2" },
-                { name: "Setting 3" }
-            ],
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
-        }
-    },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
-    methods: {
-
-    }
-
-}
-</script>

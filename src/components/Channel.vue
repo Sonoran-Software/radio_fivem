@@ -1,24 +1,21 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <div class="back" v-on:click="$emit('set-screen', '')">
+            <div class="back" v-on:click="$emit('set-screen', 'channels')">
                 <i class="fas fa-arrow-left"></i>
             </div>
             <div class="title">
-                Channels
+                Custom Freq.
             </div>
             <div class="search" style="visibility: hidden !important;">
                 &#128269;
             </div>
         </div>
         <div class="sc-body">
-            <div class="sc-row" v-on:click="$emit('set-screen', 'channel')">
-                <div class="sc-row-label">Custom</div>
-                <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
-            </div>
-            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name" v-on:click="setFrequency(preset.freq_xmit, preset.freq_recv)">
-                <div class="sc-ch-header">{{ preset.display_name }}</div>
-                <div class="sc-ch-freq">Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }} <br /> Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }} </div>
+            <div class="sc-row">
+                <div class="sc-row-label">Xmit:&nbsp;</div><input type="text" v-model="xmitInput" class="sc-row-input"/>
+                <div class="sc-row-label">Recv:&nbsp;</div><input type="text" v-model="recvInput" class="sc-row-input"/>
+                <input type="button" class="sc-row-button" value="Set Frequency" v-on:click="setFrequency()">
             </div>
         </div>
     </div>
@@ -32,34 +29,38 @@ export default {
     components: {},
     data() {
         return {
-            myPresets: [
-                { name: "Preset 1" },
-                { name: "Preset 2" },
-                { name: "Preset 3" }
-            ],
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
+            xmitInput: "",
+            recvInput: ""
         }
     },
     mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
+        this.xmitInput = this.$store.state.currFreq.xmit[0] + "." + this.$store.state.currFreq.xmit[1];
+        this.recvInput = this.$store.state.currFreq.recv[0] + "." + this.$store.state.currFreq.recv[1];
     },
     methods: {
-        setFrequency(xmit, recv) {
-            this.$store.state.currFreq.xmit[0] = xmit[0];
-            this.$store.state.currFreq.xmit[1] = xmit[1];
-            this.$store.state.currFreq.recv[0] = recv[0];
-            this.$store.state.currFreq.recv[1] = recv[1];
-            this.$emit('set-frequency','');
-            this.$emit('set-screen','');
+        inRange(val) {
+            return ((val > 30 && val < 50) || (val > 150 && val < 174));
+        },
+        inSecondRange(val) {
+            return (val >= 0 && val <= 999);
+        },
+        setFrequency() {
+            if (!this.inRange(this.xmitInput.split(".")[0]) || !this.inSecondRange(this.xmitInput.split(".")[1])) {
+                console.log("Xmit Value Invalid");
+                this.xmitInput += "(invalid)";
+                return;
+            }
+            if (!this.inRange(this.recvInput.split(".")[0]) || !this.inSecondRange(this.recvInput.split(".")[1])) {
+                console.log("Recv Value Invalid");
+                this.recvInput += "(invalid)";
+                return;
+            }
+            this.$store.state.currFreq.xmit[0] = this.xmitInput.split(".")[0];
+            this.$store.state.currFreq.xmit[1] = this.xmitInput.split(".")[1];
+            this.$store.state.currFreq.recv[0] = this.recvInput.split(".")[0];
+            this.$store.state.currFreq.recv[1] = this.recvInput.split(".")[1];
+            this.$emit('set-frequency','')
+            this.$emit('set-screen','')
         }
     }
 
@@ -92,18 +93,17 @@ export default {
 }
 .sc-row {
     padding: 3px 3px 3px 5px;
-    display: flex;
     justify-content: space-between;
     border-bottom: rgb(30, 30, 30) solid 1px;
 }
-.sc-ch {
-    padding: 3px 3px 3px 5px;
-    display: block;
-    justify-content: space-between;
-    border-bottom: rgb(30, 30, 30) solid 1px;
+.sc-row-label {
+
 }
-.sc-ch-freq {
-    font-size: 13px;
+.sc-row-input {
+    width: 130px;
+}
+.sc-row-button {
+    width: 138px;
 }
 .sc-status {
     margin: 7px 0px 0px 0px;
