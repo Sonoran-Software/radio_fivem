@@ -6,14 +6,15 @@
                 :style="{backgroundImage: 'url(../static/radio-frame.png)'}">
                     <div class="radio-controls">
                         <input type="button" class="ctrl ctrl-panic" />
-                        <input type="button" class="ctrl ctrl-prev" onclick="console.log('Previous Clicked');" />
-                        <input type="button" class="ctrl ctrl-next" onclick="console.log('Next Clicked');" />
+                        <input type="button" class="ctrl ctrl-prev" v-on:click="console.log('Previous Clicked');" />
+                        <input type="button" class="ctrl ctrl-next" v-on:click="console.log('Next Clicked');" />
                         <input type="button" class="ctrl ctrl-power" v-on:click="radioPower = !radioPower" />
                     </div>
                     <div class="radio-screen">
                         <div class="radio-content" v-if="radioPower">
                             <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
                             <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
                             <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
@@ -35,6 +36,7 @@
 <script>
 import Home from './components/Home.vue'
 import Channels from './components/Channels.vue'
+import Channel from './components/Channel.vue'
 import Message from './components/Message.vue'
 import NewMessage from './components/NewMessage.vue'
 import ScanList from './components/ScanList.vue'
@@ -46,6 +48,7 @@ export default {
     components: {
         Home,
         Channels,
+        Channel,
         Message,
         NewMessage,
         ScanList,
@@ -57,6 +60,7 @@ export default {
         return {
             showRadio: false,
             radioPower: true,
+            currPreset: 0,
             currScreen: ""
         }
     },
@@ -117,7 +121,7 @@ export default {
     },
     methods: {
         postClient(data, route = "/data") {
-            const url = new URL(route, `https://SonoranRadio`);
+            const url = new URL(route, `https://sonoran_radio`);
             fetch(url.toString(), {
                 method: "POST",
                 body: JSON.stringify(data),
@@ -160,10 +164,37 @@ export default {
         },
         setFrequency(event) {
             console.log("Setting Frequency: " + event);
+            this.sendToSocket({
+                type: "set_frequencies",
+                freq_recv: this.$store.state.currFreq.recv,
+                freq_xmit: this.$store.state.currFreq.xmit
+            })
+            this.updateFreqLabel();
+        },
+        updateFreqLabel() {
+            this.$store.state.presets.forEach(el => {
+                this.$store.state.currFreq.name = "Custom Frequency";
+                try {
+                    if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
+                        el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
+                        el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
+                        el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
+                            this.$store.state.currFreq.name = el.display_name;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            })
         },
         setScreen(name) {
             //console.log(name);
             this.currScreen = name;
+        },
+        nextPreset() {
+
+        },
+        prevPreset() {
+
         },
         setupSocket() {
             console.log("Establishing Websocket connection...");
@@ -211,19 +242,7 @@ export default {
                     default:
                         break;
                 }
-                this.myPresets.forEach(el => {
-                    this.$store.state.currFreq.name = "Custom Frequency";
-                    try {
-                        if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
-                            el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
-                            el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
-                            el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
-                                this.$store.state.currFreq.name = el.display_name;
-                        }
-                    } catch (e) {
-                        console.error(e);
-                    }
-                })
+                this.updateFreqLabel();
 
                 /**
                  * Received Events:
@@ -259,7 +278,7 @@ export default {
 };
 </script>
 
-<style lang="css">
+<style scoped>
 .hidden {
     display: none;
 }
