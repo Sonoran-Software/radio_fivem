@@ -1,7 +1,7 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            Sonoran Radio [] 19:25
+            [] 19:25
         </div>
         <div class="sc-body">
             <div class="sc-status">
