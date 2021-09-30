@@ -22,11 +22,18 @@
                             <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" />
                             <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
                         </div>
-                        <!-- <iframe id="radio-content" class="radio-content" src="screen.html" width="100%"></iframe> -->
                     </div>
                     <div class="radio-buttons">
                         <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
                     </div>
+                </div>
+            </div>
+        </div>
+        <div v-if="showTopRadio">
+            <div class="top-radio-container">
+                <div id="top-radio-body" class="top-radio-body"
+                    :style="{backgroundImage: 'url(../static/radio-frame-top.png)'}">
+
                 </div>
             </div>
         </div>
@@ -59,6 +66,7 @@ export default {
     data: () => {
         return {
             showRadio: false,
+            showTopRadio: true,
             radioPower: true,
             currPreset: 0,
             currScreen: ""
@@ -169,11 +177,12 @@ export default {
                 freq_recv: this.$store.state.currFreq.recv,
                 freq_xmit: this.$store.state.currFreq.xmit
             })
+            this.$store.state.currFreq.name = "Custom Frequency";
             this.updateFreqLabel();
         },
         updateFreqLabel() {
             this.$store.state.presets.forEach(el => {
-                this.$store.state.currFreq.name = "Custom Frequency";
+                //this.$store.state.currFreq.name = "Custom Frequency";
                 try {
                     if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
                         el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
@@ -229,16 +238,59 @@ export default {
                         });
                         break;
                     case "frequencies_updated":
-                        this.$store.state.statusText = "Freq. Updated";
-                        this.$store.state.currFreq.recv = data.freq_recv
+                        this.$store.state.statusText = "Freq. Updated"; // TODO: Remove when status is configurable.
+                        this.$store.state.currFreq.recv = data.freq_recv;
                         this.$store.state.currFreq.xmit = data.freq_xmit;
                         break;
                     case "frequencies_scanned_updated":
                         this.$store.state.scanned = [];
                         data.freqs.forEach(el => {
                             this.$store.state.scanned.push([el[0], el[1]]);
-
                         })
+                        break;
+                    case "channel_clients_changed":
+                        // Ignore for Now, will be needed for messaging and status.
+
+                        break;
+                    case "controller_created":
+                        // Needs to set all of the controller config and status.
+                        let newstate = data.data.state;
+                        this.$store.state.statusText = "Connected";
+                        this.$store.state.currFreq.name = "Custom Frequency";
+                        this.$store.state.currFreq.recv = newstate.freq_recv;
+                        this.$store.state.currFreq.xmit = newstate.freq_xmit;
+                        this.$store.state.scanned = [];
+                        newstate.freq_scan.forEach(el => {
+                            this.$store.state.scanned.push([el[0], el[1]]);
+                        });
+                        let newpresets = data.data.config.profiles;
+                        this.$store.state.presets = [];
+                        newpresets.forEach(el => {
+                            this.$store.state.presets.push({
+                                display_name: el.display_name,
+                                freq_recv: el.freq_recv,
+                                freq_xmit: el.freq_xmit
+                            })
+                        });
+                        break;
+                    case "controller_destroyed":
+                        // Needs to zero out all of the controller config and status, and possibly display disconnected message.
+                        this.$store.state.statusText = "Disconnected";
+                        this.$store.state.currFreq.name = "Not Connected";
+                        this.$store.state.currFreq.recv = ["xxx","xxx"];
+                        this.$store.state.currFreq.xmit = ["xxx","xxx"];
+                        break;
+                    case "config_changed":
+                        // Needs to update the current state with the new configuration.
+                        let cfgpresets = data.profiles;
+                        this.$store.state.presets = [];
+                        cfgpresets.forEach(el => {
+                            this.$store.state.presets.push({
+                                display_name: el.display_name,
+                                freq_recv: el.freq_recv,
+                                freq_xmit: el.freq_xmit
+                            })
+                        });
                     default:
                         break;
                 }
@@ -246,9 +298,9 @@ export default {
 
                 /**
                  * Received Events:
-                 *  - RECV_CONTROLLERS
-                 *  - RECV_CONTROLLER_DATA
-                 *  - CHANNEL_CLIENTS_CHANGED
+                 *  - RECV_CONTROLLERS          -IGNORE FOR NOW
+                 *  - RECV_CONTROLLER_DATA      -DONE
+                 *  - CHANNEL_CLIENTS_CHANGED   -IGNORE FOR NOW
                  *  - CONTROLLER_CREATED
                  *  - CONTROLLER_DESTROYED
                  *  - CONFIG_CHANGED
@@ -317,6 +369,20 @@ export default {
         position: absolute;
         transform: translate3d(0, 100vh, 0);
     }
+}
+
+.top-radio-body {
+    background-repeat: round;
+    width: 250px;
+    height: 893px;
+    position: fixed;
+    right: 30px;
+    /* right: 0px; */
+    bottom: 0px;
+    /* width: 200px;
+    height: auto; */
+    width: 275px;
+    height: 982px;
 }
 
 .radio-body {
