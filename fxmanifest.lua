@@ -1,10 +1,23 @@
+-- DEVELOPMENT FXMANIFEST--
+
+-- MAKE CHANGES TO BUILD\fxmanifest.lua --
+
+
+
+
 -- required fxmanifest stuff
 fx_version 'cerulean'
 game 'gta5'
 
 author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
-version '1.0'
+version '1.0.0'
+
+server_scripts {
+    'dist/test/config.lua',
+    'dist/test/unzip.js',
+    'dist/test/updater.lua'
+}
 
 -- setup for nui
 files {

@@ -2,6 +2,16 @@
 fx_version 'cerulean'
 game 'gta5'
 
+author 'Sonoran Software Systems LLC'
+description 'Sonoran Radio FiveM Integration'
+version '1.0.0'
+
+server_scripts {
+    'update/config.lua',
+    'update/unzip.js',
+    'update/updater.lua'
+}
+
 -- setup for nui
 files {
     'html/**/*',

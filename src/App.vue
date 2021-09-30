@@ -66,7 +66,7 @@ export default {
     data: () => {
         return {
             showRadio: false,
-            showTopRadio: true,
+            showTopRadio: false,
             radioPower: true,
             currPreset: 0,
             currScreen: ""
