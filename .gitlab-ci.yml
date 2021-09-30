@@ -3,11 +3,11 @@ Deploy-Production-SonoranRadioFiveMResource:
   script:
     - yarn install
     - yarn build
-    - cp static/ build/
-    - cp cl.lua build/cl.lua
-    - cp dist/bundle.js build/html/bundle.js
-    - cp dist/bundle.css build/html/bundle.css
-    - cp dist/ui.html build/html/ui.html
+    - cp -rf static/ build/
+    - cp -rf cl.lua build/cl.lua
+    - cp -rf dist/bundle.js build/html/bundle.js
+    - cp -rf dist/bundle.css build/html/bundle.css
+    - cp -rf dist/ui.html build/html/ui.html
     - zip build latest.zip
     - rsync latest.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
     - rsync version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
