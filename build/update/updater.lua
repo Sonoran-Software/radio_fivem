@@ -11,7 +11,7 @@ function PerformHttpRequestS(url, cb, method, data, headers)
 end
 
 local function doUnzip(path)
-    local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../../"
+    local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
     exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
     print("Unzipped to "..unzipPath)
     if not Config.allowUpdateWithPlayers and GetNumPlayerIndices() > 0 then
