@@ -20,11 +20,11 @@ local function doUnzip(path)
         return
     end
     print("Auto-restarting...")
-    local f = assert(io.open(GetResourcePath("sonoran_updatehelper").."/run.lock", "w+"))
+    local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
     f:write("radio")
     f:close()
     Wait(5000)
-    ExecuteCommand("ensure sonoran_updatehelper")
+    ExecuteCommand("ensure sonoranradio_updatehelper")
 end
 
 local function doUpdate(latest)
@@ -57,9 +57,9 @@ function RunAutoUpdater(manualRun)
     local f = LoadResourceFile(GetCurrentResourceName(), "/update.zip")
     if f ~= nil then
         -- remove the update file and stop the helper
-        ExecuteCommand("stop sonoran_updatehelper")
+        ExecuteCommand("stop sonoranradio_updatehelper")
         os.remove(GetResourcePath(GetCurrentResourceName()).."/update.zip")
-        os.remove(GetResourcePath("sonoran_updatehelper").."/run.lock")
+        os.remove(GetResourcePath("sonoranradio_updatehelper").."/run.lock")
     end
     local versionFile = Config.autoUpdateUrl
     if versionFile == nil then
@@ -97,7 +97,7 @@ function RunAutoUpdater(manualRun)
                         print("^3|                        ^5SonoranRadio Update Available                        ^3|")
                         print("^3|                             ^8Current : " .. localVersion .. "                               ^3|")
                         print("^3|                             ^2Latest  : " .. latestVersion .. "                               ^3|")
-                        print("^3| Download at: ^4https://github.com/Sonoran-Software/SonoranCADLuaIntegration ^3|")
+                        print("^3| Download at: ^4https://download.sonoransoftware.com/sonoranradio/archive/latest.zip ^3|")
                         print("^3|===========================================================================|^7")
                         if Config.allowAutoUpdate == nil then
                             print("You have not configured the automatic updater. Please set allowAutoUpdate in config.json to allow updates.")
@@ -124,10 +124,10 @@ CreateThread(function()
                 print("An update has been applied to SonoranCAD but requires a resource restart. Restart delayed until server is empty.")
             else
                 print("Server is empty, restarting resources...")
-                local f = assert(io.open(GetResourcePath("sonoran_updatehelper").."/run.lock", "w+"))
+                local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
                 f:write("radio")
                 f:close()
-                ExecuteCommand("ensure sonoran_updatehelper")
+                ExecuteCommand("ensure sonoranradio_updatehelper")
             end
         else
             RunAutoUpdater()
