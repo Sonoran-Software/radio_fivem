@@ -8,7 +8,7 @@ CreateThread(function()
         ExecuteCommand("refresh")
         Wait(1000)
         if line == "radio" then
-			ExecuteCommand("restart sonoran_radio")
+			ExecuteCommand("restart sonoranradio")
 			Wait(1000)
         end
     else

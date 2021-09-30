@@ -7,7 +7,7 @@ function PerformHttpRequestS(url, cb, method, data, headers)
     if not headers then
         headers = {["X-User-Agent"] = "SonoranCAD"}
     end
-    exports["sonoran_radio"]:HandleHttpRequest(url, cb, method, data, headers)
+    exports["sonoranradio"]:HandleHttpRequest(url, cb, method, data, headers)
 end
 
 local function doUnzip(path)
