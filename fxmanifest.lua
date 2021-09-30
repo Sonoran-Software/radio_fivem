@@ -1,7 +1,16 @@
-fx_version 'bodacious'
+-- required fxmanifest stuff
+fx_version 'cerulean'
 game 'gta5'
 
-file 'nui/**/*'
-ui_page 'nui/index.html'
+-- setup for nui
+files {
+    'dist/**/*',
+    'static/**/*'
+} 
+ui_page 'dist/ui.html'
+
+-- build webpack page automatically when resource is started for the first time
+dependencies {'yarn', 'webpack'}
+webpack_config 'webpack.config.js'
 
 client_script 'cl.lua'
