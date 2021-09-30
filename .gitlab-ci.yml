@@ -1,0 +1,11 @@
+# Deploy-Production-SonoranRadioFiveMResource:
+#   stage: deploy
+#   script:
+# #    - dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true
+#     - zip resouce resource_path/
+#     - rsync path/to/resource.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
+#     - rsync path/to/version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
+#   tags:
+#     - linux, build, shell, development
+#   only:
+#     - master
