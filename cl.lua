@@ -34,6 +34,7 @@ RegisterCommand('radio', function()
     })
     SetNuiFocus(radActive, radActive)
 end)
+RegisterKeyMapping('radio', 'Sonoran Radio', 'keyboard', '')
 
 function Radio:Toggle(toggle)
 	local playerPed = PlayerPedId()
@@ -101,7 +102,6 @@ function Radio:Toggle(toggle)
 	end
 end
 
-
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
     while true do
@@ -115,10 +115,6 @@ Citizen.CreateThread(function()
     end
     -- For Development Only
     print('Sonoran Radio Started!')
-end)
-
-RegisterCommand('hello', function()
-    SendNUIMessage({type = 'hello'})
 end)
 
 RegisterNUICallback('data', function(data, cb)
