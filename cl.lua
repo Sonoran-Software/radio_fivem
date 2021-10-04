@@ -68,35 +68,24 @@ function Radio:Toggle(toggle)
 
 	if self.Open then
 		RequestModel(self.Prop)
-
 		while not HasModelLoaded(self.Prop) do
 			Citizen.Wait(150)
 		end
-
 		self.Handle = CreateObject(self.Prop, 0.0, 0.0, 0.0, true, true, false)
-
 		local bone = GetPedBoneIndex(playerPed, self.Bone)
-
 		SetCurrentPedWeapon(playerPed, `weapon_unarmed`, true)
 		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
-
 		SetModelAsNoLongerNeeded(self.Handle)
-
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
 	else
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
-
 		Citizen.Wait(700)
-
 		StopAnimTask(playerPed, dictionary, animation, 1.0)
-
 		NetworkRequestControlOfEntity(self.Handle)
-
 		while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
 			Citizen.Wait(0)
 			count = count + 1
 		end
-		
 		DetachEntity(self.Handle, true, false)
 		DeleteEntity(self.Handle)
 	end
