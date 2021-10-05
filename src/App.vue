@@ -129,7 +129,7 @@ export default {
     },
     methods: {
         postClient(data, route = "/data") {
-            const url = new URL(route, `https://sonoran_radio`);
+            const url = new URL(route, `https://sonoranradio`);
             fetch(url.toString(), {
                 method: "POST",
                 body: JSON.stringify(data),
