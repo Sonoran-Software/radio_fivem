@@ -1,7 +1,14 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            [] 19:25
+            <div class="sc-brand">
+                SONORAN
+            </div>
+            <!--<img class="sc-logo" :src="`../static/sradio-logo-text.png`">-->
+            <div class="sc-icons">
+                <img class="sc-battery" :src="`../static/sradio-battery.png`">
+                <div class="sc-time">{{ currTime }}</div>
+            </div>
         </div>
         <div class="sc-body">
             <div class="sc-status">
@@ -77,6 +84,7 @@ export default {
     components: {},
     data() {
         return {
+            currTime: "00:00"
         }
     },
     mounted() {
@@ -105,8 +113,33 @@ export default {
 .sc-header {
     text-align: right;
     color: white;
-    padding: 3px 6px 2px 0px;
+    padding: 3px 6px 2px 3px;
     background-color: rgba(30,30,30,1);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+.sc-icons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.sc-battery {
+    height: 11px;
+    padding-right: 3px;
+}
+.sc-time {
+    font-family: 'Arial Black';
+    font-size: 12px;
+}
+.sc-brand {
+    font-family: 'Arial Black';
+    font-size: 12px;
+}
+.sc-logo {
+    height: 11px;
+    padding-top: 1px;
 }
 .sc-body {
     color: white;
@@ -120,9 +153,6 @@ export default {
 .sc-status .header {
     font-size: 14px;
     color: rgba(255,255,255,0.7)
-}
-.sc-status .content {
-
 }
 .sc-spacer {
     height: 5px;
