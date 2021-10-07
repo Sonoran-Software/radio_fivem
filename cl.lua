@@ -120,3 +120,17 @@ RegisterNUICallback('data', function(data, cb)
 
     cb('OK')
 end)
+
+AddEventHandler('onResourceStart', function(resource)
+	if GetCurrentResourceName() ~= resource then return end
+	print('Sonoran Radio Starting...')
+	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
+	print('Sonoran Radio Started!')
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+	if GetCurrentResourceName() ~= resource then return end
+	print('Sonoran Radio Stopping...')
+	TriggerEvent("chat:removeSuggestion", "/radio")
+	Radio:Toggle(false)
+end)
