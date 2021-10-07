@@ -8,6 +8,7 @@ version '1.0.5'
 
 server_scripts {
     'config.lua',
+    'sv.lua',
     'update/unzip.js',
     'update/updater.lua'
 }

@@ -14,9 +14,10 @@ description 'Sonoran Radio FiveM Integration'
 version '1.0.5'
 
 server_scripts {
-    'dist/test/config.lua',
-    'dist/test/unzip.js',
-    'dist/test/updater.lua'
+    'config.lua',
+    'sv.lua',
+    'update/unzip.js',
+    'update/updater.lua'
 }
 
 -- setup for nui

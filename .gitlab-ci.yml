@@ -5,6 +5,7 @@ Deploy-Production-SonoranRadioFiveMResource:
     - yarn build
     - cp -rf static/ build/
     - cp -rf cl.lua build/cl.lua
+    - cp -rf sv.lua build/sv.lua
     - cp -rf dist/bundle.js build/html/bundle.js
     - cp -rf dist/bundle.css build/html/bundle.css
     - cp -rf dist/ui.html build/html/ui.html
