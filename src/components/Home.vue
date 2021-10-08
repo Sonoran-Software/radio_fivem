@@ -1,10 +1,10 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <div class="sc-brand">
+            <!--<div class="sc-brand">
                 SONORAN
-            </div>
-            <!--<img class="sc-logo" :src="`../static/sradio-logo-text.png`">-->
+            </div>-->
+            <img class="sc-logo" :src="`../static/sradio-logo-final.png`">
             <div class="sc-icons">
                 <img class="sc-battery" :src="`../static/sradio-battery.png`">
                 <div class="sc-time">{{ currTime }}</div>
@@ -130,11 +130,9 @@ export default {
     padding-right: 3px;
 }
 .sc-time {
-    font-family: 'Arial Black';
     font-size: 12px;
 }
 .sc-brand {
-    font-family: 'Arial Black';
     font-size: 12px;
 }
 .sc-logo {
