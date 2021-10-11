@@ -11,6 +11,9 @@
                         <input type="button" class="ctrl ctrl-power" v-on:click="radioPower = !radioPower" />
                     </div>
                     <div class="radio-screen">
+                        <div class="radio-brand">
+                            <img class="radio-logo" :src="`../static/radio-logo.png`">
+                        </div>
                         <div class="radio-content" v-if="radioPower">
                             <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
@@ -454,11 +457,34 @@ export default {
     height: 270px;
 }
 
+.radio-brand {
+    margin: 1px 1px 0px 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 20px;
+    justify-content: center;
+    background: linear-gradient(to bottom, rgba(80,80,80,0.5) 0%, rgba(20,20,20,1) 100%);
+
+}
+
+.radio-logo {
+    height: 12px;
+    padding-top: 1px;
+    /* transform: skewX(-20deg); */
+}
+
 .radio-content {
     border: 0px;
-    height: 269px;
-    margin: 1px;
+    height: 250px;
+    margin: 0px 1px 1px 1px;
     width: 147px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.radio-content::-webkit-scrollbar {
+    display: none;
 }
 
 .radio-buttons {

@@ -1,14 +1,8 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <!--<div class="sc-brand">
-                SONORAN
-            </div>-->
-            <img class="sc-logo" :src="`../static/sradio-logo-final.png`">
-            <div class="sc-icons">
-                <img class="sc-battery" :src="`../static/sradio-battery.png`">
-                <div class="sc-time">{{ currTime }}</div>
-            </div>
+            <img class="sc-battery" :src="`../static/sradio-battery.png`">
+            <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
             <div class="sc-status">
@@ -119,6 +113,7 @@ export default {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    justify-content: flex-end;
 }
 .sc-icons {
     display: flex;
@@ -127,7 +122,7 @@ export default {
 }
 .sc-battery {
     height: 11px;
-    padding-right: 3px;
+    padding-right: 5px;
 }
 .sc-time {
     font-size: 12px;
