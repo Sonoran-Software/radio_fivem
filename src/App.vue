@@ -1,7 +1,9 @@
 <template>
-    <div>
+    <div class="appcontainer">
         <div v-if="showRadio">
-            <div class="radio-container">
+            <div class="radio-container"
+            :class="(showRadio?'radio-open':'radio-close')"
+            >
                 <div id="radio-body" class="radio-body"
                 :style="{backgroundImage: 'url(../static/radio-frame.png)'}">
                     <div class="radio-controls">
@@ -334,6 +336,10 @@ export default {
 </script>
 
 <style scoped>
+.appcontainer {
+    overflow: hidden;
+}
+
 .hidden {
     display: none;
 }
@@ -344,6 +350,7 @@ export default {
     right: 0;
     bottom: 0;
     left: 0;
+    overflow: hidden;
 }
 @keyframes radio-open {
     0% {
