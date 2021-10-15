@@ -11,7 +11,6 @@ Deploy-Production-SonoranRadioFiveMResource:
     - cp -rf dist/ui.html build/html/ui.html
     - mv build sonoranradio
     - zip -r latest sonoranradio
-    - zip -r latest sonoranradio_updatehelper
     - rsync latest.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
     - rsync version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
   tags:
