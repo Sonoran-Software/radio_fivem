@@ -1,6 +1,6 @@
 {
     "name": "src_sonoranradio",
-    "version": "1.0.0",
+    "version": "1.0.7",
     "private": true,
     "scripts": {
         "build": "webpack --mode production",
