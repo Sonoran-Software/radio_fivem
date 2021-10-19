@@ -39,9 +39,13 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
 });
 
 exports('UnzipFile', (file, dest) => {
-    fs.createReadStream(file).pipe(unzipper.Extract({ path: dest}));
+	console.log('unzipping...');
+    fs.createReadStream(file).pipe(unzipper.Extract({ path: dest})).on('close', () => {
+		emit("UnzipFileComplete", true)
+	}).on('error', (error) => {
+		emit("UnzipFileComplete", false, error)
+	});
 });
-
 function deleteDirR(dir) {
 	fs.rmdir(dir, {recursive:true}, (err) => {
         if (err) {

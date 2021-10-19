@@ -13,19 +13,28 @@ end
 local function doUnzip(path)
     local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
     exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
-    print("Unzipped to "..unzipPath)
+    print("Unzipping to " .. unzipPath .. ". Waiting for unzip to complete.")
     if not Config.allowUpdateWithPlayers and GetNumPlayerIndices() > 0 then
         pendingRestart = true
         print("Delaying auto-update until server is empty.")
         return
     end
-    print("Auto-restarting...")
-    local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
-    f:write("radio")
-    f:close()
-    Wait(5000)
-    ExecuteCommand("ensure sonoranradio_updatehelper")
 end
+
+AddEventHandler("UnzipFileComplete", function(success, err)
+	if success then
+		print("Update Decompressed Successfully...")
+		print("Auto-restarting...")
+		local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
+		f:write("radio")
+		f:close()
+		Wait(1000)
+		ExecuteCommand("ensure sonoranradio_updatehelper")
+	else
+		print("Unzipping of update did not complete successfully!")
+		print(err)
+	end
+end)
 
 local function doUpdate(latest)
     -- best way to do this...

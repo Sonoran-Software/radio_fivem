@@ -7,10 +7,10 @@
                 <div id="radio-body" class="radio-body"
                 :style="{backgroundImage: 'url(../static/radio-frame.png)'}">
                     <div class="radio-controls">
-                        <input type="button" class="ctrl ctrl-panic" />
-                        <input type="button" class="ctrl ctrl-prev" v-on:click="console.log('Previous Clicked');" />
-                        <input type="button" class="ctrl ctrl-next" v-on:click="console.log('Next Clicked');" />
-                        <input type="button" class="ctrl ctrl-power" v-on:click="radioPower = !radioPower" />
+                        <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
+                        <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
+                        <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
+                        <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
                     </div>
                     <div class="radio-screen">
                         <div class="radio-brand">
@@ -331,6 +331,18 @@ export default {
             console.log("Sending Message to Socket");
             this.connection.send(JSON.stringify(data));
         },
+        buttonPanic() {
+
+        },
+        buttonPrev() {
+
+        },
+        buttonNext() {
+
+        },
+        buttonPower() {
+            radioPower = !radioPower
+        }
     }
 };
 </script>
