@@ -20,7 +20,7 @@ client_scripts {
 
 -- setup for nui
 files {
-    'html/**/*',
+    'dist/**/*',
     'static/**/*'
 } 
-ui_page 'html/ui.html'
+ui_page 'dist/ui.html'
