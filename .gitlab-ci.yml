@@ -9,7 +9,7 @@ Deploy-Production-SonoranRadioFiveMResource:
     - cp -rf dist/bundle.js build/sonoranradio/dist/bundle.js
     - cp -rf dist/bundle.css build/sonoranradio/dist/bundle.css
     - cp -rf dist/ui.html build/sonoranradio/dist/ui.html
-    - zip -r latest build
+    - zip -r latest build/*
     - rsync latest.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
     - rsync version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
   tags:
