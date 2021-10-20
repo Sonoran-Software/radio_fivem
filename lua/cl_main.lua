@@ -34,7 +34,43 @@ RegisterCommand('radio', function()
     })
     SetNuiFocus(radActive, radActive)
 end)
-RegisterKeyMapping('radio', 'Sonoran Radio', 'keyboard', '')
+
+-- Next
+RegisterCommand('sonradnext', function()
+    SendNUIMessage({
+        type = 'pushButton',
+        button = 'next'
+    })
+end)
+
+-- Previous
+RegisterCommand('sonradprev', function()
+    SendNUIMessage({
+        type = 'pushButton',
+        button = 'prev'
+    })
+end)
+
+-- Power
+RegisterCommand('sonradpower', function()
+    SendNUIMessage({
+        type = 'pushButton',
+        button = 'power'
+    })
+end)
+
+-- Panic
+RegisterCommand('sonradpanic', function()
+    SendNUIMessage({
+        type = 'pushButton',
+        button = 'panic'
+    })
+end)
+RegisterKeyMapping('radio', 'Show Radio', 'keyboard', '')
+RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
+RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
+RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
+RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Toggle(toggle)
 	local playerPed = PlayerPedId()
