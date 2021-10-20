@@ -176,7 +176,7 @@ export default {
             })
         },
         setFrequency(event) {
-            console.log("Setting Frequency: " + event);
+            //console.log("Setting Frequency: " + event);
             this.sendToSocket({
                 type: "set_frequencies",
                 freq_recv: this.$store.state.currFreq.recv,
@@ -211,7 +211,7 @@ export default {
 
         },
         setupSocket() {
-            console.log("Establishing Websocket connection...");
+            //console.log("Establishing Websocket connection...");
             this.connection = new WebSocket("ws://[::1]:33802");
             this.connection.onmessage = this.socketMessage;
             this.connection.onopen = this.socketOpen;
@@ -220,7 +220,7 @@ export default {
         socketMessage(event) {
             if (event.data) {
                 let data = JSON.parse(event.data);
-                console.log("Received " + data.type + " message:");
+                //console.log("Received " + data.type + " message:");
                 switch (data.type) {
                     case "recv_controller_data":
                         let currstate = data.data.state;
@@ -310,15 +310,13 @@ export default {
                  *  - CONTROLLER_DESTROYED
                  *  - CONFIG_CHANGED
                  */
-                console.log(data);
+                //console.log(data);
             } else {
                 console.error("Empty Message from Socket!");
             }
         },
         socketOpen(event) {
-            console.log(event);
-            console.log("Socket connection established!");
-            console.log("Requesting Controllers");
+            console.log("Teamspeak Plugin Connected!");
             //this.sendToSocket({ "type" : "get_controllers" });
             this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
         },
@@ -341,7 +339,7 @@ export default {
 
         },
         buttonPower() {
-            radioPower = !radioPower
+            this.radioPower = !this.radioPower
         }
     }
 };
