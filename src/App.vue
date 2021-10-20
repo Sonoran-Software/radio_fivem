@@ -127,6 +127,28 @@ export default {
                         console.error(e);
                     }
                     break;
+                case 'pushButton':
+                    switch (event.data.button) {
+                        case 'prev':
+                            this.buttonPrev();
+                            break;
+
+                        case 'next':
+                            this.buttonNext();
+                            break;
+
+                        case 'power':
+                            this.buttonPower();
+                            break;
+
+                        case 'panic':
+                            this.buttonPanic();
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }
