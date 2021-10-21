@@ -41,7 +41,7 @@ local RadioTower = {
     },
 
     -- Currently only GTA props (future: custom props)
-    RadioTower.Props = {
+    RadioTower.TowerProps = {
         "prop_radiomast01",
         "prop_radiomast02",
     },
@@ -156,6 +156,42 @@ function RadioTower:AddTower(x, y, z, offset, handle, status)
     -- AttachEntityToEntityPhysically()
     -- PARAMS: (entity1, entity2, boneIndex1, boneIndex2, xPos1, yPos1, zPos1, xPos2, yPos2, zPos2, xRot, yRot, zRot, breakForce, true, true, true, false, 1)
     -- the breakforce will prove useful
+end
+
+function RadioTower:DebugGetNearbyObjects()
+	local handle, obj = FindFirstObject()
+	local finished = false
+	local objArray = {}
+
+	repeat
+		if (DoesEntityExist(obj)) then
+            local model = GetEntityModel(obj)
+
+            local towerprops = RadioTower.TowerProps
+            local repeaterprops = RadioTower.RepeaterProps
+
+            for k,v in pairs(towerprops) do
+                local pmod = GetHashKey(v)
+                --print(model, pmod, v)
+                if (pmod == model) then
+                    objArray[obj] = obj
+                end
+            end
+
+            for k,v in pairs(repeaterprops) do
+                local pmod = GetHashKey(v)
+                --print(model, pmod, v)
+                if (pmod == model) then
+                    objArray[obj] = obj
+                end
+            end
+		end
+		finished, obj = FindNextObject(handle)
+	until not finished
+
+	EndFindObject(handle)
+
+	return objArray
 end
 
 -- todo check nearby towers and setup/do things for destroying or repairing
