@@ -1,5 +1,40 @@
 local radActive = false
 
+local thisUnit = {}
+local unitStatus = nil
+
+RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
+AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
+	thisUnit = unit
+	if thisUnit ~= nil then
+		if unitStatus ~= thisUnit.status then
+			unitStatus = thisUnit.status
+			SendNUIMessage({
+				type = 'unitStatus',
+				status = thisUnit.status
+			})
+			--print('status updated')
+		end
+	end
+end)
+
+-- TODO: Push Events for Status Updates
+RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
+	if thisUnit.id ~= unit.id then return end
+	print(status)
+	SendNUIMessage({
+		type = 'unitStatus',
+		status = status
+	})
+end)
+
+CreateThread(function()
+	while true do
+		Wait(10000)
+		TriggerServerEvent("SonoranCAD::sonrad:GetUnitInfo")
+	end
+end)
+
 local Radio = {
 	Has = false,
 	Open = false,
@@ -153,6 +188,10 @@ RegisterNUICallback('data', function(data, cb)
         SetNuiFocus(false, false)
         Radio:Toggle(false)
     end
+
+	if data.type == 'panic' then
+		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+	end
 
     cb('OK')
 end)

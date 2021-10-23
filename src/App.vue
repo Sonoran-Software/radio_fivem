@@ -72,7 +72,7 @@ export default {
         return {
             showRadio: false,
             showTopRadio: false,
-            radioPower: true,
+            radioPower: false,
             currPreset: 0,
             currScreen: ""
         }
@@ -102,23 +102,15 @@ export default {
                     break;
                 case 'setPos':
                     try {
-                        let message = JSON.stringify({
-                            type: "update_position",
+                        this.$store.state.gamestate.position = [
+                            event.data.position[0],
+                            event.data.position[1],
+                            event.data.position[2]
+                        ];
+                        let message = {
+                            type: "set_gamestate",
                             to_cid: 1,
-                            position: [
-                                event.data.position[0],
-                                event.data.position[1],
-                                event.data.position[2]
-                            ]
-                        })
-                        message = {
-                            type: "update_position",
-                            to_cid: 1,
-                            position: [
-                                event.data.position[0],
-                                event.data.position[1],
-                                event.data.position[2]
-                            ]
+                            state: this.$store.state.gamestate
                         }
                         // Causing Errors
                         this.sendToSocket(message);
@@ -149,6 +141,28 @@ export default {
                             break;
                     }
                     break;
+                case 'unitStatus':
+                    let status = "Unknown";
+                    switch (event.data.status) {
+                        case 0:
+                            this.$store.state.statusText = "Unavailable";
+                            break;
+                        case 1:
+                            this.$store.state.statusText = "Busy";
+                            break;
+                        case 2:
+                            this.$store.state.statusText = "Available";
+                            break;
+                        case 3:
+                            this.$store.state.statusText = "En Route";
+                            break;
+                        case 4:
+                            this.$store.state.statusText = "On Scene";
+                            break;
+                        default:
+                            this.$store.state.statusText = "Invalid";
+                            break;
+                    }
                 default:
                     break;
             }
@@ -227,10 +241,24 @@ export default {
             this.currScreen = name;
         },
         nextPreset() {
-
+            if (this.$store.state.presets[this.currPreset + 1]) {
+                let nextPreset = this.$store.state.presets[this.currPreset + 1];
+                this.$store.state.currFreq.recv = nextPreset.recv;
+                this.$store.state.currFreq.xmit = nextPreset.xmit;
+                this.setFrequency();
+                this.currPreset++;
+                this.updateFreqLabel();
+            }
         },
         prevPreset() {
-
+            if (this.$store.state.presets[this.currPreset - 1]) {
+                let nextPreset = this.$store.state.presets[this.currPreset - 1];
+                this.$store.state.currFreq.recv = nextPreset.recv;
+                this.$store.state.currFreq.xmit = nextPreset.xmit;
+                this.setFrequency();
+                this.currPreset--;
+                this.updateFreqLabel();
+            }
         },
         setupSocket() {
             //console.log("Establishing Websocket connection...");
@@ -322,29 +350,17 @@ export default {
                         break;
                 }
                 this.updateFreqLabel();
-
-                /**
-                 * Received Events:
-                 *  - RECV_CONTROLLERS          -IGNORE FOR NOW
-                 *  - RECV_CONTROLLER_DATA      -DONE
-                 *  - CHANNEL_CLIENTS_CHANGED   -IGNORE FOR NOW
-                 *  - CONTROLLER_CREATED
-                 *  - CONTROLLER_DESTROYED
-                 *  - CONFIG_CHANGED
-                 */
-                //console.log(data);
             } else {
                 console.error("Empty Message from Socket!");
             }
         },
         socketOpen(event) {
-            console.log("Teamspeak Plugin Connected!");
-            //this.sendToSocket({ "type" : "get_controllers" });
+            console.log("Connected to teamspeak plugin...");
             this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
         },
         socketClose(event) {
-            console.log(event);
-            console.log("Socket connection lost, reconnecting...");
+            //console.log("Socket connection lost, reconnecting...");
+            this.
             this.setupSocket();
         },
         sendToSocket(data) {
@@ -352,16 +368,19 @@ export default {
             this.connection.send(JSON.stringify(data));
         },
         buttonPanic() {
-
+            this.postClient({
+                type: "panic"
+            });
         },
         buttonPrev() {
-
+            this.prevPreset();
         },
         buttonNext() {
-
+            this.nextPreset();
         },
         buttonPower() {
             this.radioPower = !this.radioPower
+            this.$store.state.gamestate.radio_powered = this.radioPower;
         }
     }
 };
