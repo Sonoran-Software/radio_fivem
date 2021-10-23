@@ -187,7 +187,7 @@ export default {
             });
         },
         addScanned(event) {
-            console.log(event);
+            //console.log(event);
             this.$store.state.scanned.push(this.$store.state.currFreq.recv);
             this.sendToSocket({
                 type: "set_frequencies_scanned",
@@ -196,7 +196,7 @@ export default {
         },
         delScanned(event) {
             let freq = event.toString().split(",");
-            console.log();
+            //console.log();
             let freqs = [];
             this.$store.state.scanned.forEach(el => {
                 if (el[0] == freq[0] && el[1] == freq[1]) {
@@ -243,8 +243,8 @@ export default {
         nextPreset() {
             if (this.$store.state.presets[this.currPreset + 1]) {
                 let nextPreset = this.$store.state.presets[this.currPreset + 1];
-                this.$store.state.currFreq.recv = nextPreset.recv;
-                this.$store.state.currFreq.xmit = nextPreset.xmit;
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset++;
                 this.updateFreqLabel();
@@ -253,8 +253,8 @@ export default {
         prevPreset() {
             if (this.$store.state.presets[this.currPreset - 1]) {
                 let nextPreset = this.$store.state.presets[this.currPreset - 1];
-                this.$store.state.currFreq.recv = nextPreset.recv;
-                this.$store.state.currFreq.xmit = nextPreset.xmit;
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset--;
                 this.updateFreqLabel();
@@ -293,7 +293,6 @@ export default {
                         });
                         break;
                     case "frequencies_updated":
-                        this.$store.state.statusText = "Freq. Updated"; // TODO: Remove when status is configurable.
                         this.$store.state.currFreq.recv = data.freq_recv;
                         this.$store.state.currFreq.xmit = data.freq_xmit;
                         break;
