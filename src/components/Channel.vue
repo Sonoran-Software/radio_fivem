@@ -39,7 +39,7 @@ export default {
     },
     methods: {
         inRange(val) {
-            return ((val > 30 && val < 50) || (val > 150 && val < 174));
+            return ((val >= 30 && val <= 50) || (val >= 150 && val <= 174));
         },
         inSecondRange(val) {
             return (val >= 0 && val <= 999);
@@ -55,10 +55,10 @@ export default {
                 this.recvInput += "(invalid)";
                 return;
             }
-            this.$store.state.currFreq.xmit[0] = this.xmitInput.split(".")[0];
-            this.$store.state.currFreq.xmit[1] = this.xmitInput.split(".")[1];
-            this.$store.state.currFreq.recv[0] = this.recvInput.split(".")[0];
-            this.$store.state.currFreq.recv[1] = this.recvInput.split(".")[1];
+            this.$store.state.currFreq.xmit[0] = parseInt(this.xmitInput.split(".")[0]);
+            this.$store.state.currFreq.xmit[1] = parseInt(this.xmitInput.split(".")[1]);
+            this.$store.state.currFreq.recv[0] = parseInt(this.recvInput.split(".")[0]);
+            this.$store.state.currFreq.recv[1] = parseInt(this.recvInput.split(".")[1]);
             this.$emit('set-frequency','')
             this.$emit('set-screen','')
         }
