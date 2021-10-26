@@ -212,11 +212,11 @@ export default {
             })
         },
         setFrequency(event) {
-            //console.log("Setting Frequency: " + event);
+            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString() );
             this.sendToSocket({
                 type: "set_frequencies",
-                freq_recv: this.$store.state.currFreq.recv,
-                freq_xmit: this.$store.state.currFreq.xmit
+                freq_recv: [parseInt(this.$store.state.currFreq.recv[0]),parseInt(this.$store.state.currFreq.recv[1])],
+                freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]),parseInt(this.$store.state.currFreq.xmit[1])]
             })
             this.$store.state.currFreq.name = "Custom Frequency";
             this.updateFreqLabel();
@@ -346,6 +346,8 @@ export default {
                             })
                         });
                     default:
+                        console.log("**Unhandled Socket Message**");
+                        console.log(JSON.stringify(event.data))
                         break;
                 }
                 this.updateFreqLabel();
