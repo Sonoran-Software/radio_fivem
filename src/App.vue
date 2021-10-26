@@ -336,7 +336,8 @@ export default {
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
-                        let cfgpresets = data.profiles;
+                        //console.log(data);
+                        let cfgpresets = data.data.profiles;
                         this.$store.state.presets = [];
                         cfgpresets.forEach(el => {
                             this.$store.state.presets.push({
