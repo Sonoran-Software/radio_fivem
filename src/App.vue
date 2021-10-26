@@ -212,7 +212,7 @@ export default {
             })
         },
         setFrequency(event) {
-            //console.log("Setting Frequency: " + event);
+            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString() );
             this.sendToSocket({
                 type: "set_frequencies",
                 freq_recv: this.$store.state.currFreq.recv,
@@ -346,6 +346,8 @@ export default {
                             })
                         });
                     default:
+                        console.log("**Unhandled Socket Message**");
+                        console.log(JSON.stringify(event.data))
                         break;
                 }
                 this.updateFreqLabel();
