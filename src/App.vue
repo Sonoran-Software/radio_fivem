@@ -97,6 +97,9 @@ export default {
             const eventType = event.data.event;
             //console.log(event);
             switch (event.data.type) {
+                case 'reset':
+                    this.setupSocket();
+                    break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     break;
