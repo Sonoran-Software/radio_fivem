@@ -350,8 +350,8 @@ export default {
                             })
                         });
                     default:
-                        console.log("**Unhandled Socket Message**");
-                        console.log(JSON.stringify(event.data))
+                        //console.log("**Unhandled Socket Message**");
+                        //console.log(JSON.stringify(event.data))
                         break;
                 }
                 this.updateFreqLabel();
