@@ -2,7 +2,7 @@
     <div class="screen">
         <div class="sc-header">
             <div class="back" v-on:click="$emit('set-screen', '')">
-                &#9664;
+                <i class="fas fa-arrow-left"></i>
             </div>
             <div class="title">
                 Scan List
@@ -11,7 +11,24 @@
                 &plus;
             </div>
         </div>
-        <div class="sc-body">
+        <div class="sc-body" v-if="$store.state.sublvl <= 1">
+            <div class="sc-ch">
+                <div class="sc-ch-header">View Only</div>
+                <div class="sc-ch-freq">Upgrade to Pro</div>
+            </div>
+            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name">
+                <div class="sc-ch-header">{{ preset.display_name }}</div>
+                <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
+            </div>
+        </div>
+        <div class="sc-body" v-if="$store.state.sublvl > 1">
+            <div class="sc-row" v-on:click="$emit('toggle-scan', '')">
+                <div class="sc-row-label">Scan {{($store.state.scanning?"enabled":"disabled")}}</div>
+                <div class="sc-row-icon">
+                    <i class="fas fa-toggle-off" v-if="!$store.state.scanning"></i>
+                    <i class="fas fa-toggle-on" v-if="$store.state.scanning"></i>
+                </div>
+            </div>
             <div class="sc-row" v-for="freq in $store.state.scanned" :key="freq.id">
                 <div class="sc-row-label">{{freq[0]}}.{{freq[1]}}</div>
                 <div class="sc-row-icon" v-on:click="$emit('del-scanned', freq)">&times;</div>
@@ -78,6 +95,15 @@ export default {
     display: flex;
     justify-content: space-between;
     border-bottom: rgb(30, 30, 30) solid 1px;
+}
+.sc-ch {
+    padding: 3px 3px 3px 5px;
+    display: block;
+    justify-content: space-between;
+    border-bottom: rgb(30, 30, 30) solid 1px;
+}
+.sc-ch-freq {
+    font-size: 13px;
 }
 .sc-status {
     margin: 7px 0px 0px 0px;

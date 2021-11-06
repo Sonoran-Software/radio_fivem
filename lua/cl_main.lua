@@ -3,6 +3,8 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
+local isTalking = false
+
 RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
 AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
 	thisUnit = unit
@@ -70,6 +72,18 @@ RegisterCommand('radio', function()
     SetNuiFocus(radActive, radActive)
 end)
 
+RegisterCommand('radioreset', function()
+	SendNUIMessage({
+		type = 'reset'
+	})
+end)
+
+-- Talking Animation
+RegisterCommand('sonradtalk', function()
+	isTalking = not isTalking
+	Radio:Talking(isTalking)
+end)
+
 -- Next
 RegisterCommand('sonradnext', function()
     SendNUIMessage({
@@ -106,6 +120,17 @@ RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
 RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
 RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
+
+function Radio:Talking(toggle)
+	if toggle then
+		RequestAnimDict("random@arrests")
+		while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+		TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+	else
+		StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+	end
+	RequestAnimDict()
+end
 
 function Radio:Toggle(toggle)
 	local playerPed = PlayerPedId()
@@ -162,6 +187,18 @@ function Radio:Toggle(toggle)
 	end
 end
 
+function Radio:Destroy()
+	local playerPed = PlayerPedId()
+	local count = 0
+	NetworkRequestControlOfEntity(self.Handle)
+	while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
+		Citizen.Wait(0)
+		count = count + 1
+	end
+	DetachEntity(self.Handle, true, false)
+	DeleteEntity(self.Handle)
+end
+
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
     while true do
@@ -177,6 +214,12 @@ Citizen.CreateThread(function()
     print('Sonoran Radio Started!')
 end)
 
+function SendNotification(message)
+	BeginTextCommandThefeedPost("STRING")
+	AddTextComponentSubstringPlayerName(message)
+	EndTextCommandThefeedPostTicker(false, false)
+end
+
 RegisterNUICallback('data', function(data, cb)
     print('data:' .. json.encode(data))
     if data.type == 'hide' then
@@ -189,6 +232,10 @@ RegisterNUICallback('data', function(data, cb)
         Radio:Toggle(false)
     end
 
+	if data.type == 'notify' then
+		SendNotification(data.message)
+	end
+
 	if data.type == 'panic' then
 		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
 	end
@@ -200,6 +247,7 @@ AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
 	print('Sonoran Radio Starting...')
 	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
+	TriggerEvent("chat:addSuggestion", "/radioreset", "Reconnect radio to teamspeak")
 	print('Sonoran Radio Started!')
 end)
 
@@ -207,5 +255,6 @@ AddEventHandler('onResourceStop', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
 	print('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
-	Radio:Toggle(false)
+	TriggerEvent("chat:removeSuggestion", "/radioreset")
+	Radio:Destroy()
 end)
