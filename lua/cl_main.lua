@@ -202,6 +202,12 @@ Citizen.CreateThread(function()
     print('Sonoran Radio Started!')
 end)
 
+function SendNotification(message)
+	BeginTextCommandThefeedPost("STRING")
+	AddTextComponentSubstringPlayerName(message)
+	EndTextCommandThefeedPostTicker(false, false)
+end
+
 RegisterNUICallback('data', function(data, cb)
     print('data:' .. json.encode(data))
     if data.type == 'hide' then
@@ -213,6 +219,10 @@ RegisterNUICallback('data', function(data, cb)
         SetNuiFocus(false, false)
         Radio:Toggle(false)
     end
+
+	if data.type == 'notify' then
+		SendNotification(data.message)
+	end
 
 	if data.type == 'panic' then
 		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
