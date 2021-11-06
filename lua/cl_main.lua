@@ -187,6 +187,19 @@ function Radio:Toggle(toggle)
 	end
 end
 
+function Radio:Destroy()
+	local playerPed = PlayerPedId()
+	local count = 0
+	StopAnimTask(playerPed, dictionary, animation, 1.0)
+	NetworkRequestControlOfEntity(self.Handle)
+	while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
+		Citizen.Wait(0)
+		count = count + 1
+	end
+	DetachEntity(self.Handle, true, false)
+	DeleteEntity(self.Handle)
+end
+
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
     while true do
@@ -244,5 +257,5 @@ AddEventHandler('onResourceStop', function(resource)
 	print('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
-	Radio:Toggle(false)
+	Radio:Destroy()
 end)
