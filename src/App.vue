@@ -105,24 +105,17 @@ export default {
                     this.showRadio = event.data.visibility;
                     break;
                 case 'setPos':
-                    if (this.$store.state.sublvl == 0) return;
                     try {
                         this.$store.state.gamestate.position = [
                             event.data.position[0],
                             event.data.position[1],
                             event.data.position[2]
                         ];
-                        let message = {
-                            type: "set_gamestate",
-                            to_cid: 1,
-                            state: this.$store.state.gamestate
-                        }
-                        // Causing Errors
-                        this.sendToSocket(message);
                     } catch (e) {
                         console.error("Failed to update posistion");
                         console.error(e);
                     }
+                    this.updateGamestate();
                     break;
                 case 'pushButton':
                     switch (event.data.button) {
@@ -193,6 +186,14 @@ export default {
         },
         notifyPlayer(message) {
             this.postClient({ type: "notify", message: message})
+        },
+        updateGamestate() {
+            let message = {
+                type: "set_gamestate",
+                to_cid: 1,
+                state: this.$store.state.gamestate
+            }
+            this.sendToSocket(message);
         },
         addScanned(event) {
             //console.log(event);
@@ -430,9 +431,10 @@ export default {
             }
         },
         buttonPower() {
-            this.radioPower = !this.radioPower
+            this.radioPower = !this.radioPower;
             this.$store.state.gamestate.radio_powered = this.radioPower;
             this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
+            this.updateGamestate();
         }
     }
 };
