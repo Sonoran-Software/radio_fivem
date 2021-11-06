@@ -17,7 +17,8 @@ export default new Vuex.Store({
         },
         presets: [],
         scanned: [],
-        statusText: "Disconnected"
+        statusText: "Disconnected",
+        subLevel: null
     },
     getters: {},
     mutations: {},

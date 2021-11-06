@@ -11,7 +11,17 @@
                 &#128269;
             </div>
         </div>
-        <div class="sc-body">
+        <div class="sc-body" v-if="$store.state.sublvl == 0">
+            <div class="sc-ch">
+                <div class="sc-ch-header">View Only</div>
+                <div class="sc-ch-freq">Upgrade to Pro</div>
+            </div>
+            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name">
+                <div class="sc-ch-header">{{ preset.display_name }}</div>
+                <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
+            </div>
+        </div>
+        <div class="sc-body" v-if="$store.state.sublvl > 0">
             <div class="sc-row" v-on:click="$emit('set-screen', 'channel')">
                 <div class="sc-row-label">Custom</div>
                 <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>

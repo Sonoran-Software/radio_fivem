@@ -73,6 +73,7 @@ export default {
             showRadio: false,
             showTopRadio: false,
             radioPower: false,
+            subLevel: null,
             currPreset: 0,
             currScreen: ""
         }
@@ -104,6 +105,7 @@ export default {
                     this.showRadio = event.data.visibility;
                     break;
                 case 'setPos':
+                    if (this.$store.state.sublvl == 0) return;
                     try {
                         this.$store.state.gamestate.position = [
                             event.data.position[0],
@@ -189,6 +191,9 @@ export default {
                 console.log(err);
             });
         },
+        notifyPlayer(message) {
+            this.postClient({ type: "notify", message: message})
+        },
         addScanned(event) {
             //console.log(event);
             this.$store.state.scanned.push(this.$store.state.currFreq.recv);
@@ -225,6 +230,7 @@ export default {
             this.updateFreqLabel();
         },
         updateFreqLabel() {
+            let custom = true;
             this.$store.state.presets.forEach(el => {
                 //this.$store.state.currFreq.name = "Custom Frequency";
                 try {
@@ -233,11 +239,17 @@ export default {
                         el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
                         el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
                             this.$store.state.currFreq.name = el.display_name;
+                            this.notifyPlayer("Channel: ~y~" + el.display_name);
+                            custom = false;
                     }
                 } catch (e) {
                     console.error(e);
                 }
-            })
+            });
+            if (custom) {
+                this.$store.state.currFreq.name = "Custom Frequency";
+                this.notifyPlayer("Channel: ~y~Custom Frequency");
+            }
         },
         setScreen(name) {
             //console.log(name);
@@ -274,7 +286,17 @@ export default {
             if (event.data) {
                 let data = JSON.parse(event.data);
                 //console.log("Received " + data.type + " message:");
-                switch (data.type) {
+                //console.log(data);
+                if (data.error) {
+                    // Handle Error Status
+                    if (data.msg) {
+                        if (data.msg == "ws api endpoint blocked for subscription level") {
+                            // Invalid Subscription Level
+                            console.log("Sending to Socket Failed: Not available for sub level " + this.$store.state.sublvl);
+                        }
+                    }
+                } else {
+                    switch (data.type) {
                     case "recv_controller_data":
                         let currstate = data.data.state;
                         this.$store.state.statusText = "Connected";
@@ -294,10 +316,12 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        this.$store.state.sublvl = data.data.config.sublvl;
                         break;
                     case "frequencies_updated":
                         this.$store.state.currFreq.recv = data.freq_recv;
                         this.$store.state.currFreq.xmit = data.freq_xmit;
+                        this.updateFreqLabel();
                         break;
                     case "frequencies_scanned_updated":
                         this.$store.state.scanned = [];
@@ -339,7 +363,6 @@ export default {
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
-                        //console.log(data);
                         let cfgpresets = data.data.profiles;
                         this.$store.state.presets = [];
                         cfgpresets.forEach(el => {
@@ -350,11 +373,14 @@ export default {
                             })
                         });
                     default:
-                        //console.log("**Unhandled Socket Message**");
-                        //console.log(JSON.stringify(event.data))
+                        console.log("**Unhandled Socket Message**");
+                        console.log(JSON.stringify(event.data))
                         break;
                 }
                 this.updateFreqLabel();
+
+                }
+
             } else {
                 console.error("Empty Message from Socket!");
             }
@@ -365,7 +391,6 @@ export default {
         },
         socketClose(event) {
             //console.log("Socket connection lost, reconnecting...");
-            this.
             this.setupSocket();
         },
         sendToSocket(data) {
@@ -373,19 +398,31 @@ export default {
             this.connection.send(JSON.stringify(data));
         },
         buttonPanic() {
+            this.notifyPlayer("Radio: ~r~Panic Pressed!");
             this.postClient({
                 type: "panic"
             });
         },
         buttonPrev() {
-            this.prevPreset();
+            if (this.$store.state.sublvl == 0) {
+                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            } else {
+                this.notifyPlayer("Radio: ~y~Prev Preset");
+                this.prevPreset();
+            }
         },
         buttonNext() {
-            this.nextPreset();
+            if (this.$store.state.sublvl == 0) {
+                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            } else {
+                this.notifyPlayer("Radio: ~y~Next Preset");
+                this.nextPreset();
+            }
         },
         buttonPower() {
             this.radioPower = !this.radioPower
             this.$store.state.gamestate.radio_powered = this.radioPower;
+            this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
         }
     }
 };
