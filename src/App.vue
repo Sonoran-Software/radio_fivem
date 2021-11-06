@@ -24,7 +24,7 @@
                             <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
                             <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
                             <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" />
+                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
                             <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
                         </div>
                     </div>
@@ -307,6 +307,7 @@ export default {
                         currstate.freq_scan.forEach(el => {
                             this.$store.state.scanned.push([el[0], el[1]]);
                         })
+                        this.$store.state.scanning = currstate.enable_scan;
                         let presetarr = data.data.config.profiles;
                         this.$store.state.presets = [];
                         presetarr.forEach(el => {
@@ -328,6 +329,7 @@ export default {
                         data.freqs.forEach(el => {
                             this.$store.state.scanned.push([el[0], el[1]]);
                         })
+                        this.$store.state.scanning = data.enabled;
                         break;
                     case "channel_clients_changed":
                         // Ignore for Now, will be needed for messaging and status.
@@ -396,6 +398,14 @@ export default {
         sendToSocket(data) {
             console.log("Sending Message to Socket");
             this.connection.send(JSON.stringify(data));
+        },
+        toggleScan(event) {
+            //console.log(event);
+            this.$store.state.scanning = !this.$store.state.scanning;
+            this.sendToSocket({
+                type: "set_scanning_enabled",
+                enabled: this.$store.state.scanned
+            })
         },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");

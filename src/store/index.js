@@ -17,6 +17,7 @@ export default new Vuex.Store({
         },
         presets: [],
         scanned: [],
+        scanning: false,
         statusText: "Disconnected",
         subLevel: null
     },

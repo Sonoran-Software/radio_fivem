@@ -2,7 +2,7 @@
     <div class="screen">
         <div class="sc-header">
             <div class="back" v-on:click="$emit('set-screen', '')">
-                &#9664;
+                <i class="fas fa-arrow-left"></i>
             </div>
             <div class="title">
                 Scan List
@@ -12,6 +12,13 @@
             </div>
         </div>
         <div class="sc-body">
+            <div class="sc-row" v-on:click="$emit('toggle-scan', '')">
+                <div class="sc-row-label">Scanning {{($store.state.scanning?"enabled":"disabled")}}</div>
+                <div class="sc-row-icon">
+                    <i class="fas fa-toggle-off" v-if="!$store.state.scanning"></i>
+                    <i class="fas fa-toggle-on" v-if="$store.state.scanning"></i>
+                </div>
+            </div>
             <div class="sc-row" v-for="freq in $store.state.scanned" :key="freq.id">
                 <div class="sc-row-label">{{freq[0]}}.{{freq[1]}}</div>
                 <div class="sc-row-icon" v-on:click="$emit('del-scanned', freq)">&times;</div>
