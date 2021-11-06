@@ -404,7 +404,7 @@ export default {
             this.$store.state.scanning = !this.$store.state.scanning;
             this.sendToSocket({
                 type: "set_scanning_enabled",
-                enabled: this.$store.state.scanned
+                enabled: this.$store.state.scanning
             })
         },
         buttonPanic() {

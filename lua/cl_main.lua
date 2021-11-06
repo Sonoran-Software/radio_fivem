@@ -190,7 +190,6 @@ end
 function Radio:Destroy()
 	local playerPed = PlayerPedId()
 	local count = 0
-	StopAnimTask(playerPed, dictionary, animation, 1.0)
 	NetworkRequestControlOfEntity(self.Handle)
 	while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
 		Citizen.Wait(0)
