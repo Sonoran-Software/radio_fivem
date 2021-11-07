@@ -2,28 +2,42 @@
 -- TODO: make being furthest away from any tower and/or the repeater(s) cause quality to go down
 -- RADIO TOWERS: handle, pos {x, y, z, offset, handle, status}, destruction status (0 - none, 1 - being destroyed, 2 - destroyed) 
 local RadioTower = {
+    Debug = true,
     Destruction = false,
     DestructionTimer = 0,
     Swankiness = 0.0,
     Prop = nil,
     DishProp = nil,
+    LadderProp = nil,
     PropPosition = nil,
+    DishPropPosition = nil,
+    LadderPropPosition = nil,
     Range = 200
 }
--- Used for the repeater and the prop that is needed to be destroyed in order to disrupt signals
+
+-- Used for the repeater dishes and is required to be destroyed to disrupt signals
 RadioTower.RepeaterProps = {
-    `prop_satdish_2_a`,
+    `prop_dish_1`,
+    `prop_dish_2`,
+    `prop_dish_3`
 }
 
--- Currently only GTA props (future: custom props)
 RadioTower.TowerProps = {
-    `prop_radiomast01`,
-    `prop_radiomast02`,
+    `prop_radio_tower`
+}
+
+RadioTower.LadderProps = {
+    `prop_radio_tower_ladder`
 }
 
 Towers = {}
 HasSpawnedTowers = false
 
+local function DebugPrint(str)
+    if (RadioTower.Debug) then
+        print("Sonoran Towers - Debug", str)
+    end
+end
 
 function GetDistance(dist1, dist2)
     local dist = #(dist1 - dist2)
@@ -32,7 +46,7 @@ end
 
 function GetClosestTower()
     if #Towers < 1 then
-        print("no towers spawned")
+        DebugPrint("no towers spawned")
         return nil, nil
     end
     local pedLocation = GetEntityCoords(GetPlayerPed(-1))
@@ -42,11 +56,11 @@ function GetClosestTower()
         local tower = Towers[i]
         if not tower.Destruction then
             local dist = GetDistance(Towers[i].PropPosition, pedLocation)
-            print(("tower %s - dist: %s - closest: %s"):format(i, dist, closest))
+            DebugPrint(("tower %s - dist: %s - closest: %s"):format(i, dist, closest))
             if dist < closest then
                 closest = dist
                 closestObj = Towers[i]
-                print(("New tower %s, distance: %s"):format(i, dist))
+                DebugPrint(("New tower %s, distance: %s"):format(i, dist))
             end
         end
     end
@@ -76,10 +90,30 @@ function CreateTower(coords)
     while not HasModelLoaded(RadioTower.TowerProps[selectedProp]) do Wait(10) end
     --coords = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
     local tower = CreateObject(RadioTower.TowerProps[selectedProp], coords, true, true, false)
+    local tcoords = GetEntityCoords(tower)
     while not DoesEntityExist(tower) do Wait(0) end
     FreezeEntityPosition(tower, true)
     SetEntityCoords(tower, coords.x, coords.y, coords.z - 1, true, true, true, false)
+    PlaceObjectOnGroundProperly(tower)
     SetModelAsNoLongerNeeded(RadioTower.TowerProps[selectedProp])
+
+    -- Ladder
+    --[[local laddermodel = RadioTower.LadderProps[1]
+    RequestModel(laddermodel)
+    while not HasModelLoaded(laddermodel) do
+        Wait(10)
+    end
+    local ladder = CreateObject(laddermodel, GetEntityCoords(tower), true, true, false)
+    local offset = {
+        x = 1.0,
+        y = 1.0,
+        z = 0.0
+    }
+    AttachEntityToEntityPhysically(ladder, tower, -1, -1, tcoords.x, tcoords.y, tcoords.z, offset.x, offset.y, offset.z, 0.5, 0.5, 0.0, 5, false, false, true, false, 2)
+    SetEntityHeading(ladder, 50)
+    SetModelAsNoLongerNeeded(RadioTower.LadderProps[1])
+    RadioTower.LadderProp = ladder
+    DebugPrint(("Attach ladder %s at tower %s"):format(json.encode(GetEntityCoords(RadioTower.LadderProp)), json.encode(tcoords)))]]
 
     -- Dish
     --[[local model = RadioTower.RepeaterProps[1]
@@ -93,14 +127,14 @@ function CreateTower(coords)
         y = 0.5,
         z = 5
     }
-    local tcoords = GetEntityCoords(tower)
     AttachEntityToEntityPhysically(dish, tower, -1, -1, tcoords.x, tcoords.y, tcoords.z, offset.x, offset.y, offset.z, 0, 0, 0, 5, false, false, true, false, 2)
     SetModelAsNoLongerNeeded(RadioTower.RepeaterProps[1])
     self.DishProp = dish
-    print(("Attach dish %s at tower %s"):format(json.encode(GetEntityCoords(self.DishProp)), json.encode(tcoords)))
+    DebugPrint(("Attach dish %s at tower %s"):format(json.encode(GetEntityCoords(self.DishProp)), json.encode(tcoords)))
     --]]
     return tower
 end
+
 
 function RadioTower:Cleanup()
     -- TODO: clean up every thing for towers and delete objects/props for resource stop/restart.
@@ -124,14 +158,14 @@ end)
 RegisterNetEvent("RadioTower:SyncTowers")
 AddEventHandler("RadioTower:SyncTowers", function(towers)
     Towers = towers
-    print(("synced %s"):format(json.encode(towers)))
+    DebugPrint(("synced %s"):format(json.encode(towers)))
     if not HasSpawnedTowers then
         for i = 1, #Towers do
             CreateTower(Towers[i].PropPosition)
         end
         HasSpawnedTowers = true
     end
-    print("Synced towers")
+    DebugPrint("Synced towers")
 end)
 
 RegisterNetEvent("RadioTower:SpawnTower")
@@ -176,14 +210,14 @@ CreateThread(function()
     while true do
         local tower, distance = GetClosestTower()
         if not tower then
-            print("no tower found")
+            DebugPrint("no tower found")
         else
             if distance > tower.Range then
-                print("closest tower out of range")
+                DebugPrint("closest tower out of range")
                 SetRadioQuality(0.0)
             else
                 local quality = 1.0 - (distance / tower.Range)
-                print(("closest tower distance: %s - Range: %s - Calculated quality: %s"):format(distance, tower.Range, quality))
+                DebugPrint(("closest tower distance: %s - Range: %s - Calculated quality: %s"):format(distance, tower.Range, quality))
                 SetRadioQuality(quality)
             end
         end
