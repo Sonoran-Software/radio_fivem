@@ -185,7 +185,7 @@ export default {
             });
         },
         notifyPlayer(message) {
-            this.postClient({ type: "notify", message: message})
+            if (this.radioPower) this.postClient({ type: "notify", message: message});
         },
         updateGamestate() {
             let message = {
