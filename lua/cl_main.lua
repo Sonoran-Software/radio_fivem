@@ -237,7 +237,11 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'panic' then
-		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		TriggerServerEvent("SonoranCAD::sonrad:RadioPanic")
+	end
+
+	if data.type == 'power' then
+		TriggerServerEvent('SonoranCAD::sonrad:RadioPower')
 	end
 
     cb('OK')
