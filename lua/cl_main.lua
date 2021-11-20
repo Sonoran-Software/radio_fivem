@@ -3,10 +3,13 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
+local thisCall = {}
+
 local isTalking = false
 
 RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
 AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
+	print(json.encode(thisUnit))
 	thisUnit = unit
 	if thisUnit ~= nil then
 		if unitStatus ~= thisUnit.status then
@@ -18,6 +21,16 @@ AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
 			--print('status updated')
 		end
 	end
+end)
+
+RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
+AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
+	local dispatch = call.dispatch
+	print(json.encode(dispatch))
+	SendNUIMessage({
+		type = 'callUpdate',
+		call = dispatch
+	})
 end)
 
 -- TODO: Push Events for Status Updates
@@ -32,8 +45,9 @@ end)
 
 CreateThread(function()
 	while true do
-		Wait(10000)
+		Wait(5000)
 		TriggerServerEvent("SonoranCAD::sonrad:GetUnitInfo")
+		TriggerServerEvent("SonoranCAD::sonrad:GetCurrentCall")
 	end
 end)
 

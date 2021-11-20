@@ -18,6 +18,7 @@
                         </div>
                         <div class="radio-content" v-if="radioPower">
                             <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
+                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
@@ -55,6 +56,7 @@ import ScanList from './components/ScanList.vue'
 import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
+import CallDetails from './components/CallDetails.vue'
 
 export default {
     components: {
@@ -66,7 +68,8 @@ export default {
         ScanList,
         Settings,
         Contacts,
-        Messages
+        Messages,
+        CallDetails
     },
     data: () => {
         return {
@@ -137,6 +140,19 @@ export default {
                     
                         default:
                             break;
+                    }
+                    break;
+                case 'callUpdate':
+                    try {
+                        console.log(event.data.call);
+                        let call = event.data.call;
+                        this.$store.state.call.code = call.code;
+                        this.$store.state.call.title = call.title;
+                        this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
+                        this.$store.state.call.description = call.description;
+                    } catch (e) {
+                        console.error("Failed to update call information");
+                        console.error(e);
                     }
                     break;
                 case 'unitStatus':

@@ -5,7 +5,7 @@
             <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
-            <div class="sc-status">
+            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')">
                 <div class="header">
                     My Status
                 </div>

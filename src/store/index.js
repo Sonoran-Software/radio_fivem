@@ -15,6 +15,12 @@ export default new Vuex.Store({
             radio_powered: false,
             tower_quality: 1
         },
+        call: {
+            code: "",
+            title: "",
+            location: "",
+            description: ""
+        },
         presets: [],
         scanned: [],
         scanning: false,
