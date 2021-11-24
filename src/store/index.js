@@ -25,7 +25,8 @@ export default new Vuex.Store({
         scanned: [],
         scanning: false,
         statusText: "Disconnected",
-        subLevel: null
+        subLevel: null,
+        radios: []
     },
     getters: {},
     mutations: {},

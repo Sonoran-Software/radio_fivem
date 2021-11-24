@@ -20,3 +20,24 @@ SonoranRadio Help
         print('Missing command. Try \"sradio help\" for help.')
     end
 end, true)
+
+local radios = {}
+
+RegisterNetEvent('SonoranRadio::RadioPower')
+AddEventHandler('SonoranRadio::RadioPower', function(power, playername)
+    local src = source
+    if power then
+        radios[tonumber(src)] = { id = src, name = playername }
+    else
+        radios[tonumber(src)] = nil
+    end
+    TriggerClientEvent('SonoranRadio::GetRadios:Return', -1, radios)
+end)
+
+RegisterNetEvent('SonoranRadio::RegisterRadio')
+AddEventHandler('SonoranRadio::RegisterRadio', function()
+    local src = source
+end)
+
+RegisterNetEvent('SonoranRadio::GetRadios', function()
+end)

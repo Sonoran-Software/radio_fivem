@@ -6,24 +6,36 @@
         </div>
         <div class="sc-body">
             <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')">
-                <div class="header">
-                    My Status
+                <div class="sc-status-text">
+                    <div class="header">
+                        My Status
+                    </div>
+                    <div class="content">
+                        {{ $store.state.statusText }}
+                    </div>
                 </div>
-                <div class="content">
-                    {{ $store.state.statusText }}
+                <div class="sc-status-icons">
+                    <i class="fas fa-clipboard-list" style="width:20px;"></i>
                 </div>
             </div>
             <div class="sc-spacer">
             </div>
             <div class="sc-container">
-                <div class="sc-channel" v-on:click="$emit('set-screen', 'channels')">
+                <div class="sc-channel">
                     <div class="header">
                         {{ $store.state.currFreq.name }}
                     </div>
-                    <div class="content">
-                        Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
-                        Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }}
+                    <div class="sc-channel-text">
+                        <div class="content">
+                            Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
+                            Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }}
+                        </div>
+                        <div class="sc-channel-icons">
+                            <i class="fas fa-house-user" v-on:click="$emit('go-home', 0)"></i>
+                            <i class="fas fa-sliders-h" v-on:click="$emit('set-screen', 'channels')"></i>
+                        </div>
                     </div>
+
                 </div>
             </div>
             <div class="sc-spacer">
@@ -33,18 +45,18 @@
                     <i class="fas fa-file-medical-alt"></i>
                     <span class="sc-button-label">Scan List</span>
                 </div>
-                <div class="sc-button" v-on:click="$emit('set-screen', 'contacts')" style="display: none;">
+                <div class="sc-button" v-on:click="$emit('set-screen', 'contacts')">
                     <i class="fas fa-address-book"></i>
                     <span class="sc-button-label">Contacts</span>
                 </div>
-                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')" style="display: none;">
+                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')" style="display:none;">
                     <i class="fas fa-cog"></i>
                     <span class="sc-button-label">Setup</span>
                 </div>
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-message" style="display: none;">
+            <div class="sc-message" style="display:none;">
                 <div class="sc-msg-content">
                     <div class="sc-sender">
                         Clark, Robert
@@ -140,6 +152,10 @@ export default {
     margin: 0px 5px;
 }
 .sc-status {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     margin: 7px 0px 0px 0px;
     padding: 3px 3px 3px 5px;
 }
@@ -160,9 +176,26 @@ export default {
     padding: 3px 5px;
     height: 60px;
 }
+.sc-channel-icons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.sc-channel-icons i {
+    padding: 1px 3px;
+}
+.sc-channel-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
 .sc-channel .header {
     font-size: 12px;
     color: rgba(255,255,255,0.7)
+}
+.sc-channel .content {
+    font-size: 14px;
 }
 .sc-buttons {
     background-color: rgba(62,92,128,1);

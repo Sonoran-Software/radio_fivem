@@ -259,7 +259,7 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'power' then
-		TriggerServerEvent('SonoranCAD::sonrad:RadioPower')
+		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
 	end
 
     cb('OK')
@@ -279,4 +279,13 @@ AddEventHandler('onResourceStop', function(resource)
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
 	Radio:Destroy()
+end)
+
+RegisterNetEvent('SonoranRadio::GetRadios:Return')
+AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
+    local src = source
+	SendNUIMessage({
+		type = "getRadios",
+		radios = radios
+	})
 end)

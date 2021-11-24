@@ -1,61 +1,19 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            Contacts
+            <div class="back" v-on:click="$emit('set-screen', '')">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <div class="title">
+                Contacts
+            </div>
+            <div class="search" style="visibility: hidden !important;">
+                &#128269;
+            </div>
         </div>
         <div class="sc-body">
-            <div class="sc-status">
-                <div class="header">
-                    My Status
-                </div>
-                <div class="content">
-                    {{ myStatus }}
-                </div>
-            </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-container">
-                <div class="sc-channel">
-                    <div class="header">
-                        {{ myZone }}
-                    </div>
-                    <div class="content">
-                        {{ myChannel }}
-                    </div>
-                </div>
-            </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-buttons">
-                <div class="sc-button1">
-                    Scan Lists
-                </div>
-                <div class="sc-button2">
-                    Contacts
-                </div>
-                <div class="sc-button3">
-                    More
-                </div>
-            </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-message">
-                <div class="sc-msg-content">
-                    <div class="sc-sender">
-                        Clark, Robert
-                    </div>
-                    <div class="sc-content">
-                        On my way
-                    </div>
-                </div>
-                <div class="sc-msg-buttons">
-                    <div class="sc-btn-new">
-                        New
-                    </div>
-                    <div class="sc-btn-all">
-                        All
-                    </div>
-                </div>
+            <div class="sc-row" v-for="radio in $store.state.radios" :key="radio.id">
+                <div class="sc-row-label">{{ radio.name }}</div>
             </div>
         </div>
     </div>
@@ -101,11 +59,30 @@ export default {
     color: white;
     padding: 3px 6px 2px 0px;
     background-color: rgba(30,30,30,1);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+.sc-header .back {
+    padding: 0px 5px;
 }
 .sc-body {
     color: white;
     background-color: rgba(62,92,128,1);
-    margin: 0px 5px;
+    /* margin: 0px 5px; */
+}
+.sc-row {
+    padding: 3px 3px 3px 5px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: rgb(30, 30, 30) solid 1px;
+}
+.sc-row-label {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .sc-status {
     margin: 7px 0px 0px 0px;

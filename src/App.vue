@@ -177,6 +177,9 @@ export default {
                             this.$store.state.statusText = "Clocked Out";
                             break;
                     }
+                case 'getRadios':
+                    this.$store.state.radios = event.data.radios;
+                    break;
                 default:
                     break;
             }
@@ -465,6 +468,10 @@ export default {
             this.radioPower = !this.radioPower;
             this.$store.state.gamestate.radio_powered = this.radioPower;
             this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
+            this.postClient({
+                type: 'power',
+                power: this.radioPower 
+            })
             this.updateGamestate();
         }
     }
