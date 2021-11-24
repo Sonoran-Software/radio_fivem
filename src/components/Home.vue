@@ -22,7 +22,7 @@
             </div>
             <div class="sc-container">
                 <div class="sc-channel">
-                    <div class="header">
+                    <div class="header" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">
                         {{ $store.state.currFreq.name }}
                     </div>
                     <div class="sc-channel-text">
