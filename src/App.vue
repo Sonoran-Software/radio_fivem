@@ -17,7 +17,7 @@
                             <img class="radio-logo" :src="`../static/radio-logo.png`">
                         </div>
                         <div class="radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
+                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
                             <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
@@ -174,7 +174,7 @@ export default {
                             this.$store.state.statusText = "On Scene";
                             break;
                         default:
-                            this.$store.state.statusText = "CAD Disconnected";
+                            this.$store.state.statusText = "Clocked Out";
                             break;
                     }
                 default:
@@ -292,6 +292,16 @@ export default {
                 this.updateFreqLabel();
             }
         },
+        goToPreset(number) {
+            if (this.$store.state.presets[number]) {
+                let nextPreset = this.$store.state.presets[number];
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
+                this.setFrequency();
+                this.currPreset = number;
+                this.updateFreqLabel();
+            }
+        },
         setupSocket() {
             //console.log("Establishing Websocket connection...");
             this.connection = new WebSocket("ws://[::1]:33802");
@@ -335,6 +345,7 @@ export default {
                             })
                         });
                         this.$store.state.sublvl = data.data.config.sublvl;
+                        this.updateFreqLabel();
                         break;
                     case "frequencies_updated":
                         this.$store.state.currFreq.recv = data.freq_recv;
@@ -396,7 +407,6 @@ export default {
                         console.log(JSON.stringify(event.data))
                         break;
                 }
-                this.updateFreqLabel();
 
                 }
 
