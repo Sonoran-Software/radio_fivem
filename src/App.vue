@@ -174,7 +174,7 @@ export default {
                             this.$store.state.statusText = "On Scene";
                             break;
                         default:
-                            this.$store.state.statusText = "Invalid";
+                            this.$store.state.statusText = "CAD Disconnected";
                             break;
                     }
                 default:
@@ -413,8 +413,13 @@ export default {
             this.setupSocket();
         },
         sendToSocket(data) {
-            console.log("Sending Message to Socket");
-            this.connection.send(JSON.stringify(data));
+            try {
+                // Suppress Any Connection Issues
+                // TODO: Replace with checking the connection state.
+                this.connection.send(JSON.stringify(data));
+            } catch (err) {
+
+            }
         },
         toggleScan(event) {
             //console.log(event);
