@@ -21,6 +21,7 @@ export default new Vuex.Store({
             location: "",
             description: ""
         },
+        connColor: 'gray',
         presets: [],
         scanned: [],
         scanning: false,

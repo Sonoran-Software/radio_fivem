@@ -20,7 +20,7 @@
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-container">
+            <div class="sc-container" v-bind:style="{ backgroundColor: $store.state.connColor }">
                 <div class="sc-channel">
                     <div class="header" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">
                         {{ $store.state.currFreq.name }}
@@ -49,9 +49,9 @@
                     <i class="fas fa-address-book"></i>
                     <span class="sc-button-label">Contacts</span>
                 </div>
-                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')" style="display:none;">
+                <div class="sc-button" v-on:click="$emit('set-screen', 'settings')">
                     <i class="fas fa-cog"></i>
-                    <span class="sc-button-label">Setup</span>
+                    <span class="sc-button-label">Config</span>
                 </div>
             </div>
             <div class="sc-spacer">
@@ -90,7 +90,7 @@ export default {
     components: {},
     data() {
         return {
-            currTime: "00:00"
+            currTime: "00:00",
         }
     },
     mounted() {
@@ -104,7 +104,14 @@ export default {
         });
     },
     methods: {
-
+        setConnectionColor(color) {
+            // xmit - red
+            // recv - yellow
+            // synced - green
+            // standby - lightblue
+            // panic - orange
+            // disconnected - gray
+        }
     }
 
 }
@@ -156,15 +163,16 @@ export default {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin: 7px 0px 0px 0px;
-    padding: 3px 3px 3px 5px;
+    margin: 4px 0px 0px 0px;
+    /* padding: 3px 3px 3px 5px; */
+    padding: 1px 3px 2px 5px;
 }
 .sc-status .header {
     font-size: 14px;
     color: rgba(255,255,255,0.7)
 }
 .sc-spacer {
-    height: 5px;
+    height: 3px;
     background-color: rgba(122,160,207,1);
 }
 .sc-container {

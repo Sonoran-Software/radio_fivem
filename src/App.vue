@@ -150,6 +150,7 @@ export default {
                         this.$store.state.call.title = call.title;
                         this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
                         this.$store.state.call.description = call.description;
+                        this.$store.state.connColor = "green";
                     } catch (e) {
                         console.error("Failed to update call information");
                         console.error(e);
@@ -177,6 +178,9 @@ export default {
                             this.$store.state.statusText = "Clocked Out";
                             break;
                     }
+                    if (event.data.status > 0) this.$store.state.connColor = "green";
+
+                    break;
                 case 'getRadios':
                     this.$store.state.radios = event.data.radios;
                     break;
@@ -386,6 +390,7 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        this.$store.state.connColor = "lightblue";
                         break;
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
@@ -393,6 +398,7 @@ export default {
                         this.$store.state.currFreq.name = "Not Connected";
                         this.$store.state.currFreq.recv = ["xxx","xxx"];
                         this.$store.state.currFreq.xmit = ["xxx","xxx"];
+                        this.$store.state.connColor = "gray";
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
