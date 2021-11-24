@@ -9,7 +9,6 @@ local isTalking = false
 
 RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
 AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
-	print(json.encode(thisUnit))
 	thisUnit = unit
 	if thisUnit ~= nil then
 		if unitStatus ~= thisUnit.status then
@@ -20,6 +19,11 @@ AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
 			})
 			--print('status updated')
 		end
+	else 
+		SendNUIMessage({
+			type = 'unitStatus',
+			status = -1
+		})
 	end
 end)
 
