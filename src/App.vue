@@ -411,6 +411,7 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        break;
                     default:
                         console.log("**Unhandled Socket Message**");
                         console.log(JSON.stringify(event.data))
