@@ -182,13 +182,23 @@ export default {
 
                     break;
                 case 'getRadios':
-                    this.$store.state.radios = event.data.radios;
+                    let activeRadios = [];
+                    event.data.radios.forEach(radio => {
+                        if (radio) {
+                            //console.log(`Radio ID: ${radio.id} Radio Name: ${radio.name}`)
+                            if (radio.id && radio.name) activeRadios.push(radio);
+                        }
+                    });
+                    this.$store.state.radios = activeRadios;
                     break;
                 default:
                     break;
             }
         });
     },
+    // beforeUnmount() {
+    //     window.removeEventListener('message');
+    // },
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
