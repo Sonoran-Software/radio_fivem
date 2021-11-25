@@ -95,8 +95,8 @@ export default {
     },
     mounted() {
         window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            if (event.data.type === 'timeSync') {
+            const eventType = event.data.type;
+            if (eventType === 'time') {
                 this.currTime = event.data.time;
             }
         });

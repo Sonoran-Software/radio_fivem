@@ -226,6 +226,7 @@ Citizen.CreateThread(function()
             local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
             SendNUIMessage({type = 'setPos', position = posArr })
         end
+		SendNUIMessage({type = 'time', time = GetClockHours() .. ':' .. GetClockMinutes()})
         Citizen.Wait(5000)
     end
     -- For Development Only
