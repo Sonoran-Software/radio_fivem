@@ -7,24 +7,29 @@ local thisCall = {}
 
 local isTalking = false
 
-RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
-AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
-	thisUnit = unit
-	if thisUnit ~= nil then
-		if unitStatus ~= thisUnit.status then
-			unitStatus = thisUnit.status
-			SendNUIMessage({
-				type = 'unitStatus',
-				status = thisUnit.status
-			})
-			--print('status updated')
-		end
-	else 
-		SendNUIMessage({
-			type = 'unitStatus',
-			status = -1
-		})
-	end
+RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
+AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
+	SendNUIMessage({
+		type = 'unitStatus',
+		status = unit.status
+	})
+	-- TODO: Work with unit cache to fix this.
+	-- thisUnit = unit
+	-- if thisUnit ~= nil then
+	-- 	if unitStatus ~= thisUnit.status then
+	-- 		unitStatus = thisUnit.status
+	-- 		SendNUIMessage({
+	-- 			type = 'unitStatus',
+	-- 			status = thisUnit.status
+	-- 		})
+	-- 		--print('status updated')
+	-- 	end
+	-- else 
+	-- 	SendNUIMessage({
+	-- 		type = 'unitStatus',
+	-- 		status = -1
+	-- 	})
+	-- end
 end)
 
 RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
