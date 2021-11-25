@@ -240,7 +240,7 @@ function SendNotification(message)
 end
 
 RegisterNUICallback('data', function(data, cb)
-    print('data:' .. json.encode(data))
+    --print('data:' .. json.encode(data))
     if data.type == 'hide' then
         SendNUIMessage({
             type = 'setVisible',
