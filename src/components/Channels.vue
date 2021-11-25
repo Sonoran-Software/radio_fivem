@@ -52,16 +52,6 @@ export default {
             myChannel: "Channel 1"
         }
     },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
     methods: {
         setFrequency(xmit, recv) {
             this.$store.state.currFreq.xmit[0] = xmit[0];
