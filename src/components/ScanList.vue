@@ -49,16 +49,6 @@ export default {
             myChannel: "Channel 1"
         }
     },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
     methods: {
 
     }

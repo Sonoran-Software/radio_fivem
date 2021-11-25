@@ -13,11 +13,7 @@
         </div>
         <div class="sc-body">
             <div class="sc-row">
-                <div class="sc-row-label">Custom</div>
-                <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
-            </div>
-            <div class="sc-row" v-for="setting in mySettings" :key="setting.name">
-                {{ setting.name }}
+                <div class="sc-row-label">Coming Soon</div>
             </div>
         </div>
     </div>
@@ -40,16 +36,6 @@ export default {
             myChannel: "Channel 1"
         }
     },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            console.log(event);
-            if (event.data.type === 'hello') {
-                console.log('world!');
-                this.showRadio = true;
-            }
-        });
-    },
     methods: {
 
     }
@@ -68,11 +54,30 @@ export default {
     color: white;
     padding: 3px 6px 2px 0px;
     background-color: rgba(30,30,30,1);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+.sc-header .back {
+    padding: 0px 5px;
 }
 .sc-body {
     color: white;
     background-color: rgba(62,92,128,1);
-    margin: 0px 5px;
+    /* margin: 0px 5px; */
+}
+.sc-row {
+    padding: 3px 3px 3px 5px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: rgb(30, 30, 30) solid 1px;
+}
+.sc-row-label {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .sc-status {
     margin: 7px 0px 0px 0px;

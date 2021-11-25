@@ -3,21 +3,43 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
+local thisCall = {}
+
 local isTalking = false
 
-RegisterNetEvent("SonoranCAD::sonrad:RecvUnitInfo")
-AddEventHandler("SonoranCAD::sonrad:RecvUnitInfo", function(unit)
-	thisUnit = unit
-	if thisUnit ~= nil then
-		if unitStatus ~= thisUnit.status then
-			unitStatus = thisUnit.status
-			SendNUIMessage({
-				type = 'unitStatus',
-				status = thisUnit.status
-			})
-			--print('status updated')
-		end
-	end
+RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
+AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
+	SendNUIMessage({
+		type = 'unitStatus',
+		status = unit.status
+	})
+	-- TODO: Work with unit cache to fix this.
+	-- thisUnit = unit
+	-- if thisUnit ~= nil then
+	-- 	if unitStatus ~= thisUnit.status then
+	-- 		unitStatus = thisUnit.status
+	-- 		SendNUIMessage({
+	-- 			type = 'unitStatus',
+	-- 			status = thisUnit.status
+	-- 		})
+	-- 		--print('status updated')
+	-- 	end
+	-- else 
+	-- 	SendNUIMessage({
+	-- 		type = 'unitStatus',
+	-- 		status = -1
+	-- 	})
+	-- end
+end)
+
+RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
+AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
+	local dispatch = call.dispatch
+	print(json.encode(dispatch))
+	SendNUIMessage({
+		type = 'callUpdate',
+		call = dispatch
+	})
 end)
 
 -- TODO: Push Events for Status Updates
@@ -32,8 +54,9 @@ end)
 
 CreateThread(function()
 	while true do
-		Wait(10000)
+		Wait(5000)
 		TriggerServerEvent("SonoranCAD::sonrad:GetUnitInfo")
+		TriggerServerEvent("SonoranCAD::sonrad:GetCurrentCall")
 	end
 end)
 
@@ -208,6 +231,7 @@ Citizen.CreateThread(function()
             local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
             SendNUIMessage({type = 'setPos', position = posArr })
         end
+		SendNUIMessage({type = 'time', time = GetClockHours() .. ':' .. GetClockMinutes()})
         Citizen.Wait(5000)
     end
     -- For Development Only
@@ -221,7 +245,7 @@ function SendNotification(message)
 end
 
 RegisterNUICallback('data', function(data, cb)
-    print('data:' .. json.encode(data))
+    --print('data:' .. json.encode(data))
     if data.type == 'hide' then
         SendNUIMessage({
             type = 'setVisible',
@@ -237,7 +261,11 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'panic' then
-		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		TriggerServerEvent("SonoranCAD::sonrad:RadioPanic")
+	end
+
+	if data.type == 'power' then
+		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
 	end
 
     cb('OK')
@@ -257,4 +285,13 @@ AddEventHandler('onResourceStop', function(resource)
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
 	Radio:Destroy()
+end)
+
+RegisterNetEvent('SonoranRadio::GetRadios:Return')
+AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
+    local src = source
+	SendNUIMessage({
+		type = "getRadios",
+		radios = radios
+	})
 end)

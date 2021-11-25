@@ -15,11 +15,19 @@ export default new Vuex.Store({
             radio_powered: false,
             tower_quality: 1
         },
+        call: {
+            code: "",
+            title: "",
+            location: "",
+            description: ""
+        },
+        connColor: 'gray',
         presets: [],
         scanned: [],
         scanning: false,
         statusText: "Disconnected",
-        subLevel: null
+        subLevel: null,
+        radios: []
     },
     getters: {},
     mutations: {},

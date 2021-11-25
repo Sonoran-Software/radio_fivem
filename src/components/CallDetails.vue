@@ -5,30 +5,19 @@
                 <i class="fas fa-arrow-left"></i>
             </div>
             <div class="title">
-                Channels
+                Call Details
             </div>
             <div class="search" style="visibility: hidden !important;">
                 &#128269;
             </div>
         </div>
-        <div class="sc-body" v-if="$store.state.sublvl == 0">
-            <div class="sc-ch">
-                <div class="sc-ch-header">View Only</div>
-                <div class="sc-ch-freq">Upgrade to Plus</div>
-            </div>
-            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name">
-                <div class="sc-ch-header">{{ preset.display_name }}</div>
-                <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
-            </div>
-        </div>
-        <div class="sc-body" v-if="$store.state.sublvl > 0">
-            <div class="sc-row" v-on:click="$emit('set-screen', 'channel')">
-                <div class="sc-row-label">Custom</div>
-                <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
-            </div>
-            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name" v-on:click="setFrequency(preset.freq_xmit, preset.freq_recv)">
-                <div class="sc-ch-header">{{ preset.display_name }}</div>
-                <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
+        <div class="sc-body">
+            <div class="sc-row">
+                <div class="sc-row-label">Code:</div><div class="sc-row-text">{{ $store.state.call.code }}</div>
+                <div class="sc-row-label">Title:</div><div class="sc-row-text">{{ $store.state.call.title }}</div>
+                <div class="sc-row-label">Location:</div><div class="sc-row-text">{{ $store.state.call.location }}</div>
+                <div class="sc-row-label">Description:</div><div class="sc-row-text">{{ $store.state.call.description }}</div>
+                <!--<input type="button" class="sc-row-button" value="Set Frequency" v-on:click="setFrequency()">-->
             </div>
         </div>
     </div>
@@ -42,26 +31,12 @@ export default {
     components: {},
     data() {
         return {
-            myPresets: [
-                { name: "Preset 1" },
-                { name: "Preset 2" },
-                { name: "Preset 3" }
-            ],
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
+            callCode: "",
+            callTitle: "",
+            callLocation: "",
+            callDescription:""
         }
     },
-    methods: {
-        setFrequency(xmit, recv) {
-            this.$store.state.currFreq.xmit[0] = xmit[0];
-            this.$store.state.currFreq.xmit[1] = xmit[1];
-            this.$store.state.currFreq.recv[0] = recv[0];
-            this.$store.state.currFreq.recv[1] = recv[1];
-            this.$emit('set-frequency','');
-            this.$emit('set-screen','');
-        }
-    }
 
 }
 </script>
@@ -92,18 +67,20 @@ export default {
 }
 .sc-row {
     padding: 3px 3px 3px 5px;
-    display: flex;
     justify-content: space-between;
     border-bottom: rgb(30, 30, 30) solid 1px;
 }
-.sc-ch {
-    padding: 3px 3px 3px 5px;
-    display: block;
-    justify-content: space-between;
-    border-bottom: rgb(30, 30, 30) solid 1px;
+.sc-row-label {
+    font-size: 16px;
 }
-.sc-ch-freq {
-    font-size: 13px;
+.sc-row-text {
+    font-size: 12px;
+}
+.sc-row-input {
+    width: 130px;
+}
+.sc-row-button {
+    width: 138px;
 }
 .sc-status {
     margin: 7px 0px 0px 0px;

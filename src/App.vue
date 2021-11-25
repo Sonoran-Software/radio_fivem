@@ -17,7 +17,8 @@
                             <img class="radio-logo" :src="`../static/radio-logo.png`">
                         </div>
                         <div class="radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
+                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
@@ -55,6 +56,7 @@ import ScanList from './components/ScanList.vue'
 import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
+import CallDetails from './components/CallDetails.vue'
 
 export default {
     components: {
@@ -66,7 +68,8 @@ export default {
         ScanList,
         Settings,
         Contacts,
-        Messages
+        Messages,
+        CallDetails
     },
     data: () => {
         return {
@@ -139,6 +142,20 @@ export default {
                             break;
                     }
                     break;
+                case 'callUpdate':
+                    try {
+                        console.log(event.data.call);
+                        let call = event.data.call;
+                        this.$store.state.call.code = call.code;
+                        this.$store.state.call.title = call.title;
+                        this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
+                        this.$store.state.call.description = call.description;
+                        this.$store.state.connColor = "green";
+                    } catch (e) {
+                        console.error("Failed to update call information");
+                        console.error(e);
+                    }
+                    break;
                 case 'unitStatus':
                     let status = "Unknown";
                     switch (event.data.status) {
@@ -158,14 +175,30 @@ export default {
                             this.$store.state.statusText = "On Scene";
                             break;
                         default:
-                            this.$store.state.statusText = "Invalid";
+                            this.$store.state.statusText = "Clocked Out";
                             break;
                     }
+                    if (event.data.status > 0) this.$store.state.connColor = "green";
+
+                    break;
+                case 'getRadios':
+                    let activeRadios = [];
+                    event.data.radios.forEach(radio => {
+                        if (radio) {
+                            //console.log(`Radio ID: ${radio.id} Radio Name: ${radio.name}`)
+                            if (radio.id && radio.name) activeRadios.push(radio);
+                        }
+                    });
+                    this.$store.state.radios = activeRadios;
+                    break;
                 default:
                     break;
             }
         });
     },
+    // beforeUnmount() {
+    //     window.removeEventListener('message');
+    // },
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
@@ -276,6 +309,16 @@ export default {
                 this.updateFreqLabel();
             }
         },
+        goToPreset(number) {
+            if (this.$store.state.presets[number]) {
+                let nextPreset = this.$store.state.presets[number];
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
+                this.setFrequency();
+                this.currPreset = number;
+                this.updateFreqLabel();
+            }
+        },
         setupSocket() {
             //console.log("Establishing Websocket connection...");
             this.connection = new WebSocket("ws://[::1]:33802");
@@ -319,6 +362,7 @@ export default {
                             })
                         });
                         this.$store.state.sublvl = data.data.config.sublvl;
+                        this.updateFreqLabel();
                         break;
                     case "frequencies_updated":
                         this.$store.state.currFreq.recv = data.freq_recv;
@@ -356,6 +400,7 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        this.$store.state.connColor = "lightblue";
                         break;
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
@@ -363,6 +408,7 @@ export default {
                         this.$store.state.currFreq.name = "Not Connected";
                         this.$store.state.currFreq.recv = ["xxx","xxx"];
                         this.$store.state.currFreq.xmit = ["xxx","xxx"];
+                        this.$store.state.connColor = "gray";
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
@@ -375,12 +421,12 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        break;
                     default:
                         console.log("**Unhandled Socket Message**");
                         console.log(JSON.stringify(event.data))
                         break;
                 }
-                this.updateFreqLabel();
 
                 }
 
@@ -397,8 +443,13 @@ export default {
             this.setupSocket();
         },
         sendToSocket(data) {
-            console.log("Sending Message to Socket");
-            this.connection.send(JSON.stringify(data));
+            try {
+                // Suppress Any Connection Issues
+                // TODO: Replace with checking the connection state.
+                this.connection.send(JSON.stringify(data));
+            } catch (err) {
+
+            }
         },
         toggleScan(event) {
             //console.log(event);
@@ -434,6 +485,10 @@ export default {
             this.radioPower = !this.radioPower;
             this.$store.state.gamestate.radio_powered = this.radioPower;
             this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
+            this.postClient({
+                type: 'power',
+                power: this.radioPower 
+            })
             this.updateGamestate();
         }
     }
