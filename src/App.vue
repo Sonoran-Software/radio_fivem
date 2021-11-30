@@ -17,14 +17,15 @@
                             <img class="radio-logo" :src="`../static/radio-logo.png`">
                         </div>
                         <div class="radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" />
+                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
                             <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
                             <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
                             <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" />
+                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
                             <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
                         </div>
                     </div>
@@ -55,6 +56,7 @@ import ScanList from './components/ScanList.vue'
 import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
+import CallDetails from './components/CallDetails.vue'
 
 export default {
     components: {
@@ -66,13 +68,15 @@ export default {
         ScanList,
         Settings,
         Contacts,
-        Messages
+        Messages,
+        CallDetails
     },
     data: () => {
         return {
             showRadio: false,
             showTopRadio: false,
-            radioPower: true,
+            radioPower: false,
+            subLevel: null,
             currPreset: 0,
             currScreen: ""
         }
@@ -97,35 +101,24 @@ export default {
             const eventType = event.data.event;
             //console.log(event);
             switch (event.data.type) {
+                case 'reset':
+                    this.setupSocket();
+                    break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     break;
                 case 'setPos':
                     try {
-                        let message = JSON.stringify({
-                            type: "update_position",
-                            to_cid: 1,
-                            position: [
-                                event.data.position[0],
-                                event.data.position[1],
-                                event.data.position[2]
-                            ]
-                        })
-                        message = {
-                            type: "update_position",
-                            to_cid: 1,
-                            position: [
-                                event.data.position[0],
-                                event.data.position[1],
-                                event.data.position[2]
-                            ]
-                        }
-                        // Causing Errors
-                        this.sendToSocket(message);
+                        this.$store.state.gamestate.position = [
+                            event.data.position[0],
+                            event.data.position[1],
+                            event.data.position[2]
+                        ];
                     } catch (e) {
                         console.error("Failed to update posistion");
                         console.error(e);
                     }
+                    this.updateGamestate();
                     break;
                 case 'pushButton':
                     switch (event.data.button) {
@@ -149,11 +142,63 @@ export default {
                             break;
                     }
                     break;
+                case 'callUpdate':
+                    try {
+                        console.log(event.data.call);
+                        let call = event.data.call;
+                        this.$store.state.call.code = call.code;
+                        this.$store.state.call.title = call.title;
+                        this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
+                        this.$store.state.call.description = call.description;
+                        this.$store.state.connColor = "green";
+                    } catch (e) {
+                        console.error("Failed to update call information");
+                        console.error(e);
+                    }
+                    break;
+                case 'unitStatus':
+                    let status = "Unknown";
+                    switch (event.data.status) {
+                        case 0:
+                            this.$store.state.statusText = "Unavailable";
+                            break;
+                        case 1:
+                            this.$store.state.statusText = "Busy";
+                            break;
+                        case 2:
+                            this.$store.state.statusText = "Available";
+                            break;
+                        case 3:
+                            this.$store.state.statusText = "En Route";
+                            break;
+                        case 4:
+                            this.$store.state.statusText = "On Scene";
+                            break;
+                        default:
+                            this.$store.state.statusText = "Clocked Out";
+                            break;
+                    }
+                    if (event.data.status > 0) this.$store.state.connColor = "green";
+
+                    break;
+                case 'getRadios':
+                    let activeRadios = [];
+                    event.data.radios.forEach(radio => {
+                        if (radio) {
+                            //console.log(`Radio ID: ${radio.id} Radio Name: ${radio.name}`)
+                            if (radio.id && radio.name) activeRadios.push(radio);
+                        }
+                    });
+                    this.$store.state.radios = activeRadios;
+                    break;
                 default:
                     break;
             }
         });
     },
+    // beforeUnmount() {
+    //     window.removeEventListener('message');
+    // },
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
@@ -172,8 +217,19 @@ export default {
                 console.log(err);
             });
         },
+        notifyPlayer(message) {
+            if (this.radioPower) this.postClient({ type: "notify", message: message});
+        },
+        updateGamestate() {
+            let message = {
+                type: "set_gamestate",
+                to_cid: 1,
+                state: this.$store.state.gamestate
+            }
+            this.sendToSocket(message);
+        },
         addScanned(event) {
-            console.log(event);
+            //console.log(event);
             this.$store.state.scanned.push(this.$store.state.currFreq.recv);
             this.sendToSocket({
                 type: "set_frequencies_scanned",
@@ -182,7 +238,7 @@ export default {
         },
         delScanned(event) {
             let freq = event.toString().split(",");
-            console.log();
+            //console.log();
             let freqs = [];
             this.$store.state.scanned.forEach(el => {
                 if (el[0] == freq[0] && el[1] == freq[1]) {
@@ -198,16 +254,17 @@ export default {
             })
         },
         setFrequency(event) {
-            //console.log("Setting Frequency: " + event);
+            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString() );
             this.sendToSocket({
                 type: "set_frequencies",
-                freq_recv: this.$store.state.currFreq.recv,
-                freq_xmit: this.$store.state.currFreq.xmit
+                freq_recv: [parseInt(this.$store.state.currFreq.recv[0]),parseInt(this.$store.state.currFreq.recv[1])],
+                freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]),parseInt(this.$store.state.currFreq.xmit[1])]
             })
             this.$store.state.currFreq.name = "Custom Frequency";
             this.updateFreqLabel();
         },
         updateFreqLabel() {
+            let custom = true;
             this.$store.state.presets.forEach(el => {
                 //this.$store.state.currFreq.name = "Custom Frequency";
                 try {
@@ -216,21 +273,51 @@ export default {
                         el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
                         el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
                             this.$store.state.currFreq.name = el.display_name;
+                            this.notifyPlayer("Channel: ~y~" + el.display_name);
+                            custom = false;
                     }
                 } catch (e) {
                     console.error(e);
                 }
-            })
+            });
+            if (custom) {
+                this.$store.state.currFreq.name = "Custom Frequency";
+                this.notifyPlayer("Channel: ~y~Custom Frequency");
+            }
         },
         setScreen(name) {
             //console.log(name);
             this.currScreen = name;
         },
         nextPreset() {
-
+            if (this.$store.state.presets[this.currPreset + 1]) {
+                let nextPreset = this.$store.state.presets[this.currPreset + 1];
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
+                this.setFrequency();
+                this.currPreset++;
+                this.updateFreqLabel();
+            }
         },
         prevPreset() {
-
+            if (this.$store.state.presets[this.currPreset - 1]) {
+                let nextPreset = this.$store.state.presets[this.currPreset - 1];
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
+                this.setFrequency();
+                this.currPreset--;
+                this.updateFreqLabel();
+            }
+        },
+        goToPreset(number) {
+            if (this.$store.state.presets[number]) {
+                let nextPreset = this.$store.state.presets[number];
+                this.$store.state.currFreq.recv = nextPreset.freq_recv;
+                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
+                this.setFrequency();
+                this.currPreset = number;
+                this.updateFreqLabel();
+            }
         },
         setupSocket() {
             //console.log("Establishing Websocket connection...");
@@ -243,7 +330,17 @@ export default {
             if (event.data) {
                 let data = JSON.parse(event.data);
                 //console.log("Received " + data.type + " message:");
-                switch (data.type) {
+                //console.log(data);
+                if (data.error) {
+                    // Handle Error Status
+                    if (data.msg) {
+                        if (data.msg == "ws api endpoint blocked for subscription level") {
+                            // Invalid Subscription Level
+                            console.log("Sending to Socket Failed: Not available for sub level " + this.$store.state.sublvl);
+                        }
+                    }
+                } else {
+                    switch (data.type) {
                     case "recv_controller_data":
                         let currstate = data.data.state;
                         this.$store.state.statusText = "Connected";
@@ -254,6 +351,7 @@ export default {
                         currstate.freq_scan.forEach(el => {
                             this.$store.state.scanned.push([el[0], el[1]]);
                         })
+                        this.$store.state.scanning = currstate.enable_scan;
                         let presetarr = data.data.config.profiles;
                         this.$store.state.presets = [];
                         presetarr.forEach(el => {
@@ -263,17 +361,20 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        this.$store.state.sublvl = data.data.config.sublvl;
+                        this.updateFreqLabel();
                         break;
                     case "frequencies_updated":
-                        this.$store.state.statusText = "Freq. Updated"; // TODO: Remove when status is configurable.
                         this.$store.state.currFreq.recv = data.freq_recv;
                         this.$store.state.currFreq.xmit = data.freq_xmit;
+                        this.updateFreqLabel();
                         break;
                     case "frequencies_scanned_updated":
                         this.$store.state.scanned = [];
                         data.freqs.forEach(el => {
                             this.$store.state.scanned.push([el[0], el[1]]);
                         })
+                        this.$store.state.scanning = data.enabled;
                         break;
                     case "channel_clients_changed":
                         // Ignore for Now, will be needed for messaging and status.
@@ -299,6 +400,7 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        this.$store.state.connColor = "lightblue";
                         break;
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
@@ -306,10 +408,11 @@ export default {
                         this.$store.state.currFreq.name = "Not Connected";
                         this.$store.state.currFreq.recv = ["xxx","xxx"];
                         this.$store.state.currFreq.xmit = ["xxx","xxx"];
+                        this.$store.state.connColor = "gray";
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
-                        let cfgpresets = data.profiles;
+                        let cfgpresets = data.data.profiles;
                         this.$store.state.presets = [];
                         cfgpresets.forEach(el => {
                             this.$store.state.presets.push({
@@ -318,50 +421,75 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        break;
                     default:
+                        console.log("**Unhandled Socket Message**");
+                        console.log(JSON.stringify(event.data))
                         break;
                 }
-                this.updateFreqLabel();
 
-                /**
-                 * Received Events:
-                 *  - RECV_CONTROLLERS          -IGNORE FOR NOW
-                 *  - RECV_CONTROLLER_DATA      -DONE
-                 *  - CHANNEL_CLIENTS_CHANGED   -IGNORE FOR NOW
-                 *  - CONTROLLER_CREATED
-                 *  - CONTROLLER_DESTROYED
-                 *  - CONFIG_CHANGED
-                 */
-                //console.log(data);
+                }
+
             } else {
                 console.error("Empty Message from Socket!");
             }
         },
         socketOpen(event) {
-            console.log("Teamspeak Plugin Connected!");
-            //this.sendToSocket({ "type" : "get_controllers" });
+            console.log("Connected to teamspeak plugin...");
             this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
         },
         socketClose(event) {
-            console.log(event);
-            console.log("Socket connection lost, reconnecting...");
+            //console.log("Socket connection lost, reconnecting...");
             this.setupSocket();
         },
         sendToSocket(data) {
-            console.log("Sending Message to Socket");
-            this.connection.send(JSON.stringify(data));
+            try {
+                // Suppress Any Connection Issues
+                // TODO: Replace with checking the connection state.
+                this.connection.send(JSON.stringify(data));
+            } catch (err) {
+
+            }
+        },
+        toggleScan(event) {
+            //console.log(event);
+            this.$store.state.scanning = !this.$store.state.scanning;
+            this.sendToSocket({
+                type: "set_scanning_enabled",
+                enabled: this.$store.state.scanning
+            })
         },
         buttonPanic() {
-
+            this.notifyPlayer("Radio: ~r~Panic Pressed!");
+            this.postClient({
+                type: "panic"
+            });
         },
         buttonPrev() {
-
+            if (this.$store.state.sublvl == 0) {
+                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            } else {
+                this.notifyPlayer("Radio: ~y~Prev Preset");
+                this.prevPreset();
+            }
         },
         buttonNext() {
-
+            if (this.$store.state.sublvl == 0) {
+                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            } else {
+                this.notifyPlayer("Radio: ~y~Next Preset");
+                this.nextPreset();
+            }
         },
         buttonPower() {
-            this.radioPower = !this.radioPower
+            this.radioPower = !this.radioPower;
+            this.$store.state.gamestate.radio_powered = this.radioPower;
+            this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
+            this.postClient({
+                type: 'power',
+                power: this.radioPower 
+            })
+            this.updateGamestate();
         }
     }
 };

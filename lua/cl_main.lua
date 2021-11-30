@@ -1,5 +1,65 @@
 local radActive = false
 
+local thisUnit = {}
+local unitStatus = nil
+
+local thisCall = {}
+
+local isTalking = false
+
+RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
+AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
+	SendNUIMessage({
+		type = 'unitStatus',
+		status = unit.status
+	})
+	-- TODO: Work with unit cache to fix this.
+	-- thisUnit = unit
+	-- if thisUnit ~= nil then
+	-- 	if unitStatus ~= thisUnit.status then
+	-- 		unitStatus = thisUnit.status
+	-- 		SendNUIMessage({
+	-- 			type = 'unitStatus',
+	-- 			status = thisUnit.status
+	-- 		})
+	-- 		--print('status updated')
+	-- 	end
+	-- else 
+	-- 	SendNUIMessage({
+	-- 		type = 'unitStatus',
+	-- 		status = -1
+	-- 	})
+	-- end
+end)
+
+RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
+AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
+	local dispatch = call.dispatch
+	print(json.encode(dispatch))
+	SendNUIMessage({
+		type = 'callUpdate',
+		call = dispatch
+	})
+end)
+
+-- TODO: Push Events for Status Updates
+RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
+	if thisUnit.id ~= unit.id then return end
+	print(status)
+	SendNUIMessage({
+		type = 'unitStatus',
+		status = status
+	})
+end)
+
+CreateThread(function()
+	while true do
+		Wait(5000)
+		TriggerServerEvent("SonoranCAD::sonrad:GetUnitInfo")
+		TriggerServerEvent("SonoranCAD::sonrad:GetCurrentCall")
+	end
+end)
+
 local Radio = {
 	Has = false,
 	Open = false,
@@ -25,8 +85,6 @@ local Radio = {
 	Clicks = true, -- Radio clicks
 }
 
-
-
 RegisterCommand('radio', function()
     radActive = not radActive
     Radio:Toggle(radActive)
@@ -35,6 +93,18 @@ RegisterCommand('radio', function()
         visibility = radActive
     })
     SetNuiFocus(radActive, radActive)
+end)
+
+RegisterCommand('radioreset', function()
+	SendNUIMessage({
+		type = 'reset'
+	})
+end)
+
+-- Talking Animation
+RegisterCommand('sonradtalk', function()
+	isTalking = not isTalking
+	Radio:Talking(isTalking)
 end)
 
 -- Next
@@ -73,6 +143,17 @@ RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
 RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
 RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
+
+function Radio:Talking(toggle)
+	if toggle then
+		RequestAnimDict("random@arrests")
+		while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+		TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+	else
+		StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+	end
+	RequestAnimDict()
+end
 
 function Radio:Toggle(toggle)
 	local playerPed = PlayerPedId()
@@ -129,7 +210,17 @@ function Radio:Toggle(toggle)
 	end
 end
 
-
+function Radio:Destroy()
+	local playerPed = PlayerPedId()
+	local count = 0
+	NetworkRequestControlOfEntity(self.Handle)
+	while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
+		Citizen.Wait(0)
+		count = count + 1
+	end
+	DetachEntity(self.Handle, true, false)
+	DeleteEntity(self.Handle)
+end
 
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
@@ -140,14 +231,21 @@ Citizen.CreateThread(function()
             local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
             SendNUIMessage({type = 'setPos', position = posArr })
         end
+		SendNUIMessage({type = 'time', time = GetClockHours() .. ':' .. GetClockMinutes()})
         Citizen.Wait(5000)
     end
     -- For Development Only
     print('Sonoran Radio Started!')
 end)
 
+function SendNotification(message)
+	BeginTextCommandThefeedPost("STRING")
+	AddTextComponentSubstringPlayerName(message)
+	EndTextCommandThefeedPostTicker(false, false)
+end
+
 RegisterNUICallback('data', function(data, cb)
-    print('data:' .. json.encode(data))
+    --print('data:' .. json.encode(data))
     if data.type == 'hide' then
         SendNUIMessage({
             type = 'setVisible',
@@ -158,6 +256,18 @@ RegisterNUICallback('data', function(data, cb)
         Radio:Toggle(false)
     end
 
+	if data.type == 'notify' then
+		SendNotification(data.message)
+	end
+
+	if data.type == 'panic' then
+		TriggerServerEvent("SonoranCAD::sonrad:RadioPanic")
+	end
+
+	if data.type == 'power' then
+		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+	end
+
     cb('OK')
 end)
 
@@ -165,6 +275,7 @@ AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
 	print('Sonoran Radio Starting...')
 	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
+	TriggerEvent("chat:addSuggestion", "/radioreset", "Reconnect radio to teamspeak")
 	print('Sonoran Radio Started!')
 end)
 
@@ -172,7 +283,15 @@ AddEventHandler('onResourceStop', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
 	print('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
-	Radio:Toggle(false)
-    
+	TriggerEvent("chat:removeSuggestion", "/radioreset")
+	Radio:Destroy()
 end)
 
+RegisterNetEvent('SonoranRadio::GetRadios:Return')
+AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
+    local src = source
+	SendNUIMessage({
+		type = "getRadios",
+		radios = radios
+	})
+end)
