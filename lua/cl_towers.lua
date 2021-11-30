@@ -92,7 +92,7 @@ end
 RegisterCommand("spawntower", function()
     local coords = GetEntityCoords(PlayerPedId())
     TriggerServerEvent("RadioTower:Create", coords, 200)
-end)
+end, true)
 
 RegisterNetEvent("RadioTower:SyncTowers")
 AddEventHandler("RadioTower:SyncTowers", function(towers)

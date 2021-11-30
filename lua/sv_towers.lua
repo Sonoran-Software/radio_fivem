@@ -30,7 +30,7 @@ RegisterCommand("savetowers", function()
     f:write(json.encode(Towers))
     f:close()
     print("ok")
-end)
+end, true)
 
 RegisterNetEvent("RadioTower:Create")
 AddEventHandler("RadioTower:Create", function(coords, range)
