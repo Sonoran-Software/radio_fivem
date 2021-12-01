@@ -22,7 +22,7 @@
                             <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
                             <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
+                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" v-on:send-message="sendRadioMessage($event)"/>
                             <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
                             <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
                             <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
@@ -39,7 +39,7 @@
             <div class="top-radio-container">
                 <div id="top-radio-body" class="top-radio-body"
                     :style="{backgroundImage: 'url(../static/radio-frame-top.png)'}">
-
+                    <input type="button" v-on:click="sendRadioMessage(1, { message: 'hello' });" />
                 </div>
             </div>
         </div>
@@ -191,6 +191,18 @@ export default {
                     });
                     this.$store.state.radios = activeRadios;
                     break;
+                case 'incomingMessage':
+                    this.notifyPlayer("Radio: ~b~New Message");
+                    let sendingradio = this.$store.state.radios.filter((obj) => {
+                        return obj.id === event.data.sender;
+                    })
+                    this.$store.state.conversations.push({
+                        senderid: sendingradio[0].id,
+                        sender: sendingradio[0].name,
+                        payload: event.data.payload
+                    })
+                    console.log(this.$store.state.conversations)
+                    break;
                 default:
                     break;
             }
@@ -216,6 +228,13 @@ export default {
             }).catch((err) => {
                 console.log(err);
             });
+        },
+        sendRadioMessage(event) {
+            let recipient = event.recipient;
+            let payload = event.payload;
+            console.log(`msgOutbound: ${recipient} ${payload}`)
+            this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload});
+            this.notifyPlayer("Radio: ~g~Message Sent");
         },
         notifyPlayer(message) {
             if (this.radioPower) this.postClient({ type: "notify", message: message});

@@ -21,6 +21,11 @@ export default new Vuex.Store({
             location: "",
             description: ""
         },
+        conversations: [],
+        recipient: {
+            id: null,
+            name: null
+        },
         connColor: 'gray',
         presets: [],
         scanned: [],

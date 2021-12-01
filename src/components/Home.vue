@@ -56,19 +56,19 @@
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-message" style="display:none;">
-                <div class="sc-msg-content">
+            <div class="sc-message" v-if="$store.state.conversations.length != 0">
+                <div class="sc-msg-content" v-on:click="openConversation($store.state.conversations[$store.state.conversations.length-1])">
                     <div class="sc-sender">
-                        Clark, Robert
+                        {{ $store.state.conversations[$store.state.conversations.length-1].sender }}
                     </div>
                     <div class="sc-content">
-                        On my way
+                        {{ $store.state.conversations[$store.state.conversations.length-1].payload.message }}
                     </div>
                 </div>
-                <div class="sc-msg-buttons">
+                <div class="sc-msg-buttons" style="display:none;">
                     <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'newmessage')">
                         <i class="fas fa-address-book"></i>
-                        <span class="sc-button-label">New</span>
+                        <span class="sc-button-label">View</span>
                     </div>
                     <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'messages')">
                         <i class="fas fa-address-book"></i>
@@ -109,6 +109,11 @@ export default {
             // standby - lightblue
             // panic - orange
             // disconnected - gray
+        },
+        openConversation(conversation) {
+            this.$store.state.recipient.id = conversation.senderid;
+            this.$store.state.recipient.name = conversation.sender;
+            this.$emit('set-screen', 'message')
         }
     }
 

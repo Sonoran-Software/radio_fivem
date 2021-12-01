@@ -13,7 +13,7 @@
         </div>
         <div class="sc-body">
             <div class="sc-row" v-for="radio in $store.state.radios" :key="radio.id">
-                <div class="sc-row-label">{{ radio.name }}</div>
+                <div class="sc-row-label" v-on:click="openConversation(radio.id, radio.name)">{{ radio.name }}</div>
             </div>
         </div>
     </div>
@@ -32,7 +32,11 @@ export default {
         }
     },
     methods: {
-
+        openConversation(id, name) {
+            this.$store.state.recipient.id = id;
+            this.$store.state.recipient.name = name;
+            this.$emit('set-screen', 'message')
+        }
     }
 
 }

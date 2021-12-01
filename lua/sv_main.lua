@@ -34,10 +34,8 @@ AddEventHandler('SonoranRadio::RadioPower', function(power, playername)
     TriggerClientEvent('SonoranRadio::GetRadios:Return', -1, radios)
 end)
 
-RegisterNetEvent('SonoranRadio::RegisterRadio')
-AddEventHandler('SonoranRadio::RegisterRadio', function()
-    local src = source
-end)
-
-RegisterNetEvent('SonoranRadio::GetRadios', function()
+RegisterNetEvent('SonoranRadio::Msg:ToServer')
+AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
+    local sender = source
+    TriggerClientEvent('SonoranRadio::Msg:ToClient', recipient, sender, payload)
 end)

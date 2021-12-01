@@ -35,7 +35,7 @@ end)
 RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
 AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
 	local dispatch = call.dispatch
-	print(json.encode(dispatch))
+	--print(json.encode(dispatch))
 	SendNUIMessage({
 		type = 'callUpdate',
 		call = dispatch
@@ -268,6 +268,10 @@ RegisterNUICallback('data', function(data, cb)
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
 	end
 
+	if data.type == 'msgOutbound' then
+		TriggerServerEvent('SonoranRadio::Msg:ToServer', data.recipient, data.payload)
+	end
+
     cb('OK')
 end)
 
@@ -289,9 +293,18 @@ end)
 
 RegisterNetEvent('SonoranRadio::GetRadios:Return')
 AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
-    local src = source
 	SendNUIMessage({
 		type = "getRadios",
 		radios = radios
 	})
+end)
+
+RegisterNetEvent('SonoranRadio::Msg:ToClient')
+AddEventHandler('SonoranRadio::Msg:ToClient', function(sender, payload)
+	SendNUIMessage({
+		type = "incomingMessage",
+		sender = sender,
+		payload = payload
+	})
+	print('Message from ' .. sender .. ' saying ' .. json.encode(payload))
 end)
