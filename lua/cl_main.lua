@@ -85,28 +85,6 @@ local Radio = {
 	Clicks = true, -- Radio clicks
 }
 
--- RADIO QUALITY (Swankiness): 0.0 - 1.0 (0.0 worst -> 1.0 greatest)
--- TODO: make being furthest away from any tower and/or the repeater(s) cause quality to go down
--- RADIO TOWERS: handle, pos {x, y, z, offset, handle, status}, destruction status (0 - none, 1 - being destroyed, 2 - destroyed) 
-local RadioTower = {
-    Destruction = false,
-    DestructionTimer = 0,
-    Swankiness = 0.0,
-
-    RadioTower.Towers = {},
-
-    -- Used for the repeater and the prop that is needed to be destroyed in order to disrupt signals
-    RadioTower.RepeaterProps = {
-        "prop_satdish_2_a",
-    },
-
-    -- Currently only GTA props (future: custom props)
-    RadioTower.Props = {
-        "prop_radiomast01",
-        "prop_radiomast02",
-    },
-}
-
 RegisterCommand('radio', function()
     radActive = not radActive
     Radio:Toggle(radActive)
@@ -252,33 +230,6 @@ function Radio:Destroy()
 	end
 	DetachEntity(self.Handle, true, false)
 	DeleteEntity(self.Handle)
-function RadioTower:AddTower(x, y, z, offset, handle, status)
-    -- TODO:
-    -- Add tower and then spawn radio mast and the repeater prop and attach it (if not in the list already & spawned)
-    -- CreateObject()
-    -- AttachEntityToEntityPhysically()
-    -- PARAMS: (entity1, entity2, boneIndex1, boneIndex2, xPos1, yPos1, zPos1, xPos2, yPos2, zPos2, xRot, yRot, zRot, breakForce, true, true, true, false, 1)
-    -- the breakforce will prove useful
-end
-
--- todo check nearby towers and setup/do things for destroying or repairing
-function RadioTower:GetNearbyTower()
-    local towers = RadioTower.Locations
-
-    for k in pairs(towers) do
-    end
-end
-
--- manage the props/objects and whether they are spawned or not
-function RadioTower:ManageObjects()
-    local objects = RadioTower.TrackedObjects
-
-    for k in pairs(objects) do
-    end
-end
-
-function RadioTower:Cleanup()
-    -- TODO: clean up every thing for towers and delete objects/props for resource stop/restart.
 end
 
 Citizen.CreateThread(function()
