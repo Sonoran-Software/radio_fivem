@@ -95,6 +95,16 @@ RegisterCommand('radio', function()
     SetNuiFocus(radActive, radActive)
 end)
 
+RegisterCommand('sonradradio', function()
+    radActive = not radActive
+    Radio:Toggle(radActive)
+    SendNUIMessage({
+        type = 'setVisible',
+        visibility = radActive
+    })
+    SetNuiFocus(radActive, radActive)
+end)
+
 RegisterCommand('radioreset', function()
 	SendNUIMessage({
 		type = 'reset'
@@ -138,7 +148,7 @@ RegisterCommand('sonradpanic', function()
         button = 'panic'
     })
 end)
-RegisterKeyMapping('radio', 'Show Radio', 'keyboard', '')
+RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', '')
 RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
 RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
 RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
