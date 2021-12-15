@@ -42,11 +42,11 @@ function GetClosestTower()
         local tower = Towers[i]
         if not tower.Destruction then
             local dist = GetDistance(Towers[i].PropPosition, pedLocation)
-            DebugPrint(("tower %s - dist: %s - closest: %s"):format(i, dist, closest))
+            --DebugPrint(("tower %s - dist: %s - closest: %s"):format(i, dist, closest))
             if dist < closest then
                 closest = dist
                 closestObj = Towers[i]
-                DebugPrint(("New tower %s, distance: %s"):format(i, dist))
+                --DebugPrint(("New tower %s, distance: %s"):format(i, dist))
             end
         end
     end
@@ -148,9 +148,7 @@ CreateThread(function()
     end
     while true do
         local tower, distance = GetClosestTower()
-        if not tower then
-            DebugPrint("no tower found")
-        else
+        if tower then
             if distance > tower.Range then
                 DebugPrint("closest tower out of range")
                 SetRadioQuality(0.0)
