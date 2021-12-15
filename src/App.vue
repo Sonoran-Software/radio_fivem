@@ -107,6 +107,15 @@ export default {
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     break;
+                case 'set_gamestate':
+                    try {
+                        this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
+                    } catch (e) {
+                        console.error("Failed to update tower quality");
+                        console.error(e);
+                    }
+                    this.updateGamestate();
+                    break;
                 case 'setPos':
                     try {
                         this.$store.state.gamestate.position = [
