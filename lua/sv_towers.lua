@@ -23,7 +23,7 @@ end
 RegisterCommand("removetowers", function()
     TriggerClientEvent("RadioTower:Shutdown", -1)
     Towers = {}
-end)
+end, true)
 
 RegisterCommand("savetowers", function()
     local f = assert(io.open(GetResourcePath("sonoranradio").."/towers.json", "w+"))
@@ -32,6 +32,18 @@ RegisterCommand("savetowers", function()
     print("ok")
 end, true)
 
+RegisterCommand("spawntower", function(source)
+    local range = 200
+    local coords = GetEntityCoords(GetPlayerPed(source))
+    local tower = shallowcopy(RadioTower)
+    tower.PropPosition = coords
+    tower.Range = range
+    table.insert(Towers, tower)
+    TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
+    TriggerClientEvent("RadioTower:SpawnTower", -1, coords, range)
+end, true)
+
+--[[
 RegisterNetEvent("RadioTower:Create")
 AddEventHandler("RadioTower:Create", function(coords, range)
     local tower = shallowcopy(RadioTower)
@@ -40,7 +52,7 @@ AddEventHandler("RadioTower:Create", function(coords, range)
     table.insert(Towers, tower)
     TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
     TriggerClientEvent("RadioTower:SpawnTower", -1, coords, range)
-end)
+end)]]
 
 RegisterNetEvent("RadioTower:clientTowerSync")
 AddEventHandler("RadioTower:clientTowerSync", function()

@@ -89,10 +89,10 @@ function RadioTower:Cleanup()
     Towers = {}
 end
 
-RegisterCommand("spawntower", function()
+--[[RegisterCommand("spawntower", function()
     local coords = GetEntityCoords(PlayerPedId())
     TriggerServerEvent("RadioTower:Create", coords, 200)
-end, true)
+end, true)]]
 
 RegisterNetEvent("RadioTower:SyncTowers")
 AddEventHandler("RadioTower:SyncTowers", function(towers)
