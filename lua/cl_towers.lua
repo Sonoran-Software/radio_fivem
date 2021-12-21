@@ -1,5 +1,5 @@
 local RadioTower = {
-    Debug = false,
+    Debug = true,
     Destruction = false,
     DestructionTimer = 0,
     Swankiness = 0.0,
@@ -9,11 +9,8 @@ local RadioTower = {
     PropPosition = nil,
     DishPropPosition = nil,
     LadderPropPosition = nil,
-    Range = 200
-}
-
-RadioTower.TowerProps = {
-    `prop_radio_tower`
+    Range = 200,
+    TowerProp = GetHashKey("prop_radio_tower"),
 }
 
 Towers = {}
@@ -64,35 +61,29 @@ end
 
 
 local function CreateTower(coords)
-    local selectedProp = math.random(1, #RadioTower.TowerProps)
-    RequestModel(RadioTower.TowerProps[selectedProp])
-    while not HasModelLoaded(RadioTower.TowerProps[selectedProp]) do Wait(10) end
-    local tower = CreateObject(RadioTower.TowerProps[selectedProp], coords, true, true, false)
+    local prop = RadioTower.TowerProp
+    RequestModel(prop)
+    while not HasModelLoaded(prop) do Wait(10) end
+
+    local tower = CreateObject(prop, coords, false, false, false)
     local tcoords = GetEntityCoords(tower)
     while not DoesEntityExist(tower) do Wait(0) end
     FreezeEntityPosition(tower, true)
     SetEntityCoords(tower, coords.x, coords.y, coords.z - 1, true, true, true, false)
     PlaceObjectOnGroundProperly(tower)
-    SetModelAsNoLongerNeeded(RadioTower.TowerProps[selectedProp])
+
+    SetModelAsNoLongerNeeded(prop)
 
     return tower
 end
 
-
-function RadioTower:Cleanup()
-    for i = 1, #Towers do
-        local obj = Towers[i]
-        if obj.Prop ~= nil then
-            DeleteEntity(obj.Prop)
-        end
-    end
-    Towers = {}
+local function AddTowerRange(t)
+    if not RadioTower.Debug then return end
+    -- create a radius blip that indicates the range of the tower (where edge of circle = 50% capacity)
+    local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
+    SetBlipAlpha(blip, 127)
+    SetBlipColour(blip, 3)
 end
-
---[[RegisterCommand("spawntower", function()
-    local coords = GetEntityCoords(PlayerPedId())
-    TriggerServerEvent("RadioTower:Create", coords, 200)
-end, true)]]
 
 RegisterNetEvent("RadioTower:SyncTowers")
 AddEventHandler("RadioTower:SyncTowers", function(towers)
@@ -101,6 +92,7 @@ AddEventHandler("RadioTower:SyncTowers", function(towers)
     if not HasSpawnedTowers then
         for i = 1, #Towers do
             CreateTower(Towers[i].PropPosition)
+            AddTowerRange(Towers[i])
         end
         HasSpawnedTowers = true
     end
@@ -112,6 +104,7 @@ AddEventHandler("RadioTower:SpawnTower", function(coords, range)
     local tower = shallowcopy(RadioTower)
     tower.PropPosition = CreateTower(coords)
     tower.Range = range
+    AddTowerRange(tower)
 end)
 
 function shallowcopy(orig)
@@ -146,6 +139,9 @@ CreateThread(function()
     while not HasSpawnedTowers do
         Wait(10)
     end
+    for _, t in ipairs(Towers) do
+        if not RadioTower.Debug then break end
+    end
     while true do
         local tower, distance = GetClosestTower()
         if tower then
@@ -160,9 +156,4 @@ CreateThread(function()
         end
         Wait(5000)
     end
-end)
-
-AddEventHandler("onResourceStop", function(resource)
-    if GetCurrentResourceName() ~= resource then return end
-    RadioTower:Cleanup()
 end)
