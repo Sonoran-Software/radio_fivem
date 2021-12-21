@@ -24,3 +24,12 @@ files {
     'static/**/*'
 } 
 ui_page 'dist/ui.html'
+
+-- setup for streamed files
+files {
+    'data/vehicles.meta',
+    'data/carvariations.meta',
+}
+data_file 'VEHICLE_METADATA_FILE' 'data/vehicles.meta'
+data_file 'VEHICLE_VARIATION_FILE' 'data/carvariations.meta'
+data_file 'DLC_ITYP_REQUEST' 'stream/prop_radio_tower.ytyp'
