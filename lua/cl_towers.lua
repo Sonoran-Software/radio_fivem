@@ -1,5 +1,4 @@
 local RadioTower = {
-    Debug = true,
     Destruction = false,
     DestructionTimer = 0,
     Swankiness = 0.0,
@@ -17,7 +16,7 @@ Towers = {}
 HasSpawnedTowers = false
 
 local function DebugPrint(str)
-    if (RadioTower.Debug) then
+    if (Config.debug) then
         print("Sonoran Radio (Towers) - Debug", str)
     end
 end
@@ -78,7 +77,7 @@ local function CreateTower(coords)
 end
 
 local function AddTowerRange(t)
-    if not RadioTower.Debug then return end
+    if not Config.debug then return end
     -- create a radius blip that indicates the range of the tower (where edge of circle = 50% capacity)
     local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
     SetBlipAlpha(blip, 127)
@@ -138,9 +137,6 @@ end)
 CreateThread(function()
     while not HasSpawnedTowers do
         Wait(10)
-    end
-    for _, t in ipairs(Towers) do
-        if not RadioTower.Debug then break end
     end
     while true do
         local tower, distance = GetClosestTower()
