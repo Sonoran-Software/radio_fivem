@@ -4,7 +4,7 @@ game 'gta5'
 
 author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
-version '1.2.1'
+version '1.2.2'
 
 server_scripts {
     'config.lua',
