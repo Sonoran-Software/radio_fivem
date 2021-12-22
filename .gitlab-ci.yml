@@ -5,7 +5,8 @@ Deploy-Production-SonoranRadioFiveMResource:
     - yarn build
     - cp -rf static/ build/sonoranradio/
     - cp -rf lua/ build/sonoranradio/
-    - cp -rf stream/ build/sonoranradio/
+    - cp -rf sonrad_tower/stream build/sonoranradio/
+    - cp -rf sonrad_tower/data build/sonoranradio/
     - cp -rf towers.json build/sonoranradio/
     - mkdir -p build/sonoranradio/dist
     - cp -rf dist/bundle.js build/sonoranradio/dist/bundle.js
