@@ -76,7 +76,8 @@ AddEventHandler("RadioTower:Destroy", function(coords)
     DestroyRequests[source] = { coords = coords, secret = handshake }
     TriggerClientEvent("RadioTower:VerifyLocation", source, handshake)
 end)
-RegisterNetEvent("RadioTower:clientLocationVerify", function(coords, handshake)
+RegisterNetEvent("RadioTower:clientLocationVerify")
+AddEventHandler("RadioTower:clientLocationVerify", function(coords, handshake)
     if DestroyRequests[source] == nil or DestroyRequests[source].secret ~= handshake then
         print("ERR: failed handshake")
         return
@@ -121,7 +122,9 @@ AddEventHandler("onResourceStart", function(resource)
     local t = LoadResourceFile(GetCurrentResourceName(), "towers.json")
     local towers = json.decode(t)
     for i = 1, #towers do
-        print(("setting up tower %s"):format(json.encode(towers[i])))
+        if Config.debug then
+            print(("setting up tower %s"):format(json.encode(towers[i])))
+        end
         local obj = shallowcopy(RadioTower)
         obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
         obj.Swankiness = towers[i].Swankiness
