@@ -6,7 +6,7 @@ local RadioTower = {
     DestructionTimer = 0,
     Swankiness = 0.0,
     PropPosition = nil,
-    Range = 200
+    Range = 1500
 }
 
 Towers = {}
@@ -33,14 +33,12 @@ RegisterCommand("savetowers", function()
 end, true)
 
 RegisterCommand("spawntower", function(source)
-    local range = 200
     local coords = GetEntityCoords(GetPlayerPed(source))
     local tower = shallowcopy(RadioTower)
     tower.PropPosition = coords
-    tower.Range = range
     table.insert(Towers, tower)
-    TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
-    TriggerClientEvent("RadioTower:SpawnTower", -1, coords, range)
+    -- TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
+    TriggerClientEvent("RadioTower:SpawnTower", -1, coords, tower.Range)
 end, true)
 
 --[[
