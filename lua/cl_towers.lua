@@ -8,7 +8,7 @@ local RadioTower = {
     PropPosition = nil,
     DishPropPosition = nil,
     LadderPropPosition = nil,
-    Range = 200,
+    Range = 1500,
     TowerProp = GetHashKey("prop_radio_tower"),
 }
 
@@ -101,9 +101,10 @@ end)
 RegisterNetEvent("RadioTower:SpawnTower")
 AddEventHandler("RadioTower:SpawnTower", function(coords, range)
     local tower = shallowcopy(RadioTower)
-    tower.PropPosition = CreateTower(coords)
+    tower.PropPosition = GetEntityCoords(CreateTower(coords))
     tower.Range = range
     AddTowerRange(tower)
+    if not HasSpawnedTowers then HasSpawnedTowers = true end
 end)
 
 function shallowcopy(orig)
