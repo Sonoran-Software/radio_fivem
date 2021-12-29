@@ -156,11 +156,25 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Talking(toggle)
 	if toggle then
-		RequestAnimDict("random@arrests")
-		while not HasAnimDictLoaded("random@arrests") do Wait(5) end
-		TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+		if self.Open then
+			RequestAnimDict("cellphone@str")
+			while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+		else
+			RequestAnimDict("random@arrests")
+			while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+		end
 	else
-		StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+		if self.Open then
+			StopAnimTask(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", -4.0)
+			Citizen.Wait(700)
+			RequestAnimDict("cellphone@")
+			while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
+		else
+			StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+		end
 	end
 	RequestAnimDict()
 end
@@ -276,6 +290,10 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'power' then
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+	end
+
+	if data.type == 'talking' then
+		Radio:Talking(data.talking)
 	end
 
     cb('OK')

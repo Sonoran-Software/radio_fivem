@@ -26,9 +26,16 @@
                         {{ $store.state.currFreq.name }}
                     </div>
                     <div class="sc-channel-text">
-                        <div class="content">
+                        <div class="content" v-if="(!($store.state.voicestate.recv) && (!$store.state.voicestate.xmit))">
                             Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
-                            Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }}
+                            Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
+                            {{ $store.state.voicestate.talker }}
+                        </div>
+                        <div class="content" v-if="$store.state.voicestate.recv">
+                            {{ $store.state.voicestate.talker }}
+                        </div>
+                        <div class="content" v-if="$store.state.voicestate.xmit">
+                            {{ $store.state.voicestate.talker }}
                         </div>
                         <div class="sc-channel-icons">
                             <i class="fas fa-house-user" v-on:click="$emit('go-home', 0)"></i>
