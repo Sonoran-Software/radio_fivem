@@ -15,6 +15,11 @@ export default new Vuex.Store({
             radio_powered: false,
             tower_quality: 1
         },
+        voicestate: {
+            recv: false,
+            xmit: false,
+            talker: ""
+        },
         call: {
             code: "",
             title: "",
@@ -22,6 +27,7 @@ export default new Vuex.Store({
             description: ""
         },
         connColor: 'gray',
+        connColorDefault: 'gray',
         presets: [],
         scanned: [],
         scanning: false,

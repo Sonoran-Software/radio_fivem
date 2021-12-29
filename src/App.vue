@@ -371,6 +371,8 @@ export default {
                             })
                         });
                         this.$store.state.sublvl = data.data.config.sublvl;
+                        this.$store.state.connColor = "lightblue";
+                        this.$store.state.connColorDefault = "lightblue";
                         this.updateFreqLabel();
                         break;
                     case "frequencies_updated":
@@ -410,6 +412,7 @@ export default {
                             })
                         });
                         this.$store.state.connColor = "lightblue";
+                        this.$store.state.connColorDefault = "lightblue";
                         break;
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
@@ -418,6 +421,7 @@ export default {
                         this.$store.state.currFreq.recv = ["xxx","xxx"];
                         this.$store.state.currFreq.xmit = ["xxx","xxx"];
                         this.$store.state.connColor = "gray";
+                        this.$store.state.connColorDefault = "gray";
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
@@ -430,6 +434,46 @@ export default {
                                 freq_xmit: el.freq_xmit
                             })
                         });
+                        break;
+                    case "client_xmit_change":
+                        if (data.can_hear) {
+                            switch (data.xmit_type) {
+                                case "self_talk_permit":
+                                    this.$store.state.voicestate.xmit = true;
+                                    this.$store.state.voicestate.recv = false;
+                                    this.$store.state.voicestate.talker = data.client.nickname;
+                                    this.$store.state.connColor = "red";
+                                    this.postClient({ type: 'talking', talking: true })
+                                    break;
+                                case "self_squelch":
+                                    this.$store.state.voicestate.xmit = false;
+                                    this.$store.state.voicestate.recv = false;
+                                    this.$store.state.voicestate.talker = "";
+                                    this.$store.state.connColor = this.$store.state.connColorDefault;
+                                    this.postClient({ type: 'talking', talking: false })
+                                    break;
+                                case "unit_talk_permit":
+                                    this.$store.state.voicestate.xmit = false;
+                                    this.$store.state.voicestate.recv = true;
+                                    this.$store.state.voicestate.talker = data.client.nickname;
+                                    this.$store.state.connColor = "yellow";
+                                    break;
+                                case "unit_squelch":
+                                    this.$store.state.voicestate.xmit = false;
+                                    this.$store.state.voicestate.recv = false;
+                                    this.$store.state.voicestate.talker = "";
+                                    this.$store.state.connColor = this.$store.state.connColorDefault;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            if (data.xmit_type == "self_talk_permit") {
+                                console.log("Self Talk Permit")
+
+                            } else if (data.xmit_type == "self_squelch") {
+                                console.log("Self Squelch")
+                            }
+                        }
                         break;
                     default:
                         console.log("**Unhandled Socket Message**");

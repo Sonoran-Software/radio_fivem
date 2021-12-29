@@ -122,8 +122,10 @@ AddEventHandler("onResourceStart", function(resource)
     local t = LoadResourceFile(GetCurrentResourceName(), "towers.json")
     local towers = json.decode(t)
     for i = 1, #towers do
-        if Config.debug then
-            print(("setting up tower %s"):format(json.encode(towers[i])))
+        if Config ~= nil then
+            if Config.debug then
+                print(("setting up tower %s"):format(json.encode(towers[i])))
+            end
         end
         local obj = shallowcopy(RadioTower)
         obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
