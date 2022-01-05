@@ -5,6 +5,10 @@ function GetDistance(dist1, dist2)
     local dist = #(dist1 - dist2)
     return dist
 end
+function LoadModelSync(model)
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(1) end
+end
 
 function GetTowerFromId(towerId)
     for _, t in ipairs(Towers) do
@@ -55,7 +59,7 @@ local function CreateTowerDishes(tower)
     local dishModel = GetHashKey("sonoran")
     RequestModel(dishModel)
     while not HasModelLoaded(dishModel) do Wait(10) end
-    local n = 4
+    local n = 3
     for i = 0, n - 1 do
         local theta = (i * math.pi * 2) / n
         -- in a normal unit circle, cos is x and sin is y. however, we need y to be the forward direction (and 1 @ theta=0.0)
@@ -82,6 +86,20 @@ local function CreateTowerDishes(tower)
     end
     SetModelAsNoLongerNeeded(dishModel)
 end
+local function CreateTowerLadder(tower)
+    if tower.Ladder then
+        DeleteEntity(tower.Ladder)
+    end
+    local model = GetHashKey("prop_radio_tower_ladder")
+    LoadModelSync(model)
+
+    local off = GetOffsetFromEntityInWorldCoords(tower.Handle, 0.0, 0.3, -0.4)
+    local ladder = CreateObject(model, off.x, off.y, off.z, false, false, false)
+    SetEntityRotation(ladder, GetEntityRotation(tower.Handle, 0) + vec(0.0, 0.0, 285.0), 0)
+
+    tower.Ladder = ladder
+    SetModelAsNoLongerNeeded(model)
+end
 local function CreateTower(tower)
     local towerModel = GetHashKey("prop_radio_tower")
     RequestModel(towerModel)
@@ -96,6 +114,7 @@ local function CreateTower(tower)
 
     SetModelAsNoLongerNeeded(towerModel)
     CreateTowerDishes(tower)
+    CreateTowerLadder(tower)
     AddTowerRange(tower)
 end
 
@@ -230,6 +249,9 @@ AddEventHandler('onResourceStop', function(resource)
         local tower = Towers[i]
         if tower.Handle then
             DeleteEntity(tower.Handle)
+        end
+        if tower.Ladder then
+            DeleteEntity(tower.Ladder)
         end
         for j = 1, #tower.Dishes do
             DeleteEntity(tower.Dishes[j])
