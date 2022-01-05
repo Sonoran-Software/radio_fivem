@@ -19,6 +19,13 @@ local function GetTower(coords)
     end
     return nil, nil
 end
+local function GetTowerFromId(id)
+    for _, t in ipairs(Towers) do
+        if t.Id == id then
+            return t
+        end
+    end
+end
 
 RegisterCommand("removetowers", function()
     TriggerClientEvent("RadioTower:Shutdown", -1)
@@ -61,19 +68,23 @@ end)
 
 RegisterNetEvent("RadioTower:KillDish")
 AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
-    local tower
-    for _, t in ipairs(Towers) do
-        if t.Id == towerId then
-            tower = t
-            break
-        end
-    end
+    local tower = GetTowerFromId(towerId)
     DebugPrint("RadioTower:KillDish", towerId)
     if not tower then return end
 
     if not tower.KilledDishes then tower.KilledDishes = {} end
     table.insert(tower.KilledDishes, dishIndex)
     TriggerClientEvent('RadioTower:KillDish', -1, towerId, dishIndex)
+end)
+
+RegisterNetEvent("RadioTower:RepairTower")
+AddEventHandler("RadioTower:RepairTower", function(towerId)
+    local tower = GetTowerFromId(towerId)
+    DebugPrint("RadioTower:RepairTower", towerId)
+    if not tower then return end
+
+    tower.KilledDishes = {}
+    TriggerClientEvent('RadioTower:RepairTower', -1, towerId)
 end)
 
 RegisterNetEvent("RadioTower:clientLocationVerify")

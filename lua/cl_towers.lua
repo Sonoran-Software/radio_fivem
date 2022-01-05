@@ -10,32 +10,39 @@ function LoadModelSync(model)
     while not HasModelLoaded(model) do Wait(1) end
 end
 
-function GetTowerFromId(towerId)
+local function GetTowerFromId(towerId)
     for _, t in ipairs(Towers) do
         if t.Id == towerId then
             return t
         end
     end
 end
-function GetClosestTower()
+local function GetClosestTower()
     if #Towers < 1 then
         DebugPrint("no towers spawned")
         return nil, nil
     end
     local pedLocation = GetEntityCoords(GetPlayerPed(-1))
-    local closest = GetDistance(Towers[1].PropPosition, pedLocation)
-    local closestObj = Towers[1]
+    local d, dObj
     for i = 1, #Towers do
-        local tower = Towers[i]
-        if not tower.Destruction then
-            local dist = GetDistance(Towers[i].PropPosition, pedLocation)
-            if dist < closest then
-                closest = dist
-                closestObj = Towers[i]
-            end
+        local location = GetOffsetFromEntityInWorldCoords(Towers[i].Handle, 0.0, 0.0, 1.0)
+        local dist = GetDistance(location, pedLocation)
+        if d == nil or dist < d then
+            d = dist
+            dObj = Towers[i]
         end
     end
-    return closestObj, closest
+    return dObj, d
+end
+-- returns a value from 0-1 representing the percentage of active dishes
+local function GetTowerCapacity(tower)
+    local n = 0.0
+    for i = 1, #tower.Dishes do
+        if not IsEntityDead(tower.Dishes[i]) then
+            n = n + 1.0
+        end
+    end
+    return n / #tower.Dishes
 end
 
 local function AddTowerRange(t)
@@ -57,9 +64,8 @@ local function CreateTowerDishes(tower)
 
     -- create dishes around tower base (in a circle)
     local dishModel = GetHashKey("sonoran")
-    RequestModel(dishModel)
-    while not HasModelLoaded(dishModel) do Wait(10) end
-    local n = 3
+    LoadModelSync(dishModel)
+    local n = 4
     for i = 0, n - 1 do
         local theta = (i * math.pi * 2) / n
         -- in a normal unit circle, cos is x and sin is y. however, we need y to be the forward direction (and 1 @ theta=0.0)
@@ -102,8 +108,7 @@ local function CreateTowerLadder(tower)
 end
 local function CreateTower(tower)
     local towerModel = GetHashKey("prop_radio_tower")
-    RequestModel(towerModel)
-    while not HasModelLoaded(towerModel) do Wait(10) end
+    LoadModelSync(towerModel)
 
     local coords = tower.PropPosition
     tower.Handle = CreateObject(towerModel, coords, false, false, false)
@@ -158,6 +163,17 @@ AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
     end
 end)
 
+RegisterNetEvent("RadioTower:RepairTower")
+AddEventHandler("RadioTower:RepairTower", function(towerId)
+    local tower = GetTowerFromId(towerId)
+    if not tower then return end
+    CreateTowerDishes(tower)
+    for _, e in ipairs(tower.Dishes) do
+        local coords = GetEntityCoords(e)
+        PlaySoundFromCoord(-1, "Success", coords, "DLC_HEIST_HACKING_SNAKE_SOUNDS", 0, 80)
+    end
+end)
+
 local function SetRadioQuality(quality)
     SendNUIMessage({
         type = 'set_gamestate',
@@ -184,21 +200,62 @@ CreateThread(function()
                 DebugPrint("closest tower out of range")
                 SetRadioQuality(0.0)
             else
-                -- find the # of dishes that are "alive" (aka active)
-                local nAlive = 0.0
-                for _, e in ipairs(tower.Dishes) do
-                    if not IsEntityDead(e) then
-                        nAlive = nAlive + 1.0
-                    end
-                end
-
-                -- base tower quality off of the distance to the tower, and the # of dishes alive
-                local quality = (1.0 - (distance / tower.Range)) * (nAlive / #tower.Dishes)
-                DebugPrint(("closest tower distance:%fm range:%f dishes:%f quality:%f"):format(distance, tower.Range, nAlive, quality))
+                -- base tower quality off of the distance to the tower, and the # of dishes active
+                local capacity = GetTowerCapacity(tower)
+                local quality = (1.0 - (distance / tower.Range)) * capacity
+                DebugPrint(("closest tower distance:%fm range:%f capacity:%f quality:%f"):format(distance, tower.Range, capacity, quality))
                 SetRadioQuality(quality)
             end
         end
         Wait(5000)
+    end
+end)
+
+local function RepairTower(tower)
+    local ped = GetPlayerPed(-1)
+    TaskStartScenarioInPlace(ped, "WORLD_HUMAN_WELDING", 0, true)
+
+    local start = GetGameTimer()
+    -- watch WASD keys, and if pressed then cancel repair
+    local controls = {32, 33, 34, 35}
+    while start + 3000 > GetGameTimer() do
+        for _, c in ipairs(controls) do
+            if IsControlPressed(0, c) then
+                ClearPedTasksImmediately(ped)
+                return
+            end
+        end
+        Wait(0)
+    end
+
+    ClearPedTasksImmediately(ped)
+
+    -- recreate the dishes so they don't accidentally repair the tower twice
+    -- waiting for the event to propogate
+    CreateTowerDishes(tower)
+    TriggerServerEvent('RadioTower:RepairTower', tower.Id)
+end
+
+CreateThread(function()
+    while not HasSpawnedTowers do
+        Wait(10)
+    end
+    while true do
+        local tower, distance = GetClosestTower()
+        if distance < 2.0 and (GetTowerCapacity(tower) < 1.0 or Config.debug) then
+            BeginTextCommandDisplayHelp("STRING")
+            AddTextComponentSubstringPlayerName("Press ~INPUT_DETONATE~ to repair this tower.")
+            EndTextCommandDisplayHelp(0, false, true, -1)
+
+            DisableControlAction(0, 47, true)
+            if IsDisabledControlJustReleased(0, 47) then
+                RepairTower(tower)
+            end
+
+            Wait(0)
+        else
+            Wait(500)
+        end
     end
 end)
 
