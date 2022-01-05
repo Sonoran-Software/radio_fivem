@@ -194,19 +194,25 @@ CreateThread(function()
         Wait(10)
     end
     while true do
-        local tower, distance = GetClosestTower()
-        if tower then
-            if distance > tower.Range then
-                DebugPrint("closest tower out of range")
-                SetRadioQuality(0.0)
-            else
-                -- base tower quality off of the distance to the tower, and the # of dishes active
-                local capacity = GetTowerCapacity(tower)
-                local quality = (1.0 - (distance / tower.Range)) * capacity
-                DebugPrint(("closest tower distance:%fm range:%f capacity:%f quality:%f"):format(distance, tower.Range, capacity, quality))
-                SetRadioQuality(quality)
-            end
+        local pCoords = GetEntityCoords(GetPlayerPed(-1))
+        local quality = 0.0
+        for i = 1, #Towers do
+            local tower = Towers[i]
+            -- if tower is out of range, then just ignore it
+            local d = #(GetEntityCoords(tower.Handle) - pCoords)
+            if d > tower.Range then goto continue end
+
+            local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
+            if quality < tQuality then quality = tQuality end
+            ::continue::
         end
+
+        if quality == 0.0 then
+            DebugPrint("closest tower out of range")
+        else
+            DebugPrint(('best tower quality:%.4f'):format(quality))
+        end
+        SetRadioQuality(quality)
         Wait(5000)
     end
 end)
