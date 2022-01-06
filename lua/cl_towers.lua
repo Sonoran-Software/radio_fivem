@@ -17,6 +17,13 @@ local function GetTowerFromId(towerId)
         end
     end
 end
+local function GetTowerCoords(tower)
+    if DoesEntityExist(tower.Handle) then
+        return GetOffsetFromEntityInWorldCoords(tower.Handle, 0.0, 0.0, 1.0)
+    else
+        return tower.PropPosition
+    end
+end
 local function GetClosestTower()
     if #Towers < 1 then
         DebugPrint("no towers spawned")
@@ -25,7 +32,7 @@ local function GetClosestTower()
     local pedLocation = GetEntityCoords(GetPlayerPed(-1))
     local d, dObj
     for i = 1, #Towers do
-        local location = GetOffsetFromEntityInWorldCoords(Towers[i].Handle, 0.0, 0.0, 1.0)
+        local location = GetTowerCoords(Towers[i])
         local dist = GetDistance(location, pedLocation)
         if d == nil or dist < d then
             d = dist
@@ -36,6 +43,7 @@ local function GetClosestTower()
 end
 -- returns a value from 0-1 representing the percentage of active dishes
 local function GetTowerCapacity(tower)
+    if not tower.Dishes or #tower.Dishes < 1 then return 1.0 end
     local n = 0.0
     for i = 1, #tower.Dishes do
         if not IsEntityDead(tower.Dishes[i]) then
@@ -78,7 +86,13 @@ local function CreateTowerDishes(tower)
         SetEntityAsMissionEntity(dishHndl, true, true)
         FreezeEntityPosition(dishHndl, true)
         NetworkSetEntityInvisibleToNetwork(dishHndl, true)
-        SetVehicleStrong(dishHndl, true)
+        if tower.Destruction then
+            SetVehicleStrong(dishHndl, true)
+        else
+            -- turning each dish invincible will make it impossible to destroy the dishes
+            -- in turn, disabling tower destruction
+            SetEntityInvincible(dishHndl, true)
+        end
 
         -- set the decorator to "1" to alert lower functions that this is a dish
         -- NOTE: later, this is set to 0 when the dish is killed. this is so that the dish doesn't get "destroyed" when it's killed
@@ -129,7 +143,10 @@ AddEventHandler("RadioTower:SyncTowers", function(towers)
     DebugPrint(("synced %s"):format(json.encode(towers)))
     if not HasSpawnedTowers then
         for i = 1, #Towers do
-            CreateTower(Towers[i])
+            if Config.spawnTowers then
+                CreateTower(Towers[i])
+            end
+            AddTowerRange(Towers[i])
         end
         HasSpawnedTowers = true
     end
@@ -138,7 +155,10 @@ end)
 
 RegisterNetEvent("RadioTower:SpawnTower")
 AddEventHandler("RadioTower:SpawnTower", function(tower)
-    CreateTower(tower)
+    if Config.spawnTowers then
+        CreateTower(tower)
+    end
+    AddTowerRange(Towers[i])
     table.insert(Towers, tower)
     if not HasSpawnedTowers then HasSpawnedTowers = true end
 end)
@@ -199,7 +219,7 @@ CreateThread(function()
         for i = 1, #Towers do
             local tower = Towers[i]
             -- if tower is out of range, then just ignore it
-            local d = #(GetEntityCoords(tower.Handle) - pCoords)
+            local d = #(GetTowerCoords(tower) - pCoords)
             if d > tower.Range then goto continue end
 
             local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
@@ -224,7 +244,7 @@ local function RepairTower(tower)
     local start = GetGameTimer()
     -- watch WASD keys, and if pressed then cancel repair
     local controls = {32, 33, 34, 35}
-    while start + 3000 > GetGameTimer() do
+    while (start + Config.towerRepairTimer * 1000) > GetGameTimer() do
         for _, c in ipairs(controls) do
             if IsControlPressed(0, c) then
                 ClearPedTasksImmediately(ped)
@@ -248,7 +268,7 @@ CreateThread(function()
     end
     while true do
         local tower, distance = GetClosestTower()
-        if distance < 2.0 and (GetTowerCapacity(tower) < 1.0 or Config.debug) then
+        if distance < 2.0 and GetTowerCapacity(tower) < 1.0 then
             BeginTextCommandDisplayHelp("STRING")
             AddTextComponentSubstringPlayerName("Press ~INPUT_DETONATE~ to repair this tower.")
             EndTextCommandDisplayHelp(0, false, true, -1)

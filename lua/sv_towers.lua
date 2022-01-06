@@ -1,12 +1,11 @@
--- RADIO QUALITY (Swankiness): 0.0 - 1.0 (0.0 worst -> 1.0 greatest)
--- TODO: make being furthest away from any tower and/or the repeater(s) cause quality to go down
--- RADIO TOWERS: handle, pos {x, y, z, offset, handle, status}, destruction status (0 - none, 1 - being destroyed, 2 - destroyed) 
 local RadioTower = {
-    Destruction = false,
-    DestructionTimer = 0,
+    -- whether the tower can be destroyed or not
+    Destruction = true,
     Swankiness = 0.0,
+    -- the tower's position (vec3)
     PropPosition = nil,
-    Range = 1500
+    -- the range of the tower
+    Range = 1500.0
 }
 
 Towers = {}

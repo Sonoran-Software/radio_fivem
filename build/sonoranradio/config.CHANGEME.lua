@@ -6,3 +6,5 @@ Config.enableCanary = false
 Config.updateBranch = "master"
 Config.autoUpdateUrl = "https://download.sonoransoftware.com/sonoranradio/version.json"
 Config.allowAutoUpdate = true
+Config.spawnTowers = true
+Config.towerRepairTimer = 20
