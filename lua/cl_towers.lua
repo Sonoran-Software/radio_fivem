@@ -10,9 +10,10 @@ function LoadModelSync(model)
     while not HasModelLoaded(model) do Wait(1) end
 end
 
-local function GetTowerFromId(towerId)
+local function GetTowerFromId(id)
     for _, t in ipairs(Towers) do
-        if t.Id == towerId then
+        if t.Id == id then
+            print(json.encode(t))
             return t
         end
     end
@@ -82,10 +83,9 @@ local function CreateTowerDishes(tower)
         local offy = math.cos(theta) * 1.6
 
         local offset = GetOffsetFromEntityInWorldCoords(tower.Handle, offx, offy, 11.75)
-        local dishHndl = CreateVehicle(dishModel, offset.x, offset.y, offset.z, 0.0, true, false)
+        local dishHndl = CreateVehicle(dishModel, offset.x, offset.y, offset.z, 0.0, false, false)
         SetEntityAsMissionEntity(dishHndl, true, true)
         FreezeEntityPosition(dishHndl, true)
-        NetworkSetEntityInvisibleToNetwork(dishHndl, true)
         if tower.Destruction then
             SetVehicleStrong(dishHndl, true)
         else
@@ -170,17 +170,10 @@ AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
     if not tower then return end
     local dish = tower.Dishes[dishIndex]
     NetworkExplodeVehicle(dish, false, false)
+    DecorSetInt(dish, "sonrad_dish", 0)
     -- play a power-down sound for the player
     local coords = GetEntityCoords(dish)
     PlaySoundFromCoord(-1, "Power_Down", coords, "DLC_HEIST_HACKING_SNAKE_SOUNDS", 0, 80)
-
-    -- testing revealed it takes 150ms for explosions to propagate damage to the other dishes
-    Citizen.Wait(250)
-    for _, e in ipairs(tower.Dishes) do
-        if not IsEntityDead(e) then
-            SetVehicleFixed(e)
-        end
-    end
 end)
 
 RegisterNetEvent("RadioTower:RepairTower")
@@ -285,44 +278,31 @@ CreateThread(function()
     end
 end)
 
-AddEventHandler('gameEventTriggered', function(name, data)
-    if name ~= 'CEventNetworkEntityDamage' then return end
+CreateThread(function()
+    while true do
+        for i = 1, #Towers do
+            local tower = Towers[i]
+            for j = 1, #tower.Dishes do
+                local e = tower.Dishes[j]
+                if DecorGetInt(e, 'sonrad_dish') ~= 1 then goto continue end
+                if not IsEntityDead(e) then
+                    -- make sure it doesn't explode from gunshots
+                    SetVehiclePetrolTankHealth(e, 1000.0)
+                end
 
-    local victim = table.remove(data, 1)
-    local attacker = table.remove(data, 1)
+                local health = GetVehicleBodyHealth(e)
+                if health < 1000.0 then print(health, GetVehicleEngineHealth(e), GetVehiclePetrolTankHealth(e)) end
+                if health > 500.0 then goto continue end
 
-    -- handle extra unk booleans
-    local build = GetGameBuildNumber()
-    if build >= 2060 then table.remove(data, 1) end
-    if build >= 2189 then table.remove(data, 1) end
-    for _ = 1, 2 do table.remove(data, 1) end
-
-    local weaponHash = table.remove(data, 1)
-
-    -- lots of condition checking to make sure we're dealing with a tower dish at the right health
-    local dType = GetWeaponDamageType(weaponHash)
-    if dType ~= 3 and dType ~= 5 then return end
-    if DecorGetInt(victim, "sonrad_dish") ~= 1 then return end
-    if not GetPlayerPed(-1) == attacker then return end
-    if GetVehicleBodyHealth(victim) >= 500 then return end
-
-    -- find the associated tower/antenna based on the victim handle
-    local tower, dishIndex
-    for _, t in ipairs(Towers) do
-        for i, e in ipairs(t.Dishes) do
-            if e == victim then
-                tower = t
-                dishIndex = i
-                break
+                -- here we kill the dish
+                DecorSetInt(e, "sonrad_dish", 0)
+                DebugPrint("sending dish destroyed server event")
+                TriggerServerEvent('RadioTower:KillDish', tower.Id, j)
+                ::continue::
             end
         end
-        if tower then break end
+        Wait(250)
     end
-    if not tower then return end
-
-    DecorSetInt(victim, "sonrad_dish", 0)
-    DebugPrint("sending dish destroyed server event")
-    TriggerServerEvent('RadioTower:KillDish', tower.Id, dishIndex)
 end)
 
 -- cleanup towers on stop

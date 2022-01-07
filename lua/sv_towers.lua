@@ -68,7 +68,7 @@ end)
 RegisterNetEvent("RadioTower:KillDish")
 AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
     local tower = GetTowerFromId(towerId)
-    DebugPrint("RadioTower:KillDish", towerId)
+    DebugPrint("RadioTower:KillDish", towerId, dishIndex)
     if not tower then return end
 
     if not tower.KilledDishes then tower.KilledDishes = {} end
@@ -125,7 +125,7 @@ AddEventHandler("onResourceStart", function(resource)
         obj.Swankiness = towers[i].Swankiness
         obj.Range = towers[i].Range
         obj.Destruction = towers[i].Destruction
-        obj.DestructionTimer = towers[i].DestructionTimer
+        DebugPrint("setting up tower", json.encode(obj))
         table.insert(Towers, obj)
     end
 end)
