@@ -51,8 +51,10 @@ function unzipUpdate(file, dest) {
             // ensure the directory exists and *is* a directory
             if (type === 'Directory') {
                 const mkdir = !fs.existsSync(fullPath);
-                if (!mkdir && !fs.statSync(fullPath).isDirectory())
+                if (!mkdir && !fs.statSync(fullPath).isDirectory()) {
+                    fs.rmSync(fullPath);
                     mkdir = true;
+                }
                 if (mkdir)
                     fs.mkdirSync(fullPath);
                 return void entry.autodrain();
