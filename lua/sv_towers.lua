@@ -118,7 +118,6 @@ AddEventHandler("onResourceStart", function(resource)
     local t = LoadResourceFile(GetCurrentResourceName(), "towers.json")
     local towers = json.decode(t)
     for i = 1, #towers do
-        DebugPrint("setting up tower", json.encode(towers[i]))
         local obj = shallowcopy(RadioTower)
         obj.Id = uuid()
         obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)

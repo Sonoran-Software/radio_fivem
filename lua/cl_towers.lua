@@ -13,7 +13,6 @@ end
 local function GetTowerFromId(id)
     for _, t in ipairs(Towers) do
         if t.Id == id then
-            print(json.encode(t))
             return t
         end
     end
@@ -291,7 +290,6 @@ CreateThread(function()
                 end
 
                 local health = GetVehicleBodyHealth(e)
-                if health < 1000.0 then print(health, GetVehicleEngineHealth(e), GetVehiclePetrolTankHealth(e)) end
                 if health > 500.0 then goto continue end
 
                 -- here we kill the dish
