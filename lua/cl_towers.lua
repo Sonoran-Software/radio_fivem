@@ -120,19 +120,21 @@ local function CreateTowerLadder(tower)
     SetModelAsNoLongerNeeded(model)
 end
 local function CreateTower(tower)
-    local towerModel = GetHashKey("prop_radio_tower")
-    LoadModelSync(towerModel)
+    if not Config.noPhysicalTowers then
+        local towerModel = GetHashKey("prop_radio_tower")
+        LoadModelSync(towerModel)
 
-    local coords = tower.PropPosition
-    tower.Handle = CreateObject(towerModel, coords, false, false, false)
-    while not DoesEntityExist(tower.Handle) do Wait(0) end
-    FreezeEntityPosition(tower.Handle, true)
-    SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
-    PlaceObjectOnGroundProperly(tower.Handle)
+        local coords = tower.PropPosition
+        tower.Handle = CreateObject(towerModel, coords, false, false, false)
+        while not DoesEntityExist(tower.Handle) do Wait(0) end
+        FreezeEntityPosition(tower.Handle, true)
+        SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
+        PlaceObjectOnGroundProperly(tower.Handle)
 
-    SetModelAsNoLongerNeeded(towerModel)
-    CreateTowerDishes(tower)
-    CreateTowerLadder(tower)
+        SetModelAsNoLongerNeeded(towerModel)
+        CreateTowerDishes(tower)
+        CreateTowerLadder(tower)
+    end
     AddTowerRange(tower)
 end
 
@@ -142,10 +144,7 @@ AddEventHandler("RadioTower:SyncTowers", function(towers)
     DebugPrint(("synced %s"):format(json.encode(towers)))
     if not HasSpawnedTowers then
         for i = 1, #Towers do
-            if Config.spawnTowers then
-                CreateTower(Towers[i])
-            end
-            AddTowerRange(Towers[i])
+            CreateTower(Towers[i])
         end
         HasSpawnedTowers = true
     end
@@ -154,10 +153,7 @@ end)
 
 RegisterNetEvent("RadioTower:SpawnTower")
 AddEventHandler("RadioTower:SpawnTower", function(tower)
-    if Config.spawnTowers then
-        CreateTower(tower)
-    end
-    AddTowerRange(Towers[i])
+    CreateTower(tower)
     table.insert(Towers, tower)
     if not HasSpawnedTowers then HasSpawnedTowers = true end
 end)
@@ -236,7 +232,7 @@ local function RepairTower(tower)
     local start = GetGameTimer()
     -- watch WASD keys, and if pressed then cancel repair
     local controls = {32, 33, 34, 35}
-    while (start + Config.towerRepairTimer * 1000) > GetGameTimer() do
+    while (start + (Config.towerRepairTimer or 20) * 1000) > GetGameTimer() do
         for _, c in ipairs(controls) do
             if IsControlPressed(0, c) then
                 ClearPedTasksImmediately(ped)
@@ -278,10 +274,14 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    while not HasSpawnedTowers do
+        Wait(10)
+    end
     while true do
         for i = 1, #Towers do
             local tower = Towers[i]
-            for j = 1, #tower.Dishes do
+            local n = tower.Dishes and #tower.Dishes or 0
+            for j = 1, n do
                 local e = tower.Dishes[j]
                 if DecorGetInt(e, 'sonrad_dish') ~= 1 then goto continue end
                 if not IsEntityDead(e) then
@@ -314,7 +314,8 @@ AddEventHandler('onResourceStop', function(resource)
         if tower.Ladder then
             DeleteEntity(tower.Ladder)
         end
-        for j = 1, #tower.Dishes do
+        local n = tower.Dishes and #tower.Dishes or 0
+        for j = 1, n do
             DeleteEntity(tower.Dishes[j])
         end
     end
