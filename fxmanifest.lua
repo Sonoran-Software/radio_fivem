@@ -6,7 +6,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-shared_script 'config.lua'
+shared_scripts {'config.lua', 'lua/**/sh_*.lua'}
 server_script 'lua/**/sv_*.lua'
 client_script 'lua/**/cl_*.lua'
 

@@ -1,12 +1,11 @@
--- RADIO QUALITY (Swankiness): 0.0 - 1.0 (0.0 worst -> 1.0 greatest)
--- TODO: make being furthest away from any tower and/or the repeater(s) cause quality to go down
--- RADIO TOWERS: handle, pos {x, y, z, offset, handle, status}, destruction status (0 - none, 1 - being destroyed, 2 - destroyed) 
 local RadioTower = {
-    Destruction = false,
-    DestructionTimer = 0,
+    -- whether the tower can be destroyed or not
+    Destruction = true,
     Swankiness = 0.0,
+    -- the tower's position (vec3)
     PropPosition = nil,
-    Range = 1500
+    -- the range of the tower
+    Range = 1500.0
 }
 
 Towers = {}
@@ -18,6 +17,13 @@ local function GetTower(coords)
         end
     end
     return nil, nil
+end
+local function GetTowerFromId(id)
+    for _, t in ipairs(Towers) do
+        if t.Id == id then
+            return t
+        end
+    end
 end
 
 RegisterCommand("removetowers", function()
@@ -35,22 +41,12 @@ end, true)
 RegisterCommand("spawntower", function(source)
     local coords = GetEntityCoords(GetPlayerPed(source))
     local tower = shallowcopy(RadioTower)
+    tower.Id = uuid()
     tower.PropPosition = coords
     table.insert(Towers, tower)
     -- TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
-    TriggerClientEvent("RadioTower:SpawnTower", -1, coords, tower.Range)
+    TriggerClientEvent("RadioTower:SpawnTower", -1, tower)
 end, true)
-
---[[
-RegisterNetEvent("RadioTower:Create")
-AddEventHandler("RadioTower:Create", function(coords, range)
-    local tower = shallowcopy(RadioTower)
-    tower.PropPosition = coords
-    tower.Range = range
-    table.insert(Towers, tower)
-    TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
-    TriggerClientEvent("RadioTower:SpawnTower", -1, coords, range)
-end)]]
 
 RegisterNetEvent("RadioTower:clientTowerSync")
 AddEventHandler("RadioTower:clientTowerSync", function()
@@ -62,20 +58,34 @@ AddEventHandler("RadioTower:clientTowerSync", function()
 end)
 
 local DestroyRequests = {}
-local function uuid()
-    math.randomseed(GetGameTimer())
-    local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-    return string.gsub(template, '[xy]', function (c)
-        local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-        return string.format('%x', v)
-    end)
-end
 RegisterNetEvent("RadioTower:Destroy")
 AddEventHandler("RadioTower:Destroy", function(coords)
     local handshake = uuid()
     DestroyRequests[source] = { coords = coords, secret = handshake }
     TriggerClientEvent("RadioTower:VerifyLocation", source, handshake)
 end)
+
+RegisterNetEvent("RadioTower:KillDish")
+AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
+    local tower = GetTowerFromId(towerId)
+    DebugPrint("RadioTower:KillDish", towerId, dishIndex)
+    if not tower then return end
+
+    if not tower.KilledDishes then tower.KilledDishes = {} end
+    table.insert(tower.KilledDishes, dishIndex)
+    TriggerClientEvent('RadioTower:KillDish', -1, towerId, dishIndex)
+end)
+
+RegisterNetEvent("RadioTower:RepairTower")
+AddEventHandler("RadioTower:RepairTower", function(towerId)
+    local tower = GetTowerFromId(towerId)
+    DebugPrint("RadioTower:RepairTower", towerId)
+    if not tower then return end
+
+    tower.KilledDishes = {}
+    TriggerClientEvent('RadioTower:RepairTower', -1, towerId)
+end)
+
 RegisterNetEvent("RadioTower:clientLocationVerify")
 AddEventHandler("RadioTower:clientLocationVerify", function(coords, handshake)
     if DestroyRequests[source] == nil or DestroyRequests[source].secret ~= handshake then
@@ -103,36 +113,18 @@ AddEventHandler("RadioTower:clientLocationVerify", function(coords, handshake)
 end)
 
 
-function shallowcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in pairs(orig) do
-            copy[orig_key] = orig_value
-        end
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
 AddEventHandler("onResourceStart", function(resource)
     if GetCurrentResourceName() ~= resource then return end
     local t = LoadResourceFile(GetCurrentResourceName(), "towers.json")
     local towers = json.decode(t)
     for i = 1, #towers do
-        if Config ~= nil then
-            if Config.debug then
-                print(("setting up tower %s"):format(json.encode(towers[i])))
-            end
-        end
         local obj = shallowcopy(RadioTower)
+        obj.Id = uuid()
         obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
         obj.Swankiness = towers[i].Swankiness
         obj.Range = towers[i].Range
         obj.Destruction = towers[i].Destruction
-        obj.DestructionTimer = towers[i].DestructionTimer
+        DebugPrint("setting up tower", json.encode(obj))
         table.insert(Towers, obj)
     end
 end)
