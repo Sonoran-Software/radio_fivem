@@ -216,7 +216,7 @@ CreateThread(function()
             -- if tower is out of range, then just ignore it
             if d > tower.Range then goto continue end
 
-            local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
+            local tQuality = (1.0 - (d / tower.Range / GetTowerCapacity(tower)))
             if quality < tQuality then quality = tQuality end
             ::continue::
         end
