@@ -5,7 +5,8 @@ local RadioTower = {
     -- the tower's position (vec3)
     PropPosition = nil,
     -- the range of the tower
-    Range = 1500.0
+    Range = 1500.0,
+    DishStatus = {'alive', 'alive', 'alive', 'alive'}
 }
 
 Towers = {}
@@ -44,7 +45,7 @@ RegisterCommand("spawntower", function(source)
     tower.Id = uuid()
     tower.PropPosition = coords
     table.insert(Towers, tower)
-    -- TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
+
     TriggerClientEvent("RadioTower:SpawnTower", -1, tower)
 end, true)
 
@@ -71,9 +72,8 @@ AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
     DebugPrint("RadioTower:KillDish", towerId, dishIndex)
     if not tower then return end
 
-    if not tower.KilledDishes then tower.KilledDishes = {} end
-    table.insert(tower.KilledDishes, dishIndex)
-    TriggerClientEvent('RadioTower:KillDish', -1, towerId, dishIndex)
+    tower.DishStatus[dishIndex] = 'dead'
+    TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent("RadioTower:RepairTower")
@@ -82,8 +82,10 @@ AddEventHandler("RadioTower:RepairTower", function(towerId)
     DebugPrint("RadioTower:RepairTower", towerId)
     if not tower then return end
 
-    tower.KilledDishes = {}
-    TriggerClientEvent('RadioTower:RepairTower', -1, towerId)
+    for i = 1, #tower.DishStatus do
+        tower.DishStatus[i] = 'alive'
+    end
+    TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent("RadioTower:clientLocationVerify")
@@ -124,6 +126,7 @@ AddEventHandler("onResourceStart", function(resource)
         obj.Swankiness = towers[i].Swankiness
         obj.Range = towers[i].Range
         obj.Destruction = towers[i].Destruction
+
         DebugPrint("setting up tower", json.encode(obj))
         table.insert(Towers, obj)
     end
