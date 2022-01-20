@@ -1,5 +1,4 @@
 Towers = {}
-HasSpawnedTowers = false
 
 function GetDistance(dist1, dist2)
     local dist = #(dist1 - dist2)
@@ -11,9 +10,9 @@ function LoadModelSync(model)
 end
 
 local function GetTowerFromId(id)
-    for _, t in ipairs(Towers) do
-        if t.Id == id then
-            return t
+    for i = 1, #Towers do
+        if Towers[i].Id == id then
+            return Towers[i]
         end
     end
 end
@@ -267,7 +266,7 @@ CreateThread(function()
             local t = Towers[i]
             if t.Spawned then
                 local td = #(GetTowerCoords(t) - coords)
-                if d == nil or d < td then
+                if d == nil or td < d then
                     tower = t
                     d = td
                 end

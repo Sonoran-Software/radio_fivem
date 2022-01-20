@@ -45,7 +45,7 @@ RegisterCommand("spawntower", function(source)
     tower.Id = uuid()
     tower.PropPosition = coords
     table.insert(Towers, tower)
-    -- TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
+
     TriggerClientEvent("RadioTower:SpawnTower", -1, tower)
 end, true)
 
