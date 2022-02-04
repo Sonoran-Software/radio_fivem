@@ -111,9 +111,7 @@ local function SyncDishStatus(tower, playSound)
 end
 
 local function CreateTowerLadder(tower)
-    if tower.Ladder then
-        DeleteEntity(tower.Ladder)
-    end
+    if DoesEntityExist(tower.Ladder) then DeleteEntity(tower.Ladder) end
     local model = GetHashKey("prop_radio_tower_ladder")
     LoadModelSync(model)
 
@@ -126,6 +124,7 @@ local function CreateTowerLadder(tower)
 end
 -- fully creates a tower based on the given tower object
 local function CreateTower(tower)
+    if DoesEntityExist(tower.Handle) then DeleteEntity(tower.Handle) end
     local towerModel = GetHashKey("prop_radio_tower")
     LoadModelSync(towerModel)
 
@@ -210,6 +209,21 @@ CreateThread(function()
             elseif d >= 750.0 and tower.Spawned then
                 DestroyTower(tower)
                 DebugPrint(("destroy physical tower (%f) %s"):format(d, tower.Id))
+            end
+
+            -- recreate the tower completely if anything is missing
+            local recreate = tower.Spawned and not (DoesEntityExist(tower.Handle) and DoesEntityExist(tower.Ladder))
+            local n = tower.Dishes and #tower.Dishes or 0
+            for j = 1, n do
+                if not recreate then
+                    recreate = not DoesEntityExist(tower.Dishes[j])
+                end
+            end
+            if recreate then
+                DebugPrint(("tower:%s component missing, recreating"):format(tower.Id))
+                -- CreateTower will automatically delete old entities
+                CreateTower(tower)
+                SyncDishStatus(tower, false)
             end
 
             -- if tower is out of range, then just ignore it
