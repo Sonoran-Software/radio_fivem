@@ -203,10 +203,7 @@ export default {
             }
         });
         // update the gamestate with an interval
-        setInterval(function() {
-            if (this.radioPower)
-                this.updateGamestate();
-        }.bind(this), 2500);
+        setInterval(this.updateGamestate.bind(this), 2500);
     },
     // beforeUnmount() {
     //     window.removeEventListener('message');
@@ -544,7 +541,7 @@ export default {
             this.postClient({
                 type: 'power',
                 power: this.radioPower 
-            })
+            });
             this.updateGamestate();
         }
     }
