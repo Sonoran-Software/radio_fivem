@@ -226,7 +226,7 @@ CreateThread(function()
             DebugPrint(('best tower quality:%.4f'):format(quality))
         end
         SendNUIMessage({
-            type = 'set_gamestate',
+            type = 'setTowerQuality',
             state = { tower_quality = quality }
         })
         Wait(3000)

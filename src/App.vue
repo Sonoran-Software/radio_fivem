@@ -107,14 +107,13 @@ export default {
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     break;
-                case 'set_gamestate':
+                case 'setTowerQuality':
                     try {
                         this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
                     } catch (e) {
                         console.error("Failed to update tower quality");
                         console.error(e);
                     }
-                    this.updateGamestate();
                     break;
                 case 'setPos':
                     try {
@@ -127,7 +126,6 @@ export default {
                         console.error("Failed to update posistion");
                         console.error(e);
                     }
-                    this.updateGamestate();
                     break;
                 case 'pushButton':
                     switch (event.data.button) {
@@ -204,6 +202,11 @@ export default {
                     break;
             }
         });
+        // update the gamestate with an interval
+        setInterval(function() {
+            if (this.radioPower)
+                this.updateGamestate();
+        }.bind(this), 2500);
     },
     // beforeUnmount() {
     //     window.removeEventListener('message');
