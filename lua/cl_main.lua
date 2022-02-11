@@ -195,6 +195,9 @@ function Radio:Toggle(toggle)
 	if self.Open == toggle then
 		return
 	end
+	if IsPlayerFreeAiming(PlayerId()) then
+		return
+	end
 
 	self.Open = toggle
 
@@ -220,17 +223,18 @@ function Radio:Toggle(toggle)
 		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
-	else
+	elseif DoesEntityExist(self.Handle) then
+		local radioHndl = self.Handle
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
 		Citizen.Wait(700)
 		StopAnimTask(playerPed, dictionary, animation, 1.0)
-		NetworkRequestControlOfEntity(self.Handle)
-		while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
+		NetworkRequestControlOfEntity(radioHndl)
+		while not NetworkHasControlOfEntity(radioHndl) and count < 5000 do
 			Citizen.Wait(0)
 			count = count + 1
 		end
-		DetachEntity(self.Handle, true, false)
-		DeleteEntity(self.Handle)
+		DetachEntity(radioHndl, true, false)
+		DeleteEntity(radioHndl)
 	end
 end
 
