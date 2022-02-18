@@ -1,5 +1,6 @@
 var unzipper = require("unzipper");
 var fs = require("fs");
+var path = require("path");
 
 exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     //emit("SonoranCAD::core:writeLog", "debug", "[http] to: " + dest + " - data: " + dest, JSON.stringify(data));
@@ -38,13 +39,39 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     req.end();
 });
 
+function unzipUpdate(file, dest) {
+    const ignoreFile = path.join(GetResourcePath("sonoranradio_updatehelper"), "ignore.json");
+    const ignore = fs.existsSync(ignoreFile) ? JSON.parse(fs.readFileSync(ignoreFile)) : [];
+
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(file).pipe(unzipper.Parse()).on('entry', (entry) => {
+            const {path: file, type} = entry;
+            const fullPath = path.resolve(dest, file);
+
+            // ensure the directory exists and *is* a directory
+            if (type === 'Directory') {
+                const mkdir = !fs.existsSync(fullPath);
+                if (!mkdir && !fs.statSync(fullPath).isDirectory()) {
+                    fs.rmSync(fullPath);
+                    mkdir = true;
+                }
+                if (mkdir)
+                    fs.mkdirSync(fullPath);
+                return void entry.autodrain();
+            }
+
+            if (ignore.includes(file) && fs.existsSync(fullPath)) return void entry.autodrain();
+            entry.pipe(fs.createWriteStream(fullPath));
+        })
+        .on('close', resolve)
+        .on('error', reject);
+    });
+}
 exports('UnzipFile', (file, dest) => {
-	console.log('unzipping...');
-    fs.createReadStream(file).pipe(unzipper.Extract({ path: dest})).on('close', () => {
-		emit("UnzipFileComplete", true)
-	}).on('error', (error) => {
-		emit("UnzipFileComplete", false, error)
-	});
+    console.log('unzipping...');
+    unzipUpdate(file, dest)
+        .then(() => emit("UnzipFileComplete", true))
+        .catch(err => emit("UnzipFileComplete", false, err));
 });
 function deleteDirR(dir) {
 	fs.rmdir(dir, {recursive:true}, (err) => {

@@ -155,12 +155,28 @@ RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Talking(toggle)
-	if toggle then
-		RequestAnimDict("random@arrests")
-		while not HasAnimDictLoaded("random@arrests") do Wait(5) end
-		TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+	if toggle and not inVeh then
+		if self.Open then
+			RequestAnimDict("cellphone@str")
+			while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+		else
+			RequestAnimDict("random@arrests")
+			while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+		end
 	else
-		StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+		if self.Open then
+			StopAnimTask(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", -4.0)
+			if inVeh then return end
+			Citizen.Wait(700)
+			RequestAnimDict("cellphone@")
+			while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+			TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
+		else
+			StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+		end
 	end
 	RequestAnimDict()
 end
@@ -179,6 +195,9 @@ function Radio:Toggle(toggle)
 	end
 
 	if self.Open == toggle then
+		return
+	end
+	if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(GetPlayerPed(-1)) then
 		return
 	end
 
@@ -206,17 +225,18 @@ function Radio:Toggle(toggle)
 		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
-	else
+	elseif DoesEntityExist(self.Handle) then
+		local radioHndl = self.Handle
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
 		Citizen.Wait(700)
 		StopAnimTask(playerPed, dictionary, animation, 1.0)
-		NetworkRequestControlOfEntity(self.Handle)
-		while not NetworkHasControlOfEntity(self.Handle) and count < 5000 do
+		NetworkRequestControlOfEntity(radioHndl)
+		while not NetworkHasControlOfEntity(radioHndl) and count < 5000 do
 			Citizen.Wait(0)
 			count = count + 1
 		end
-		DetachEntity(self.Handle, true, false)
-		DeleteEntity(self.Handle)
+		DetachEntity(radioHndl, true, false)
+		DeleteEntity(radioHndl)
 	end
 end
 
@@ -271,15 +291,15 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'panic' then
-		TriggerServerEvent("SonoranCAD::sonrad:RadioPanic")
+		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
 	end
 
 	if data.type == 'power' then
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
 	end
 
-	if data.type == 'msgOutbound' then
-		TriggerServerEvent('SonoranRadio::Msg:ToServer', data.recipient, data.payload)
+	if data.type == 'talking' then
+		Radio:Talking(data.talking)
 	end
 
     cb('OK')
@@ -307,14 +327,4 @@ AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
 		type = "getRadios",
 		radios = radios
 	})
-end)
-
-RegisterNetEvent('SonoranRadio::Msg:ToClient')
-AddEventHandler('SonoranRadio::Msg:ToClient', function(sender, payload)
-	SendNUIMessage({
-		type = "incomingMessage",
-		sender = sender,
-		payload = payload
-	})
-	print('Message from ' .. sender .. ' saying ' .. json.encode(payload))
 end)

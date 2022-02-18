@@ -4,17 +4,20 @@ game 'gta5'
 
 author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
-version '1.1.6'
+version '1.3.4'
+
+shared_scripts {
+    'config.lua',
+    'lua/**/sh_*.lua'
+}
 
 server_scripts {
-    'config.lua',
     'lua/**/sv_*.lua',
     'lua/update/unzip.js',
     'lua/update/updater.lua'
 }
 
 client_scripts {
-    'config.lua',
     'lua/**/cl_*.lua'
 }
 
@@ -24,3 +27,12 @@ files {
     'static/**/*'
 } 
 ui_page 'dist/ui.html'
+
+-- setup for streamed files
+files {
+    'data/vehicles.meta',
+    'data/carvariations.meta',
+}
+data_file 'VEHICLE_METADATA_FILE' 'data/vehicles.meta'
+data_file 'VEHICLE_VARIATION_FILE' 'data/carvariations.meta'
+data_file 'DLC_ITYP_REQUEST' 'stream/prop_radio_tower.ytyp'
