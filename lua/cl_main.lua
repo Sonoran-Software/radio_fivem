@@ -155,7 +155,8 @@ RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Talking(toggle)
-	if toggle then
+	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+	if toggle and not inVeh then
 		if self.Open then
 			RequestAnimDict("cellphone@str")
 			while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
@@ -168,6 +169,7 @@ function Radio:Talking(toggle)
 	else
 		if self.Open then
 			StopAnimTask(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", -4.0)
+			if inVeh then return end
 			Citizen.Wait(700)
 			RequestAnimDict("cellphone@")
 			while not HasAnimDictLoaded("cellphone@") do Wait(5) end
@@ -195,7 +197,7 @@ function Radio:Toggle(toggle)
 	if self.Open == toggle then
 		return
 	end
-	if IsPlayerFreeAiming(PlayerId()) then
+	if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(GetPlayerPed(-1)) then
 		return
 	end
 
