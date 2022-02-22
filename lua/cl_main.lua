@@ -85,25 +85,33 @@ local Radio = {
 	Clicks = true, -- Radio clicks
 }
 
-RegisterCommand('radio', function()
-    radActive = not radActive
-    Radio:Toggle(radActive)
-    SendNUIMessage({
-        type = 'setVisible',
-        visibility = radActive
-    })
-    SetNuiFocus(radActive, radActive)
+-- Disable Attack when Radio is Open
+CreateThread(function()
+	while true do
+		if Radio.Open then
+			DisableControlAction(0, 142, true)
+		end
+		Wait(0)
+	end
 end)
 
-RegisterCommand('sonradradio', function()
-    radActive = not radActive
-    Radio:Toggle(radActive)
-    SendNUIMessage({
-        type = 'setVisible',
-        visibility = radActive
-    })
-    SetNuiFocus(radActive, radActive)
-end)
+local function radioToggle()
+	radActive = not radActive
+	Radio:Toggle(radActive)
+	SendNUIMessage({
+		type = 'setVisible',
+		visibility = radActive
+	})
+	if radActive then
+		SetNuiFocus(true, true)
+		SetNuiFocusKeepInput(true)
+	else
+		SetNuiFocus(false, false)
+	end
+end
+
+RegisterCommand('radio', radioToggle)
+RegisterCommand('sonradradio', radioToggle)
 
 RegisterCommand('radioreset', function()
 	SendNUIMessage({
