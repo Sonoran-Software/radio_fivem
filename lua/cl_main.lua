@@ -128,8 +128,8 @@ function radioToggle()
 	end
 end
 
-RegisterNetEvent("SonoranRadio::Authorize")
-AddEventHandler("SonoranRadio::Authorize", function()
+RegisterNetEvent("SonoranRadio::AuthorizeRadio")
+AddEventHandler("SonoranRadio::AuthorizeRadio", function()
 	DebugPrint("Authorized for Radio Usage")
 	authorized = true
 end)

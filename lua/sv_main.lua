@@ -31,10 +31,10 @@ RegisterNetEvent("SonoranRadio::CheckPermissions")
 AddEventHandler("SonoranRadio::CheckPermissions", function()
     if acePermsForRadio then
         if IsPlayerAceAllowed(source, "sonoranradio.use") then
-            TriggerClientEvent("SonoranRadio::Authorize", source)
+            TriggerClientEvent("SonoranRadio::AuthorizeRadio", source)
         end
     else
-        TriggerClientEvent("SonoranRadio::Authorize", source)
+        TriggerClientEvent("SonoranRadio::AuthorizeRadio", source)
     end
 end)
 
