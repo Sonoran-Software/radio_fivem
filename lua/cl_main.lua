@@ -348,7 +348,7 @@ CreateThread(function()
 
 		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
 		local prevState = inVehicle
-		print("Getting Players Vehicle")
+		DebugPrint("Getting Players Vehicle")
 
 		if not IsPedInAnyVehicle(PlayerPedId(), false) then 
 			-- player is in vehicle
@@ -357,7 +357,7 @@ CreateThread(function()
 			inVehicle = true
 		end
 
-		print("Updating Radio State")
+		DebugPrint("Updating Radio State")
 		SendNUIMessage({
 			type = "inVehicle",
 			vehState = inVehicle
