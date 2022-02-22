@@ -295,13 +295,7 @@ end
 RegisterNUICallback('data', function(data, cb)
     --print('data:' .. json.encode(data))
     if data.type == 'hide' then
-        SendNUIMessage({
-            type = 'setVisible',
-            visibility = false
-        })
-        radActive = false
-        SetNuiFocus(false, false)
-        Radio:Toggle(false)
+		toggleRadio()
     end
 
 	if data.type == 'notify' then
