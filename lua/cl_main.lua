@@ -9,6 +9,8 @@ local isTalking = false
 
 local inVehicle = false
 
+local authorized = false
+
 RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
 AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	SendNUIMessage({
@@ -97,20 +99,40 @@ CreateThread(function()
 	end
 end)
 
-local function radioToggle()
-	radActive = not radActive
-	Radio:Toggle(radActive)
+RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
+AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
+	local dispatch = call.dispatch
+	DebugPrint(json.encode(dispatch))
 	SendNUIMessage({
-		type = 'setVisible',
-		visibility = radActive
+		type = 'callUpdate',
+		call = dispatch
 	})
-	if radActive then
-		SetNuiFocus(true, true)
-		SetNuiFocusKeepInput(true)
+end)
+
+function radioToggle()
+	if authorized then
+		radActive = not radActive
+		Radio:Toggle(radActive)
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive
+		})
+		if radActive then
+			SetNuiFocusKeepInput(true)
+			SetNuiFocus(true, true)
+		else
+			SetNuiFocus(false, false)
+		end
 	else
-		SetNuiFocus(false, false)
+		SendNotification("Radio: ~r~No Permission~r~")
 	end
 end
+
+RegisterNetEvent("SonoranRadio::Authorize")
+AddEventHandler("SonoranRadio::Authorize", function()
+	DebugPrint("Authorized for Radio Usage")
+	authorized = true
+end)
 
 RegisterCommand('radio', radioToggle)
 RegisterCommand('sonradradio', radioToggle)
@@ -264,6 +286,7 @@ end
 
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
+	TriggerServerEvent("SonoranRadio::CheckPermissions")
     while true do
         local ped = GetPlayerPed(-1)
         if DoesEntityExist(ped) then

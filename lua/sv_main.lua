@@ -1,3 +1,9 @@
+local acePermsForRadio = false
+
+if Config.acePermsForRadio ~= nil then
+	acePermsForRadio = Config.acePermsForRadio
+end
+
 RegisterCommand("sradio", function(source, args, rawCommands)
     if source ~= 0 then
         print("This command can only be used from console.")
@@ -20,6 +26,17 @@ SonoranRadio Help
         print('Missing command. Try \"sradio help\" for help.')
     end
 end, true)
+
+RegisterNetEvent("SonoranRadio::CheckPermissions")
+AddEventHandler("SonoranRadio::CheckPermissions", function()
+    if acePermsForRadio then
+        if IsPlayerAceAllowed(source, "sonoranradio.use") then
+            TriggerClientEvent("SonoranRadio::Authorize", source)
+        end
+    else
+        TriggerClientEvent("SonoranRadio::Authorize", source)
+    end
+end)
 
 local radios = {}
 
