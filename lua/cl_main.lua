@@ -45,7 +45,7 @@ end)
 -- TODO: Push Events for Status Updates
 RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
 	if thisUnit.id ~= unit.id then return end
-	print(status)
+	DebugPrint(status)
 	SendNUIMessage({
 		type = 'unitStatus',
 		status = status
@@ -272,7 +272,7 @@ Citizen.CreateThread(function()
         Citizen.Wait(5000)
     end
     -- For Development Only
-    print('Sonoran Radio Started!')
+    DebugPrint('Sonoran Radio Started!')
 end)
 
 CreateThread(function()
@@ -319,15 +319,15 @@ end)
 
 AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
-	print('Sonoran Radio Starting...')
+	DebugPrint('Sonoran Radio Starting...')
 	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
 	TriggerEvent("chat:addSuggestion", "/radioreset", "Reconnect radio to teamspeak")
-	print('Sonoran Radio Started!')
+	DebugPrint('Sonoran Radio Started!')
 end)
 
 AddEventHandler('onResourceStop', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
-	print('Sonoran Radio Stopping...')
+	DebugPrint('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
 	Radio:Destroy()

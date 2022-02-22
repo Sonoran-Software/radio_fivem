@@ -22,6 +22,6 @@ end
 
 function DebugPrint(...)
     if (Config.debug) then
-        print("Sonoran Radio (Towers) - Debug", ...)
+        print("Sonoran Radio - Debug", ...)
     end
 end
