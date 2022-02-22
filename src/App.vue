@@ -140,7 +140,7 @@ export default {
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
-                    this.showMobileRadio = event.data.visibility;
+                    // this.showMobileRadio = event.data.visibility;
                     break;
                 case 'setTowerQuality':
                     try {
