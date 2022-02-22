@@ -296,8 +296,8 @@ export default {
             this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload});
             this.notifyPlayer("Radio: ~g~Message Sent");
         },
-        notifyPlayer(message) {
-            if (this.radioPower) this.postClient({ type: "notify", message: message});
+        notifyPlayer(message, ignorestate) {
+            if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message});
         },
         updateGamestate() {
             let message = {
@@ -607,7 +607,7 @@ export default {
         buttonPower() {
             this.radioPower = !this.radioPower;
             this.$store.state.gamestate.radio_powered = this.radioPower;
-            this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"));
+            this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"), true);
             this.postClient({
                 type: 'power',
                 power: this.radioPower 
