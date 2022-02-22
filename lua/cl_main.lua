@@ -7,6 +7,8 @@ local thisCall = {}
 
 local isTalking = false
 
+local inVehicle = false
+
 RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
 AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	SendNUIMessage({
@@ -35,7 +37,7 @@ end)
 RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
 AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
 	local dispatch = call.dispatch
-	--print(json.encode(dispatch))
+	DebugPrint(json.encode(dispatch))
 	SendNUIMessage({
 		type = 'callUpdate',
 		call = dispatch
@@ -339,4 +341,28 @@ AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
 		type = "getRadios",
 		radios = radios
 	})
+end)
+
+CreateThread(function()
+	while true do
+
+		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
+		local prevState = inVehicle
+		print("Getting Players Vehicle")
+
+		if not IsPedInAnyVehicle(PlayerPedId(), false) then 
+			-- player is in vehicle
+			inVehicle = false
+		else
+			inVehicle = true
+		end
+
+		print("Updating Radio State")
+		SendNUIMessage({
+			type = "inVehicle",
+			vehState = inVehicle
+		})
+		
+		Wait(1)
+	end
 end)

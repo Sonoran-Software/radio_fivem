@@ -5,7 +5,7 @@
             :class="(showRadio?'radio-open':'radio-close')"
             >
                 <div id="radio-body" class="radio-body"
-                :style="{backgroundImage: 'url(../static/radio-frame.png)'}">
+                :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
                     <div class="radio-controls">
                         <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
                         <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
@@ -13,9 +13,6 @@
                         <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
                     </div>
                     <div class="radio-screen">
-                        <div class="radio-brand">
-                            <img class="radio-logo" :src="`../static/radio-logo.png`">
-                        </div>
                         <div class="radio-content" v-if="radioPower">
                             <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
                             <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
@@ -38,11 +35,46 @@
         <div v-if="showTopRadio">
             <div class="top-radio-container">
                 <div id="top-radio-body" class="top-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-frame-top.png)'}">
+                    :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}">
                     <input type="button" v-on:click="sendRadioMessage(1, { message: 'hello' });" />
                 </div>
             </div>
         </div>
+        <div v-if="showMobileRadio">
+            <div class="mobile-radio-container">
+                <div id="mobile-radio-body" class="mobile-radio-body"
+                    :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
+                    <div class="mobile-radio-buttons">
+                        <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
+                    </div>
+                    <div class="mobile-radio-screen">
+                        <div class="mobile-radio-content" v-if="radioPower">
+                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
+                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
+                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
+                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
+                        </div>
+                    </div>
+                    <div class="mobile-radio-controls">
+                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
+                    </div>
+                    <div class="mobile-radio-end">
+                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -75,10 +107,12 @@ export default {
         return {
             showRadio: false,
             showTopRadio: false,
+            showMobileRadio: false,
             radioPower: false,
             subLevel: null,
             currPreset: 0,
-            currScreen: ""
+            currScreen: "",
+            inVehicle: false
         }
     },
     created() {
@@ -106,6 +140,7 @@ export default {
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
+                    this.showMobileRadio = event.data.visibility;
                     break;
                 case 'setTowerQuality':
                     try {
@@ -198,6 +233,11 @@ export default {
                     });
                     this.$store.state.radios = activeRadios;
                     break;
+                case 'inVehicle':
+                    this.inVehicle = event.data.vehState;
+                    console.log("inVehicle: " + this.inVehicle);
+                    this.updateRadioType();
+                    break;
                 case 'incomingMessage':
                     this.notifyPlayer("Radio: ~b~New Message");
                     let sendingradio = this.$store.state.radios.filter((obj) => {
@@ -237,6 +277,17 @@ export default {
             }).catch((err) => {
                 console.log(err);
             });
+        },
+        updateRadioType() {
+            // if (this.showMobileRadio || this.showRadio) {
+            //     if (this.inVehicle) {
+            //         this.showMobileRadio = true;
+            //         this.showRadio = false;
+            //     } else {
+            //         this.showMobileRadio = false;
+            //         this.showRadio = true;
+            //     }
+            // }
         },
         sendRadioMessage(event) {
             let recipient = event.recipient;
@@ -613,6 +664,18 @@ export default {
     }
 }
 
+.mobile-radio-body {
+    background-repeat: round;
+    width: 722px;
+    height: 240px;
+    position: fixed;
+    right: 30px;
+    bottom: 0px;
+    height: 250px;
+    display: flex;
+    flex-direction: row;
+}
+
 .top-radio-body {
     background-repeat: round;
     width: 250px;
@@ -630,7 +693,7 @@ export default {
 .radio-body {
     background-repeat: round;
     width: 250px;
-    height: 893px;
+    height: 1040px;
     position: fixed;
     right: 30px;
     /* right: 0px; */
@@ -639,6 +702,24 @@ export default {
     height: auto; */
     width: 275px;
     height: 982px;
+}
+
+.mobile-radio-controls {
+    background-color: rgba(255, 0, 0, 0.5);
+    margin-top: 482px;
+    height: 67px;
+    border-width: 0px;
+    display: flex;
+}
+
+.mobile-radio-controls .mobile-ctrl:focus {
+    outline: none;
+}
+
+.mobile-radio-controls .mobile-ctrl {
+    position: relative;
+    visibility: visible;
+    opacity: 0.3;
 }
 
 .radio-controls {
@@ -659,6 +740,47 @@ export default {
     opacity: 0.0;
     /* for development only */
     /* opacity: 0.3; */
+}
+
+.mobile-radio-controls .ctrl:focus {
+    outline: none;
+}
+
+.mobile-radio-controls .ctrl {
+    position: relative;
+    visibility: visible;
+    opacity: 0.0;
+    /* for development only */
+    opacity: 0.3;
+}
+
+.mobile-radio-controls .mobile-ctrl-panic {
+    margin-left: 74px;
+    border-radius: 35px;
+    width: 30px;
+    height: 18px; /* Originally 10px */
+    margin-top: 48px; /* Originally 50px */ 
+}
+
+
+.mobile-radio-controls .mobile-ctrl-prev {
+    height: 65px;
+    margin-left: 10px;
+    width: 22px;
+}
+
+.mobile-radio-controls .mobile-ctrl-next {
+    height: 65px; /* Originally 10px */
+    margin-left: 0px;
+    width: 22px;
+}
+
+.mobile-radio-controls .mobile-ctrl-power {
+    height: 45px; /* Originally 10px */
+    margin-left: 44px;
+    width: 50px;
+    margin-top: 28px;
+    border-radius: 20px;
 }
 
 .radio-controls .ctrl-panic {
@@ -692,8 +814,14 @@ export default {
 
 .radio-screen {
     background-color:black;
-    margin: 66px 63px 16px 63px;
-    height: 270px;
+    margin: 86px 51px 16px 52px;
+    height: 264px;
+}
+
+.mobile-radio-screen {
+    background-color:black;
+    margin: 43px 15px 18px 0px;
+    height: 167px;
 }
 
 .radio-brand {
@@ -713,17 +841,52 @@ export default {
     /* transform: skewX(-20deg); */
 }
 
+.mobile-radio-content {
+    border: 0px;
+    height: 167px;
+    margin: 0px 1px 1px 1px;
+    width: 216px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.mobile-radio-content::-webkit-scrollbar {
+    display: none;
+}
+
 .radio-content {
     border: 0px;
-    height: 250px;
+    height: 264px;
     margin: 0px 1px 1px 1px;
-    width: 147px;
+    width: 169px;
     overflow-y: scroll;
     overflow-x: hidden;
 }
 
 .radio-content::-webkit-scrollbar {
     display: none;
+}
+
+.mobile-radio-buttons {
+    background-color: rgba(0,0,255,0.5);
+    width: 0px;
+    margin: 35px 76px 169px 100px;
+    height: 25px;
+    display: flex;
+}
+
+.mobile-radio-buttons .mobile-ctrl {
+    position: relative;
+    visibility: visible;
+    opacity: 0.0;
+    /* for development only */
+    opacity: 0.3;
+}
+
+.mobile-radio-buttons .mobile-ctrl-home {
+    width: 30px;
+    height: 30px;
+    border-radius: 20px;
 }
 
 .radio-buttons {

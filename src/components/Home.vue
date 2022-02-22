@@ -1,7 +1,8 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <img class="sc-battery" :src="`../static/sradio-battery.png`">
+            <div class="sc-header-status">{{ $store.state.statusText }}</div>
+            <!--<img class="sc-battery" :src="`../static/radio-portable-battery.png`">-->
             <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
@@ -142,16 +143,16 @@ export default {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    justify-content: flex-end;
 }
-.sc-icons {
+/* .sc-icons {
     display: flex;
     flex-direction: row;
     align-items: center;
-}
+} */
 .sc-battery {
     height: 11px;
     padding-right: 5px;
+    padding-left: 75px;
 }
 .sc-time {
     font-size: 12px;
