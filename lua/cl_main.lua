@@ -363,6 +363,6 @@ CreateThread(function()
 			vehState = inVehicle
 		})
 		
-		Wait(1)
+		Wait(100)
 	end
 end)
