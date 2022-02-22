@@ -1,5 +1,13 @@
 Towers = {}
 
+local rightToRepair = false
+
+RegisterNetEvent("SonoranRadio::AuthorizeTowers")
+AddEventHandler("SonoranRadio::AuthorizeTowers", function()
+	DebugPrint("Authorized for Tower Repair")
+	rightToRepair = true
+end)
+
 function GetDistance(dist1, dist2)
     local dist = #(dist1 - dist2)
     return dist
@@ -248,27 +256,31 @@ CreateThread(function()
 end)
 
 local function RepairTower(tower)
-    local ped = GetPlayerPed(-1)
-    TaskStartScenarioInPlace(ped, "WORLD_HUMAN_WELDING", 0, true)
+    if rightToRepair then
+        local ped = GetPlayerPed(-1)
+        TaskStartScenarioInPlace(ped, "WORLD_HUMAN_WELDING", 0, true)
 
-    local start = GetGameTimer()
-    -- watch WASD keys, and if pressed then cancel repair
-    local controls = {32, 33, 34, 35}
-    while (start + (Config.towerRepairTimer or 20) * 1000) > GetGameTimer() do
-        for _, c in ipairs(controls) do
-            if IsControlPressed(0, c) then
-                ClearPedTasksImmediately(ped)
-                return
+        local start = GetGameTimer()
+        -- watch WASD keys, and if pressed then cancel repair
+        local controls = {32, 33, 34, 35}
+        while (start + (Config.towerRepairTimer or 20) * 1000) > GetGameTimer() do
+            for _, c in ipairs(controls) do
+                if IsControlPressed(0, c) then
+                    ClearPedTasksImmediately(ped)
+                    return
+                end
             end
+            Wait(0)
         end
-        Wait(0)
-    end
 
-    ClearPedTasksImmediately(ped)
+        ClearPedTasksImmediately(ped)
 
-    -- recreate the dishes so they don't accidentally repair the tower twice
-    -- waiting for the event to propogate
-    TriggerServerEvent('RadioTower:RepairTower', tower.Id)
+        -- recreate the dishes so they don't accidentally repair the tower twice
+        -- waiting for the event to propogate
+        TriggerServerEvent('RadioTower:RepairTower', tower.Id)
+    else
+		SendNotification("Radio: ~r~No Repair Permission~r~")
+	end
 end
 
 CreateThread(function()

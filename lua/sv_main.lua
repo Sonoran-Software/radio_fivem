@@ -1,7 +1,12 @@
 local acePermsForRadio = false
+local acePermsForTowerRepair = false
 
 if Config.acePermsForRadio ~= nil then
 	acePermsForRadio = Config.acePermsForRadio
+end
+
+if Config.acePermsForTowerRepair ~= nil then
+    acePermsForTowerRepair = Config.acePermsForTowerRepair
 end
 
 RegisterCommand("sradio", function(source, args, rawCommands)
@@ -35,6 +40,13 @@ AddEventHandler("SonoranRadio::CheckPermissions", function()
         end
     else
         TriggerClientEvent("SonoranRadio::AuthorizeRadio", source)
+    end
+    if acePermsForTowerRepair then
+        if IsPlayerAceAllowed(source, "sonoranradio.repair") then
+            TriggerClientEvent("SonoranRadio::AuthorizeTowers", source)
+        end
+    else
+        TriggerClientEvent("SonoranRadio::AuthorizeTowers", source)
     end
 end)
 

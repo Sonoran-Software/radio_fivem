@@ -9,3 +9,4 @@ Config.allowAutoUpdate = true
 Config.noPhysicalTowers = false
 Config.towerRepairTimer = 20
 Config.acePermsForRadio = false
+Config.acePermsForTowerRepair = false
