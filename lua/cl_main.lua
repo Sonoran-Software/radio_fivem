@@ -261,11 +261,21 @@ Citizen.CreateThread(function()
             local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
             SendNUIMessage({type = 'setPos', position = posArr })
         end
-		SendNUIMessage({type = 'time', time = GetClockHours() .. ':' .. GetClockMinutes()})
         Citizen.Wait(5000)
     end
     -- For Development Only
     print('Sonoran Radio Started!')
+end)
+
+CreateThread(function()
+	while true do
+		local hours = GetClockHours()
+		local minutes = GetClockMinutes()
+		if hours < 9 then hours = "0" .. tostring(hours) end
+		if minutes < 9 then minutes = "0" .. tostring(minutes) end
+		SendNUIMessage({type = 'time', time = hours .. ':' .. minutes})
+		Wait(500)
+	end
 end)
 
 function SendNotification(message)
