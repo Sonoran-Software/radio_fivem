@@ -235,7 +235,7 @@ export default {
                     break;
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
-                    console.log("inVehicle: " + this.inVehicle);
+                    //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
                     break;
                 case 'incomingMessage':
