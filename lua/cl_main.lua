@@ -94,7 +94,8 @@ local Radio = {
 CreateThread(function()
 	while true do
 		if Radio.Open then
-			DisableControlAction(0, 142, true)
+			DisableControlAction(0, 142, true) -- Attack
+			DisableControlAction(0, 200, true) -- Escape
 		end
 		Wait(0)
 	end
