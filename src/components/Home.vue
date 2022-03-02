@@ -1,7 +1,8 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <img class="sc-battery" :src="`../static/sradio-battery.png`">
+            <div class="sc-header-status">{{ $store.state.statusText }}</div>
+            <!--<img class="sc-battery" :src="`../static/radio-portable-battery.png`">-->
             <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
@@ -63,19 +64,19 @@
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-message" style="display:none;">
-                <div class="sc-msg-content">
+            <div class="sc-message" v-if="$store.state.conversations.length != 0">
+                <div class="sc-msg-content" v-on:click="openConversation($store.state.conversations[$store.state.conversations.length-1])">
                     <div class="sc-sender">
-                        Clark, Robert
+                        {{ $store.state.conversations[$store.state.conversations.length-1].sender }}
                     </div>
                     <div class="sc-content">
-                        On my way
+                        {{ $store.state.conversations[$store.state.conversations.length-1].payload.message }}
                     </div>
                 </div>
-                <div class="sc-msg-buttons">
+                <div class="sc-msg-buttons" style="display:none;">
                     <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'newmessage')">
                         <i class="fas fa-address-book"></i>
-                        <span class="sc-button-label">New</span>
+                        <span class="sc-button-label">View</span>
                     </div>
                     <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'messages')">
                         <i class="fas fa-address-book"></i>
@@ -116,6 +117,11 @@ export default {
             // standby - lightblue
             // panic - orange
             // disconnected - gray
+        },
+        openConversation(conversation) {
+            this.$store.state.recipient.id = conversation.senderid;
+            this.$store.state.recipient.name = conversation.sender;
+            this.$emit('set-screen', 'message')
         }
     }
 
@@ -137,16 +143,16 @@ export default {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    justify-content: flex-end;
 }
-.sc-icons {
+/* .sc-icons {
     display: flex;
     flex-direction: row;
     align-items: center;
-}
+} */
 .sc-battery {
     height: 11px;
     padding-right: 5px;
+    padding-left: 75px;
 }
 .sc-time {
     font-size: 12px;

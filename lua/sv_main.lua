@@ -1,3 +1,14 @@
+local acePermsForRadio = false
+local acePermsForTowerRepair = false
+
+if Config.acePermsForRadio ~= nil then
+	acePermsForRadio = Config.acePermsForRadio
+end
+
+if Config.acePermsForTowerRepair ~= nil then
+    acePermsForTowerRepair = Config.acePermsForTowerRepair
+end
+
 RegisterCommand("sradio", function(source, args, rawCommands)
     if source ~= 0 then
         print("This command can only be used from console.")
@@ -21,6 +32,24 @@ SonoranRadio Help
     end
 end, true)
 
+RegisterNetEvent("SonoranRadio::CheckPermissions")
+AddEventHandler("SonoranRadio::CheckPermissions", function()
+    if acePermsForRadio then
+        if IsPlayerAceAllowed(source, "sonoranradio.use") then
+            TriggerClientEvent("SonoranRadio::AuthorizeRadio", source)
+        end
+    else
+        TriggerClientEvent("SonoranRadio::AuthorizeRadio", source)
+    end
+    if acePermsForTowerRepair then
+        if IsPlayerAceAllowed(source, "sonoranradio.repair") then
+            TriggerClientEvent("SonoranRadio::AuthorizeTowers", source)
+        end
+    else
+        TriggerClientEvent("SonoranRadio::AuthorizeTowers", source)
+    end
+end)
+
 local radios = {}
 
 RegisterNetEvent('SonoranRadio::RadioPower')
@@ -34,10 +63,8 @@ AddEventHandler('SonoranRadio::RadioPower', function(power, playername)
     TriggerClientEvent('SonoranRadio::GetRadios:Return', -1, radios)
 end)
 
-RegisterNetEvent('SonoranRadio::RegisterRadio')
-AddEventHandler('SonoranRadio::RegisterRadio', function()
-    local src = source
-end)
-
-RegisterNetEvent('SonoranRadio::GetRadios', function()
+RegisterNetEvent('SonoranRadio::Msg:ToServer')
+AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
+    local sender = source
+    TriggerClientEvent('SonoranRadio::Msg:ToClient', recipient, sender, payload)
 end)

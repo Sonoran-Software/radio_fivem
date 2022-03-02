@@ -7,6 +7,10 @@ local thisCall = {}
 
 local isTalking = false
 
+local inVehicle = false
+
+local authorized = false
+
 RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
 AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	SendNUIMessage({
@@ -35,7 +39,7 @@ end)
 RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
 AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
 	local dispatch = call.dispatch
-	print(json.encode(dispatch))
+	DebugPrint(json.encode(dispatch))
 	SendNUIMessage({
 		type = 'callUpdate',
 		call = dispatch
@@ -45,7 +49,7 @@ end)
 -- TODO: Push Events for Status Updates
 RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
 	if thisUnit.id ~= unit.id then return end
-	print(status)
+	DebugPrint(status)
 	SendNUIMessage({
 		type = 'unitStatus',
 		status = status
@@ -83,26 +87,65 @@ local Radio = {
 		"generic_radio_chatter",
 	},
 	Clicks = true, -- Radio clicks
+	TalkAnim = true
 }
 
-RegisterCommand('radio', function()
-    radActive = not radActive
-    Radio:Toggle(radActive)
-    SendNUIMessage({
-        type = 'setVisible',
-        visibility = radActive
-    })
-    SetNuiFocus(radActive, radActive)
+-- Disable Attack when Radio is Open
+CreateThread(function()
+	while true do
+		if Radio.Open then
+			DisableControlAction(0, 142, true) -- Attack
+			DisableControlAction(0, 200, true) -- Escape
+		end
+		Wait(0)
+	end
 end)
 
-RegisterCommand('sonradradio', function()
-    radActive = not radActive
-    Radio:Toggle(radActive)
-    SendNUIMessage({
-        type = 'setVisible',
-        visibility = radActive
-    })
-    SetNuiFocus(radActive, radActive)
+RegisterNetEvent("SonoranCAD::sonrad:UpdateCurrentCall")
+AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
+	local dispatch = call.dispatch
+	DebugPrint(json.encode(dispatch))
+	SendNUIMessage({
+		type = 'callUpdate',
+		call = dispatch
+	})
+end)
+
+function radioToggle()
+	if authorized then
+		radActive = not radActive
+		Radio:Toggle(radActive)
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive
+		})
+		if radActive then
+			SetNuiFocusKeepInput(true)
+			SetNuiFocus(true, true)
+		else
+			SetNuiFocus(false, false)
+		end
+	else
+		SendNotification("Radio: ~r~No Permission~r~")
+	end
+end
+
+RegisterNetEvent("SonoranRadio::AuthorizeRadio")
+AddEventHandler("SonoranRadio::AuthorizeRadio", function()
+	DebugPrint("Authorized for Radio Usage")
+	authorized = true
+end)
+
+RegisterCommand('radio', radioToggle)
+RegisterCommand('sonradradio', radioToggle)
+
+RegisterCommand('radiotalk', function()
+	Radio.TalkAnim = not Radio.TalkAnim
+	if Radio.TalkAnim then
+		SendNotification("Radio Talk Animation: ~g~On~g~")
+	else
+		SendNotification("Radio Talk Animation: ~r~Off~r~")
+	end
 end)
 
 RegisterCommand('radioreset', function()
@@ -112,10 +155,9 @@ RegisterCommand('radioreset', function()
 end)
 
 -- Talking Animation
-RegisterCommand('sonradtalk', function()
-	isTalking = not isTalking
-	Radio:Talking(isTalking)
-end)
+-- RegisterCommand('sonradtalk', function()
+-- 	Radio:Talking(isTalking)
+-- end)
 
 -- Next
 RegisterCommand('sonradnext', function()
@@ -156,29 +198,53 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
-	if toggle and not inVeh then
-		if self.Open then
-			RequestAnimDict("cellphone@str")
-			while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+	if self.TalkAnim then
+		if toggle and not inVeh then
+			if self.Open then
+				RequestAnimDict("cellphone@")
+				while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+				TaskPlayAnim(PlayerPedId(), "cellphone@","cellphone_text_to_call", 8.0, 0.0, -1, 50, 0, false, false, false)
+
+				-- Wait(300)
+				-- RequestAnimDict("cellphone@str")
+				-- while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
+				-- TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 50, 0, false, false, false)
+
+				isTalking = true
+
+
+			else
+				RequestAnimDict("random@arrests")
+				while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+				TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+				isTalking = true
+			end
 		else
-			RequestAnimDict("random@arrests")
-			while not HasAnimDictLoaded("random@arrests") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+			if self.Open then
+				-- cellphone@cellphone_call_to_text
+				-- cellphone@cellphone_text_read_base
+				-- 
+
+				--StopAnimTask(PlayerPedId(), "cellphone@","cellphone_text_to_call", 4.0)
+				if inVeh then return end
+				--Citizen.Wait(700)
+				RequestAnimDict("cellphone@")
+				while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+				--TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
+				TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_call_to_text", 4.0, -1, -1, 50, 0, false, false, false)
+				isTalking = false
+			else
+				StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+				isTalking = false
+			end
 		end
 	else
-		if self.Open then
+		if isTalking then
 			StopAnimTask(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", -4.0)
-			if inVeh then return end
-			Citizen.Wait(700)
-			RequestAnimDict("cellphone@")
-			while not HasAnimDictLoaded("cellphone@") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
-		else
 			StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+			isTalking = false
 		end
 	end
-	RequestAnimDict()
 end
 
 function Radio:Toggle(toggle)
@@ -254,6 +320,7 @@ end
 
 Citizen.CreateThread(function()
     SetNuiFocus(false, false)
+	TriggerServerEvent("SonoranRadio::CheckPermissions")
     while true do
         local ped = GetPlayerPed(-1)
         if DoesEntityExist(ped) then
@@ -261,11 +328,21 @@ Citizen.CreateThread(function()
             local posArr = {math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)}
             SendNUIMessage({type = 'setPos', position = posArr })
         end
-		SendNUIMessage({type = 'time', time = GetClockHours() .. ':' .. GetClockMinutes()})
         Citizen.Wait(5000)
     end
     -- For Development Only
-    print('Sonoran Radio Started!')
+    DebugPrint('Sonoran Radio Started!')
+end)
+
+CreateThread(function()
+	while true do
+		local hours = GetClockHours()
+		local minutes = GetClockMinutes()
+		if hours < 9 then hours = "0" .. tostring(hours) end
+		if minutes < 9 then minutes = "0" .. tostring(minutes) end
+		SendNUIMessage({type = 'time', time = hours .. ':' .. minutes})
+		Wait(500)
+	end
 end)
 
 function SendNotification(message)
@@ -277,13 +354,12 @@ end
 RegisterNUICallback('data', function(data, cb)
     --print('data:' .. json.encode(data))
     if data.type == 'hide' then
-        SendNUIMessage({
-            type = 'setVisible',
-            visibility = false
-        })
-        radActive = false
-        SetNuiFocus(false, false)
-        Radio:Toggle(false)
+		radActive = false
+		Radio:Toggle(radActive)
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive
+		})
     end
 
 	if data.type == 'notify' then
@@ -307,25 +383,50 @@ end)
 
 AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
-	print('Sonoran Radio Starting...')
+	DebugPrint('Sonoran Radio Starting...')
 	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
 	TriggerEvent("chat:addSuggestion", "/radioreset", "Reconnect radio to teamspeak")
-	print('Sonoran Radio Started!')
+	TriggerEvent("chat:addSuggestion", "/radiotalk", "Toggle your radio talk animation")
+	DebugPrint('Sonoran Radio Started!')
 end)
 
 AddEventHandler('onResourceStop', function(resource)
 	if GetCurrentResourceName() ~= resource then return end
-	print('Sonoran Radio Stopping...')
+	DebugPrint('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
+	TriggerEvent("chat:removeSuggestion", "/radiotalk")
 	Radio:Destroy()
 end)
 
 RegisterNetEvent('SonoranRadio::GetRadios:Return')
 AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
-    local src = source
 	SendNUIMessage({
 		type = "getRadios",
 		radios = radios
 	})
+end)
+
+CreateThread(function()
+	while true do
+
+		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
+		local prevState = inVehicle
+		--DebugPrint("Getting Players Vehicle")
+
+		if not IsPedInAnyVehicle(PlayerPedId(), false) then 
+			-- player is in vehicle
+			inVehicle = false
+		else
+			inVehicle = true
+		end
+
+		--DebugPrint("Updating Radio State")
+		SendNUIMessage({
+			type = "inVehicle",
+			vehState = inVehicle
+		})
+		
+		Wait(100)
+	end
 end)

@@ -8,3 +8,5 @@ Config.autoUpdateUrl = "https://download.sonoransoftware.com/sonoranradio/versio
 Config.allowAutoUpdate = true
 Config.noPhysicalTowers = false
 Config.towerRepairTimer = 20
+Config.acePermsForRadio = false
+Config.acePermsForTowerRepair = false
