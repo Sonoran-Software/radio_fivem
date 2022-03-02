@@ -60,14 +60,8 @@ local function CreateTowerDish(tower, index, n)
     local dishModel = GetHashKey("sonoran")
     LoadModelSync(dishModel)
 
-    local theta = ((index - 1) * math.pi * 2) / n
-    -- in a normal unit circle, cos is x and sin is y. however, we need y to be the forward direction (and 1 @ theta=0.0)
-    -- so we do some unconventional stuff here to ascertain the offsets
-    local offx = -math.sin(theta) * 1.6
-    local offy = math.cos(theta) * 1.6
-
-    local offset = GetOffsetFromEntityInWorldCoords(tower.Handle, offx, offy, 11.75)
-    local dishHndl = CreateVehicle(dishModel, offset.x, offset.y, offset.z, 0.0, false, false)
+    local spawnPos = GetEntityCoords(tower.Handle)
+    local dishHndl = CreateVehicle(dishModel, spawnPos.x, spawnPos.y, spawnPos.z, 0.0, false, false)
     SetEntityAsMissionEntity(dishHndl, true, true)
     FreezeEntityPosition(dishHndl, true)
     if tower.Destruction then
@@ -82,10 +76,14 @@ local function CreateTowerDish(tower, index, n)
     -- NOTE: later, this is set to 0 when the dish is killed. this is so that the dish doesn't get "destroyed" when it's killed
     DecorSetInt(dishHndl, "sonrad_dish", 1)
 
-    -- update the rotation of the antenna based on the initial rotation of the tower + theta
-    -- also, thanks GTA for working in radians in some places and degrees in others (╯°□°）╯︵ ┻━┻
-    local baseRot = GetEntityRotation(tower.Handle, 0)
-    SetEntityRotation(dishHndl, baseRot.x, baseRot.y, baseRot.z + (theta * 180 / math.pi), 0, true)
+    local theta = ((index - 1) * math.pi * 2) / n
+    -- in a normal unit circle, cos is x and sin is y. however, we need y to be the forward direction (and 1 @ theta=0.0)
+    -- so we do some unconventional stuff here to ascertain the offsets
+    local offx = -math.sin(theta) * 1.6
+    local offy = math.cos(theta) * 1.6
+
+    local zRot = (theta * 180.0 / math.pi)
+    AttachEntityToEntity(dishHndl, tower.Handle, -1, offx, offy, 11.7, 0.0, 0.0, zRot, false, false, true, false, 0, true)
 
     SetModelAsNoLongerNeeded(dishModel)
     if not tower.Dishes then tower.Dishes = {} end
@@ -119,13 +117,20 @@ local function SyncDishStatus(tower, playSound)
 end
 
 local function CreateTowerLadder(tower)
+    -- if the tower isn't aligned almost straight up, then omit the ladder
+    -- this is because GTA will be weird if going up a ladder rotated in x or y directions
+    if #GetEntityRotation(tower.Handle, 0).xy > 2.0 then
+        return
+    end
+
     if DoesEntityExist(tower.Ladder) then DeleteEntity(tower.Ladder) end
     local model = GetHashKey("prop_radio_tower_ladder")
     LoadModelSync(model)
 
     local off = GetOffsetFromEntityInWorldCoords(tower.Handle, 0.0, 0.3, -0.4)
     local ladder = CreateObject(model, off.x, off.y, off.z, false, false, false)
-    SetEntityRotation(ladder, GetEntityRotation(tower.Handle, 0) + vec(0.0, 0.0, 285.0), 0)
+
+    AttachEntityToEntity(ladder, tower.Handle, -1, 0.0, 0.3, 10.45, 0.0, 0.0, 285.0, false, false, true, false, 5, true)
 
     tower.Ladder = ladder
     SetModelAsNoLongerNeeded(model)
@@ -220,7 +225,8 @@ CreateThread(function()
             end
 
             -- recreate the tower completely if anything is missing
-            local recreate = tower.Spawned and not (DoesEntityExist(tower.Handle) and DoesEntityExist(tower.Ladder))
+            -- NOTE: not including the ladder, as it will be omitted on certain conditions
+            local recreate = tower.Spawned and not DoesEntityExist(tower.Handle)
             local n = tower.Dishes and #tower.Dishes or 0
             for j = 1, n do
                 if not recreate then
