@@ -87,6 +87,7 @@ local Radio = {
 		"generic_radio_chatter",
 	},
 	Clicks = true, -- Radio clicks
+	TalkAnim = true
 }
 
 -- Disable Attack when Radio is Open
@@ -137,6 +138,15 @@ end)
 RegisterCommand('radio', radioToggle)
 RegisterCommand('sonradradio', radioToggle)
 
+RegisterCommand('radiotalk', function()
+	Radio.TalkAnim = not Radio.TalkAnim
+	if Radio.TalkAnim then
+		SendNotification("Radio Talk Animation: ~g~On~g~")
+	else
+		SendNotification("Radio Talk Animation: ~r~Off~r~")
+	end
+end)
+
 RegisterCommand('radioreset', function()
 	SendNUIMessage({
 		type = 'reset'
@@ -144,10 +154,9 @@ RegisterCommand('radioreset', function()
 end)
 
 -- Talking Animation
-RegisterCommand('sonradtalk', function()
-	isTalking = not isTalking
-	Radio:Talking(isTalking)
-end)
+-- RegisterCommand('sonradtalk', function()
+-- 	Radio:Talking(isTalking)
+-- end)
 
 -- Next
 RegisterCommand('sonradnext', function()
@@ -188,29 +197,53 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
-	if toggle and not inVeh then
-		if self.Open then
-			RequestAnimDict("cellphone@str")
-			while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+	if self.TalkAnim then
+		if toggle and not inVeh then
+			if self.Open then
+				RequestAnimDict("cellphone@")
+				while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+				TaskPlayAnim(PlayerPedId(), "cellphone@","cellphone_text_to_call", 8.0, 0.0, -1, 50, 0, false, false, false)
+
+				-- Wait(300)
+				-- RequestAnimDict("cellphone@str")
+				-- while not HasAnimDictLoaded("cellphone@str") do Wait(5) end
+				-- TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 50, 0, false, false, false)
+
+				isTalking = true
+
+
+			else
+				RequestAnimDict("random@arrests")
+				while not HasAnimDictLoaded("random@arrests") do Wait(5) end
+				TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+				isTalking = true
+			end
 		else
-			RequestAnimDict("random@arrests")
-			while not HasAnimDictLoaded("random@arrests") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "random@arrests","generic_radio_chatter", 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+			if self.Open then
+				-- cellphone@cellphone_call_to_text
+				-- cellphone@cellphone_text_read_base
+				-- 
+
+				--StopAnimTask(PlayerPedId(), "cellphone@","cellphone_text_to_call", 4.0)
+				if inVeh then return end
+				--Citizen.Wait(700)
+				RequestAnimDict("cellphone@")
+				while not HasAnimDictLoaded("cellphone@") do Wait(5) end
+				--TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
+				TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_call_to_text", 4.0, -1, -1, 50, 0, false, false, false)
+				isTalking = false
+			else
+				StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+				isTalking = false
+			end
 		end
 	else
-		if self.Open then
+		if isTalking then
 			StopAnimTask(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", -4.0)
-			if inVeh then return end
-			Citizen.Wait(700)
-			RequestAnimDict("cellphone@")
-			while not HasAnimDictLoaded("cellphone@") do Wait(5) end
-			TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
-		else
 			StopAnimTask(PlayerPedId(), "random@arrests","generic_radio_chatter", -4.0)
+			isTalking = false
 		end
 	end
-	RequestAnimDict()
 end
 
 function Radio:Toggle(toggle)
@@ -320,7 +353,12 @@ end
 RegisterNUICallback('data', function(data, cb)
     --print('data:' .. json.encode(data))
     if data.type == 'hide' then
-		toggleRadio()
+		radActive = false
+		Radio:Toggle(radActive)
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive
+		})
     end
 
 	if data.type == 'notify' then
@@ -347,6 +385,7 @@ AddEventHandler('onResourceStart', function(resource)
 	DebugPrint('Sonoran Radio Starting...')
 	TriggerEvent("chat:addSuggestion", "/radio", "Open the Sonoran Radio Interface")
 	TriggerEvent("chat:addSuggestion", "/radioreset", "Reconnect radio to teamspeak")
+	TriggerEvent("chat:addSuggestion", "/radiotalk", "Toggle your radio talk animation")
 	DebugPrint('Sonoran Radio Started!')
 end)
 
@@ -355,6 +394,7 @@ AddEventHandler('onResourceStop', function(resource)
 	DebugPrint('Sonoran Radio Stopping...')
 	TriggerEvent("chat:removeSuggestion", "/radio")
 	TriggerEvent("chat:removeSuggestion", "/radioreset")
+	TriggerEvent("chat:removeSuggestion", "/radiotalk")
 	Radio:Destroy()
 end)
 
