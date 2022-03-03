@@ -360,6 +360,8 @@ RegisterNUICallback('data', function(data, cb)
 			type = 'setVisible',
 			visibility = radActive
 		})
+		SetNuiFocusKeepInput(false)
+		SetNuiFocus(false, false)
     end
 
 	if data.type == 'notify' then
