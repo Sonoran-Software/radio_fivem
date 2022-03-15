@@ -120,7 +120,6 @@ function radioToggle()
 			visibility = radActive
 		})
 		if radActive then
-			SetNuiFocusKeepInput(true)
 			SetNuiFocus(true, true)
 		else
 			SetNuiFocus(false, false)
