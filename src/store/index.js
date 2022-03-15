@@ -5,10 +5,11 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
     state: {
+        sublvl: 0,
         currFreq: {
-            name: "Not Connected",
-            recv: [155,195],
-            xmit: [155,195]
+            name: "Disconnected",
+            recv: ['xxx','xxx'],
+            xmit: ['xxx','xxx']
         },
         gamestate: {
             position: [],
@@ -40,7 +41,35 @@ export default new Vuex.Store({
         subLevel: null,
         radios: []
     },
-    getters: {},
-    mutations: {},
+    getters: {
+        presets(state) {
+            return state.presets;
+        },
+        scanner(state) {
+            return {list: state.scanned, status: state.scanning};
+        }
+    },
+    mutations: {
+        setConnected(state, connected) {
+            state.statusText = connected ? "Connected" : "Disconnected";
+            state.currFreq.name = state.statusText;
+            state.connColor = connected ? "lightblue" : "gray";
+            state.connColorDefault = connected ? "lightblue" : "gray";
+            if (!connected) {
+                state.sublvl = 0;
+                state.currFreq.recv = ['xxx', 'xxx'];
+                state.currFreq.xmit = ['xxx', 'xxx'];
+                state.presets = [];
+                state.scanned = [];
+                state.scanning = false;
+            }
+        },
+        setPresets(state, presets) {
+            state.presets = presets;
+        },
+        setScanList(state, list) {
+            state.scanned = list;
+        }
+    },
     actions: {}
 })

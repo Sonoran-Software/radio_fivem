@@ -420,31 +420,22 @@ export default {
                     }
                 } else {
                     switch (data.type) {
-                    case "recv_controller_data":
+                    case "recv_controller_data": {
                         let currstate = data.data.state;
-                        this.$store.state.statusText = "Connected";
-                        this.$store.state.currFreq.name = "Custom Frequency";
+                        this.$store.commit('setConnected', true);
                         this.$store.state.currFreq.recv = currstate.freq_recv;
                         this.$store.state.currFreq.xmit = currstate.freq_xmit;
-                        this.$store.state.scanned = [];
-                        currstate.freq_scan.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
-                        })
+                        this.$store.commit('setScanList', currstate.freq_scan);
                         this.$store.state.scanning = currstate.enable_scan;
-                        let presetarr = data.data.config.profiles;
-                        this.$store.state.presets = [];
-                        presetarr.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
-                        });
+                        this.$store.commit('setPresets', data.data.config.profiles.map(x => ({
+                            display_name: x.display_name,
+                            freq_recv: x.freq_recv,
+                            freq_xmit: x.freq_xmit
+                        })));
                         this.$store.state.sublvl = data.data.config.sublvl;
-                        this.$store.state.connColor = "lightblue";
-                        this.$store.state.connColorDefault = "lightblue";
                         this.updateFreqLabel();
                         break;
+                    }
                     case "frequencies_updated":
                         this.$store.state.currFreq.recv = data.freq_recv;
                         this.$store.state.currFreq.xmit = data.freq_xmit;
@@ -461,49 +452,32 @@ export default {
                         // Ignore for Now, will be needed for messaging and status.
 
                         break;
-                    case "controller_created":
+                    case "controller_created": {
                         // Needs to set all of the controller config and status.
                         let newstate = data.data.state;
-                        this.$store.state.statusText = "Connected";
-                        this.$store.state.currFreq.name = "Custom Frequency";
+                        this.$store.commit('setConnected', true);
                         this.$store.state.currFreq.recv = newstate.freq_recv;
                         this.$store.state.currFreq.xmit = newstate.freq_xmit;
-                        this.$store.state.scanned = [];
-                        newstate.freq_scan.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
-                        });
-                        let newpresets = data.data.config.profiles;
-                        this.$store.state.presets = [];
-                        newpresets.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
-                        });
-                        this.$store.state.connColor = "lightblue";
-                        this.$store.state.connColorDefault = "lightblue";
+                        this.$store.commit('setScanList', newstate.freq_scan);
+                        this.$store.state.scanning = newstate.enable_scan;
+                        this.$store.commit('setPresets', data.data.config.profiles.map(x => ({
+                            display_name: x.display_name,
+                            freq_recv: x.freq_recv,
+                            freq_xmit: x.freq_xmit
+                        })));
                         break;
+                    }
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
-                        this.$store.state.statusText = "Disconnected";
-                        this.$store.state.currFreq.name = "Not Connected";
-                        this.$store.state.currFreq.recv = ["xxx","xxx"];
-                        this.$store.state.currFreq.xmit = ["xxx","xxx"];
-                        this.$store.state.connColor = "gray";
-                        this.$store.state.connColorDefault = "gray";
+                        this.$store.commit('setConnected', false);
                         break;
                     case "config_changed":
                         // Needs to update the current state with the new configuration.
-                        let cfgpresets = data.data.profiles;
-                        this.$store.state.presets = [];
-                        cfgpresets.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
-                        });
+                        this.$store.commit('setPresets', data.data.profiles.map(x => ({
+                            display_name: x.display_name,
+                            freq_recv: x.freq_recv,
+                            freq_xmit: x.freq_xmit
+                        })));
                         break;
                     case "client_xmit_change":
                         if (data.can_hear) {
