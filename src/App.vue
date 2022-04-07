@@ -109,10 +109,20 @@ export default {
             showTopRadio: false,
             showMobileRadio: false,
             radioPower: false,
-            subLevel: null,
             currPreset: 0,
             currScreen: "",
             inVehicle: false
+        }
+    },
+    computed: {
+        stateFreqName() {
+            return this.$store.getters.freqName;
+        }
+    },
+    watch: {
+        stateFreqName(newVal, oldVal) {
+            if (!this.$store.state.connected) return;
+            this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
         }
     },
     created() {
@@ -185,54 +195,16 @@ export default {
                     }
                     break;
                 case 'callUpdate':
-                    try {
-                        console.log(event.data.call);
-                        let call = event.data.call;
-                        this.$store.state.call.code = call.code;
-                        this.$store.state.call.title = call.title;
-                        this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
-                        this.$store.state.call.description = call.description;
-                        this.$store.state.connColor = "green";
-                    } catch (e) {
-                        console.error("Failed to update call information");
-                        console.error(e);
-                    }
+                    this.$store.commit('setCall', event.data.call);
                     break;
                 case 'unitStatus':
-                    let status = "Unknown";
-                    switch (event.data.status) {
-                        case 0:
-                            this.$store.state.statusText = "Unavailable";
-                            break;
-                        case 1:
-                            this.$store.state.statusText = "Busy";
-                            break;
-                        case 2:
-                            this.$store.state.statusText = "Available";
-                            break;
-                        case 3:
-                            this.$store.state.statusText = "En Route";
-                            break;
-                        case 4:
-                            this.$store.state.statusText = "On Scene";
-                            break;
-                        default:
-                            this.$store.state.statusText = "Clocked Out";
-                            break;
-                    }
-                    if (event.data.status > 0) this.$store.state.connColor = "green";
-
+                    this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios':
-                    let activeRadios = [];
-                    event.data.radios.forEach(radio => {
-                        if (radio) {
-                            //console.log(`Radio ID: ${radio.id} Radio Name: ${radio.name}`)
-                            if (radio.id && radio.name) activeRadios.push(radio);
-                        }
-                    });
-                    this.$store.state.radios = activeRadios;
+                case 'getRadios': {
+                    let activeRadios = event.data.radios.filter(radio => radio && radio.id && radio.name);
+                    this.$store.commit('setActiveRadios', activeRadios);
                     break;
+                }
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
                     //console.log("inVehicle: " + this.inVehicle);
@@ -257,9 +229,6 @@ export default {
         // update the gamestate with an interval
         setInterval(this.updateGamestate.bind(this), 2500);
     },
-    // beforeUnmount() {
-    //     window.removeEventListener('message');
-    // },
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
@@ -292,7 +261,7 @@ export default {
         sendRadioMessage(event) {
             let recipient = event.recipient;
             let payload = event.payload;
-            console.log(`msgOutbound: ${recipient} ${payload}`)
+            console.log(`msgOutbound: ${recipient} ${payload}`);
             this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload});
             this.notifyPlayer("Radio: ~g~Message Sent");
         },
@@ -339,33 +308,8 @@ export default {
                 freq_recv: [parseInt(this.$store.state.currFreq.recv[0]),parseInt(this.$store.state.currFreq.recv[1])],
                 freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]),parseInt(this.$store.state.currFreq.xmit[1])]
             })
-            this.$store.state.currFreq.name = "Custom Frequency";
-            this.updateFreqLabel();
-        },
-        updateFreqLabel() {
-            let custom = true;
-            this.$store.state.presets.forEach(el => {
-                //this.$store.state.currFreq.name = "Custom Frequency";
-                try {
-                    if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
-                        el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
-                        el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
-                        el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
-                            this.$store.state.currFreq.name = el.display_name;
-                            this.notifyPlayer("Channel: ~y~" + el.display_name);
-                            custom = false;
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            });
-            if (custom) {
-                this.$store.state.currFreq.name = "Custom Frequency";
-                this.notifyPlayer("Channel: ~y~Custom Frequency");
-            }
         },
         setScreen(name) {
-            //console.log(name);
             this.currScreen = name;
         },
         nextPreset() {
@@ -375,7 +319,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset++;
-                this.updateFreqLabel();
             }
         },
         prevPreset() {
@@ -385,7 +328,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset--;
-                this.updateFreqLabel();
             }
         },
         goToPreset(number) {
@@ -395,7 +337,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset = number;
-                this.updateFreqLabel();
             }
         },
         setupSocket() {
@@ -408,8 +349,6 @@ export default {
         socketMessage(event) {
             if (event.data) {
                 let data = JSON.parse(event.data);
-                //console.log("Received " + data.type + " message:");
-                //console.log(data);
                 if (data.error) {
                     // Handle Error Status
                     if (data.msg) {
@@ -419,34 +358,33 @@ export default {
                         }
                     }
                 } else {
+                    // for now, only accept events coming globally OR from the first connection
+                    if (typeof data.cid !== 'undefined' && data.cid !== 1) return;
+
                     switch (data.type) {
                     case "recv_controller_data": {
-                        let currstate = data.data.state;
+                        const { state: currstate, config } = data.data;
                         this.$store.commit('setConnected', true);
-                        this.$store.state.currFreq.recv = currstate.freq_recv;
-                        this.$store.state.currFreq.xmit = currstate.freq_xmit;
+                        this.$store.commit('setFreqs', {
+                            recv: currstate.freq_recv,
+                            xmit: currstate.freq_xmit
+                        });
                         this.$store.commit('setScanList', currstate.freq_scan);
-                        this.$store.state.scanning = currstate.enable_scan;
-                        this.$store.commit('setPresets', data.data.config.profiles.map(x => ({
-                            display_name: x.display_name,
-                            freq_recv: x.freq_recv,
-                            freq_xmit: x.freq_xmit
-                        })));
-                        this.$store.state.sublvl = data.data.config.sublvl;
-                        this.updateFreqLabel();
+                        this.$store.commit('setScanState', currstate.enable_scan);
+                        this.$store.commit('setConfig', config);
                         break;
                     }
-                    case "frequencies_updated":
-                        this.$store.state.currFreq.recv = data.freq_recv;
-                        this.$store.state.currFreq.xmit = data.freq_xmit;
-                        this.updateFreqLabel();
+                    case "frequencies_updated": {
+                        const { freq_recv, freq_xmit } = data;
+                        this.$store.commit('setFreqs', {
+                            recv: freq_recv,
+                            xmit: freq_xmit,
+                        });
                         break;
+                    }
                     case "frequencies_scanned_updated":
-                        this.$store.state.scanned = [];
-                        data.freqs.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
-                        })
-                        this.$store.state.scanning = data.enabled;
+                        this.$store.commit('setScanList', data.freqs);
+                        this.$store.commit('setScanState', data.enabled);
                         break;
                     case "channel_clients_changed":
                         // Ignore for Now, will be needed for messaging and status.
@@ -454,17 +392,15 @@ export default {
                         break;
                     case "controller_created": {
                         // Needs to set all of the controller config and status.
-                        let newstate = data.data.state;
+                        let {state, config} = data.data;
                         this.$store.commit('setConnected', true);
-                        this.$store.state.currFreq.recv = newstate.freq_recv;
-                        this.$store.state.currFreq.xmit = newstate.freq_xmit;
-                        this.$store.commit('setScanList', newstate.freq_scan);
-                        this.$store.state.scanning = newstate.enable_scan;
-                        this.$store.commit('setPresets', data.data.config.profiles.map(x => ({
-                            display_name: x.display_name,
-                            freq_recv: x.freq_recv,
-                            freq_xmit: x.freq_xmit
-                        })));
+                        this.$store.commit('setFreqs', {
+                            recv: state.freq_recv,
+                            xmit: state.freq_xmit,
+                        });
+                        this.$store.commit('setScanList', state.freq_scan);
+                        this.$store.commit('setScanState', state.enable_scan);
+                        this.$store.commit('setConfig', config);
                         break;
                     }
                     case "controller_destroyed":
@@ -472,52 +408,15 @@ export default {
                         this.$store.commit('setConnected', false);
                         break;
                     case "config_changed":
-                        // Needs to update the current state with the new configuration.
-                        this.$store.commit('setPresets', data.data.profiles.map(x => ({
-                            display_name: x.display_name,
-                            freq_recv: x.freq_recv,
-                            freq_xmit: x.freq_xmit
-                        })));
+                        this.$store.commit('setConfig', data.data);
                         break;
                     case "client_xmit_change":
-                        if (data.can_hear) {
-                            switch (data.xmit_type) {
-                                case "self_talk_permit":
-                                    this.$store.state.voicestate.xmit = true;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = data.client.nickname;
-                                    this.$store.state.connColor = "red";
-                                    this.postClient({ type: 'talking', talking: true })
-                                    break;
-                                case "self_squelch":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = "";
-                                    this.$store.state.connColor = this.$store.state.connColorDefault;
-                                    this.postClient({ type: 'talking', talking: false })
-                                    break;
-                                case "unit_talk_permit":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = true;
-                                    this.$store.state.voicestate.talker = data.client.nickname;
-                                    this.$store.state.connColor = "yellow";
-                                    break;
-                                case "unit_squelch":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = "";
-                                    this.$store.state.connColor = this.$store.state.connColorDefault;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            if (data.xmit_type == "self_talk_permit") {
-                                console.log("Self Talk Permit")
-
-                            } else if (data.xmit_type == "self_squelch") {
-                                console.log("Self Squelch")
-                            }
-                        }
+                        if (data.xmit_type.startsWith('self'))
+                            this.postClient({
+                                type: 'talking',
+                                talking: data.xmit_type.includes('talk_permit')
+                            });
+                        this.$store.commit('addXmitState', data);
                         break;
                     default:
                         console.log("**Unhandled Socket Message**");
@@ -536,7 +435,6 @@ export default {
             this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
         },
         socketClose(event) {
-            //console.log("Socket connection lost, reconnecting...");
             this.setupSocket();
         },
         sendToSocket(data) {
@@ -545,12 +443,11 @@ export default {
                 // TODO: Replace with checking the connection state.
                 this.connection.send(JSON.stringify(data));
             } catch (err) {
-
+                console.error(err);
             }
         },
         toggleScan(event) {
-            //console.log(event);
-            this.$store.state.scanning = !this.$store.state.scanning;
+            this.$store.commit('setScanState', !this.$store.state.scanning);
             this.sendToSocket({
                 type: "set_scanning_enabled",
                 enabled: this.$store.state.scanning

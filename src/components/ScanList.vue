@@ -16,44 +16,26 @@
                 <div class="sc-ch-header">View Only</div>
                 <div class="sc-ch-freq">Upgrade to Pro</div>
             </div>
-            <div class="sc-ch" v-for="preset in presets" :key="preset.display_name">
+            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name">
                 <div class="sc-ch-header">{{ preset.display_name }}</div>
                 <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
         </div>
         <div class="sc-body" v-if="$store.state.sublvl > 1">
             <div class="sc-row" v-on:click="$emit('toggle-scan', '')">
-                <div class="sc-row-label">Scan {{ (isScanning ? "enabled" : "disabled") }}</div>
+                <div class="sc-row-label">Scan {{ ($store.state.scanning ? "enabled" : "disabled") }}</div>
                 <div class="sc-row-icon">
-                    <i class="fas fa-toggle-off" v-if="!isScanning"></i>
+                    <i class="fas fa-toggle-off" v-if="!$store.state.scanning"></i>
                     <i class="fas fa-toggle-on" v-else></i>
                 </div>
             </div>
-            <div class="sc-row" v-for="freq in scanned" :key="freq.id">
+            <div class="sc-row" v-for="freq in $store.state.scanned" :key="freq.id">
                 <div class="sc-row-label">{{freq[0]}}.{{freq[1]}}</div>
                 <div class="sc-row-icon" v-on:click="$emit('del-scanned', freq)">&times;</div>
             </div>
         </div>
     </div>
 </template>
-
-<script>
-import vue from 'vue';
-
-export default {
-    computed: {
-        presets() {
-            return this.$store.getters.presets;
-        },
-        scanned() {
-            return this.$store.getters.scanner.list;
-        },
-        isScanning() {
-            return this.$store.getters.scanner.status;
-        }
-    }
-}
-</script>
 
 <style scoped>
 .screen {
