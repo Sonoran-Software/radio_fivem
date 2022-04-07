@@ -5,9 +5,9 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
     state: {
+        connected: false,
         sublvl: 0,
         currFreq: {
-            name: "Disconnected",
             recv: ['xxx','xxx'],
             xmit: ['xxx','xxx']
         },
@@ -16,11 +16,8 @@ export default new Vuex.Store({
             radio_powered: false,
             tower_quality: 1
         },
-        voicestate: {
-            recv: false,
-            xmit: false,
-            talker: ""
-        },
+        talkers: [],
+        unitStatus: -1,
         call: {
             code: "",
             title: "",
@@ -32,43 +29,109 @@ export default new Vuex.Store({
             id: null,
             name: null
         },
-        connColor: 'gray',
-        connColorDefault: 'gray',
         presets: [],
         scanned: [],
         scanning: false,
-        statusText: "Disconnected",
-        subLevel: null,
         radios: []
     },
+    // TODO: getter for frequency label & sub level
     getters: {
-        presets(state) {
-            return state.presets;
+        statusText(state) {
+            const unitStatusNames = [
+                "Unavailable",
+                "Busy",
+                "Available",
+                "En Route",
+                "On Scene",
+                "Clocked Out"
+            ];
+            if (state.unitStatus < 0)
+                return state.connected ? 'Connected' : 'Disconnected';
+            else
+                return unitStatusNames[state.unitStatus];
         },
-        scanner(state) {
-            return {list: state.scanned, status: state.scanning};
+        connColor(state) {
+            if (!state.connected)
+                return "gray";
+            else if (state.talkers.find(t => t.isSelf))
+                return "red";
+            else if (state.talkers.length > 0)
+                return "yellow";
+            else if (state.call.title != '' || state.unitStatus > 0)
+                return "green";
+            else
+                return "lightblue";
+        },
+        freqName(state) {
+            const {recv, xmit} = state.currFreq;
+            for (const p of state.presets) {
+                const {freq_recv, freq_xmit} = p;
+                if (freq_recv[0] === recv[0] &&
+                    freq_recv[1] === recv[1] &&
+                    freq_xmit[0] === xmit[0] &&
+                    freq_xmit[1] === xmit[1]) {
+                    return p.display_name || null;
+                }
+            }
+            return null;
         }
     },
     mutations: {
         setConnected(state, connected) {
-            state.statusText = connected ? "Connected" : "Disconnected";
-            state.currFreq.name = state.statusText;
-            state.connColor = connected ? "lightblue" : "gray";
-            state.connColorDefault = connected ? "lightblue" : "gray";
+            state.connected = connected;
             if (!connected) {
                 state.sublvl = 0;
                 state.currFreq.recv = ['xxx', 'xxx'];
                 state.currFreq.xmit = ['xxx', 'xxx'];
+                state.unitStatus = -1;
                 state.presets = [];
                 state.scanned = [];
                 state.scanning = false;
             }
         },
-        setPresets(state, presets) {
-            state.presets = presets;
+        setConfig(state, config) {
+            state.sublvl = config.sublvl;
+            state.presets = config.profiles.map(x => ({
+                display_name: x.display_name,
+                freq_recv: x.freq_recv,
+                freq_xmit: x.freq_xmit,
+            }));
+        },
+        setFreqs(state, { recv, xmit }) {
+            state.currFreq.recv = recv;
+            state.currFreq.xmit = xmit;
         },
         setScanList(state, list) {
-            state.scanned = list;
+            state.scanned = [...list];
+        },
+        setScanState(state, status) {
+            state.scanning = status;
+        },
+        addXmitState(state, { xmit_type, can_hear, client }) {
+            if (xmit_type.includes('talk_permit') && can_hear) {
+                state.talkers.push({
+                    id: client.id,
+                    nickname: client.nickname,
+                    isSelf: client.self,
+                });
+            } else if (xmit_type.includes('squelch')) {
+                // remove from talkers by client id
+                state.talkers = state.talkers.filter(talker => talker.id !== client.id);
+            }
+        },
+        setCall(state, { code, title, postal, address, description }) {
+            try {
+                state.call.code = code;
+                state.call.title = title;
+                state.call.location = (postal != "" ? postal + " " + address : address);
+                state.call.description = description;
+            } catch (e) {
+                console.error("Failed to update call information");
+                console.error(e);
+            }
+        },
+        setActiveRadios(state, radios) {
+            state.radios = radios;
         }
     },
     actions: {}

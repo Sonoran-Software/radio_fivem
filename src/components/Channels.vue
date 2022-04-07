@@ -16,7 +16,7 @@
                 <div class="sc-ch-header">View Only</div>
                 <div class="sc-ch-freq">Upgrade to Plus</div>
             </div>
-            <div class="sc-ch" v-for="preset in presets" :key="preset.display_name">
+            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name">
                 <div class="sc-ch-header">{{ preset.display_name }}</div>
                 <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
@@ -26,7 +26,7 @@
                 <div class="sc-row-label">Custom</div>
                 <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
             </div>
-            <div class="sc-ch" v-for="preset in presets" :key="preset.display_name" v-on:click="setFrequency(preset.freq_xmit, preset.freq_recv)">
+            <div class="sc-ch" v-for="preset in $store.state.presets" :key="preset.display_name" v-on:click="setFrequency(preset.freq_xmit, preset.freq_recv)">
                 <div class="sc-ch-header">{{ preset.display_name }}</div>
                 <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
@@ -35,20 +35,13 @@
 </template>
 
 <script>
-import vue from 'vue';
-
 export default {
-    computed: {
-        presets() {
-            return this.$store.getters.presets;
-        }
-    },
     methods: {
         setFrequency(xmit, recv) {
-            this.$store.state.currFreq.xmit[0] = xmit[0];
-            this.$store.state.currFreq.xmit[1] = xmit[1];
-            this.$store.state.currFreq.recv[0] = recv[0];
-            this.$store.state.currFreq.recv[1] = recv[1];
+            this.$store.commit('setFreqs', {
+                xmit,
+                recv
+            });
             this.$emit('set-frequency','');
             this.$emit('set-screen','');
         }

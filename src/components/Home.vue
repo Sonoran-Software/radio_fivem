@@ -1,7 +1,7 @@
 <template>
     <div class="screen">
         <div class="sc-header">
-            <div class="sc-header-status">{{ $store.state.statusText }}</div>
+            <div class="sc-header-status">{{ $store.getters.statusText }}</div>
             <!--<img class="sc-battery" :src="`../static/radio-portable-battery.png`">-->
             <div class="sc-time">{{ currTime }}</div>
         </div>
@@ -12,7 +12,7 @@
                         My Status
                     </div>
                     <div class="content">
-                        {{ $store.state.statusText }}
+                        {{ $store.getters.statusText }}
                     </div>
                 </div>
                 <div class="sc-status-icons">
@@ -21,22 +21,20 @@
             </div>
             <div class="sc-spacer">
             </div>
-            <div class="sc-container" v-bind:style="{ backgroundColor: $store.state.connColor }">
+            <div class="sc-container" v-bind:style="{ backgroundColor: $store.getters.connColor }">
                 <div class="sc-channel">
                     <div class="header" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">
-                        {{ $store.state.currFreq.name }}
+                        {{ $store.getters.freqName || "Custom" }}
                     </div>
                     <div class="sc-channel-text">
-                        <div class="content" v-if="(!($store.state.voicestate.recv) && (!$store.state.voicestate.xmit))">
+                        <div v-if="$store.state.talkers.length === 0" class="content">
                             Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
                             Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
-                            {{ $store.state.voicestate.talker }}
                         </div>
-                        <div class="content" v-if="$store.state.voicestate.recv">
-                            {{ $store.state.voicestate.talker }}
-                        </div>
-                        <div class="content" v-if="$store.state.voicestate.xmit">
-                            {{ $store.state.voicestate.talker }}
+                        <div v-else class="content">
+                            <div v-for="t in $store.state.talkers" :key="t.id">
+                                {{ t.nickname }}
+                            </div>
                         </div>
                         <div class="sc-channel-icons">
                             <i class="fas fa-house-user" v-on:click="$emit('go-home', 0)"></i>
