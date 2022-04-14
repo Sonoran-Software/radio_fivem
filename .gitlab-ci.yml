@@ -19,7 +19,7 @@ resource-build:
         export RESOURCE_VERSION="$CI_COMMIT_REF_NAME@$CI_PIPELINE_IID"
       fi
     - envsubst < version.json > build/version.json
-    - envsubst < build/sonoranradio/fxmanifest.lua
+    - envsubst < fxmanifest.prod.lua > build/sonoranradio/fxmanifest.lua
   artifacts:
     paths:
       - build
