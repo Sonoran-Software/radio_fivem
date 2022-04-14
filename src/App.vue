@@ -438,13 +438,8 @@ export default {
             this.setupSocket();
         },
         sendToSocket(data) {
-            try {
-                // Suppress Any Connection Issues
-                // TODO: Replace with checking the connection state.
+            if (this.connection.readyState === WebSocket.OPEN)
                 this.connection.send(JSON.stringify(data));
-            } catch (err) {
-                console.error(err);
-            }
         },
         toggleScan(event) {
             this.$store.commit('setScanState', !this.$store.state.scanning);

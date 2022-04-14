@@ -70,15 +70,15 @@ local Radio = {
 	On = false,
 	Enabled = true,
 	Handle = nil,
-	Prop = `prop_cs_hand_radio`,
+	Prop = GetHashKey('prop_cs_hand_radio'),
 	Bone = 28422,
 	Offset = vector3(0.0, 0.0, 0.0),
 	Rotation = vector3(0.0, 0.0, 0.0),
 	Dictionary = {
 		"cellphone@",
 		"cellphone@in_car@ds",
-		"cellphone@str",    
-		"random@arrests",  
+		"cellphone@str",
+		"random@arrests",
 	},
 	Animation = {
 		"cellphone_text_in",
@@ -286,7 +286,7 @@ function Radio:Toggle(toggle)
 		end
 		self.Handle = CreateObject(self.Prop, 0.0, 0.0, 0.0, true, true, false)
 		local bone = GetPedBoneIndex(playerPed, self.Bone)
-		SetCurrentPedWeapon(playerPed, `weapon_unarmed`, true)
+		SetCurrentPedWeapon(playerPed, GetHashKey('weapon_unarmed'), true)
 		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
