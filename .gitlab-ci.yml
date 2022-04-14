@@ -1,24 +1,47 @@
-Deploy-Production-SonoranRadioFiveMResource:
+resource-build:
+  stage: build
+  script:
+    # copy a clean node_modules for the build
+    - yarn --prod
+    - cp node_modules build/sonoranradio
+    # build the program and copy all files over
+    - yarn
+    - yarn build
+    - cp -rf lua build/sonoranradio
+    - cp -rf sonrad_tower/* build/sonoranradio
+    - cp -rf towers.json build/sonoranradio
+    - cp -rf dist build/sonoranradio
+    # set the version of version.json and fxmanifest.lua
+    - >-
+      if [[ -n "$CI_COMMIT_TAG" ]]; then
+        export RESOURCE_VERSION="$CI_COMMIT_TAG"
+      else
+        export RESOURCE_VERSION="$CI_COMMIT_REF_NAME@CI_PIPELINE_IID"
+      fi
+    - cat version.json | envsubst | tee build/version.json
+    - cat build/sonoranradio/fxmanifest.lua | envsubst | tee build/sonoranradio/fxmanifest.lua
+  artifacts:
+    paths:
+      - build
+    expire_in: 1 month
+  only:
+    - branches
+    - tags
+  tags:
+    - linux, build, shell, development
+
+resource-deploy-prod:
   stage: deploy
   script:
-    - yarn install
-    - yarn build
-    - cp -rf static/ build/sonoranradio/
-    - cp -rf lua/ build/sonoranradio/
-    - cp -rf sonrad_tower/stream build/sonoranradio/
-    - cp -rf sonrad_tower/data build/sonoranradio/
-    - cp -rf towers.json build/sonoranradio/
-    - mkdir -p build/sonoranradio/dist
-    - cp -rf dist/bundle.js build/sonoranradio/dist/bundle.js
-    - cp -rf dist/bundle.css build/sonoranradio/dist/bundle.css
-    - cp -rf dist/ui.html build/sonoranradio/dist/ui.html
+    # create zip of resources
     - cd build
     - zip -r latest sonoranradio
     - zip -r latest sonoranradio_updatehelper
-    - mv latest.zip ../latest.zip
     - cd ..
-    - rsync latest.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
-    - rsync version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
+    # send files over to the webserver
+    - rsync build/latest.zip git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
+    - rsync build/version.json git@172.107.228.131:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
+    # clear cloudflare cache
     - >-
       curl -X POST "https://api.cloudflare.com/client/v4/zones/5e892b9b03facaf059df71c6154a823b/purge_cache" 
       -H "Authorization: Bearer $CF_Cache_Key" 
@@ -26,5 +49,8 @@ Deploy-Production-SonoranRadioFiveMResource:
       --data '{"files":["https://download.sonoransoftware.com/sonoranradio/archive/latest.zip","https://download.sonoransoftware.com/sonoranradio/version.json"]}'
   tags:
     - linux, build, shell, development
+  dependencies:
+    - resource-build
+  when: manual
   only:
-    - master
+    - /^[0-9]+\.[0-9]+\.[0-9]+$/
