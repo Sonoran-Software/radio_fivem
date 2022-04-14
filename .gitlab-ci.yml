@@ -8,7 +8,7 @@ resource-build:
     - yarn
     - yarn build
     - cp -r lua build/sonoranradio
-    - cp -r sonrad_tower/* build/sonoranradio
+    - cp -r sonrad_tower/stream sonrad_tower/data build/sonoranradio
     - cp -r towers.json build/sonoranradio
     - cp -r dist build/sonoranradio
     # set the version of version.json and fxmanifest.lua
@@ -24,6 +24,17 @@ resource-build:
     paths:
       - build
     expire_in: 1 month
+  only:
+    - branches
+    - tags
+  tags:
+    - linux, build, shell, development
+
+# makes sure that webpack dev mode is off
+resource-test-webpack:
+  stage: test
+  script:
+    - cat webpack.config.js | grep -E "const +DEV += +false"
   only:
     - branches
     - tags
