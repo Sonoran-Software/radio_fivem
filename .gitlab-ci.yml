@@ -3,14 +3,14 @@ resource-build:
   script:
     # copy a clean node_modules for the build
     - yarn --prod
-    - cp node_modules build/sonoranradio
+    - cp -r node_modules build/sonoranradio
     # build the program and copy all files over
     - yarn
     - yarn build
-    - cp -rf lua build/sonoranradio
-    - cp -rf sonrad_tower/* build/sonoranradio
-    - cp -rf towers.json build/sonoranradio
-    - cp -rf dist build/sonoranradio
+    - cp -r lua build/sonoranradio
+    - cp -r sonrad_tower/* build/sonoranradio
+    - cp -r towers.json build/sonoranradio
+    - cp -r dist build/sonoranradio
     # set the version of version.json and fxmanifest.lua
     - >-
       if [[ -n "$CI_COMMIT_TAG" ]]; then
