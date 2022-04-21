@@ -46,16 +46,6 @@ AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
 	})
 end)
 
--- TODO: Push Events for Status Updates
-RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
-	if thisUnit.id ~= unit.id then return end
-	DebugPrint(status)
-	SendNUIMessage({
-		type = 'unitStatus',
-		status = status
-	})
-end)
-
 CreateThread(function()
 	while true do
 		Wait(5000)
