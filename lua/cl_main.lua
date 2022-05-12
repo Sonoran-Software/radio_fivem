@@ -80,6 +80,44 @@ local Radio = {
 	TalkAnim = true
 }
 
+local QBCore = nil
+local PlayerData = nil
+if Config.enforceRadioItem then
+	QBCore = exports['qb-core']:GetCoreObject()
+	PlayerData = {}
+end
+
+CreateThread(function()
+	if Config.enforceRadioItem then
+		while QBCore.Functions.GetPlayerData() == nil do
+			Wait(10)
+		end
+	end
+end)
+
+CreateThread(function()
+	while true do
+		Wait(1000)
+		if LocalPlayer.state.isLoggedIn then
+			--print("has radio")
+			QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
+				if not hasItem then
+					Radio.Has = false
+					Radio:Toggle(false)
+				else
+					Radio.Has = true
+				end
+			end, "radio")
+		end
+	end
+end)
+
+
+RegisterNetEvent("qb-sonrad:use")
+AddEventHandler("qb-sonrad:use", function()
+	radioToggle()
+end)
+
 -- Disable Attack when Radio is Open
 CreateThread(function()
 	while true do
@@ -103,17 +141,27 @@ end)
 
 function radioToggle()
 	if authorized then
-		radActive = not radActive
-		Radio:Toggle(radActive)
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive
-		})
-		if radActive then
-			SetNuiFocus(true, true)
-		else
-			SetNuiFocus(false, false)
+		if not Config.enforceRadioItem then
+			Radio.Has = true
 		end
+
+		if Radio.Has then
+			radActive = not radActive
+			Radio:Toggle(radActive)
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = radActive
+			})
+			if radActive then
+				SetNuiFocus(true, true)
+			else
+				SetNuiFocus(false, false)
+			end
+		else
+			DebugPrint("Radio Requested, but player doesn't have a radio.")
+		end
+
+
 	else
 		SendNotification("Radio: ~r~No Permission~r~")
 	end
