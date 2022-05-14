@@ -56,6 +56,7 @@ AddEventHandler("RadioTower:clientTowerSync", function()
         Wait(10)
     end
     TriggerClientEvent("RadioTower:SyncTowers", source, Towers)
+    TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
 end)
 
 local DestroyRequests = {}
@@ -74,6 +75,7 @@ AddEventHandler("RadioTower:KillDish", function(towerId, dishIndex)
 
     tower.DishStatus[dishIndex] = 'dead'
     TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
+    TriggerEvent("SonoranCAD::sonrad:SetDishStatus", towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent("RadioTower:RepairTower")
@@ -86,6 +88,7 @@ AddEventHandler("RadioTower:RepairTower", function(towerId)
         tower.DishStatus[i] = 'alive'
     end
     TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
+    TriggerEvent("SonoranCAD::sonrad:SetDishStatus", towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent("RadioTower:clientLocationVerify")
