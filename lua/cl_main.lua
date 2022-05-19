@@ -96,7 +96,7 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-	while true do
+	while Config.enforceRadioItem do
 		Wait(1000)
 		if LocalPlayer.state.isLoggedIn then
 			--print("has radio")
