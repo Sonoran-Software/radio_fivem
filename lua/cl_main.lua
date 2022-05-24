@@ -191,6 +191,18 @@ RegisterCommand('radioreset', function()
 	})
 end)
 
+RegisterCommand('radiohud', function(source, args, rawCommand)
+	if #args < 1 then
+		SendNotification("~r~Error: ~w~Please specify hud size using ~b~/radiohud (size)")
+		SendNotification("~b~small~w~, ~b~medium~w~, ~b~large~w~, or ~b~off~w~.")
+	else
+		SendNUIMessage({
+			type = 'radioHud',
+			size = args[1]
+		})
+	end
+end)
+
 -- Talking Animation
 -- RegisterCommand('sonradtalk', function()
 -- 	Radio:Talking(isTalking)

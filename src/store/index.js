@@ -57,7 +57,7 @@ export default new Vuex.Store({
                 return "red";
             else if (state.talkers.length > 0)
                 return "yellow";
-            else if (state.unitStatus > 0)
+            else if (state.unitStatus >= 0)
                 return "green";
             else
                 return "lightblue";

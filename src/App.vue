@@ -35,8 +35,28 @@
         <div v-if="showTopRadio">
             <div class="top-radio-container">
                 <div id="top-radio-body" class="top-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}">
-                    <input type="button" v-on:click="sendRadioMessage(1, { message: 'hello' });" />
+                    :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}"
+                    v-bind:class="'top-radio-body-' + topRadioSize">
+                    <div class="top-radio-screen"
+                    v-bind:style="{ backgroundColor: $store.getters.connColor }"
+                    v-bind:class="'backlight-' + $store.getters.connColor"
+                    v-if="radioPower">
+                        <div class="top-radio-header">
+                            {{ $store.getters.statusText }}
+                        </div>
+                        <div class="top-radio-content">
+                            {{ $store.getters.freqName || "Custom" }}
+                        </div>
+                        <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
+                            {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} /
+                            {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
+                        </div>
+                        <div v-else class="content">
+                            <div v-for="t in $store.state.talkers" :key="t.id">
+                                {{ t.nickname }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,6 +131,7 @@ export default {
             radioPower: false,
             currPreset: 0,
             currScreen: "",
+            topRadioSize: "lg",
             inVehicle: false
         }
     },
@@ -158,6 +179,28 @@ export default {
                     } catch (e) {
                         console.error("Failed to update tower quality");
                         console.error(e);
+                    }
+                    break;
+                case 'radioHud':
+                    switch (event.data.size) {
+                        case 'off':
+                            this.showTopRadio = false;
+                            break;
+                        case 'small':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "sm";
+                            break;
+                        case 'medium':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "md";
+                            break;
+                        case 'large':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "lg";
+                            break;
+                        default:
+                            console.error("Invalid Hud Size Specified.");
+                            break;
                     }
                     break;
                 case 'setPos':
@@ -211,16 +254,16 @@ export default {
                     this.updateRadioType();
                     break;
                 case 'incomingMessage':
-                    this.notifyPlayer("Radio: ~b~New Message");
-                    let sendingradio = this.$store.state.radios.filter((obj) => {
-                        return obj.id === event.data.sender;
-                    })
-                    this.$store.state.conversations.push({
-                        senderid: sendingradio[0].id,
-                        sender: sendingradio[0].name,
-                        payload: event.data.payload
-                    })
-                    console.log(this.$store.state.conversations)
+                    // this.notifyPlayer("Radio: ~b~New Message");
+                    // let sendingradio = this.$store.state.radios.filter((obj) => {
+                    //     return obj.id === event.data.sender;
+                    // })
+                    // this.$store.state.conversations.push({
+                    //     senderid: sendingradio[0].id,
+                    //     sender: sendingradio[0].name,
+                    //     payload: event.data.payload
+                    // })
+                    // console.log(this.$store.state.conversations)
                     break;
                 default:
                     break;
@@ -542,20 +585,6 @@ export default {
     flex-direction: row;
 }
 
-.top-radio-body {
-    background-repeat: round;
-    width: 250px;
-    height: 893px;
-    position: fixed;
-    right: 30px;
-    /* right: 0px; */
-    bottom: 0px;
-    /* width: 200px;
-    height: auto; */
-    width: 275px;
-    height: 982px;
-}
-
 .radio-body {
     background-repeat: round;
     width: 250px;
@@ -773,6 +802,89 @@ export default {
 .radio-buttons .ctrl-home {
     width: 100%;
     border-radius: 20px;
+}
+
+/* TOP RADIO VIEW */
+.top-radio-body {
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: fixed;
+
+
+
+
+    right: 400px; /* Direct Input from user */
+    bottom: 0px; /* Direct Input from user */
+
+}
+
+.top-radio-body-lg {
+    /* Largest Radio Body */
+    width: 439px; /* Variable Width & Height */
+    height: 439px; /* Variable Width & Height */
+}
+
+.top-radio-body-md {
+    height: 300px;
+    width: 300px;
+}
+
+.top-radio-body-sm {
+    height: 200px;
+    width: 200px;
+}
+
+.top-radio-screen {
+    margin: 224px 143px 0px 149px;
+    height: 81px;
+    border-radius: 11px;
+    /*background-color: black;*/
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.top-radio-body-lg .top-radio-screen {
+    font-size: 17px;
+}
+
+.top-radio-body-md .top-radio-screen {
+    border-radius: 4px;
+    height: 55px;
+    margin: 153px 99px 0px 102px;
+    font-size: 11px;
+}
+
+.top-radio-body-sm .top-radio-screen {
+    height: 39px;
+    margin: 102px 65px 0 66px;
+    font-size: 8px;
+}
+
+.backlight-gray {
+    background-color: unset;
+}
+
+.backlight-red {
+    background-color: rgb(254 69 69 / 30%);
+
+}
+
+.backlight-yellow {
+    background-color: rgb(217 254 69 / 30%);
+
+}
+
+.backlight-green {
+    background-color: rgb(80 254 69 / 30%);
+
+}
+
+.backlight-lightblue {
+    background-color: rgb(69 152 254 / 30%);
+
 }
 
 </style>
