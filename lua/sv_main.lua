@@ -1,37 +1,43 @@
 local acePermsForRadio = false
 local acePermsForTowerRepair = false
 
-if Config.acePermsForRadio ~= nil then
-	acePermsForRadio = Config.acePermsForRadio
-end
-
-if Config.acePermsForTowerRepair ~= nil then
-    acePermsForTowerRepair = Config.acePermsForTowerRepair
-end
-
 local QBCore = nil
 
-if Config.enforceRadioItem then
-    QBCore = exports['qb-core']:GetCoreObject()
+if Config == nil then
+    print('!!! CRITICAL ERROR !!!')
+    print('Config file not found, did you forget to rename it?')
+    print('!!! CRITICAL ERROR !!!')
+else
+    if Config.acePermsForRadio ~= nil then
+        acePermsForRadio = Config.acePermsForRadio
+    end
+    
+    if Config.acePermsForTowerRepair ~= nil then
+        acePermsForTowerRepair = Config.acePermsForTowerRepair
+    end
 
-    QBCore.Functions.CreateUseableItem("radio", function(source, item)
-        TriggerClientEvent('qb-sonrad:use', source)
-    end)
-
-    QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
-        local src = source
-        local Player = QBCore.Functions.GetPlayer(src)
-        if Player ~= nil then
-            local RadioItem = Player.Functions.GetItemByName(item)
-            if RadioItem ~= nil and not Player.PlayerData.metadata["isdead"] and not Player.PlayerData.metadata["inlaststand"] then
-                cb(true)
+    if Config.enforceRadioItem then
+        QBCore = exports['qb-core']:GetCoreObject()
+    
+        QBCore.Functions.CreateUseableItem("radio", function(source, item)
+            TriggerClientEvent('qb-sonrad:use', source)
+        end)
+    
+        QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
+            local src = source
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player ~= nil then
+                local RadioItem = Player.Functions.GetItemByName(item)
+                if RadioItem ~= nil and not Player.PlayerData.metadata["isdead"] and not Player.PlayerData.metadata["inlaststand"] then
+                    cb(true)
+                else
+                    cb(false)
+                end
             else
                 cb(false)
             end
-        else
-            cb(false)
-        end
-    end)
+        end)
+    end
 end
 
 RegisterCommand("sradio", function(source, args, rawCommands)
