@@ -206,23 +206,47 @@ exports('createTower', function(config)
         obj[k] = v
     end
     obj.DontSaveMe = true
+    obj.ApiResource = GetInvokingResource()
 
+    table.insert(Towers, obj)
     TriggerClientEvent("RadioTower:SpawnTower", -1, obj)
+    DebugPrint('tower spawned by an api', obj.Id, obj.ApiResource)
     return obj.Id
 end)
 exports('updateTower', function(towerId, config)
-    local t = nil
     for i = 1, #Towers do
         if Towers[i].Id == towerId then
-            t = Towers[i]
-            break
+            DebugPrint('tower updated by an api', towerId, GetInvokingResource())
+            if config == nil then
+                table.remove(Towers, i)
+            else
+                for k, v in pairs(config) do
+                    Towers[i][k] = v
+                end
+            end
+            TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
+            return config and Towers[i].Id or ''
         end
     end
-    if not t then return nil end
 
-    for k, v in pairs(config) do
-        t[k] = v
+    return nil
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    local hadChange = false
+    local i = 1
+    while i <= #Towers do
+        if Towers[i].ApiResource == resource then
+            DebugPrint('removing tower after resource shutdown', Towers[i].Id)
+            table.remove(Towers, i)
+            hadChange = true
+        else
+            i = i + 1
+        end
     end
-    TriggerClientEvent("RadioTower:SyncTowers", source, Towers)
-    return obj.Id
+
+    -- sync all towers with all clients
+    if hadChange then
+        TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
+    end
 end)

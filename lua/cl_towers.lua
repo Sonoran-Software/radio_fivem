@@ -186,11 +186,24 @@ AddEventHandler("RadioTower:SyncTowers", function(towers)
     DebugPrint(("synced %s"):format(json.encode(towers)))
 end)
 
+RegisterNetEvent('RadioTower:SyncOneTower')
+AddEventHandler('RadioTower:SyncOneTower', function(towerId, tower)
+    for i = 1, #Towers do
+        if Towers[i].Id == towerId then
+            DestroyTower(Towers[i])
+            Towers[i] = tower
+            DebugPrint('synced tower', towerId)
+            break
+        end
+    end
+end)
+
 RegisterNetEvent("RadioTower:SpawnTower")
 AddEventHandler("RadioTower:SpawnTower", function(tower)
     DebugPrint(("spawned %s"):format(json.encode(tower)))
     table.insert(Towers, tower)
     AddTowerRange(tower)
+    DebugPrint('new tower spawned', tower.Id)
 end)
 
 RegisterNetEvent('RadioTower:SetDishStatus')
@@ -216,7 +229,8 @@ CreateThread(function()
             local tower = Towers[i]
             local d = #(GetTowerCoords(tower) - pCoords)
             -- if the player is within range (750m), then spawn a physical tower
-            if d < 750.0 and not tower.Spawned and not Config.noPhysicalTowers then
+            local physical = not Config.noPhysicalTowers and not tower.NotPhysical
+            if d < 750.0 and not tower.Spawned and physical then
                 CreateTower(tower)
                 DebugPrint(("spawn physical tower (%f) %s"):format(d, tower.Id))
             elseif d >= 750.0 and tower.Spawned then
