@@ -6,7 +6,7 @@
             <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
-            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')">
+            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')" v-if="!$store.getters.isInVehicle">
                 <div class="sc-status-text">
                     <div class="header">
                         My Status

@@ -87,7 +87,7 @@
                         <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
                         <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
                     </div>
-                    <div class="mobile-radio-end">
+                    <div class="mobile-radio-end" style="opacity: 0.0;">
                         <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
                         <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
                     </div>
@@ -170,7 +170,13 @@ export default {
                     this.setupSocket();
                     break;
                 case 'setVisible':
-                    this.showRadio = event.data.visibility;
+                    if (this.inVehicle && this.radioPower) {
+                        this.showMobileRadio = event.data.visibility;
+                        this.showRadio = false;
+                    } else {
+                        this.showMobileRadio = false;
+                        this.showRadio = event.data.visibility;
+                    }
                     // this.showMobileRadio = event.data.visibility;
                     break;
                 case 'setTowerQuality':
@@ -250,6 +256,7 @@ export default {
                 }
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
+                    this.$store.commit('setInVehicle', this.inVehicle);
                     //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
                     break;
@@ -291,15 +298,15 @@ export default {
             });
         },
         updateRadioType() {
-            // if (this.showMobileRadio || this.showRadio) {
-            //     if (this.inVehicle) {
-            //         this.showMobileRadio = true;
-            //         this.showRadio = false;
-            //     } else {
-            //         this.showMobileRadio = false;
-            //         this.showRadio = true;
-            //     }
-            // }
+            if (this.showMobileRadio || this.showRadio) {
+                if (this.inVehicle) {
+                    this.showMobileRadio = true;
+                    this.showRadio = false;
+                } else {
+                    this.showMobileRadio = false;
+                    this.showRadio = true;
+                }
+            }
         },
         sendRadioMessage(event) {
             let recipient = event.recipient;
@@ -646,7 +653,7 @@ export default {
     visibility: visible;
     opacity: 0.0;
     /* for development only */
-    opacity: 0.3;
+    /*opacity: 0.3;*/
 }
 
 .mobile-radio-controls .mobile-ctrl-panic {
@@ -717,6 +724,7 @@ export default {
     background-color:black;
     margin: 43px 15px 18px 0px;
     height: 167px;
+    width: 216px;
 }
 
 .radio-brand {
@@ -741,8 +749,8 @@ export default {
     height: 167px;
     margin: 0px 1px 1px 1px;
     width: 216px;
-    overflow-y: scroll;
-    overflow-x: hidden;
+    /*overflow-y: scroll;
+    overflow-x: hidden;*/
 }
 
 .mobile-radio-content::-webkit-scrollbar {
@@ -763,7 +771,7 @@ export default {
 }
 
 .mobile-radio-buttons {
-    background-color: rgba(0,0,255,0.5);
+    /*background-color: rgba(0,0,255,0.5);*/
     width: 0px;
     margin: 35px 76px 169px 100px;
     height: 25px;
@@ -775,7 +783,7 @@ export default {
     visibility: visible;
     opacity: 0.0;
     /* for development only */
-    opacity: 0.3;
+    /*opacity: 0.3;*/
 }
 
 .mobile-radio-buttons .mobile-ctrl-home {

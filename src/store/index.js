@@ -32,7 +32,8 @@ export default new Vuex.Store({
         presets: [],
         scanned: [],
         scanning: false,
-        radios: []
+        radios: [],
+        inVehicle: false
     },
     // TODO: getter for frequency label & sub level
     getters: {
@@ -74,6 +75,9 @@ export default new Vuex.Store({
                 }
             }
             return null;
+        },
+        isInVehicle(state) {
+            return state.inVehicle;
         }
     },
     mutations: {
@@ -135,6 +139,9 @@ export default new Vuex.Store({
         },
         setActiveRadios(state, radios) {
             state.radios = radios;
+        },
+        setInVehicle(state, isInVehicle) {
+            state.inVehicle = isInVehicle;
         }
     },
     actions: {}

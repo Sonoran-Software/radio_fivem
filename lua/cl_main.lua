@@ -157,6 +157,9 @@ function radioToggle()
 			else
 				SetNuiFocus(false, false)
 			end
+
+			local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+			if inVeh then SetNuiFocus(false, false) end
 		else
 			DebugPrint("Radio Requested, but player doesn't have a radio.")
 		end
@@ -477,6 +480,13 @@ CreateThread(function()
 			type = "inVehicle",
 			vehState = inVehicle
 		})
+
+		if prevState ~= inVehicle then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+		end
 		
 		Wait(100)
 	end
