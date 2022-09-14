@@ -1,13 +1,15 @@
 local RadioTower = {
     -- whether the tower can be destroyed or not
     Destruction = true,
+    NotPhysical = false,
     Swankiness = 0.0,
     -- the tower's position (vec3)
     PropPosition = nil,
     -- the range of the tower
     Range = 1500.0,
     DishStatus = {'alive', 'alive', 'alive', 'alive'},
-    Powered = true
+    Powered = true,
+    DontSaveMe = false,
 }
 
 Towers = {}
@@ -81,8 +83,14 @@ RegisterCommand("removetowers", function()
 end, true)
 
 RegisterCommand("savetowers", function()
+    local saveTowers = {}
+    for _, t in ipairs(Towers) do
+        if not t.DontSaveMe then
+            table.insert(saveTowers, t)
+        end
+    end
     local f = assert(io.open(GetResourcePath("sonoranradio").."/towers.json", "w+"))
-    f:write(json.encode(Towers))
+    f:write(json.encode(saveTowers))
     f:close()
     print("ok")
 end, true)
@@ -185,5 +193,60 @@ AddEventHandler("onResourceStart", function(resource)
 
         DebugPrint("setting up tower", json.encode(obj))
         table.insert(Towers, obj)
+    end
+end)
+
+
+-- API
+exports('createTower', function(config)
+    local obj = shallowcopy(RadioTower)
+    obj.Id = uuid()
+    obj.NotPhysical = true
+    for k, v in pairs(config) do
+        obj[k] = v
+    end
+    obj.DontSaveMe = true
+    obj.ApiResource = GetInvokingResource()
+
+    table.insert(Towers, obj)
+    TriggerClientEvent("RadioTower:SpawnTower", -1, obj)
+    DebugPrint('tower spawned by an api', obj.Id, obj.ApiResource)
+    return obj.Id
+end)
+exports('updateTower', function(towerId, config)
+    for i = 1, #Towers do
+        if Towers[i].Id == towerId then
+            DebugPrint('tower updated by an api', towerId, GetInvokingResource())
+            if config == nil then
+                table.remove(Towers, i)
+            else
+                for k, v in pairs(config) do
+                    Towers[i][k] = v
+                end
+            end
+            TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
+            return config and Towers[i].Id or ''
+        end
+    end
+
+    return nil
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    local hadChange = false
+    local i = 1
+    while i <= #Towers do
+        if Towers[i].ApiResource == resource then
+            DebugPrint('removing tower after resource shutdown', Towers[i].Id)
+            table.remove(Towers, i)
+            hadChange = true
+        else
+            i = i + 1
+        end
+    end
+
+    -- sync all towers with all clients
+    if hadChange then
+        TriggerClientEvent("RadioTower:SyncTowers", -1, Towers)
     end
 end)
