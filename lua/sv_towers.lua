@@ -210,6 +210,7 @@ exports('createTower', function(config)
 
     table.insert(Towers, obj)
     TriggerClientEvent("RadioTower:SpawnTower", -1, obj)
+    TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
     DebugPrint('tower spawned by an api', obj.Id, obj.ApiResource)
     return obj.Id
 end)
@@ -225,6 +226,7 @@ exports('updateTower', function(towerId, config)
                 end
             end
             TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
+            TriggerEvent("SonoranCAD::sonrad:SyncOneTower", towerId, Towers[i])
             return config and Towers[i].Id or ''
         end
     end
