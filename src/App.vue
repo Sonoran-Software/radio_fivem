@@ -65,7 +65,7 @@
                 <div id="mobile-radio-body" class="mobile-radio-body"
                     :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
                     <div class="mobile-radio-buttons">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
                     </div>
                     <div class="mobile-radio-screen">
                         <div class="mobile-radio-content" v-if="radioPower">
@@ -82,15 +82,12 @@
                         </div>
                     </div>
                     <div class="mobile-radio-controls">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
                         <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
                         <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-hide" v-on:click="hideRadio(true);" />
+                        <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
                     </div>
-                    <div class="mobile-radio-end" style="opacity: 0.0;">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
-                    </div>
+                    <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
                 </div>
             </div>
         </div>
@@ -152,7 +149,7 @@ export default {
             //console.log(event.code);
             switch (event.code) {
                 case "Escape":
-                    this.postClient({ type: 'hide'});
+                    this.hideRadio(false);
 
                     break;
             
@@ -307,6 +304,9 @@ export default {
                     this.showRadio = true;
                 }
             }
+        },
+        hideRadio(forceful) {
+            this.postClient({ type: 'hide', force: forceful });
         },
         sendRadioMessage(event) {
             let recipient = event.recipient;
@@ -607,11 +607,15 @@ export default {
 }
 
 .mobile-radio-controls {
-    background-color: rgba(255, 0, 0, 0.5);
-    margin-top: 482px;
-    height: 67px;
+    /*background-color: rgba(255, 0, 0, 0.5);*/
+    /*margin-top: 482px;*/
     border-width: 0px;
     display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 30px;
+    height: 100%;
+    width: 51px;
 }
 
 .mobile-radio-controls .mobile-ctrl:focus {
@@ -621,15 +625,15 @@ export default {
 .mobile-radio-controls .mobile-ctrl {
     position: relative;
     visibility: visible;
-    opacity: 0.3;
+    opacity: 0;
 }
 
 .radio-controls {
-    /* background-color: rgba(255,0,0,0.5); */
     margin-top: 482px;
     height: 67px;
     border-width: 0px;
     display: flex;
+    flex-direction: column;
 }
 
 .radio-controls .ctrl:focus {
@@ -640,49 +644,48 @@ export default {
     position: relative;
     visibility: visible;
     opacity: 0.0;
-    /* for development only */
-    /* opacity: 0.3; */
 }
 
 .mobile-radio-controls .ctrl:focus {
     outline: none;
 }
 
-.mobile-radio-controls .ctrl {
+/* .mobile-radio-controls .ctrl {
     position: relative;
     visibility: visible;
     opacity: 0.0;
     /* for development only */
-    /*opacity: 0.3;*/
-}
+    /*opacity: 0.3;
+} */
 
-.mobile-radio-controls .mobile-ctrl-panic {
-    margin-left: 74px;
+.mobile-ctrl-panic {
+    opacity: 0.0;
+    margin-top: 25px;
+    margin-left: 167px;
+    height: 52px;
     border-radius: 35px;
-    width: 30px;
-    height: 18px; /* Originally 10px */
-    margin-top: 48px; /* Originally 50px */ 
+    width: 38px;
+    height: 52px;
 }
 
 
 .mobile-radio-controls .mobile-ctrl-prev {
-    height: 65px;
-    margin-left: 10px;
-    width: 22px;
+    height: 43px;
+    width: 100%;
 }
 
 .mobile-radio-controls .mobile-ctrl-next {
-    height: 65px; /* Originally 10px */
-    margin-left: 0px;
-    width: 22px;
+    height: 40px; /* Originally 10px */
+    width: 100%;
+    margin-top: 5px;
 }
 
-.mobile-radio-controls .mobile-ctrl-power {
-    height: 45px; /* Originally 10px */
-    margin-left: 44px;
-    width: 50px;
-    margin-top: 28px;
-    border-radius: 20px;
+.mobile-radio-buttons .mobile-ctrl-power {
+    margin-left: 0px;
+    margin-top: 0px;
+    height: 32px;
+    width: 30px;
+    border-radius: 11px;
 }
 
 .radio-controls .ctrl-panic {
@@ -771,22 +774,28 @@ export default {
 }
 
 .mobile-radio-buttons {
-    /*background-color: rgba(0,0,255,0.5);*/
     width: 0px;
     margin: 35px 76px 169px 100px;
     height: 25px;
-    display: flex;
 }
 
 .mobile-radio-buttons .mobile-ctrl {
     position: relative;
     visibility: visible;
     opacity: 0.0;
-    /* for development only */
-    /*opacity: 0.3;*/
 }
 
-.mobile-radio-buttons .mobile-ctrl-home {
+.mobile-radio-controls .mobile-ctrl-hide {
+    margin-top: 15px;
+    margin-left: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 20px;
+}
+
+.mobile-radio-controls .mobile-ctrl-home {
+    margin-top: 16px;
+    margin-left: 10px;
     width: 30px;
     height: 30px;
     border-radius: 20px;
