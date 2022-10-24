@@ -159,7 +159,7 @@ function radioToggle()
 			end
 
 			local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
-			if inVeh then SetNuiFocus(false, false) end
+			--if inVeh then SetNuiFocus(false, false) end
 		else
 			DebugPrint("Radio Requested, but player doesn't have a radio.")
 		end
@@ -408,10 +408,12 @@ RegisterNUICallback('data', function(data, cb)
     if data.type == 'hide' then
 		radActive = false
 		Radio:Toggle(radActive)
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive
-		})
+		if not inVehicle or data.force then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = radActive
+			})
+		end
 		SetNuiFocusKeepInput(false)
 		SetNuiFocus(false, false)
     end
