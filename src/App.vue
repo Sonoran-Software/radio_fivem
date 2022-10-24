@@ -633,7 +633,6 @@ export default {
     height: 67px;
     border-width: 0px;
     display: flex;
-    flex-direction: column;
 }
 
 .radio-controls .ctrl:focus {
