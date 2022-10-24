@@ -39,6 +39,31 @@ resource-test-webpack:
   tags:
     - linux, build, shell, development
 
+resource-deploy-QAServer:
+  stage: deploy
+  script:
+    - cd build
+    - zip -r sonoranradio sonoranradio
+    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; rmdir /resources/[sonoranradio]; mkdir -p /resources/[sonoranradio]; cd /resources/[sonoranradio]; put sonoranradio.zip; bye"
+    - >-
+        curl "https://game.sonoranservers.com/api/client/servers/$FiveM01_ID/files/decompress"
+        -H "Content-Type: application/json"
+        -H "Authorization: Bearer $Ptero_API_Key"
+        -X POST
+        -d '{"root": "/resources/[sonoranradio]/","file": "sonoranradio.zip"}'
+    - >-
+        curl "https://game.sonoranservers.com/api/client/servers/$FiveM01_ID/files/delete"
+        -H "Content-Type: application/json"
+        -H "Authorization: Bearer $Ptero_API_Key"
+        -X POST
+        -d '{"root": "/resources/[sonoranradio]/","files": ["sonoranradio.zip"]}'
+    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; cd /resources/[sonoranradio]/sonoranradio; put QA-config.lua -o config.lua; cd ../; rmdir sonoranradio_updatehelper; bye"
+
+  tags:
+    - linux, build, shell, development
+  only:
+    - master
+
 resource-deploy-prod:
   stage: deploy
   script:
