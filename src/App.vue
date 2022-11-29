@@ -751,8 +751,8 @@ export default {
     height: 167px;
     margin: 0px 1px 1px 1px;
     width: 216px;
-    /*overflow-y: scroll;
-    overflow-x: hidden;*/
+    overflow-y: scroll;
+    /*overflow-x: hidden;*/
 }
 
 .mobile-radio-content::-webkit-scrollbar {
