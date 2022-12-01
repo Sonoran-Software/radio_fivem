@@ -211,36 +211,64 @@ end)
 -- 	Radio:Talking(isTalking)
 -- end)
 
--- Next
-RegisterCommand('sonradnext', function()
+RegisterNetEvent('SonoranRadio::API:NextPreset')
+AddEventHandler('SonoranRadio::API:NextPreset', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'next'
     })
 end)
 
--- Previous
-RegisterCommand('sonradprev', function()
+RegisterNetEvent('SonoranRadio::API:PrevPreset')
+AddEventHandler('SonoranRadio::API:PrevPreset', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'prev'
     })
 end)
 
--- Power
-RegisterCommand('sonradpower', function()
+RegisterNetEvent('SonoranRadio::API:PowerToggle')
+AddEventHandler('SonoranRadio::API:PowerToggle', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'power'
     })
 end)
 
--- Panic
-RegisterCommand('sonradpanic', function()
+RegisterNetEvent('SonoranRadio::API:PanicButton')
+AddEventHandler('SonoranRadio::API:PanicButton', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'panic'
     })
+end)
+
+RegisterNetEvent('SonoranRadio::API:SetPreset')
+AddEventHandler('SonoranRadio::API:SetPreset', function(number)
+    SendNUIMessage({
+        type = 'goToPreset',
+        preset = number
+    })
+end)
+
+-- Next
+RegisterCommand('sonradnext', function()
+	TriggerEvent('SonoranRadio::API:NextPreset')
+end)
+
+-- Previous
+RegisterCommand('sonradprev', function()
+	TriggerEvent('SonoranRadio::API:NextPreset')
+end)
+
+-- Power
+RegisterCommand('sonradpower', function()
+	TriggerEvent('SonoranRadio::API:PowerToggle')
+end)
+
+-- Panic
+RegisterCommand('sonradpanic', function()
+	TriggerEvent('SonoranRadio::API:PanicButton')
 end)
 RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', '')
 RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')

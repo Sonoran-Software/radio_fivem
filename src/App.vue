@@ -240,17 +240,19 @@ export default {
                             break;
                     }
                     break;
+                case 'goToPreset':
+                    this.goToPreset(event.data.preset);
+                    break;
                 case 'callUpdate':
                     this.$store.commit('setCall', event.data.call);
                     break;
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios': {
+                case 'getRadios': 
                     let activeRadios = event.data.radios.filter(radio => radio && radio.id && radio.name);
                     this.$store.commit('setActiveRadios', activeRadios);
                     break;
-                }
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
                     this.$store.commit('setInVehicle', this.inVehicle);
