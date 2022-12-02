@@ -258,7 +258,7 @@ end)
 
 -- Previous
 RegisterCommand('sonradprev', function()
-	TriggerEvent('SonoranRadio::API:NextPreset')
+	TriggerEvent('SonoranRadio::API:PrevPreset')
 end)
 
 -- Power
