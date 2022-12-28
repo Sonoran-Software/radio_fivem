@@ -149,6 +149,10 @@ function radioToggle()
 			radActive = not radActive
 			Radio:Toggle(radActive)
 			SendNUIMessage({
+				type = 'setUiPositions',
+				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+			})
+			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive
 			})
@@ -460,6 +464,11 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'talking' then
 		Radio:Talking(data.talking)
+	end
+
+	if data.type == 'setUiPositions' then
+		-- save positions of components in the UI
+		SetResourceKvp('ui_pos_dic', json.encode(data.data))
 	end
 
     cb('OK')

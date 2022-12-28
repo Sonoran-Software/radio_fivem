@@ -1,96 +1,97 @@
 <template>
     <div class="appcontainer">
-        <div v-if="showRadio">
-            <div class="radio-container"
-            :class="(showRadio?'radio-open':'radio-close')"
-            >
-                <div id="radio-body" class="radio-body"
-                :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
-                    <div class="radio-controls">
-                        <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
-                        <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
-                        <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
-                        <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
+        <draggable-box
+            v-if="showRadio"
+            v-model="radioBodyPos"
+            :class="( showRadio ? 'radio-open' : 'radio-close')"
+            :drag-enabled="dragMode"
+        >
+            <div id="radio-body" class="radio-body" :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
+                <div class="radio-controls">
+                    <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
+                    <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
+                    <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
+                    <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
+                </div>
+                <div class="radio-screen">
+                    <div class="radio-content" v-if="radioPower">
+                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
+                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)"
+                            v-on:set-frequency="setFrequency($event)" />
+                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)"
+                            v-on:send-message="sendRadioMessage($event)" />
+                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)"
+                            v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
+                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
                     </div>
-                    <div class="radio-screen">
-                        <div class="radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" v-on:send-message="sendRadioMessage($event)"/>
-                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
+                </div>
+                <div class="radio-buttons">
+                    <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
+                </div>
+            </div>
+        </draggable-box>
+
+        <draggable-box v-if="showTopRadio" v-model="topRadioPos" :drag-enabled="dragMode">
+            <div id="top-radio-body" class="top-radio-body"
+                :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}"
+                v-bind:class="'top-radio-body-' + topRadioSize">
+                <div class="top-radio-screen"
+                v-bind:style="{ backgroundColor: $store.getters.connColor }"
+                v-bind:class="'backlight-' + $store.getters.connColor"
+                v-if="radioPower">
+                    <div class="top-radio-header">
+                        {{ $store.getters.statusText }}
+                    </div>
+                    <div class="top-radio-content">
+                        {{ $store.getters.freqName || "Custom" }}
+                    </div>
+                    <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
+                        {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} /
+                        {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
+                    </div>
+                    <div v-else class="content">
+                        <div v-for="t in $store.state.talkers" :key="t.id">
+                            {{ t.nickname }}
                         </div>
-                    </div>
-                    <div class="radio-buttons">
-                        <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
                     </div>
                 </div>
             </div>
-        </div>
-        <div v-if="showTopRadio">
-            <div class="top-radio-container">
-                <div id="top-radio-body" class="top-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}"
-                    v-bind:class="'top-radio-body-' + topRadioSize">
-                    <div class="top-radio-screen"
-                    v-bind:style="{ backgroundColor: $store.getters.connColor }"
-                    v-bind:class="'backlight-' + $store.getters.connColor"
-                    v-if="radioPower">
-                        <div class="top-radio-header">
-                            {{ $store.getters.statusText }}
-                        </div>
-                        <div class="top-radio-content">
-                            {{ $store.getters.freqName || "Custom" }}
-                        </div>
-                        <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
-                            {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} /
-                            {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
-                        </div>
-                        <div v-else class="content">
-                            <div v-for="t in $store.state.talkers" :key="t.id">
-                                {{ t.nickname }}
-                            </div>
-                        </div>
+        </draggable-box>
+
+        <draggable-box v-if="showMobileRadio" v-model="mobileRadioBodyPos" :drag-enabled="dragMode">
+            <div id="mobile-radio-body" class="mobile-radio-body"
+                :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
+                <div class="mobile-radio-buttons">
+                    <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
+                </div>
+                <div class="mobile-radio-screen">
+                    <div class="mobile-radio-content" v-if="radioPower">
+                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
+                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
+                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
+                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
                     </div>
                 </div>
-            </div>
-        </div>
-        <div v-if="showMobileRadio">
-            <div class="mobile-radio-container">
-                <div id="mobile-radio-body" class="mobile-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
-                    <div class="mobile-radio-buttons">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
-                    </div>
-                    <div class="mobile-radio-screen">
-                        <div class="mobile-radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
-                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
-                        </div>
-                    </div>
-                    <div class="mobile-radio-controls">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-hide" v-on:click="hideRadio(true);" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
-                    </div>
-                    <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
+                <div class="mobile-radio-controls">
+                    <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-hide" v-on:click="hideRadio(true);" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
                 </div>
+                <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
             </div>
-        </div>
+        </draggable-box>
 
     </div>
 </template>
@@ -106,9 +107,11 @@ import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
 import CallDetails from './components/CallDetails.vue'
+import DraggableBox from './components/util/DraggableBox.vue'
 
 export default {
     components: {
+        DraggableBox,
         Home,
         Channels,
         Channel,
@@ -129,7 +132,12 @@ export default {
             currPreset: 0,
             currScreen: "",
             topRadioSize: "lg",
-            inVehicle: false
+            inVehicle: false,
+
+            dragMode: false,
+            radioBodyPos: [0, 0],
+            topRadioPos: [400, 0],
+            mobileRadioBodyPos: [0, 0],
         }
     },
     computed: {
@@ -149,8 +157,19 @@ export default {
             //console.log(event.code);
             switch (event.code) {
                 case "Escape":
-                    this.hideRadio(false);
-
+                    if (this.dragMode) {
+                        this.dragMode = false;
+                        // save the positions by sending them back to the client
+                        this.postClient({
+                            type: 'setUiPositions', data: {
+                                radioBodyPos: this.radioBodyPos,
+                                topRadioPos: this.topRadioPos,
+                                mobileRadioBodyPos: this.mobileRadioBodyPos,
+                            }
+                        });
+                    } else {
+                        this.hideRadio(false);
+                    }
                     break;
             
                 default:
@@ -258,6 +277,15 @@ export default {
                     this.$store.commit('setInVehicle', this.inVehicle);
                     //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
+                    break;
+                case 'setUiPositions':
+                    if (typeof event.data.data !== 'object') break;
+                    for (const k in event.data.data) {
+                        if (event.data.data[k] instanceof Array)
+                            this.$set(this, k, event.data.data[k]);
+                        else
+                            console.warn('WARNING: skip in setUiPositions', k);
+                    }
                     break;
                 case 'incomingMessage':
                     // this.notifyPlayer("Radio: ~b~New Message");
@@ -585,10 +613,7 @@ export default {
 .mobile-radio-body {
     background-repeat: round;
     width: 722px;
-    height: 240px;
-    position: fixed;
-    right: 30px;
-    bottom: 0px;
+    /* height: 240px; */
     height: 250px;
     display: flex;
     flex-direction: row;
@@ -596,14 +621,6 @@ export default {
 
 .radio-body {
     background-repeat: round;
-    width: 250px;
-    height: 1040px;
-    position: fixed;
-    right: 30px;
-    /* right: 0px; */
-    bottom: 0px;
-    /* width: 200px;
-    height: auto; */
     width: 275px;
     height: 982px;
 }
@@ -633,7 +650,7 @@ export default {
 .radio-controls {
     margin-top: 482px;
     height: 67px;
-    border-width: 0px;
+    /* border-width: 0px; */
     display: flex;
 }
 
@@ -826,14 +843,10 @@ export default {
 .top-radio-body {
     background-repeat: no-repeat;
     background-size: cover;
-    position: fixed;
+    /* position: fixed; */
 
-
-
-
-    right: 400px; /* Direct Input from user */
-    bottom: 0px; /* Direct Input from user */
-
+    /* right: 400px; Direct Input from user */
+    /* bottom: 0px; Direct Input from user */
 }
 
 .top-radio-body-lg {
