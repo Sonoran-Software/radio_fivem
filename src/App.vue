@@ -1,5 +1,11 @@
 <template>
     <div class="appcontainer">
+        <div v-if="dragMode" class="drag-instructions">
+            <div>
+                Click and drag to move the components. Press <code>ESC</code> to save.
+            </div>
+        </div>
+
         <draggable-box
             v-if="showRadio"
             v-model="radioBodyPos"
@@ -569,6 +575,22 @@ export default {
     overflow: hidden;
 }
 
+.drag-instructions {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    justify-content: center;
+}
+.drag-instructions > div {
+    font-family: sans-serif;
+    padding: 1rem;
+    background-color: rgba(0,0,0,0.75);
+    color: white;
+}
+
 .hidden {
     display: none;
 }
@@ -917,5 +939,4 @@ export default {
     background-color: rgb(69 152 254 / 30%);
 
 }
-
 </style>
