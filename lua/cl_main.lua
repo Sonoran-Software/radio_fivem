@@ -60,6 +60,7 @@ local Radio = {
 	On = false,
 	Enabled = true,
 	Handle = nil,
+	Hud = "off",
 	Prop = GetHashKey('prop_cs_hand_radio'),
 	Bone = 28422,
 	Offset = vector3(0.0, 0.0, 0.0),
@@ -203,6 +204,7 @@ RegisterCommand('radiohud', function(source, args, rawCommand)
 		SendNotification("~r~Error: ~w~Please specify hud size using ~b~/radiohud (size)")
 		SendNotification("~b~small~w~, ~b~medium~w~, ~b~large~w~, or ~b~off~w~.")
 	else
+		Radio.Hud = args[1]
 		SendNUIMessage({
 			type = 'radioHud',
 			size = args[1]
@@ -460,6 +462,7 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'power' then
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+		Radio.On = data.power
 	end
 
 	if data.type == 'talking' then
@@ -528,5 +531,84 @@ CreateThread(function()
 		end
 		
 		Wait(100)
+	end
+end)
+
+local PlayerDead = false
+local RadioLastState = nil
+
+RegisterNetEvent("SonoranRadio::PlayerDeath", function()
+	PlayerDead = true
+	if Config.disableRadioOnDeath then
+		if Radio.On then
+			Radio.Enabled = false
+			Radio:Toggle(false)
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+			SendNUIMessage({
+				type = 'power',
+				power = false
+			})
+			SendNUIMessage({
+				type = 'radioHud',
+				size = "off"
+			})
+			SetNuiFocus(false, false)
+			DebugPrint("Radio Disabled Due to Death.")
+		end
+	end
+end)
+
+RegisterNetEvent("SonoranRadio::PlayerRevive", function()
+	PlayerDead = false
+	if Config.disableRadioOnDeath then
+		if Config.restoreRadioStateWhenAlive then
+			if Radio.Enabled == false then
+				SendNUIMessage({
+					type = 'power',
+					power = true
+				})
+				SendNUIMessage({
+					type = 'radioHud',
+					size = Radio.Hud
+				})
+			end
+		end
+		Radio.Enabled = true
+	end
+end)
+
+local QBDeath = false;
+
+CreateThread(function()
+	local QBCore = nil
+	if Config.deathDetectionMethod == 'qbcore' then
+		QBCore = exports['qb-core']:GetCoreObject()
+	end
+
+	while true do
+		if QBCore ~= nil then
+			local PlayerData = QBCore.Functions.GetPlayerData()
+			if PlayerData ~= nil then
+				--print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
+				--print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
+				QBDeath = PlayerData.metadata["isdead"] or PlayerData.metadata["inlaststand"]
+			end
+		end
+
+		if Config.deathDetectionMethod == "auto" or Config.deathDetectionMethod == "qbcore" then
+			local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
+			if IsPlayerDead then
+				TriggerEvent("SonoranRadio::PlayerDeath")
+			else
+				TriggerEvent("SonoranRadio::PlayerRevive")
+			end
+		end
+		--print("QBDeath:" .. tostring(QBDeath))
+		--print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
+		--print("Radio Enabled: " .. tostring(Radio.Enabled))
+		Wait(1000)
 	end
 end)
