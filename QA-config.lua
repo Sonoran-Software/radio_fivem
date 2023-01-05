@@ -11,3 +11,5 @@ Config.towerRepairTimer = 20
 Config.acePermsForRadio = false
 Config.acePermsForTowerRepair = false
 Config.enforceRadioItem = false
+Config.disableRadioOnDeath = true
+Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn

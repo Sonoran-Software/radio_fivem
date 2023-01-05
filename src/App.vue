@@ -191,6 +191,15 @@ export default {
                 case 'reset':
                     this.setupSocket();
                     break;
+                case 'power':
+                    this.radioPower = event.data.power || !this.radioPower;
+                    this.$store.state.gamestate.radio_powered = this.radioPower;
+                    this.postClient({
+                        type: 'power',
+                        power: this.radioPower 
+                    });
+                    this.updateGamestate();
+                    break;
                 case 'setVisible':
                     if (this.inVehicle && this.radioPower) {
                         this.showMobileRadio = event.data.visibility;
