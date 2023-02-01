@@ -19,6 +19,18 @@ else
     if Config.enforceRadioItem then
         QBCore = exports['qb-core']:GetCoreObject()
 
+        exports['qb-core']:AddItem('sonoran_radio', {
+            name = 'sonoran_radio',
+            label= 'Sonoran Radio',
+            weight = 10,
+            type = 'item',
+            image = 'radio.png',
+            unique = true,
+            useable = true,
+            shouldClose = true,
+            combinable = false,
+            description = 'Communicate with others through the Sonoran Radio'
+        })
         QBCore.Functions.CreateUseableItem("sonoran_radio", function(source, item)
             TriggerClientEvent('qb-sonrad:use', source)
         end)
