@@ -28,7 +28,7 @@ AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	-- 		})
 	-- 		--print('status updated')
 	-- 	end
-	-- else 
+	-- else
 	-- 	SendNUIMessage({
 	-- 		type = 'unitStatus',
 	-- 		status = -1
@@ -108,7 +108,7 @@ CreateThread(function()
 				else
 					Radio.Has = true
 				end
-			end, "radio")
+			end, "sonoran_radio")
 		end
 	end
 end)
@@ -309,7 +309,7 @@ function Radio:Talking(toggle)
 			if self.Open then
 				-- cellphone@cellphone_call_to_text
 				-- cellphone@cellphone_text_read_base
-				-- 
+				--
 
 				--StopAnimTask(PlayerPedId(), "cellphone@","cellphone_text_to_call", 4.0)
 				if inVeh then return end
@@ -339,10 +339,10 @@ function Radio:Toggle(toggle)
 
 	if IsEntityDead(playerPed) then
 		self.Open = false
-		
+
 		DetachEntity(self.Handle, true, false)
 		DeleteEntity(self.Handle)
-		
+
 		return
 	end
 
@@ -510,7 +510,7 @@ CreateThread(function()
 		local prevState = inVehicle
 		--DebugPrint("Getting Players Vehicle")
 
-		if not IsPedInAnyVehicle(PlayerPedId(), false) then 
+		if not IsPedInAnyVehicle(PlayerPedId(), false) then
 			-- player is in vehicle
 			inVehicle = false
 		else
@@ -529,7 +529,7 @@ CreateThread(function()
 				visibility = false
 			})
 		end
-		
+
 		Wait(100)
 	end
 end)
