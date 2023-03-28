@@ -24,3 +24,6 @@ if not IsDuplicityVersion() then
         TriggerEvent("SonoranRadio::PlayerRevive") -- This event will revive the player
     end)
 end
+
+Config.enableVehicleRepeaters = false
+Config.repeaterVehicleHashes = {}
