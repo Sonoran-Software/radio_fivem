@@ -25,5 +25,5 @@ if not IsDuplicityVersion() then
     end)
 end
 
-Config.enableVehicleRepeaters = false
+Config.enableVehicleRepeaters = true
 Config.repeaterVehicleHashes = {}
