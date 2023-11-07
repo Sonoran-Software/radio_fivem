@@ -12,16 +12,17 @@
             </div>
         </div>
         <div class="sc-body">
+            <div class="sc-row" @click="$emit('set-drag', true)">
+                <div class="sc-row-label">Reposition UI</div>
+            </div>
             <div class="sc-row">
-                <div class="sc-row-label">Coming Soon</div>
+                <div class="sc-row-label">More Coming Soon</div>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import vue from 'vue';
-
 export default {
     components: {},
     data() {

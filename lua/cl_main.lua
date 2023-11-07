@@ -28,7 +28,7 @@ AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	-- 		})
 	-- 		--print('status updated')
 	-- 	end
-	-- else 
+	-- else
 	-- 	SendNUIMessage({
 	-- 		type = 'unitStatus',
 	-- 		status = -1
@@ -46,16 +46,6 @@ AddEventHandler("SonoranCAD::sonrad:UpdateCurrentCall", function(call)
 	})
 end)
 
--- TODO: Push Events for Status Updates
-RegisterNetEvent("SonoranCAD::pushevents:UnitUpdate", function(unit, status)
-	if thisUnit.id ~= unit.id then return end
-	DebugPrint(status)
-	SendNUIMessage({
-		type = 'unitStatus',
-		status = status
-	})
-end)
-
 CreateThread(function()
 	while true do
 		Wait(5000)
@@ -70,15 +60,16 @@ local Radio = {
 	On = false,
 	Enabled = true,
 	Handle = nil,
-	Prop = `prop_cs_hand_radio`,
+	Hud = "off",
+	Prop = GetHashKey('prop_cs_hand_radio'),
 	Bone = 28422,
 	Offset = vector3(0.0, 0.0, 0.0),
 	Rotation = vector3(0.0, 0.0, 0.0),
 	Dictionary = {
 		"cellphone@",
 		"cellphone@in_car@ds",
-		"cellphone@str",    
-		"random@arrests",  
+		"cellphone@str",
+		"random@arrests",
 	},
 	Animation = {
 		"cellphone_text_in",
@@ -89,6 +80,44 @@ local Radio = {
 	Clicks = true, -- Radio clicks
 	TalkAnim = true
 }
+
+local QBCore = nil
+local PlayerData = nil
+if Config.enforceRadioItem then
+	QBCore = exports['qb-core']:GetCoreObject()
+	PlayerData = {}
+end
+
+CreateThread(function()
+	if Config.enforceRadioItem then
+		while QBCore.Functions.GetPlayerData() == nil do
+			Wait(10)
+		end
+	end
+end)
+
+CreateThread(function()
+	while Config.enforceRadioItem do
+		Wait(1000)
+		if LocalPlayer.state.isLoggedIn then
+			--print("has radio")
+			QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
+				if not hasItem then
+					Radio.Has = false
+					Radio:Toggle(false)
+				else
+					Radio.Has = true
+				end
+			end, "sonoran_radio")
+		end
+	end
+end)
+
+
+RegisterNetEvent("qb-sonrad:use")
+AddEventHandler("qb-sonrad:use", function()
+	radioToggle()
+end)
 
 -- Disable Attack when Radio is Open
 CreateThread(function()
@@ -113,18 +142,34 @@ end)
 
 function radioToggle()
 	if authorized then
-		radActive = not radActive
-		Radio:Toggle(radActive)
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive
-		})
-		if radActive then
-			SetNuiFocusKeepInput(true)
-			SetNuiFocus(true, true)
-		else
-			SetNuiFocus(false, false)
+		if not Config.enforceRadioItem then
+			Radio.Has = true
 		end
+
+		if Radio.Has then
+			radActive = not radActive
+			Radio:Toggle(radActive)
+			SendNUIMessage({
+				type = 'setUiPositions',
+				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+			})
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = radActive
+			})
+			if radActive then
+				SetNuiFocus(true, true)
+			else
+				SetNuiFocus(false, false)
+			end
+
+			local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+			--if inVeh then SetNuiFocus(false, false) end
+		else
+			DebugPrint("Radio Requested, but player doesn't have a radio.")
+		end
+
+
 	else
 		SendNotification("Radio: ~r~No Permission~r~")
 	end
@@ -154,41 +199,82 @@ RegisterCommand('radioreset', function()
 	})
 end)
 
+RegisterCommand('radiohud', function(source, args, rawCommand)
+	if #args < 1 then
+		SendNotification("~r~Error: ~w~Please specify hud size using ~b~/radiohud (size)")
+		SendNotification("~b~small~w~, ~b~medium~w~, ~b~large~w~, or ~b~off~w~.")
+	else
+		Radio.Hud = args[1]
+		SendNUIMessage({
+			type = 'radioHud',
+			size = args[1]
+		})
+	end
+end)
+
 -- Talking Animation
 -- RegisterCommand('sonradtalk', function()
 -- 	Radio:Talking(isTalking)
 -- end)
 
--- Next
-RegisterCommand('sonradnext', function()
+RegisterNetEvent('SonoranRadio::API:NextPreset')
+AddEventHandler('SonoranRadio::API:NextPreset', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'next'
     })
 end)
 
--- Previous
-RegisterCommand('sonradprev', function()
+RegisterNetEvent('SonoranRadio::API:PrevPreset')
+AddEventHandler('SonoranRadio::API:PrevPreset', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'prev'
     })
 end)
 
--- Power
-RegisterCommand('sonradpower', function()
+RegisterNetEvent('SonoranRadio::API:PowerToggle')
+AddEventHandler('SonoranRadio::API:PowerToggle', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'power'
     })
 end)
 
--- Panic
-RegisterCommand('sonradpanic', function()
+RegisterNetEvent('SonoranRadio::API:PanicButton')
+AddEventHandler('SonoranRadio::API:PanicButton', function()
     SendNUIMessage({
         type = 'pushButton',
         button = 'panic'
     })
+end)
+
+RegisterNetEvent('SonoranRadio::API:SetPreset')
+AddEventHandler('SonoranRadio::API:SetPreset', function(number)
+    SendNUIMessage({
+        type = 'goToPreset',
+        preset = number
+    })
+end)
+
+-- Next
+RegisterCommand('sonradnext', function()
+	TriggerEvent('SonoranRadio::API:NextPreset')
+end)
+
+-- Previous
+RegisterCommand('sonradprev', function()
+	TriggerEvent('SonoranRadio::API:PrevPreset')
+end)
+
+-- Power
+RegisterCommand('sonradpower', function()
+	TriggerEvent('SonoranRadio::API:PowerToggle')
+end)
+
+-- Panic
+RegisterCommand('sonradpanic', function()
+	TriggerEvent('SonoranRadio::API:PanicButton')
 end)
 RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', '')
 RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
@@ -223,7 +309,7 @@ function Radio:Talking(toggle)
 			if self.Open then
 				-- cellphone@cellphone_call_to_text
 				-- cellphone@cellphone_text_read_base
-				-- 
+				--
 
 				--StopAnimTask(PlayerPedId(), "cellphone@","cellphone_text_to_call", 4.0)
 				if inVeh then return end
@@ -253,10 +339,10 @@ function Radio:Toggle(toggle)
 
 	if IsEntityDead(playerPed) then
 		self.Open = false
-		
+
 		DetachEntity(self.Handle, true, false)
 		DeleteEntity(self.Handle)
-		
+
 		return
 	end
 
@@ -287,7 +373,7 @@ function Radio:Toggle(toggle)
 		end
 		self.Handle = CreateObject(self.Prop, 0.0, 0.0, 0.0, true, true, false)
 		local bone = GetPedBoneIndex(playerPed, self.Bone)
-		SetCurrentPedWeapon(playerPed, `weapon_unarmed`, true)
+		SetCurrentPedWeapon(playerPed, GetHashKey('weapon_unarmed'), true)
 		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
@@ -356,10 +442,14 @@ RegisterNUICallback('data', function(data, cb)
     if data.type == 'hide' then
 		radActive = false
 		Radio:Toggle(radActive)
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive
-		})
+		if not inVehicle or data.force then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = radActive
+			})
+		end
+		SetNuiFocusKeepInput(false)
+		SetNuiFocus(false, false)
     end
 
 	if data.type == 'notify' then
@@ -372,10 +462,16 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'power' then
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+		Radio.On = data.power
 	end
 
 	if data.type == 'talking' then
 		Radio:Talking(data.talking)
+	end
+
+	if data.type == 'setUiPositions' then
+		-- save positions of components in the UI
+		SetResourceKvp('ui_pos_dic', json.encode(data.data))
 	end
 
     cb('OK')
@@ -414,7 +510,7 @@ CreateThread(function()
 		local prevState = inVehicle
 		--DebugPrint("Getting Players Vehicle")
 
-		if not IsPedInAnyVehicle(PlayerPedId(), false) then 
+		if not IsPedInAnyVehicle(PlayerPedId(), false) then
 			-- player is in vehicle
 			inVehicle = false
 		else
@@ -426,7 +522,93 @@ CreateThread(function()
 			type = "inVehicle",
 			vehState = inVehicle
 		})
-		
+
+		if prevState ~= inVehicle then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+		end
+
 		Wait(100)
+	end
+end)
+
+local PlayerDead = false
+local RadioLastState = nil
+
+RegisterNetEvent("SonoranRadio::PlayerDeath", function()
+	PlayerDead = true
+	if Config.disableRadioOnDeath then
+		if Radio.On then
+			Radio.Enabled = false
+			Radio:Toggle(false)
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+			SendNUIMessage({
+				type = 'power',
+				power = false
+			})
+			SendNUIMessage({
+				type = 'radioHud',
+				size = "off"
+			})
+			SetNuiFocus(false, false)
+			DebugPrint("Radio Disabled Due to Death.")
+		end
+	end
+end)
+
+RegisterNetEvent("SonoranRadio::PlayerRevive", function()
+	PlayerDead = false
+	if Config.disableRadioOnDeath then
+		if Config.restoreRadioStateWhenAlive then
+			if Radio.Enabled == false then
+				SendNUIMessage({
+					type = 'power',
+					power = true
+				})
+				SendNUIMessage({
+					type = 'radioHud',
+					size = Radio.Hud
+				})
+			end
+		end
+		Radio.Enabled = true
+	end
+end)
+
+local QBDeath = false;
+
+CreateThread(function()
+	local QBCore = nil
+	if Config.deathDetectionMethod == 'qbcore' then
+		QBCore = exports['qb-core']:GetCoreObject()
+	end
+
+	while true do
+		if QBCore ~= nil then
+			local PlayerData = QBCore.Functions.GetPlayerData()
+			if PlayerData ~= nil then
+				--print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
+				--print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
+				QBDeath = PlayerData.metadata["isdead"] or PlayerData.metadata["inlaststand"]
+			end
+		end
+
+		if Config.deathDetectionMethod == "auto" or Config.deathDetectionMethod == "qbcore" then
+			local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
+			if IsPlayerDead then
+				TriggerEvent("SonoranRadio::PlayerDeath")
+			else
+				TriggerEvent("SonoranRadio::PlayerRevive")
+			end
+		end
+		--print("QBDeath:" .. tostring(QBDeath))
+		--print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
+		--print("Radio Enabled: " .. tostring(Radio.Enabled))
+		Wait(1000)
 	end
 end)

@@ -1,79 +1,103 @@
 <template>
     <div class="appcontainer">
-        <div v-if="showRadio">
-            <div class="radio-container"
-            :class="(showRadio?'radio-open':'radio-close')"
-            >
-                <div id="radio-body" class="radio-body"
-                :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
-                    <div class="radio-controls">
-                        <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
-                        <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
-                        <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
-                        <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
+        <div v-if="dragMode" class="drag-instructions">
+            <div>
+                Click and drag to move the components. Press <code>ESC</code> to save.
+            </div>
+        </div>
+
+        <draggable-box
+            v-if="showRadio"
+            v-model="radioBodyPos"
+            :class="( showRadio ? 'radio-open' : 'radio-close')"
+            :drag-enabled="dragMode"
+        >
+            <div id="radio-body" class="radio-body" :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
+                <div class="radio-controls">
+                    <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
+                    <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
+                    <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
+                    <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
+                </div>
+                <div class="radio-screen">
+                    <div class="radio-content" v-if="radioPower">
+                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
+                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)"
+                            v-on:set-frequency="setFrequency($event)" />
+                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)"
+                            v-on:send-message="sendRadioMessage($event)" />
+                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)"
+                            v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
+                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
                     </div>
-                    <div class="radio-screen">
-                        <div class="radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" v-on:send-message="sendRadioMessage($event)"/>
-                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
+                </div>
+                <div class="radio-buttons">
+                    <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
+                </div>
+            </div>
+        </draggable-box>
+
+        <draggable-box v-if="showTopRadio" v-model="topRadioPos" :drag-enabled="dragMode">
+            <div id="top-radio-body" class="top-radio-body"
+                :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}"
+                v-bind:class="'top-radio-body-' + topRadioSize">
+                <div class="top-radio-screen"
+                v-bind:style="{ backgroundColor: $store.getters.connColor }"
+                v-bind:class="'backlight-' + $store.getters.connColor"
+                v-if="radioPower">
+                    <div class="top-radio-header">
+                        {{ $store.getters.statusText }}
+                    </div>
+                    <div class="top-radio-content">
+                        {{ $store.getters.freqName || "Custom" }}
+                    </div>
+                    <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
+                        {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} /
+                        {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
+                    </div>
+                    <div v-else class="content">
+                        <div v-for="t in $store.state.talkers" :key="t.id">
+                            {{ t.nickname }}
                         </div>
                     </div>
-                    <div class="radio-buttons">
-                        <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
-                    </div>
                 </div>
             </div>
-        </div>
-        <div v-if="showTopRadio">
-            <div class="top-radio-container">
-                <div id="top-radio-body" class="top-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}">
-                    <input type="button" v-on:click="sendRadioMessage(1, { message: 'hello' });" />
+        </draggable-box>
+
+        <draggable-box v-if="showMobileRadio" v-model="mobileRadioBodyPos" :drag-enabled="dragMode">
+            <div id="mobile-radio-body" class="mobile-radio-body"
+                :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
+                <div class="mobile-radio-buttons">
+                    <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
                 </div>
-            </div>
-        </div>
-        <div v-if="showMobileRadio">
-            <div class="mobile-radio-container">
-                <div id="mobile-radio-body" class="mobile-radio-body"
-                    :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
-                    <div class="mobile-radio-buttons">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
-                    </div>
-                    <div class="mobile-radio-screen">
-                        <div class="mobile-radio-content" v-if="radioPower">
-                            <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                            <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                            <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                            <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                            <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
-                            <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                            <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                            <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                            <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" />
-                        </div>
-                    </div>
-                    <div class="mobile-radio-controls">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
-                    </div>
-                    <div class="mobile-radio-end">
-                        <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
-                        <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
+                <div class="mobile-radio-screen">
+                    <div class="mobile-radio-content" v-if="radioPower">
+                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
+                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
+                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
+                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
+                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
+                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
+                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
+                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
+                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
                     </div>
                 </div>
+                <div class="mobile-radio-controls">
+                    <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-hide" v-on:click="hideRadio(true);" />
+                    <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
+                </div>
+                <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
             </div>
-        </div>
+        </draggable-box>
 
     </div>
 </template>
@@ -89,9 +113,11 @@ import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
 import CallDetails from './components/CallDetails.vue'
+import DraggableBox from './components/util/DraggableBox.vue'
 
 export default {
     components: {
+        DraggableBox,
         Home,
         Channels,
         Channel,
@@ -109,10 +135,26 @@ export default {
             showTopRadio: false,
             showMobileRadio: false,
             radioPower: false,
-            subLevel: null,
             currPreset: 0,
             currScreen: "",
-            inVehicle: false
+            topRadioSize: "lg",
+            inVehicle: false,
+
+            dragMode: false,
+            radioBodyPos: [0, 0],
+            topRadioPos: [400, 0],
+            mobileRadioBodyPos: [0, 0],
+        }
+    },
+    computed: {
+        stateFreqName() {
+            return this.$store.getters.freqName;
+        }
+    },
+    watch: {
+        stateFreqName(newVal, oldVal) {
+            if (!this.$store.state.connected) return;
+            this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
         }
     },
     created() {
@@ -121,8 +163,19 @@ export default {
             //console.log(event.code);
             switch (event.code) {
                 case "Escape":
-                    this.postClient({ type: 'hide'});
-
+                    if (this.dragMode) {
+                        this.dragMode = false;
+                        // save the positions by sending them back to the client
+                        this.postClient({
+                            type: 'setUiPositions', data: {
+                                radioBodyPos: this.radioBodyPos,
+                                topRadioPos: this.topRadioPos,
+                                mobileRadioBodyPos: this.mobileRadioBodyPos,
+                            }
+                        });
+                    } else {
+                        this.hideRadio(false);
+                    }
                     break;
             
                 default:
@@ -138,8 +191,23 @@ export default {
                 case 'reset':
                     this.setupSocket();
                     break;
+                case 'power':
+                    this.radioPower = event.data.power || !this.radioPower;
+                    this.$store.state.gamestate.radio_powered = this.radioPower;
+                    this.postClient({
+                        type: 'power',
+                        power: this.radioPower 
+                    });
+                    this.updateGamestate();
+                    break;
                 case 'setVisible':
-                    this.showRadio = event.data.visibility;
+                    if (this.inVehicle && this.radioPower) {
+                        this.showMobileRadio = event.data.visibility;
+                        this.showRadio = false;
+                    } else {
+                        this.showMobileRadio = false;
+                        this.showRadio = event.data.visibility;
+                    }
                     // this.showMobileRadio = event.data.visibility;
                     break;
                 case 'setTowerQuality':
@@ -148,6 +216,28 @@ export default {
                     } catch (e) {
                         console.error("Failed to update tower quality");
                         console.error(e);
+                    }
+                    break;
+                case 'radioHud':
+                    switch (event.data.size) {
+                        case 'off':
+                            this.showTopRadio = false;
+                            break;
+                        case 'small':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "sm";
+                            break;
+                        case 'medium':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "md";
+                            break;
+                        case 'large':
+                            this.showTopRadio = true;
+                            this.topRadioSize = "lg";
+                            break;
+                        default:
+                            console.error("Invalid Hud Size Specified.");
+                            break;
                     }
                     break;
                 case 'setPos':
@@ -184,71 +274,45 @@ export default {
                             break;
                     }
                     break;
+                case 'goToPreset':
+                    this.goToPreset(event.data.preset);
+                    break;
                 case 'callUpdate':
-                    try {
-                        console.log(event.data.call);
-                        let call = event.data.call;
-                        this.$store.state.call.code = call.code;
-                        this.$store.state.call.title = call.title;
-                        this.$store.state.call.location = (call.postal != ""?call.postal + " " + call.address : call.address);
-                        this.$store.state.call.description = call.description;
-                        this.$store.state.connColor = "green";
-                    } catch (e) {
-                        console.error("Failed to update call information");
-                        console.error(e);
-                    }
+                    this.$store.commit('setCall', event.data.call);
                     break;
                 case 'unitStatus':
-                    let status = "Unknown";
-                    switch (event.data.status) {
-                        case 0:
-                            this.$store.state.statusText = "Unavailable";
-                            break;
-                        case 1:
-                            this.$store.state.statusText = "Busy";
-                            break;
-                        case 2:
-                            this.$store.state.statusText = "Available";
-                            break;
-                        case 3:
-                            this.$store.state.statusText = "En Route";
-                            break;
-                        case 4:
-                            this.$store.state.statusText = "On Scene";
-                            break;
-                        default:
-                            this.$store.state.statusText = "Clocked Out";
-                            break;
-                    }
-                    if (event.data.status > 0) this.$store.state.connColor = "green";
-
+                    this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios':
-                    let activeRadios = [];
-                    event.data.radios.forEach(radio => {
-                        if (radio) {
-                            //console.log(`Radio ID: ${radio.id} Radio Name: ${radio.name}`)
-                            if (radio.id && radio.name) activeRadios.push(radio);
-                        }
-                    });
-                    this.$store.state.radios = activeRadios;
+                case 'getRadios': 
+                    let activeRadios = event.data.radios.filter(radio => radio && radio.id && radio.name);
+                    this.$store.commit('setActiveRadios', activeRadios);
                     break;
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
+                    this.$store.commit('setInVehicle', this.inVehicle);
                     //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
                     break;
+                case 'setUiPositions':
+                    if (typeof event.data.data !== 'object') break;
+                    for (const k in event.data.data) {
+                        if (event.data.data[k] instanceof Array)
+                            this.$set(this, k, event.data.data[k]);
+                        else
+                            console.warn('WARNING: skip in setUiPositions', k);
+                    }
+                    break;
                 case 'incomingMessage':
-                    this.notifyPlayer("Radio: ~b~New Message");
-                    let sendingradio = this.$store.state.radios.filter((obj) => {
-                        return obj.id === event.data.sender;
-                    })
-                    this.$store.state.conversations.push({
-                        senderid: sendingradio[0].id,
-                        sender: sendingradio[0].name,
-                        payload: event.data.payload
-                    })
-                    console.log(this.$store.state.conversations)
+                    // this.notifyPlayer("Radio: ~b~New Message");
+                    // let sendingradio = this.$store.state.radios.filter((obj) => {
+                    //     return obj.id === event.data.sender;
+                    // })
+                    // this.$store.state.conversations.push({
+                    //     senderid: sendingradio[0].id,
+                    //     sender: sendingradio[0].name,
+                    //     payload: event.data.payload
+                    // })
+                    // console.log(this.$store.state.conversations)
                     break;
                 default:
                     break;
@@ -257,9 +321,6 @@ export default {
         // update the gamestate with an interval
         setInterval(this.updateGamestate.bind(this), 2500);
     },
-    // beforeUnmount() {
-    //     window.removeEventListener('message');
-    // },
     methods: {
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
@@ -279,20 +340,23 @@ export default {
             });
         },
         updateRadioType() {
-            // if (this.showMobileRadio || this.showRadio) {
-            //     if (this.inVehicle) {
-            //         this.showMobileRadio = true;
-            //         this.showRadio = false;
-            //     } else {
-            //         this.showMobileRadio = false;
-            //         this.showRadio = true;
-            //     }
-            // }
+            if (this.showMobileRadio || this.showRadio) {
+                if (this.inVehicle) {
+                    this.showMobileRadio = true;
+                    this.showRadio = false;
+                } else {
+                    this.showMobileRadio = false;
+                    this.showRadio = true;
+                }
+            }
+        },
+        hideRadio(forceful) {
+            this.postClient({ type: 'hide', force: forceful });
         },
         sendRadioMessage(event) {
             let recipient = event.recipient;
             let payload = event.payload;
-            console.log(`msgOutbound: ${recipient} ${payload}`)
+            console.log(`msgOutbound: ${recipient} ${payload}`);
             this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload});
             this.notifyPlayer("Radio: ~g~Message Sent");
         },
@@ -339,33 +403,8 @@ export default {
                 freq_recv: [parseInt(this.$store.state.currFreq.recv[0]),parseInt(this.$store.state.currFreq.recv[1])],
                 freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]),parseInt(this.$store.state.currFreq.xmit[1])]
             })
-            this.$store.state.currFreq.name = "Custom Frequency";
-            this.updateFreqLabel();
-        },
-        updateFreqLabel() {
-            let custom = true;
-            this.$store.state.presets.forEach(el => {
-                //this.$store.state.currFreq.name = "Custom Frequency";
-                try {
-                    if (el.freq_recv[0] == this.$store.state.currFreq.recv[0] &&
-                        el.freq_recv[1] == this.$store.state.currFreq.recv[1] &&
-                        el.freq_xmit[0] == this.$store.state.currFreq.xmit[0] &&
-                        el.freq_xmit[1] == this.$store.state.currFreq.xmit[1]) {
-                            this.$store.state.currFreq.name = el.display_name;
-                            this.notifyPlayer("Channel: ~y~" + el.display_name);
-                            custom = false;
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            });
-            if (custom) {
-                this.$store.state.currFreq.name = "Custom Frequency";
-                this.notifyPlayer("Channel: ~y~Custom Frequency");
-            }
         },
         setScreen(name) {
-            //console.log(name);
             this.currScreen = name;
         },
         nextPreset() {
@@ -375,7 +414,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset++;
-                this.updateFreqLabel();
             }
         },
         prevPreset() {
@@ -385,7 +423,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset--;
-                this.updateFreqLabel();
             }
         },
         goToPreset(number) {
@@ -395,7 +432,6 @@ export default {
                 this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
                 this.setFrequency();
                 this.currPreset = number;
-                this.updateFreqLabel();
             }
         },
         setupSocket() {
@@ -408,8 +444,6 @@ export default {
         socketMessage(event) {
             if (event.data) {
                 let data = JSON.parse(event.data);
-                //console.log("Received " + data.type + " message:");
-                //console.log(data);
                 if (data.error) {
                     // Handle Error Status
                     if (data.msg) {
@@ -419,131 +453,65 @@ export default {
                         }
                     }
                 } else {
+                    // for now, only accept events coming globally OR from the first connection
+                    if (typeof data.cid !== 'undefined' && data.cid !== 1) return;
+
                     switch (data.type) {
-                    case "recv_controller_data":
-                        let currstate = data.data.state;
-                        this.$store.state.statusText = "Connected";
-                        this.$store.state.currFreq.name = "Custom Frequency";
-                        this.$store.state.currFreq.recv = currstate.freq_recv;
-                        this.$store.state.currFreq.xmit = currstate.freq_xmit;
-                        this.$store.state.scanned = [];
-                        currstate.freq_scan.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
-                        })
-                        this.$store.state.scanning = currstate.enable_scan;
-                        let presetarr = data.data.config.profiles;
-                        this.$store.state.presets = [];
-                        presetarr.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
+                    case "recv_controller_data": {
+                        const { state: currstate, config } = data.data;
+                        this.$store.commit('setConnected', true);
+                        this.$store.commit('setFreqs', {
+                            recv: currstate.freq_recv,
+                            xmit: currstate.freq_xmit
                         });
-                        this.$store.state.sublvl = data.data.config.sublvl;
-                        this.$store.state.connColor = "lightblue";
-                        this.$store.state.connColorDefault = "lightblue";
-                        this.updateFreqLabel();
+                        this.$store.commit('setScanList', currstate.freq_scan);
+                        this.$store.commit('setScanState', currstate.enable_scan);
+                        this.$store.commit('setConfig', config);
                         break;
-                    case "frequencies_updated":
-                        this.$store.state.currFreq.recv = data.freq_recv;
-                        this.$store.state.currFreq.xmit = data.freq_xmit;
-                        this.updateFreqLabel();
+                    }
+                    case "frequencies_updated": {
+                        const { freq_recv, freq_xmit } = data;
+                        this.$store.commit('setFreqs', {
+                            recv: freq_recv,
+                            xmit: freq_xmit,
+                        });
                         break;
+                    }
                     case "frequencies_scanned_updated":
-                        this.$store.state.scanned = [];
-                        data.freqs.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
-                        })
-                        this.$store.state.scanning = data.enabled;
+                        this.$store.commit('setScanList', data.freqs);
+                        this.$store.commit('setScanState', data.enabled);
                         break;
                     case "channel_clients_changed":
                         // Ignore for Now, will be needed for messaging and status.
 
                         break;
-                    case "controller_created":
+                    case "controller_created": {
                         // Needs to set all of the controller config and status.
-                        let newstate = data.data.state;
-                        this.$store.state.statusText = "Connected";
-                        this.$store.state.currFreq.name = "Custom Frequency";
-                        this.$store.state.currFreq.recv = newstate.freq_recv;
-                        this.$store.state.currFreq.xmit = newstate.freq_xmit;
-                        this.$store.state.scanned = [];
-                        newstate.freq_scan.forEach(el => {
-                            this.$store.state.scanned.push([el[0], el[1]]);
+                        let {state, config} = data.data;
+                        this.$store.commit('setConnected', true);
+                        this.$store.commit('setFreqs', {
+                            recv: state.freq_recv,
+                            xmit: state.freq_xmit,
                         });
-                        let newpresets = data.data.config.profiles;
-                        this.$store.state.presets = [];
-                        newpresets.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
-                        });
-                        this.$store.state.connColor = "lightblue";
-                        this.$store.state.connColorDefault = "lightblue";
+                        this.$store.commit('setScanList', state.freq_scan);
+                        this.$store.commit('setScanState', state.enable_scan);
+                        this.$store.commit('setConfig', config);
                         break;
+                    }
                     case "controller_destroyed":
                         // Needs to zero out all of the controller config and status, and possibly display disconnected message.
-                        this.$store.state.statusText = "Disconnected";
-                        this.$store.state.currFreq.name = "Not Connected";
-                        this.$store.state.currFreq.recv = ["xxx","xxx"];
-                        this.$store.state.currFreq.xmit = ["xxx","xxx"];
-                        this.$store.state.connColor = "gray";
-                        this.$store.state.connColorDefault = "gray";
+                        this.$store.commit('setConnected', false);
                         break;
                     case "config_changed":
-                        // Needs to update the current state with the new configuration.
-                        let cfgpresets = data.data.profiles;
-                        this.$store.state.presets = [];
-                        cfgpresets.forEach(el => {
-                            this.$store.state.presets.push({
-                                display_name: el.display_name,
-                                freq_recv: el.freq_recv,
-                                freq_xmit: el.freq_xmit
-                            })
-                        });
+                        this.$store.commit('setConfig', data.data);
                         break;
                     case "client_xmit_change":
-                        if (data.can_hear) {
-                            switch (data.xmit_type) {
-                                case "self_talk_permit":
-                                    this.$store.state.voicestate.xmit = true;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = data.client.nickname;
-                                    this.$store.state.connColor = "red";
-                                    this.postClient({ type: 'talking', talking: true })
-                                    break;
-                                case "self_squelch":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = "";
-                                    this.$store.state.connColor = this.$store.state.connColorDefault;
-                                    this.postClient({ type: 'talking', talking: false })
-                                    break;
-                                case "unit_talk_permit":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = true;
-                                    this.$store.state.voicestate.talker = data.client.nickname;
-                                    this.$store.state.connColor = "yellow";
-                                    break;
-                                case "unit_squelch":
-                                    this.$store.state.voicestate.xmit = false;
-                                    this.$store.state.voicestate.recv = false;
-                                    this.$store.state.voicestate.talker = "";
-                                    this.$store.state.connColor = this.$store.state.connColorDefault;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            if (data.xmit_type == "self_talk_permit") {
-                                console.log("Self Talk Permit")
-
-                            } else if (data.xmit_type == "self_squelch") {
-                                console.log("Self Squelch")
-                            }
-                        }
+                        if (data.xmit_type.startsWith('self'))
+                            this.postClient({
+                                type: 'talking',
+                                talking: data.xmit_type.includes('talk_permit')
+                            });
+                        this.$store.commit('addXmitState', data);
                         break;
                     default:
                         console.log("**Unhandled Socket Message**");
@@ -562,21 +530,14 @@ export default {
             this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
         },
         socketClose(event) {
-            //console.log("Socket connection lost, reconnecting...");
             this.setupSocket();
         },
         sendToSocket(data) {
-            try {
-                // Suppress Any Connection Issues
-                // TODO: Replace with checking the connection state.
+            if (this.connection.readyState === WebSocket.OPEN)
                 this.connection.send(JSON.stringify(data));
-            } catch (err) {
-
-            }
         },
         toggleScan(event) {
-            //console.log(event);
-            this.$store.state.scanning = !this.$store.state.scanning;
+            this.$store.commit('setScanState', !this.$store.state.scanning);
             this.sendToSocket({
                 type: "set_scanning_enabled",
                 enabled: this.$store.state.scanning
@@ -623,6 +584,22 @@ export default {
     overflow: hidden;
 }
 
+.drag-instructions {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    justify-content: center;
+}
+.drag-instructions > div {
+    font-family: sans-serif;
+    padding: 1rem;
+    background-color: rgba(0,0,0,0.75);
+    color: white;
+}
+
 .hidden {
     display: none;
 }
@@ -667,49 +644,28 @@ export default {
 .mobile-radio-body {
     background-repeat: round;
     width: 722px;
-    height: 240px;
-    position: fixed;
-    right: 30px;
-    bottom: 0px;
+    /* height: 240px; */
     height: 250px;
     display: flex;
     flex-direction: row;
 }
 
-.top-radio-body {
-    background-repeat: round;
-    width: 250px;
-    height: 893px;
-    position: fixed;
-    right: 30px;
-    /* right: 0px; */
-    bottom: 0px;
-    /* width: 200px;
-    height: auto; */
-    width: 275px;
-    height: 982px;
-}
-
 .radio-body {
     background-repeat: round;
-    width: 250px;
-    height: 1040px;
-    position: fixed;
-    right: 30px;
-    /* right: 0px; */
-    bottom: 0px;
-    /* width: 200px;
-    height: auto; */
     width: 275px;
     height: 982px;
 }
 
 .mobile-radio-controls {
-    background-color: rgba(255, 0, 0, 0.5);
-    margin-top: 482px;
-    height: 67px;
+    /*background-color: rgba(255, 0, 0, 0.5);*/
+    /*margin-top: 482px;*/
     border-width: 0px;
     display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 30px;
+    height: 100%;
+    width: 51px;
 }
 
 .mobile-radio-controls .mobile-ctrl:focus {
@@ -719,14 +675,13 @@ export default {
 .mobile-radio-controls .mobile-ctrl {
     position: relative;
     visibility: visible;
-    opacity: 0.3;
+    opacity: 0;
 }
 
 .radio-controls {
-    /* background-color: rgba(255,0,0,0.5); */
     margin-top: 482px;
     height: 67px;
-    border-width: 0px;
+    /* border-width: 0px; */
     display: flex;
 }
 
@@ -738,49 +693,48 @@ export default {
     position: relative;
     visibility: visible;
     opacity: 0.0;
-    /* for development only */
-    /* opacity: 0.3; */
 }
 
 .mobile-radio-controls .ctrl:focus {
     outline: none;
 }
 
-.mobile-radio-controls .ctrl {
+/* .mobile-radio-controls .ctrl {
     position: relative;
     visibility: visible;
     opacity: 0.0;
     /* for development only */
-    opacity: 0.3;
-}
+    /*opacity: 0.3;
+} */
 
-.mobile-radio-controls .mobile-ctrl-panic {
-    margin-left: 74px;
+.mobile-ctrl-panic {
+    opacity: 0.0;
+    margin-top: 25px;
+    margin-left: 167px;
+    height: 52px;
     border-radius: 35px;
-    width: 30px;
-    height: 18px; /* Originally 10px */
-    margin-top: 48px; /* Originally 50px */ 
+    width: 38px;
+    height: 52px;
 }
 
 
 .mobile-radio-controls .mobile-ctrl-prev {
-    height: 65px;
-    margin-left: 10px;
-    width: 22px;
+    height: 43px;
+    width: 100%;
 }
 
 .mobile-radio-controls .mobile-ctrl-next {
-    height: 65px; /* Originally 10px */
-    margin-left: 0px;
-    width: 22px;
+    height: 40px; /* Originally 10px */
+    width: 100%;
+    margin-top: 5px;
 }
 
-.mobile-radio-controls .mobile-ctrl-power {
-    height: 45px; /* Originally 10px */
-    margin-left: 44px;
-    width: 50px;
-    margin-top: 28px;
-    border-radius: 20px;
+.mobile-radio-buttons .mobile-ctrl-power {
+    margin-left: 0px;
+    margin-top: 0px;
+    height: 32px;
+    width: 30px;
+    border-radius: 11px;
 }
 
 .radio-controls .ctrl-panic {
@@ -822,6 +776,7 @@ export default {
     background-color:black;
     margin: 43px 15px 18px 0px;
     height: 167px;
+    width: 216px;
 }
 
 .radio-brand {
@@ -847,7 +802,7 @@ export default {
     margin: 0px 1px 1px 1px;
     width: 216px;
     overflow-y: scroll;
-    overflow-x: hidden;
+    /*overflow-x: hidden;*/
 }
 
 .mobile-radio-content::-webkit-scrollbar {
@@ -868,22 +823,28 @@ export default {
 }
 
 .mobile-radio-buttons {
-    background-color: rgba(0,0,255,0.5);
     width: 0px;
     margin: 35px 76px 169px 100px;
     height: 25px;
-    display: flex;
 }
 
 .mobile-radio-buttons .mobile-ctrl {
     position: relative;
     visibility: visible;
     opacity: 0.0;
-    /* for development only */
-    opacity: 0.3;
 }
 
-.mobile-radio-buttons .mobile-ctrl-home {
+.mobile-radio-controls .mobile-ctrl-hide {
+    margin-top: 15px;
+    margin-left: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 20px;
+}
+
+.mobile-radio-controls .mobile-ctrl-home {
+    margin-top: 16px;
+    margin-left: 10px;
     width: 30px;
     height: 30px;
     border-radius: 20px;
@@ -909,4 +870,82 @@ export default {
     border-radius: 20px;
 }
 
+/* TOP RADIO VIEW */
+.top-radio-body {
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* position: fixed; */
+
+    /* right: 400px; Direct Input from user */
+    /* bottom: 0px; Direct Input from user */
+}
+
+.top-radio-body-lg {
+    /* Largest Radio Body */
+    width: 439px; /* Variable Width & Height */
+    height: 439px; /* Variable Width & Height */
+}
+
+.top-radio-body-md {
+    height: 300px;
+    width: 300px;
+}
+
+.top-radio-body-sm {
+    height: 200px;
+    width: 200px;
+}
+
+.top-radio-screen {
+    margin: 224px 143px 0px 149px;
+    height: 81px;
+    border-radius: 11px;
+    /*background-color: black;*/
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.top-radio-body-lg .top-radio-screen {
+    font-size: 17px;
+}
+
+.top-radio-body-md .top-radio-screen {
+    border-radius: 4px;
+    height: 55px;
+    margin: 153px 99px 0px 102px;
+    font-size: 11px;
+}
+
+.top-radio-body-sm .top-radio-screen {
+    height: 39px;
+    margin: 102px 65px 0 66px;
+    font-size: 8px;
+}
+
+.backlight-gray {
+    background-color: unset;
+}
+
+.backlight-red {
+    background-color: rgb(254 69 69 / 30%);
+
+}
+
+.backlight-yellow {
+    background-color: rgb(217 254 69 / 30%);
+
+}
+
+.backlight-green {
+    background-color: rgb(80 254 69 / 30%);
+
+}
+
+.backlight-lightblue {
+    background-color: rgb(69 152 254 / 30%);
+
+}
 </style>

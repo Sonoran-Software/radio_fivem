@@ -57,7 +57,7 @@ module.exports = {
             },
         ],
     },
-    devtool: DEV ? "eval-source-map" : "source-map",
+    devtool: DEV ? "eval-source-map" : "cheap-source-map",
     optimization: {
         minimize: !DEV,
         minimizer: [

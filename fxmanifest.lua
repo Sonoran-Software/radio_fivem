@@ -1,7 +1,7 @@
 -- !!THIS IS THE DEVELOPMENT MANIFEST!! --
 
 -- PRODUCTION MANIFEST IS LOCATED HERE; --
--- ./build/sonoranradio/fxmanifest.lua	--
+-- ./fxmanifest.prod.lua                --
 
 fx_version 'cerulean'
 game 'gta5'

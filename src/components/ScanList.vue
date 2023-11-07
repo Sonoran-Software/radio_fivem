@@ -23,10 +23,10 @@
         </div>
         <div class="sc-body" v-if="$store.state.sublvl > 1">
             <div class="sc-row" v-on:click="$emit('toggle-scan', '')">
-                <div class="sc-row-label">Scan {{($store.state.scanning?"enabled":"disabled")}}</div>
+                <div class="sc-row-label">Scan {{ ($store.state.scanning ? "enabled" : "disabled") }}</div>
                 <div class="sc-row-icon">
                     <i class="fas fa-toggle-off" v-if="!$store.state.scanning"></i>
-                    <i class="fas fa-toggle-on" v-if="$store.state.scanning"></i>
+                    <i class="fas fa-toggle-on" v-else></i>
                 </div>
             </div>
             <div class="sc-row" v-for="freq in $store.state.scanned" :key="freq.id">
@@ -36,25 +36,6 @@
         </div>
     </div>
 </template>
-
-<script>
-import vue from 'vue';
-
-export default {
-    components: {},
-    data() {
-        return {
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
-        }
-    },
-    methods: {
-
-    }
-
-}
-</script>
 
 <style scoped>
 .screen {

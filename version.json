@@ -1,6 +1,6 @@
 {
-    "resource": "1.3.5",
+    "resource": "$RESOURCE_VERSION",
     "check_url": "https://download.sonoransoftware.com/sonoranradio/version.json",
     "download_url": "https://download.sonoransoftware.com/sonoranradio/",
-    "configVersion": "1.1"
+    "configVersion": "1.2"
 }

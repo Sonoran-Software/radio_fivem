@@ -35,34 +35,17 @@
 </template>
 
 <script>
-import vue from 'vue';
-
 export default {
-    props: ["presets"],
-    components: {},
-    data() {
-        return {
-            myPresets: [
-                { name: "Preset 1" },
-                { name: "Preset 2" },
-                { name: "Preset 3" }
-            ],
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
-        }
-    },
     methods: {
         setFrequency(xmit, recv) {
-            this.$store.state.currFreq.xmit[0] = xmit[0];
-            this.$store.state.currFreq.xmit[1] = xmit[1];
-            this.$store.state.currFreq.recv[0] = recv[0];
-            this.$store.state.currFreq.recv[1] = recv[1];
+            this.$store.commit('setFreqs', {
+                xmit,
+                recv
+            });
             this.$emit('set-frequency','');
             this.$emit('set-screen','');
         }
-    }
-
+    },
 }
 </script>
 
