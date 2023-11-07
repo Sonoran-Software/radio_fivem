@@ -1,0 +1,63 @@
+local repeaters = {}
+local lastLogs = {}
+
+RegisterNetEvent(
+    'sonoranscripts::togglerepeater',
+    function(id, repeater, pos)
+        if repeater then
+            if repeaters[id] ~= nil then
+                exports['sonoranradio']:updateTower(repeaters[id], nil)
+                repeaters[id] =
+                    exports['sonoranradio']:createTower(
+                    {
+                        Destruction = false,
+                        NotPhysical = true,
+                        Swankiness = 0.0,
+                        PropPosition = pos,
+                        DishStatus = {'alive', 'alive', 'alive', 'alive'},
+                        Range = config.radio.range,
+                        Powered = true,
+                        DontSaveMe = true
+                    }
+                )
+            else
+                repeaters[id] =
+                    exports['sonoranradio']:createTower(
+                    {
+                        Destruction = false,
+                        NotPhysical = true,
+                        Swankiness = 0.0,
+                        PropPosition = pos,
+                        DishStatus = {'alive', 'alive', 'alive', 'alive'},
+                        Range = config.radio.range,
+                        Powered = true,
+                        DontSaveMe = true
+                    }
+                )
+            end
+        else
+            exports['sonoranradio']:updateTower(repeaters[id], nil)
+            repeaters[id] = nil
+        end
+    end
+)
+
+RegisterNetEvent(
+    'sonoranscripts::updatepos',
+    function(id, pos)
+        exports['sonoranradio']:updateTower(
+            repeaters[id],
+            {
+                Destruction = false,
+                NotPhysical = true,
+                Swankiness = 0.0,
+                PropPosition = pos,
+                DishStatus = {'alive', 'alive', 'alive', 'alive'},
+                Range = config.radio.range,
+                Powered = true,
+                DontSaveMe = true
+            }
+        )
+    end
+)
+
