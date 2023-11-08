@@ -64,6 +64,7 @@ resource-deploy-QAServer:
     - linux, build, shell, development
   only:
     - master
+    - development
 
 resource-deploy-prod:
   stage: deploy
