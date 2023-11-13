@@ -1,13 +1,22 @@
 RegisterNetEvent('sonoranscripts::mcc_decor', function()
 	DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
 	TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-	                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
+	                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 300)
 end)
 
 local function isRegisteredVehicle(veh)
-	for i = 1, #Config.repeaterVehicleHashes do
-		if GetEntityModel(veh) == GetHashKey(Config.repeaterVehicleHashes[i]) then
+	for i = 1, #Config.repeaterVehicleSpawncodes do
+		if GetEntityModel(veh) == GetHashKey(Config.repeaterVehicleSpawncodes[i].model) then
 			return true
+		end
+	end
+	return false
+end
+
+local function getVehicleConfig(veh)
+	for i = 1, #Config.repeaterVehicleSpawncodes do
+		if GetEntityModel(veh) == GetHashKey(Config.repeaterVehicleSpawncodes[i].model) then
+			return Config.repeaterVehicleSpawncodes[i]
 		end
 	end
 	return false
@@ -25,6 +34,12 @@ Citizen.CreateThread(function()
 	while true do
 		Wait(100)
 		if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and NetworkHasControlOfEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)) then
+			if GetVehicleEngineHealth(GetVehiclePedIsIn(GetPlayerPed(-1, false))) == -4000 then
+				DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', false)
+				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), false, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
+				                   0)
+				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater disabled due to engine damage')
+			end
 			TriggerServerEvent('sonoranscripts::updatepos', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
 		end
 		local entering = GetVehiclePedIsEntering(GetPlayerPed(-1))
@@ -70,12 +85,13 @@ Citizen.CreateThread(function()
 			if isRegisteredVehicle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) or isRegisteredVehicle(trailer) then
 				if isTrailer then
 					DecorSetBool(trailer, 'RepeaterActive', not DecorGetBool(trailer, 'RepeaterActive'))
-					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(trailer), DecorGetBool(trailer, 'RepeaterActive'), GetEntityCoords(trailer))
+					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(trailer), DecorGetBool(trailer, 'RepeaterActive'), GetEntityCoords(trailer), getVehicleConfig(trailer).range)
 					ShowNotification('~b~[SonoranRadio]:~w~ Trailer radio repeater ' .. (DecorGetBool(trailer, 'RepeaterActive') and 'enabled' or 'disabled'))
 				else
 					DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'))
 					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-					                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
+					                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
+					                   getVehicleConfig(GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
 					ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ' .. (DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and 'enabled' or 'disabled'))
 				end
 			end

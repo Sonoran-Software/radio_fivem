@@ -1,7 +1,7 @@
 local repeaters = {}
 local lastLogs = {}
 
-RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos)
+RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, range)
 	if repeater then
 		if repeaters[id] ~= nil then
 			exports['sonoranradio']:updateTower(repeaters[id], nil)

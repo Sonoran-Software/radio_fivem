@@ -25,5 +25,10 @@ if not IsDuplicityVersion() then
     end)
 end
 
+-- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
-Config.repeaterVehicleHashes = {}
+-- Mobile repeater spawncodes
+Config.repeaterVehicleSpawncodes = {
+    {model = "police", label = "Police Vehicle", range = 200},
+    {model = "police2", label = "Police Vehicle", range = 200},
+}
