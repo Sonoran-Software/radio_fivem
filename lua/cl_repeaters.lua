@@ -43,8 +43,7 @@ Citizen.CreateThread(function()
 				-- Set the decor bool to false
 				DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', false)
 				-- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
-				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), false, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-				                   0)
+				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
 				-- Show a notification to the player
 				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
 				-- Remove the vehicle from the repeater table
@@ -61,7 +60,7 @@ Citizen.CreateThread(function()
 			end
 			if GetVehicleEngineHealth(k) < -1000 then
 				DecorSetBool(k, 'RepeaterActive', false)
-				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(k), false, GetEntityCoords(k), 0)
+				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(k))
 				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
 				RepeaterVehicles[k] = nil
 			end
