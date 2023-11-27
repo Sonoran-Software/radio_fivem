@@ -54,11 +54,11 @@ AddEventHandler("SonoranScripts::PowerGrid::DeviceDisabled", function(affectedDe
             tower.DishStatus[i] = 'dead'
         end
         TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus)
-        TriggerEvent("SonoranCAD::sonrad:SetDishStatus", v, tower.DishStatus)    
+        TriggerEvent("SonoranCAD::sonrad:SetDishStatus", v, tower.DishStatus)
     end
     -- TriggerClientEvent("RadioTower:SyncTowers", source, Towers)
     -- TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
-    
+
 end)
 
 RegisterNetEvent("SonoranScripts::PowerGrid::DeviceRepaired")

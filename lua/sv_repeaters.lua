@@ -16,7 +16,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 					'alive',
 					'alive'
 				},
-				Range = config.radio.range,
+				Range = range,
 				Powered = true,
 				DontSaveMe = true
 			})
@@ -32,7 +32,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 					'alive',
 					'alive'
 				},
-				Range = config.radio.range,
+				Range = range,
 				Powered = true,
 				DontSaveMe = true
 			})
@@ -43,7 +43,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 	end
 end)
 
-RegisterNetEvent('sonoranscripts::updatepos', function(id, pos)
+RegisterNetEvent('sonoranscripts::updatepos', function(id, pos, range)
 	exports['sonoranradio']:updateTower(repeaters[id], {
 		Destruction = false,
 		NotPhysical = true,
@@ -55,7 +55,7 @@ RegisterNetEvent('sonoranscripts::updatepos', function(id, pos)
 			'alive',
 			'alive'
 		},
-		Range = config.radio.range,
+		Range = range,
 		Powered = true,
 		DontSaveMe = true
 	})

@@ -1,3 +1,5 @@
+local RepeaterVehicles = {}
+
 RegisterNetEvent('sonoranscripts::mcc_decor', function()
 	DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
 	TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
@@ -34,13 +36,26 @@ Citizen.CreateThread(function()
 	while true do
 		Wait(100)
 		if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and NetworkHasControlOfEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)) then
-			if GetVehicleEngineHealth(GetVehiclePedIsIn(GetPlayerPed(-1, false))) == -4000 then
+			if GetVehicleEngineHealth(GetVehiclePedIsIn(GetPlayerPed(-1, false))) < -1000 then
 				DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', false)
 				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), false, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
 				                   0)
 				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater disabled due to engine damage')
+				RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] = nil
 			end
-			TriggerServerEvent('sonoranscripts::updatepos', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
+			TriggerServerEvent('sonoranscripts::updatepos', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
+			                   getVehicleConfig(GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
+		end
+		for k, _ in pairs(RepeaterVehicles) do
+			if not DoesEntityExist(k) then
+				RepeaterVehicles[k] = nil
+			end
+			if GetVehicleEngineHealth(k) < -1000 then
+				DecorSetBool(k, 'RepeaterActive', false)
+				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(k), false, GetEntityCoords(k), 0)
+				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater disabled due to engine damage')
+				RepeaterVehicles[k] = nil
+			end
 		end
 		local entering = GetVehiclePedIsEntering(GetPlayerPed(-1))
 		if entering ~= 0 and isRegisteredVehicle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) and not IsVehicleAttachedToTrailer(GetVehiclePedIsIn(GetPlayerPed(-1), false))
@@ -87,12 +102,22 @@ Citizen.CreateThread(function()
 					DecorSetBool(trailer, 'RepeaterActive', not DecorGetBool(trailer, 'RepeaterActive'))
 					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(trailer), DecorGetBool(trailer, 'RepeaterActive'), GetEntityCoords(trailer), getVehicleConfig(trailer).range)
 					ShowNotification('~b~[SonoranRadio]:~w~ Trailer radio repeater ' .. (DecorGetBool(trailer, 'RepeaterActive') and 'enabled' or 'disabled'))
+					if DecorGetBool(trailer, 'RepeaterActive') then
+						RepeaterVehicles[trailer] = true
+					else
+						RepeaterVehicles[trailer] = nil
+					end
 				else
 					DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'))
 					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
 					                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
 					                   getVehicleConfig(GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
 					ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ' .. (DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and 'enabled' or 'disabled'))
+					if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') then
+						RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] = true
+					else
+						RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] = nil
+					end
 				end
 			end
 		end
