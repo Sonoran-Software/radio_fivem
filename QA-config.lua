@@ -1,6 +1,6 @@
 Config = {}
 
-Config.debug = false
+Config.debug = true
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.updateBranch = "master"
