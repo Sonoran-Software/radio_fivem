@@ -22,7 +22,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 				DontSaveMe = true
 			})
 		else
-			DebugPrint('Creating tower ' .. id)
+			RegPrint('Creating tower ' .. id)
 			repeaters[id] = exports['sonoranradio']:createTower({
 				Destruction = false,
 				NotPhysical = true,
@@ -40,7 +40,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 			})
 		end
 	else
-		DebugPrint('Removing tower ' .. id)
+		RegPrint('Removing tower ' .. id)
 		exports['sonoranradio']:updateTower(repeaters[id], nil)
 		repeaters[id] = nil
 	end
