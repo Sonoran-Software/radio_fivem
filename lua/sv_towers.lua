@@ -218,7 +218,6 @@ exports('createTower', function(config)
 	end
 	obj.DontSaveMe = true
 	obj.ApiResource = GetInvokingResource()
-
 	table.insert(Towers, obj)
 	TriggerClientEvent('RadioTower:SpawnTower', -1, obj)
 	TriggerEvent('SonoranCAD::sonrad:SyncTowers', Towers)
@@ -230,17 +229,16 @@ exports('updateTower', function(towerId, config)
 		if Towers[i].Id == towerId then
 			DebugPrint('tower updated by an api', towerId, GetInvokingResource())
 			if config == nil then
+				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, nil)
 				table.remove(Towers, i)
-				print('removing tower', i)
-				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, Towers[i])
 			else
 				for k, v in pairs(config) do
 					Towers[i][k] = v
 				end
+				TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
+				print('triggering events')
+				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, Towers[i])
 			end
-			TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
-			print('triggering events')
-			TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, Towers[i])
 			return config and Towers[i].Id or ''
 		end
 	end
