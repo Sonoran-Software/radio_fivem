@@ -24,13 +24,6 @@ local function getVehicleConfig(veh)
 	return false
 end
 
--- Draw notificaiton above map
-local function ShowNotification(text)
-	SetNotificationTextEntry('STRING')
-	AddTextComponentString(text)
-	DrawNotification(false, false)
-end
-
 Citizen.CreateThread(function()
 	DecorRegister('RepeaterActive', 2)
 	while true do
@@ -45,7 +38,7 @@ Citizen.CreateThread(function()
 				-- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
 				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
 				-- Show a notification to the player
-				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+				notifyClient('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
 				-- Remove the vehicle from the repeater table
 				RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] = nil
 			end
@@ -61,7 +54,7 @@ Citizen.CreateThread(function()
 			if GetVehicleEngineHealth(k) < -1000 then
 				DecorSetBool(k, 'RepeaterActive', false)
 				TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(k))
-				ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+				notifyClient('~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
 				RepeaterVehicles[k] = nil
 			end
 		end
@@ -79,10 +72,10 @@ Citizen.CreateThread(function()
 			end
 			-- Check if the vehicle's repeater is enabled and notify the player
 			if not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') then
-				ShowNotification('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
+				notifyClient('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
 			else
 				-- Check if the vehicle's repeater is disabled and notify the player
-				ShowNotification('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
+				notifyClient('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
 			end
 			-- Check if the player is entering a vehicle and if the vehicle is registered and if the player is in the driver or passenger seat and if the vehicle is attached to a trailer
 		elseif entering ~= 0 and IsVehicleAttachedToTrailer(GetVehiclePedIsIn(GetPlayerPed(-1), false))
@@ -100,10 +93,10 @@ Citizen.CreateThread(function()
 				end
 				-- Check if the trailer's repeater is enabled and notify the player
 				if not DecorGetBool(trailer, 'RepeaterActive') then
-					ShowNotification('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
+					notifyClient('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
 				else
 					-- Check if the trailer's repeater is disabled and notify the player
-					ShowNotification('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
+					notifyClient('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
 				end
 			end
 		end
@@ -127,7 +120,7 @@ Citizen.CreateThread(function()
 					-- Trigger the server event to toggle the repeater. Parameters: trailer network ID, repeater status, trailer position, repeater range
 					TriggerServerEvent('sonoranscripts::togglerepeater', NetworkGetNetworkIdFromEntity(trailer), DecorGetBool(trailer, 'RepeaterActive'), GetEntityCoords(trailer), getVehicleConfig(trailer).range)
 					-- Show a notification to the player
-					ShowNotification('~b~[SonoranRadio]:~w~ Trailer radio repeater ' .. (DecorGetBool(trailer, 'RepeaterActive') and '~g~enabled' or '~o~disabled'))
+					notifyClient('~b~[SonoranRadio]:~w~ Trailer radio repeater ' .. (DecorGetBool(trailer, 'RepeaterActive') and '~g~enabled' or '~o~disabled'))
 					-- If the repeater is enabled, add the trailer to the repeater table
 					if DecorGetBool(trailer, 'RepeaterActive') then
 						RepeaterVehicles[trailer] = true
@@ -144,7 +137,7 @@ Citizen.CreateThread(function()
 					                   DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive'), GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false)),
 					                   getVehicleConfig(GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
 					-- Show a notification to the player
-					ShowNotification('~b~[SonoranRadio]:~w~ Radio repeater ' .. (DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and '~g~enabled' or '~o~disabled'))
+					notifyClient('~b~[SonoranRadio]:~w~ Radio repeater ' .. (DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and '~g~enabled' or '~o~disabled'))
 					-- If the repeater is enabled, add the vehicle to the repeater table
 					if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') then
 						RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] = true
