@@ -48,7 +48,7 @@ function notifyClient(notification, urgent)
 	elseif Config['notifications']['type'] == 'custom' then
 		Config['notifications']['custom'](notification)
     elseif Config['notifications']['type'] == 'chat' then
-        TriggerClientEvent('chat:addMessage', -1, {
+        TriggerEvent('chat:addMessage', -1, {
             template = '<div class="chat-message sonoran-radio"><b>SonoranRadio</b> {0}</div>',
             args = { notification }
         })
