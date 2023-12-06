@@ -230,6 +230,7 @@ exports('updateTower', function(towerId, config)
 			DebugPrint('tower updated by an api', towerId, GetInvokingResource())
 			if config == nil then
 				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, nil)
+				TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, nil)
 				table.remove(Towers, i)
 			else
 				for k, v in pairs(config) do
