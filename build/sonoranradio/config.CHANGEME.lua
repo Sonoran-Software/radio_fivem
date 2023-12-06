@@ -17,7 +17,7 @@ Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 
 -- Notification Settings --
 Config.notifications = {
-    type = "chat", -- Available options: native, pNotify, okokNotify, custom or cadonly
+    type = "native", -- Available options: native, pNotify, okokNotify, or custom
     notificationTitle = "SonoranRadio", -- Notification Title for methods that support it
     -- Uncomment line below and comment line 105 if you plan to use pNotify
     -- notificationMessage = "<b>SonoranRadio</b></br>{{MESSAGE}}"
