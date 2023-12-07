@@ -5,7 +5,7 @@ Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.updateBranch = "master"
 Config.autoUpdateUrl = "https://download.sonoransoftware.com/sonoranradio/version.json"
-Config.allowAutoUpdate = false
+Config.allowAutoUpdate = true
 Config.noPhysicalTowers = false
 Config.towerRepairTimer = 20
 Config.acePermsForRadio = false
@@ -13,3 +13,36 @@ Config.acePermsForTowerRepair = false
 Config.enforceRadioItem = false
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
+Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
+
+-- Notification Settings --
+Config.notifications = {
+    type = "native", -- Available options: native, pNotify, okokNotify or custom
+    notificationTitle = "SonoranRadio", -- Notification Title for methods that support it
+    -- Uncomment line below and comment line 105 if you plan to use pNotify
+    -- notificationMessage = "<b>SonoranRadio</b></br>{{MESSAGE}}"
+    notificationMessage = "~b~SonoranRadio~w~\n{{MESSAGE}}", -- The text of the notification
+    custom = function(notification) -- Custom notification function, only used if type is set to custom
+        Utilities.Logging.logDebug("Custom notification function called with notification: " .. notification)
+        exports.pNotify:SendNotification({['type'] = 'info', ['text'] = "<b style='color:blue'>SonoranRadio</b><br/>Notification: "..notification..""})
+    end
+}
+
+
+-- Only Run This on Client
+if not IsDuplicityVersion() then
+    RegisterNetEvent("SonoranRadio::API:PlayerDeath", function(playerid)
+        TriggerEvent("SonoranRadio::PlayerDeath") -- This event will kill the player
+    end)
+    RegisterNetEvent("SonoranRadio::API:PlayerRevive", function(playerid)
+        TriggerEvent("SonoranRadio::PlayerRevive") -- This event will revive the player
+    end)
+end
+
+-- Enable mobile repeaters
+Config.enableVehicleRepeaters = true
+-- Mobile repeater spawncodes
+Config.repeaterVehicleSpawncodes = {
+    {model = "police", label = "Police Vehicle", range = 200},
+    {model = "police2", label = "Police Vehicle", range = 200},
+}
