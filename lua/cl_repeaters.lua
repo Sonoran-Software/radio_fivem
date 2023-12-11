@@ -1,4 +1,5 @@
 local RepeaterVehicles = {}
+local lastNotificaiton = nil
 
 RegisterNetEvent('sonoranscripts::mcc_decor', function()
 	DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false)))
@@ -71,11 +72,13 @@ Citizen.CreateThread(function()
 				DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive', false)
 			end
 			-- Check if the vehicle's repeater is enabled and notify the player
-			if not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') then
+			if not DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive') and lastNotificaiton ~= entering then
 				notifyClient('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
-			else
+				lastNotificaiton = entering
+			elseif lastNotificaiton ~= entering then
 				-- Check if the vehicle's repeater is disabled and notify the player
 				notifyClient('~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
+				lastNotificaiton = entering
 			end
 			-- Check if the player is entering a vehicle and if the vehicle is registered and if the player is in the driver or passenger seat and if the vehicle is attached to a trailer
 		elseif entering ~= 0 and IsVehicleAttachedToTrailer(GetVehiclePedIsIn(GetPlayerPed(-1), false))
@@ -92,11 +95,13 @@ Citizen.CreateThread(function()
 					DecorSetBool(trailer, 'RepeaterActive', false)
 				end
 				-- Check if the trailer's repeater is enabled and notify the player
-				if not DecorGetBool(trailer, 'RepeaterActive') then
+				if not DecorGetBool(trailer, 'RepeaterActive') and lastNotificaiton ~= trailer then
 					notifyClient('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
-				else
+					lastNotificaiton = trailer
+				elseif lastNotificaiton ~= trailer then
 					-- Check if the trailer's repeater is disabled and notify the player
 					notifyClient('~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
+					lastNotificaiton = trailer
 				end
 			end
 		end
