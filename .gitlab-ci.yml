@@ -6,7 +6,7 @@ resource-build:
     - cp -r node_modules build/sonoranradio
     # build the program and copy all files over
     - yarn
-    - yarn build
+    - NODE_ENV=production yarn build
     - cp -r sonrad_tower/stream sonrad_tower/data build/sonoranradio
     - cp -r lua dist static towers.json build/sonoranradio
     # set the version of version.json and fxmanifest.lua

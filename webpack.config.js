@@ -1,5 +1,5 @@
 const { resolve } = require("path");
-const babelPresetEnv = require("@babel/preset-env");
+// const babelPresetEnv = require("@babel/preset-env");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const TerserWebpackPlugin = require("terser-webpack-plugin");
 const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
@@ -12,7 +12,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
  * WARNING: DO NOT enable this unless you are truly developing
  * the resource. This will dramatically increase bundle sizes.
  */
-const DEV = true;
+const DEV = process.env.NODE_ENV !== 'production';
 
 module.exports = {
   mode: DEV ? "development" : "production",
@@ -34,12 +34,17 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /.js$/,
-        exclude: /node_modules/,
+        test: /\.(js|mjs|cjs)$/,
+        // exclude: /node_modules/,
         use: {
           loader: "babel-loader",
           options: {
-            presets: [babelPresetEnv],
+            presets: [
+              require('@babel/preset-env'),
+            ],
+            plugins: [
+              require('@babel/plugin-transform-optional-chaining'),
+            ]
           },
         },
       },
