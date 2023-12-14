@@ -24,7 +24,8 @@ client_scripts {
 -- setup for nui
 files {
     'dist/**/*',
-    'static/**/*'
+    'static/**/*',
+    'skins/**/*',
 } 
 ui_page 'dist/ui.html'
 

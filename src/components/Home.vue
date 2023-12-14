@@ -6,7 +6,7 @@
             <div class="sc-time">{{ currTime }}</div>
         </div>
         <div class="sc-body">
-            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')" v-if="!$store.getters.isInVehicle">
+            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')">
                 <div class="sc-status-text">
                     <div class="header">
                         My Status
@@ -28,8 +28,8 @@
                     </div>
                     <div class="sc-channel-text">
                         <div v-if="$store.state.talkers.length === 0" class="content">
-                            Recv: {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} <br/>
-                            Xmit: {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
+                            Recv: {{ recvFreq }}<br/>
+                            Xmit: {{ xmitFreq }}<br/>
                         </div>
                         <div v-else class="content">
                             <div v-for="t in $store.state.talkers" :key="t.id">
@@ -87,8 +87,6 @@
 </template>
 
 <script>
-import vue from 'vue';
-
 export default {
     props: [
         "config"
@@ -99,6 +97,14 @@ export default {
             currTime: "00:00",
         }
     },
+    computed: {
+        recvFreq() {
+            return this.$store.getters.recvFreqStr;
+        },
+        xmitFreq() {
+            return this.$store.getters.xmitFreqStr;
+        },
+    },
     mounted() {
         window.addEventListener('message', (event) => {
             const eventType = event.data.type;
@@ -108,13 +114,9 @@ export default {
         });
     },
     methods: {
-        setConnectionColor(color) {
-            // xmit - red
-            // recv - yellow
-            // synced - green
-            // standby - lightblue
-            // panic - orange
-            // disconnected - gray
+        freqToString(freq) {
+            if (freq[0] === 'xxx') return 'N/A';
+            return `${freq[0]}.${freq[1].toString().padStart(3, '0')}MHz`
         },
         openConversation(conversation) {
             this.$store.state.recipient.id = conversation.senderid;

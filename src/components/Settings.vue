@@ -15,6 +15,9 @@
             <div class="sc-row" @click="$emit('set-drag', true)">
                 <div class="sc-row-label">Reposition UI</div>
             </div>
+            <div v-for="(skin, i) in skins" :key="i" class="sc-row" @click="setSkin(skin.id)">
+                <div class="sc-row-label">{{ skin.name }}</div>
+            </div>
             <div class="sc-row">
                 <div class="sc-row-label">More Coming Soon</div>
             </div>
@@ -25,22 +28,13 @@
 <script>
 export default {
     components: {},
-    data() {
-        return {
-            myPresets: [
-                { name: "Setting 1" },
-                { name: "Setting 2" },
-                { name: "Setting 3" }
-            ],
-            myStatus: "Available",
-            myZone: "Zone 1",
-            myChannel: "Channel 1"
-        }
-    },
+    data: () => ({}),
+    props: { skins: Array, },
     methods: {
-
+        setSkin(skinId) {
+            this.$emit('set-skin-id', skinId);
+        }
     }
-
 }
 </script>
 
@@ -73,6 +67,7 @@ export default {
     display: flex;
     justify-content: space-between;
     border-bottom: rgb(30, 30, 30) solid 1px;
+    cursor: pointer;
 }
 .sc-row-label {
     font-size: 14px;

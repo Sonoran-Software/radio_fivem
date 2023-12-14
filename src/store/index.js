@@ -3,6 +3,11 @@ import Vuex from 'vuex';
 
 Vue.use(Vuex);
 
+const freqToString = (freq) => {
+    if (freq[0] === 'xxx') return 'N/A';
+    return `${freq[0]}.${freq[1].toString().padStart(3, '0')}`;
+};
+
 export default new Vuex.Store({
     state: {
         connected: false,
@@ -78,7 +83,13 @@ export default new Vuex.Store({
         },
         isInVehicle(state) {
             return state.inVehicle;
-        }
+        },
+        recvFreqStr(state) {
+            return freqToString(state.currFreq.recv);
+        },
+        xmitFreqStr(state) {
+            return freqToString(state.currFreq.xmit);
+        },
     },
     mutations: {
         setConnected(state, connected) {
