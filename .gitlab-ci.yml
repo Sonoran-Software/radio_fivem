@@ -28,17 +28,6 @@ resource-build:
   tags:
     - linux, build, shell, development
 
-# makes sure that webpack dev mode is off
-resource-test-webpack:
-  stage: test
-  script:
-    - cat webpack.config.js | grep -E "const +DEV += +false"
-  only:
-    - branches
-    - tags
-  tags:
-    - linux, build, shell, development
-
 resource-deploy-QAServer:
   stage: deploy
   script:

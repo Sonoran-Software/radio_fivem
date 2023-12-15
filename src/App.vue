@@ -35,26 +35,7 @@
                 </skin-body-component>
 
                 <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
-                    <div
-                        v-if="radioPower"
-                        class="top-radio-screen"
-                        :class="'backlight-' + $store.getters.connColor"
-                    >
-                        <div class="top-radio-header">
-                            {{ $store.getters.statusText }}
-                        </div>
-                        <div class="top-radio-content">
-                            {{ $store.getters.freqName || "Custom" }}
-                        </div>
-                        <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
-                            {{ $store.getters.recvFreqStr }} / {{ $store.getters.xmitFreqStr }}
-                        </div>
-                        <div v-else class="content">
-                            <div v-for="t in $store.state.talkers" :key="t.id">
-                                {{ t.nickname }}
-                            </div>
-                        </div>
-                    </div>
+                    <mini-screen v-if="radioPower" />
                 </skin-body-component>
 
                 <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
@@ -79,6 +60,7 @@ import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
 import Messages from './components/Messages.vue'
 import CallDetails from './components/CallDetails.vue'
+import MiniScreen from './components/MiniScreen.vue'
 
 export default {
     components: {
@@ -94,7 +76,8 @@ export default {
         Settings,
         Contacts,
         Messages,
-        CallDetails
+        CallDetails,
+        MiniScreen,
     },
     data: () => {
         return {
@@ -361,7 +344,7 @@ export default {
             else if (key === 'ArrowLeft') wNudge = -NUDGE;
             else if (key === 'ArrowRight') wNudge = NUDGE;
 
-            const prop = this.curSkin.controls[5];
+            const prop = this.activeFrames[1].miniScreen;
             if (prop.top)
                 this.$set(prop, 'top', prop.top + hNudge);
             if (prop.bottom)
@@ -669,164 +652,14 @@ export default {
     color: white;
 }
 
-.hidden {
-    display: none;
-}
-
-.radio-open {
-    animation: radio-open 1s;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    overflow: hidden;
-}
-@keyframes radio-open {
-    0% {
-        position: absolute;
-        transform: translate3d(0, 100vh, 0);
-    }
-    100% {
-        position: absolute;
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-.radio-close {
-    animation: radio-close 1s;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-}
-@keyframes radio-close {
-    0% {
-        position: absolute;
-        transform: translate3d(0, 0, 0);
-    }
-    100% {
-        position: absolute;
-        transform: translate3d(0, 100vh, 0);
-    }
-}
-
-.mobile-radio-body {
-    background-repeat: round;
-    width: 722px;
-    /* height: 240px; */
-    height: 250px;
-    display: flex;
-    flex-direction: row;
-}
-
 .radio-body {
     position: relative;
-}
-.radio-body-overlay {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
 }
 .radio-control {
     outline: none;
     border: none;
     background-color: transparent;
     cursor: pointer;
-}
-
-.mobile-radio-controls {
-    /*background-color: rgba(255, 0, 0, 0.5);*/
-    /*margin-top: 482px;*/
-    border-width: 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-top: 30px;
-    height: 100%;
-    width: 51px;
-}
-
-.mobile-radio-controls .mobile-ctrl:focus {
-    outline: none;
-}
-
-.mobile-radio-controls .mobile-ctrl {
-    position: relative;
-    visibility: visible;
-    /* opacity: 0; */
-}
-
-.mobile-radio-controls .ctrl:focus {
-    outline: none;
-}
-
-/* .mobile-radio-controls .ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-    /* for development only */
-    /*opacity: 0.3;
-} */
-
-.mobile-ctrl-panic {
-    opacity: 0.0;
-    margin-top: 25px;
-    margin-left: 167px;
-    height: 52px;
-    border-radius: 35px;
-    width: 38px;
-    height: 52px;
-}
-
-
-.mobile-radio-controls .mobile-ctrl-prev {
-    height: 43px;
-    width: 100%;
-}
-
-.mobile-radio-controls .mobile-ctrl-next {
-    height: 40px; /* Originally 10px */
-    width: 100%;
-    margin-top: 5px;
-}
-
-.mobile-radio-buttons .mobile-ctrl-power {
-    margin-left: 0px;
-    margin-top: 0px;
-    height: 32px;
-    width: 30px;
-    border-radius: 11px;
-}
-
-.radio-controls .ctrl-panic {
-    margin-left: 74px;
-    border-radius: 35px;
-    width: 30px;
-    height: 18px; /* Originally 10px */
-    margin-top: 48px; /* Originally 50px */ 
-}
-
-
-.radio-controls .ctrl-prev {
-    height: 65px;
-    margin-left: 10px;
-    width: 22px;
-}
-
-.radio-controls .ctrl-next {
-    height: 65px; /* Originally 10px */
-    margin-left: 0px;
-    width: 22px;
-}
-
-.radio-controls .ctrl-power {
-    height: 45px; /* Originally 10px */
-    margin-left: 44px;
-    width: 50px;
-    margin-top: 28px;
-    border-radius: 20px;
 }
 
 .radio-content {
@@ -839,164 +672,5 @@ export default {
 }
 .radio-content > *::-webkit-scrollbar {
     display: none;
-}
-
-.mobile-radio-screen {
-    background-color:black;
-    margin: 43px 15px 18px 0px;
-    height: 167px;
-    width: 216px;
-}
-
-.radio-brand {
-    margin: 1px 1px 0px 1px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 20px;
-    justify-content: center;
-    background: linear-gradient(to bottom, rgba(80,80,80,0.5) 0%, rgba(20,20,20,1) 100%);
-
-}
-
-.radio-logo {
-    height: 12px;
-    padding-top: 1px;
-    /* transform: skewX(-20deg); */
-}
-
-.mobile-radio-content {
-    border: 0px;
-    height: 167px;
-    margin: 0px 1px 1px 1px;
-    width: 216px;
-    overflow-y: scroll;
-    /*overflow-x: hidden;*/
-}
-
-.mobile-radio-content::-webkit-scrollbar {
-    display: none;
-}
-
-.mobile-radio-buttons {
-    width: 0px;
-    margin: 35px 76px 169px 100px;
-    height: 25px;
-}
-
-.mobile-radio-buttons .mobile-ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-}
-
-.mobile-radio-controls .mobile-ctrl-hide {
-    margin-top: 15px;
-    margin-left: 10px;
-    width: 30px;
-    height: 30px;
-    border-radius: 20px;
-}
-
-.mobile-radio-controls .mobile-ctrl-home {
-    margin-top: 16px;
-    margin-left: 10px;
-    width: 30px;
-    height: 30px;
-    border-radius: 20px;
-}
-
-.radio-buttons {
-    /* background-color: rgba(0,0,255,0.5); */
-    height: 25px;
-    margin: 0px 110px;
-    display: flex;
-}
-
-.radio-buttons .ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-    /* for development only */
-    /* opacity: 0.3; */
-}
-
-.radio-buttons .ctrl-home {
-    width: 100%;
-    border-radius: 20px;
-}
-
-/* TOP RADIO VIEW */
-.top-radio-body {
-    background-repeat: no-repeat;
-    background-size: cover;
-    /* position: fixed; */
-
-    /* right: 400px; Direct Input from user */
-    /* bottom: 0px; Direct Input from user */
-}
-
-.top-radio-body-lg {
-    /* Largest Radio Body */
-    width: 439px; /* Variable Width & Height */
-    height: 439px; /* Variable Width & Height */
-}
-
-.top-radio-body-md {
-    height: 300px;
-    width: 300px;
-}
-
-.top-radio-body-sm {
-    height: 200px;
-    width: 200px;
-}
-
-.top-radio-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-}
-
-.top-radio-body-lg .top-radio-screen {
-    font-size: 17px;
-}
-
-.top-radio-body-md .top-radio-screen {
-    border-radius: 4px;
-    height: 55px;
-    margin: 153px 99px 0px 102px;
-    font-size: 11px;
-}
-
-.top-radio-body-sm .top-radio-screen {
-    height: 39px;
-    margin: 102px 65px 0 66px;
-    font-size: 8px;
-}
-
-.backlight-gray {
-    background-color: unset;
-}
-
-.backlight-red {
-    background-color: rgb(254 69 69 / 30%);
-
-}
-
-.backlight-yellow {
-    background-color: rgb(217 254 69 / 30%);
-
-}
-
-.backlight-green {
-    background-color: rgb(80 254 69 / 30%);
-
-}
-
-.backlight-lightblue {
-    background-color: rgb(69 152 254 / 30%);
-
 }
 </style>
