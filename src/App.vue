@@ -5,6 +5,7 @@
                 Click and drag to move the components. Press <code>ESC</code> to save.
             </div>
         </div>
+        <pre>{{ Object.values(skinCache).map(x => x?.name) }}</pre>
 
         <draggable-box
             v-for="frame in activeFrames"
@@ -20,7 +21,7 @@
                         <component
                             v-if="screenDynComponent"
                             :is="screenDynComponent"
-                            :skins="skins"
+                            :skin-options="selectSkinOptions()"
                             @set-screen="setScreen($event)"
                             @go-home="goToPreset(0)"
                             @set-frequency="setFrequency($event)"
@@ -28,8 +29,8 @@
                             @add-scanned="addScanned($event)"
                             @del-scanned="delScanned($event)"
                             @toggle-scan="toggleScan($event)"
+                            @set-skin-id="selectSkin($event)"
                             @set-drag="dragMode = true"
-                            @set-skin-id="curSkinId = $event"
                         />
                     </div>
                 </skin-body-component>
@@ -100,8 +101,12 @@ export default {
             // topRadioPos: [400, 0],
             // mobileRadioBodyPos: [0, 0],
 
-            skins: [],
-            curSkinId: 'default',
+            // promises of queried skin data (so we don't query twice)
+            // Record<string, Promise<SkinData> | SkinData>
+            skinCache: {},
+            selectSkinIds: ['default', 'ems'], // list of skin ids that can be selected
+            // curSkinId: 'default',
+            curSkin: null,
         }
     },
     computed: {
@@ -125,9 +130,6 @@ export default {
                 'settings': c.Settings,
             };
             return ROUTES[this.currScreen];
-        },
-        curSkin() {
-            return this.skins.find(x => x.id === this.curSkinId) || this.skins[0];
         },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
@@ -198,7 +200,8 @@ export default {
         })
     },
     mounted() {
-        this.initSkins().then(() => console.log("skins initialized"));
+        this.selectSkin('default');
+
         window.addEventListener('message', (event) => {
             switch (event.data.type) {
                 case 'reset':
@@ -315,6 +318,13 @@ export default {
                             console.warn('WARNING: skip in setUiPositions', k);
                     }
                     break;
+                case 'setSkins':
+                case 'setCurrentSkin':
+                    if (event.data.skins) // update available skins
+                        this.selectSkinIds = event.data.skins;
+                    if (event.data.skin) // update current ski
+                        this.selectSkin(event.data.skin);
+                    break;
                 case 'incomingMessage':
                     // this.notifyPlayer("Radio: ~b~New Message");
                     // let sendingradio = this.$store.state.radios.filter((obj) => {
@@ -372,24 +382,54 @@ export default {
                 console.log(err);
             });
         },
-        async initSkins() {
+        async querySkinNoCache(skinId) {
             const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
+            const res = await fetch(`${BASE}/${skinId}/skin.json`)
+            const skinData = await  res.json()
 
-            const res = await fetch(`${BASE}/skins.json`);
-            const allSkinIds = await res.json();
+            skinData.id = skinId;
+            // add the base url to the image paths
+            for (const frame of skinData.frames)
+                if (frame.body?.image)
+                    frame.body.image = `${BASE}/${skinId}/${frame.body.image}`;
+            return skinData;
+        },
+        querySkin(skinId) {
+            if (this.skinCache[skinId] instanceof Promise) return this.skinCache[skinId];
+            else if (this.skinCache[skinId]) return Promise.resolve(this.skinCache[skinId]);
 
-            const skinPromises = allSkinIds.map(async (skinId) => {
-                const res2 = await fetch(`${BASE}/${skinId}/skin.json`);
-                const skinData = await res2.json();
+            const promise = this.querySkinNoCache(skinId);
+            this.$set(this.skinCache, skinId, promise);
+            promise.then(res => this.$set(this.skinCache, skinId, res));
+            return promise;
+        },
+        extractSkin(skinId) {
+            // this will take a skin from the cache if the promise is resolved, otherwise it will return undefined
+            // in the event no cache entry exists, it will start a query
+            const skin = this.skinCache[skinId];
+            if (skin instanceof Promise) return undefined; // still loading
+            else if (skin !== undefined) return skin; // fully queried
 
-                skinData.id = skinId;
-                for (const frame of skinData.frames)
-                    if (frame.body?.image)
-                        frame.body.image = `${BASE}/${skinId}/${frame.body.image}`;
-                return skinData;
-            });
-            this.skins = await Promise.all(skinPromises);
-            this.curSkinId = this.skins[0].id;
+            this.querySkin(skinId);
+            return undefined;
+        },
+        selectSkin(skinId) {
+            this.querySkin(skinId).then(skin => this.curSkin = skin);
+        },
+        selectSkinOptions() {
+            // NOTE: this cannot be a computed property because of this.extractSkin
+            const skinOptions = [];
+            for (const skinId of this.selectSkinIds) {
+                const skin = this.extractSkin(skinId);
+                if (skin === null) continue; // skin queried but invalid
+                const name = skin?.name || "Loading...";
+
+                skinOptions.push({
+                    id: skinId,
+                    name,
+                });
+            }
+            return skinOptions;
         },
         updateRadioType() {
             if (this.showMobileRadio || this.showRadio) {

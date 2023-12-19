@@ -1,5 +1,4 @@
 const { resolve } = require("path");
-// const babelPresetEnv = require("@babel/preset-env");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const TerserWebpackPlugin = require("terser-webpack-plugin");
 const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");

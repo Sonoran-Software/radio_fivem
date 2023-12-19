@@ -15,7 +15,7 @@
             <div class="sc-row" @click="$emit('set-drag', true)">
                 <div class="sc-row-label">Reposition UI</div>
             </div>
-            <div v-for="(skin, i) in skins" :key="i" class="sc-row" @click="setSkin(skin.id)">
+            <div v-for="(skin, i) in skinOptions" :key="i" class="sc-row" @click="setSkin(skin.id)">
                 <div class="sc-row-label">{{ skin.name }}</div>
             </div>
             <div class="sc-row">
@@ -29,7 +29,7 @@
 export default {
     components: {},
     data: () => ({}),
-    props: { skins: Array, },
+    props: { skinOptions: Array, },
     methods: {
         setSkin(skinId) {
             this.$emit('set-skin-id', skinId);
