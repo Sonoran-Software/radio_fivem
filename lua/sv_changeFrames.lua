@@ -1,4 +1,4 @@
-local function checkFramePermissions(player)
+function checkFramePermissions(player)
 	local allowedFrames = {}
 	-- Check if the permission mode is 'ace' and departments are defined
 	if Config.frames.permissionMode == 'ace' and Config.frames.departments then
@@ -57,5 +57,3 @@ local function checkFramePermissions(player)
 	end
 	return allowedFrames
 end
-
-exports('checkFramePermissions', checkFramePermissions)

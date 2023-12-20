@@ -11,6 +11,8 @@ local inVehicle = false
 
 local authorized = false
 
+local allowedFrames = {};
+
 RegisterNetEvent("SonoranCAD::sonrad:GetUnitInfo:Return")
 AddEventHandler("SonoranCAD::sonrad:GetUnitInfo:Return", function(unit)
 	SendNUIMessage({
@@ -176,9 +178,10 @@ function radioToggle()
 end
 
 RegisterNetEvent("SonoranRadio::AuthorizeRadio")
-AddEventHandler("SonoranRadio::AuthorizeRadio", function()
+AddEventHandler("SonoranRadio::AuthorizeRadio", function(frames)
 	DebugPrint("Authorized for Radio Usage")
 	authorized = true
+	allowedFrames = frames
 end)
 
 RegisterCommand('radio', radioToggle)
