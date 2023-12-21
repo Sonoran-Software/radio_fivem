@@ -8,7 +8,7 @@ resource-build:
     - yarn
     - NODE_ENV=production yarn build
     - cp -r sonrad_tower/stream sonrad_tower/data build/sonoranradio
-    - cp -r lua dist static towers.json build/sonoranradio
+    - cp -r lua dist skins towers.json build/sonoranradio
     # set the version of version.json and fxmanifest.lua
     - >-
       if [[ -n "$CI_COMMIT_TAG" ]]; then

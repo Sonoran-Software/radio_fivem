@@ -14,7 +14,6 @@ client_script 'lua/**/cl_*.lua'
 files {
     'stream/*',
     'dist/**/*',
-    'static/**/*',
     'skins/**/*',
 } 
 ui_page 'dist/ui.html'
