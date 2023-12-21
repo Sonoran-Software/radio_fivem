@@ -4,6 +4,6 @@
  * @returns {string | undefined}
  */
 export function unitToSize(unit) {
-  if (typeof unit === "number") return `${unit}rem`;
+  if (typeof unit === "number") return `${unit}em`;
   return undefined;
 }

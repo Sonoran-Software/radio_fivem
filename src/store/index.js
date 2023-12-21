@@ -38,7 +38,8 @@ export default new Vuex.Store({
         scanned: [],
         scanning: false,
         radios: [],
-        inVehicle: false
+        inVehicle: false,
+        inGameTime: '00:00',
     },
     // TODO: getter for frequency label & sub level
     getters: {
@@ -153,6 +154,9 @@ export default new Vuex.Store({
         },
         setInVehicle(state, isInVehicle) {
             state.inVehicle = isInVehicle;
+        },
+        setInGameTime(state, time) {
+            state.inGameTime = time;
         }
     },
     actions: {}

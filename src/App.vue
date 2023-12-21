@@ -5,10 +5,10 @@
                 Click and drag to move the components. Press <code>ESC</code> to save.
             </div>
         </div>
-        <pre>{{ Object.values(skinCache).map(x => x?.name) }}</pre>
 
         <draggable-box
             v-for="frame in activeFrames"
+            :style="{fontSize: `${size}px`}"
             :key="frame.type"
             v-model="positions[frame.type]"
             :drag-enabled="dragMode"
@@ -17,9 +17,9 @@
                 <skin-body-img v-if="frame.body" :body-skin="frame.body" />
 
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen">
-                    <div class="radio-content">
+                    <primary-screen :on="radioPower">
                         <component
-                            v-if="screenDynComponent"
+                            v-if="radioPower && screenDynComponent"
                             :is="screenDynComponent"
                             :skin-options="selectSkinOptions()"
                             @set-screen="setScreen($event)"
@@ -32,7 +32,7 @@
                             @set-skin-id="selectSkin($event)"
                             @set-drag="dragMode = true"
                         />
-                    </div>
+                    </primary-screen>
                 </skin-body-component>
 
                 <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
@@ -51,34 +51,34 @@
 import SkinBodyImg from './components/skin/BodyImage.vue'
 import SkinBodyComponent from './components/skin/BodyComp.vue';
 import DraggableBox from './components/util/DraggableBox.vue'
+import MiniScreen from './components/MiniScreen.vue'
+import Screen from './components/Screen.vue'
+
 import Home from './components/Home.vue'
 import Channels from './components/Channels.vue'
 import Channel from './components/Channel.vue'
 import Message from './components/Message.vue'
-import NewMessage from './components/NewMessage.vue'
 import ScanList from './components/ScanList.vue'
 import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
-import Messages from './components/Messages.vue'
 import CallDetails from './components/CallDetails.vue'
-import MiniScreen from './components/MiniScreen.vue'
 
 export default {
     components: {
         SkinBodyImg,
         SkinBodyComponent,
         DraggableBox,
+        MiniScreen,
+        PrimaryScreen: Screen,
+
         Home,
         Channels,
         Channel,
         Message,
-        NewMessage,
         ScanList,
         Settings,
         Contacts,
-        Messages,
         CallDetails,
-        MiniScreen,
     },
     data: () => {
         return {
@@ -97,9 +97,7 @@ export default {
                 vehicle: [0, 0],
                 hud: [400, 0]
             },
-            // radioBodyPos: [0, 0],
-            // topRadioPos: [400, 0],
-            // mobileRadioBodyPos: [0, 0],
+            size: 16,
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
@@ -114,8 +112,6 @@ export default {
             return this.$store.getters.freqName;
         },
         screenDynComponent() {
-            if (!this.radioPower) return null;
-
             const c = this.$options.components;
             const ROUTES = {
                 '': c.Home,
@@ -124,8 +120,6 @@ export default {
                 'channel': c.Channel,
                 'contacts': c.Contacts,
                 'message': c.Message,
-                'messages': c.Messages,
-                'newmessage': c.NewMessage,
                 'scanlist': c.ScanList,
                 'settings': c.Settings,
             };
@@ -188,11 +182,17 @@ export default {
 
                 // TODO: remove after development
                 case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    this.nudgeSkinProperty(event.code);
+                    this.size += 1;
                     break;
+                case 'ArrowDown':
+                    this.size -= 1;
+                    break;
+                // case 'ArrowUp':
+                // case 'ArrowDown':
+                // case 'ArrowLeft':
+                // case 'ArrowRight':
+                //     this.nudgeSkinProperty(event.code);
+                //     break;
             
                 default:
                     break;
@@ -308,6 +308,9 @@ export default {
                     this.$store.commit('setInVehicle', this.inVehicle);
                     //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
+                    break;
+                case 'time':
+                    this.$store.commit('setInGameTime', event.data.time);
                     break;
                 case 'setUiPositions':
                     if (typeof event.data.data !== 'object') break;
@@ -497,7 +500,7 @@ export default {
             })
         },
         setScreen(name) {
-            this.currScreen = name;
+            this.currScreen = name || '';
         },
         nextPreset() {
             if (this.$store.state.presets[this.currPreset + 1]) {
@@ -700,17 +703,5 @@ export default {
     border: none;
     background-color: transparent;
     cursor: pointer;
-}
-
-.radio-content {
-    background-color: black;
-    overflow-y: hidden;
-    overflow-x: hidden;
-}
-.radio-content > * {
-    overflow-y: scroll;
-}
-.radio-content > *::-webkit-scrollbar {
-    display: none;
 }
 </style>

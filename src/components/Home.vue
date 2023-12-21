@@ -1,29 +1,24 @@
 <template>
-    <div class="screen">
-        <div class="sc-header">
-            <div class="sc-header-status">{{ $store.getters.statusText }}</div>
-            <!--<img class="sc-battery" :src="`../static/radio-portable-battery.png`">-->
-            <div class="sc-time">{{ currTime }}</div>
-        </div>
+    <main>
+        <top-bar :title="$store.getters.statusText" home />
         <div class="sc-body">
-            <div class="sc-status" v-on:click="$emit('set-screen', 'calldetails')">
+            <div class="section sc-status" @click="$emit('set-screen', 'calldetails')">
                 <div class="sc-status-text">
                     <div class="header">
                         My Status
                     </div>
-                    <div class="content">
+                    <div>
                         {{ $store.getters.statusText }}
                     </div>
                 </div>
-                <div class="sc-status-icons">
-                    <i class="fas fa-clipboard-list" style="width:20px;"></i>
+                <div>
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
             </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-container" v-bind:style="{ backgroundColor: $store.getters.connColor }">
-                <div class="sc-channel">
-                    <div class="header" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">
+
+            <div class="sc-container" :style="{ backgroundColor: $store.getters.connColor }">
+                <div class="section sc-channel">
+                    <div class="header">
                         {{ $store.getters.freqName || "Custom" }}
                     </div>
                     <div class="sc-channel-text">
@@ -44,9 +39,8 @@
 
                 </div>
             </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-buttons">
+
+            <div class="section sc-buttons">
                 <div class="sc-button" v-on:click="$emit('set-screen', 'scanlist')">
                     <i class="fas fa-file-medical-alt"></i>
                     <span class="sc-button-label">Scan List</span>
@@ -60,42 +54,27 @@
                     <span class="sc-button-label">Config</span>
                 </div>
             </div>
-            <div class="sc-spacer">
-            </div>
-            <div class="sc-message" v-if="$store.state.conversations.length != 0">
-                <div class="sc-msg-content" v-on:click="openConversation($store.state.conversations[$store.state.conversations.length-1])">
+
+            <div class="section sc-message" v-if="lastConversation">
+                <div class="sc-msg-content" @click="openConversation(lastConversation)">
                     <div class="sc-sender">
-                        {{ $store.state.conversations[$store.state.conversations.length-1].sender }}
+                        {{ lastConversation.sender }}
                     </div>
                     <div class="sc-content">
-                        {{ $store.state.conversations[$store.state.conversations.length-1].payload.message }}
-                    </div>
-                </div>
-                <div class="sc-msg-buttons" style="display:none;">
-                    <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'newmessage')">
-                        <i class="fas fa-address-book"></i>
-                        <span class="sc-button-label">View</span>
-                    </div>
-                    <div class="sc-msg-btn" v-on:click="$emit('set-screen', 'messages')">
-                        <i class="fas fa-address-book"></i>
-                        <span class="sc-button-label">All</span>
+                        {{ lastConversation.payload.message }}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </template>
 
 <script>
+import TopBar from './util/TopBar.vue';
+
 export default {
-    props: [
-        "config"
-    ],
-    components: {},
-    data() {
-        return {
-            currTime: "00:00",
-        }
+    components: {
+        TopBar,
     },
     computed: {
         recvFreq() {
@@ -104,14 +83,11 @@ export default {
         xmitFreq() {
             return this.$store.getters.xmitFreqStr;
         },
-    },
-    mounted() {
-        window.addEventListener('message', (event) => {
-            const eventType = event.data.type;
-            if (eventType === 'time') {
-                this.currTime = event.data.time;
-            }
-        });
+        lastConversation() {
+            const convos = this.$store.state.conversations;
+            if (convos.length === 0) return null;
+            return convos[convos.length - 1];
+        }
     },
     methods: {
         freqToString(freq) {
@@ -129,79 +105,40 @@ export default {
 </script>
 
 <style scoped>
-.screen {
-    background-color: rgba(122,160,207,1);
-    height: 100%;
-    font-family: system-ui;
-}
-.sc-header {
-    text-align: right;
-    color: white;
-    padding: 3px 6px 2px 3px;
-    background-color: rgba(30,30,30,1);
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-}
-/* .sc-icons {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-} */
-.sc-battery {
-    height: 11px;
-    padding-right: 5px;
-    padding-left: 75px;
-}
-.sc-time {
-    font-size: 12px;
-}
-.sc-brand {
-    font-size: 12px;
-}
-.sc-logo {
-    height: 11px;
-    padding-top: 1px;
-}
 .sc-body {
-    color: white;
-    background-color: rgba(62,92,128,1);
-    margin: 0px 5px;
+    display: flex;
+    flex-direction: column;
+    padding: 0.3125em; /* 5px */
+    gap: 0.1875em; /* 3px */
 }
+.sc-body .section {
+    background-color: rgb(62, 92, 128);
+}
+
 .sc-status {
     display: flex;
-    flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin: 4px 0px 0px 0px;
-    /* padding: 3px 3px 3px 5px; */
-    padding: 1px 3px 2px 5px;
+    padding: 0.125em 0.25em; /* 2px 4px */
 }
-.sc-status .header {
-    font-size: 14px;
-    color: rgba(255,255,255,0.7)
+.sc-status-text > .header {
+    font-size: 0.75em;
+    color: #d0d0d0;
 }
-.sc-spacer {
-    height: 3px;
-    background-color: rgba(122,160,207,1);
-}
+
 .sc-container {
     background-color: white;
 }
 .sc-channel {
-    background-color: rgba(62,92,128,1);
-    margin: 0px 0px 0px 10px;
-    padding: 3px 5px;
-    height: 60px;
+    margin-left: 0.75em; /* 12px */
+    padding: 0.125em 0.25em; /* 2px 4px */
 }
 .sc-channel-icons {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-.sc-channel-icons i {
-    padding: 1px 3px;
+    padding: 0.125em 0.25em; /* 2px 4px */
+    gap: 0.125em; /* 2px */
 }
 .sc-channel-text {
     display: flex;
@@ -210,23 +147,22 @@ export default {
     align-items: center;
 }
 .sc-channel .header {
-    font-size: 12px;
-    color: rgba(255,255,255,0.7)
+    font-size: 0.75em;
+    color: #d0d0d0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .sc-channel .content {
-    font-size: 14px;
+    font-size: 0.875em; /* 14px */
 }
+
 .sc-buttons {
-    background-color: rgba(62,92,128,1);
-    margin: 0px;
-    padding: 3px 5px;
-    height: 40px;
-    font-size: 10px;
+    padding: 0.5em 0.25em; /* 8px 4px */
     display: flex;
-    flex-direction: row;
     justify-content: space-around;
-    flex-wrap: nowrap;
     align-items: flex-end;
+    flex-wrap: nowrap;
 }
 .sc-button {
     display: flex;
@@ -234,32 +170,19 @@ export default {
     align-items: center;
 }
 .sc-button i {
-    font-size: 20px;
+    font-size: 1.25em; /* 20px */
 }
-.sc-sender {
-    font-size: 14px;
+.sc-button .sc-button-label {
+    font-size: 0.625em; /* 10px */
 }
-.sc-content {
-    font-size: 12px;
-    color: rgba(255,255,255,0.7);
-
+.sc-message .sender {
+    font-size: 0.875em; /* 14px */
+}
+.sc-message .content {
+    font-size: 0.75em; /* 12px */
+    color: #d0d0d0;
 }
 .sc-msg-content {
-    padding: 3px 3px 3px 5px;
-}
-.sc-msg-buttons {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: space-around;
-    font-size: 14px;
-}
-.sc-msg-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.sc-msg-button i {
-    font-size: 20px;
+    padding: 0.25em 0.25em; /* 4px 4px */
 }
 </style>
