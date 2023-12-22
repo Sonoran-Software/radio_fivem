@@ -2,16 +2,19 @@
     <div class="appcontainer">
         <div v-if="dragMode" class="drag-instructions">
             <div>
-                Click and drag to move the components. Press <code>ESC</code> to save.
+                Click and drag to move the components.
+                Hold <code>CTRL</code> to resize.
+                Press <code>ESC</code> to save.
             </div>
         </div>
 
+        <pre>{{ positions }}</pre>
         <draggable-box
             v-for="frame in activeFrames"
-            :style="{fontSize: `${size}px`}"
             :key="frame.type"
-            v-model="positions[frame.type]"
             :drag-enabled="dragMode"
+            :value="positions[frame.key] || defaultPositions[frame.type]"
+            @input="$set(positions, frame.key, $event)"
         >
             <div class="radio-body">
                 <skin-body-img v-if="frame.body" :body-skin="frame.body" />
@@ -49,7 +52,7 @@
 
 <script>
 import SkinBodyImg from './components/skin/BodyImage.vue'
-import SkinBodyComponent from './components/skin/BodyComp.vue';
+import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
@@ -92,18 +95,17 @@ export default {
             inVehicle: false,
 
             dragMode: false,
-            positions: {
-                portable: [0, 0],
-                vehicle: [0, 0],
-                hud: [400, 0]
+            defaultPositions: {
+                portable: [0, 0, 16],
+                vehicle: [0, 0, 16],
+                hud: [400, 0, 16]
             },
-            size: 16,
+            positions: {},
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
             skinCache: {},
-            selectSkinIds: ['default', 'ems'], // list of skin ids that can be selected
-            // curSkinId: 'default',
+            selectSkinIds: [], // list of skin ids that can be selected
             curSkin: null,
         }
     },
@@ -179,20 +181,6 @@ export default {
                         this.hideRadio(false);
                     }
                     break;
-
-                // TODO: remove after development
-                case 'ArrowUp':
-                    this.size += 1;
-                    break;
-                case 'ArrowDown':
-                    this.size -= 1;
-                    break;
-                // case 'ArrowUp':
-                // case 'ArrowDown':
-                // case 'ArrowLeft':
-                // case 'ArrowRight':
-                //     this.nudgeSkinProperty(event.code);
-                //     break;
             
                 default:
                     break;
@@ -201,7 +189,6 @@ export default {
     },
     mounted() {
         this.selectSkin('default');
-
         window.addEventListener('message', (event) => {
             switch (event.data.type) {
                 case 'reset':
@@ -235,26 +222,7 @@ export default {
                     }
                     break;
                 case 'radioHud':
-                    switch (event.data.size) {
-                        case 'off':
-                            this.showTopRadio = false;
-                            break;
-                        case 'small':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "sm";
-                            break;
-                        case 'medium':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "md";
-                            break;
-                        case 'large':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "lg";
-                            break;
-                        default:
-                            console.error("Invalid Hud Size Specified.");
-                            break;
-                    }
+                    this.showTopRadio = event.data.size !== 'off';
                     break;
                 case 'setPos':
                     try {
@@ -314,12 +282,7 @@ export default {
                     break;
                 case 'setUiPositions':
                     if (typeof event.data.data !== 'object') break;
-                    for (const k in event.data.data) {
-                        if (event.data.data[k] instanceof Array)
-                            this.$set(this.positions, k, event.data.data[k]);
-                        else
-                            console.warn('WARNING: skip in setUiPositions', k);
-                    }
+                    this.positions = event.data.data;
                     break;
                 case 'setSkins':
                 case 'setCurrentSkin':
@@ -348,26 +311,6 @@ export default {
         setInterval(this.updateGamestate.bind(this), 2500);
     },
     methods: {
-        nudgeSkinProperty(key) {
-            const NUDGE = 0.25;
-            let wNudge = 0;
-            let hNudge = 0;
-            if (key === 'ArrowUp') hNudge = -NUDGE;
-            else if (key === 'ArrowDown') hNudge = NUDGE;
-            else if (key === 'ArrowLeft') wNudge = -NUDGE;
-            else if (key === 'ArrowRight') wNudge = NUDGE;
-
-            const prop = this.activeFrames[1].miniScreen;
-            if (prop.top)
-                this.$set(prop, 'top', prop.top + hNudge);
-            if (prop.bottom)
-                this.$set(prop, 'bottom', prop.bottom - hNudge);
-            if (prop.left)
-                this.$set(prop, 'left', prop.left + wNudge);
-            if (prop.right)
-                this.$set(prop, 'right', prop.right - wNudge);
-            console.log(JSON.stringify(prop));
-        },
         postClient(data, route = "/data") {
             const url = new URL(route, `https://sonoranradio`);
             fetch(url.toString(), {
@@ -391,10 +334,12 @@ export default {
             const skinData = await  res.json()
 
             skinData.id = skinId;
-            // add the base url to the image paths
-            for (const frame of skinData.frames)
+            for (const frame of skinData.frames) {
+                // add the base url to the image paths
                 if (frame.body?.image)
                     frame.body.image = `${BASE}/${skinId}/${frame.body.image}`;
+                frame.key = `${skinId}-${frame.type}`;
+            }
             return skinData;
         },
         querySkin(skinId) {
