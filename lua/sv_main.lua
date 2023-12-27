@@ -134,8 +134,9 @@ RegisterCommand('adminskinchange', function(source, args, rawCommand)
 					'Invalid frame name. Valid frames are: ' .. table.concat(validFrames, ', ')
 				}
 			})
+		else
+			TriggerClientEvent('SonoranRadio::AdminSkinChange', source, args[1])
 		end
-		TriggerClientEvent('SonoranRadio::AdminSkinChange', source, args[1])
 	else
 		TriggerClientEvent('chat:addMessage', source, {
 			args = {
