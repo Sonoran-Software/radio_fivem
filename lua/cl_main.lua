@@ -116,8 +116,8 @@ CreateThread(function()
 end)
 
 RegisterNetEvent('qb-sonrad:use')
-AddEventHandler('qb-sonrad:use', function()
-	radioToggle()
+AddEventHandler('qb-sonrad:use', function(frame)
+	radioToggle(frame)
 end)
 
 -- Disable Attack when Radio is Open
@@ -141,7 +141,7 @@ AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
 	})
 end)
 
-function radioToggle()
+function radioToggle(frame)
 	if authorized then
 		if not Config.enforceRadioItem then
 			Radio.Has = true
@@ -157,6 +157,13 @@ function radioToggle()
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive
+			})
+			if frame == nil then
+				frame = 'default'
+			end
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame
 			})
 			if radActive then
 				SetNuiFocus(true, true)
