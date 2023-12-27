@@ -9,7 +9,7 @@ function checkFramePermissions(player)
 					if IsPlayerAceAllowed(player, acePermission) then
 						-- Add allowed frames for this department to the list
 						for _, frame in ipairs(department.allowedFrames or {}) do
-							allowedFrames[frame] = true
+							table.insert(allowedFrames, frame)
 						end
 					end
 				end
@@ -25,7 +25,7 @@ function checkFramePermissions(player)
 					if QBPlayer.PlayerData.job.name == qbPermission then
 						-- Add allowed frames for this department to the list
 						for _, frame in ipairs(department.allowedFrames or {}) do
-							allowedFrames[frame] = true
+							table.insert(allowedFrames, frame)
 						end
 					end
 				end
@@ -41,7 +41,7 @@ function checkFramePermissions(player)
 					if ESXPlayer.job.name == esxPermission then
 						-- Add allowed frames for this department to the list
 						for _, frame in ipairs(department.allowedFrames or {}) do
-							allowedFrames[frame] = true
+							table.insert(allowedFrames, frame)
 						end
 					end
 				end
@@ -51,7 +51,7 @@ function checkFramePermissions(player)
 		-- Add all frames to the list
 		for _, department in pairs(Config.frames.departments) do
 			for _, frame in ipairs(department.allowedFrames or {}) do
-				allowedFrames[frame] = true
+				table.insert(allowedFrames, frame)
 			end
 		end
 	end
