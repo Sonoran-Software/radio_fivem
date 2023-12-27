@@ -140,14 +140,16 @@ RegisterCommand('adminskinchange', function(source, args, rawCommand)
 end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
-	local QBCore = exports['qb-core']:GetCoreObject()
-	local Player = QBCore.Functions.GetPlayer(source)
-	local radio = Player.Functions.GetItemByName('sonoran_radio')
-	if radio ~= nil then
-		local radioSlot = radio.slot
-		Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
-		Player.Functions.AddItem('sonoran_radio', 1, radioSlot, {
-			['frame'] = frame
-		})
+	if Config.enforceRadioItem then
+		local QBCore = exports['qb-core']:GetCoreObject()
+		local Player = QBCore.Functions.GetPlayer(source)
+		local radio = Player.Functions.GetItemByName('sonoran_radio')
+		if radio ~= nil then
+			local radioSlot = radio.slot
+			Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
+			Player.Functions.AddItem('sonoran_radio', 1, radioSlot, {
+				['frame'] = frame
+			})
+		end
 	end
 end)
