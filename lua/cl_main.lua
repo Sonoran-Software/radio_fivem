@@ -148,6 +148,10 @@ function radioToggle(frame)
 		end
 
 		if Radio.Has then
+			SendNUIMessage({
+				type = 'setSkins',
+				skin = allowedFrames
+			})
 			radActive = not radActive
 			Radio:Toggle(radActive)
 			SendNUIMessage({
