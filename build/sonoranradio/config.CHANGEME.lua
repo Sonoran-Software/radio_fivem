@@ -41,7 +41,8 @@ Config.frames = {
             },
             -- Radio frames that can be used by this department
             allowedFrames = {
-                "moto_42069"
+                "default",
+                "echolink"
             },
         }
     },
@@ -50,7 +51,7 @@ Config.frames = {
             label = "Police Cruiser",
             -- Radio frames that can be used by this vehicle
             allowedFrames = {
-                "moto_42069"
+                "voxguard"
             },
         }
 
