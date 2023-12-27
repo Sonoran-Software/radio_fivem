@@ -8,7 +8,8 @@
         "chrome >= 91"
     ],
     "dependencies": {
-        "unzipper": "^0.10.11"
+        "unzipper": "^0.10.14",
+        "minimatch": "^9.0.3"
     },
     "devDependencies": {
         "@babel/core": "^7.23.6",
