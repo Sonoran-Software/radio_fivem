@@ -119,6 +119,17 @@ AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
 	TriggerClientEvent('SonoranRadio::Msg:ToClient', recipient, sender, payload)
 end)
 
+function validFrame(frame)
+	for _, department in pairs(Config.frames.departments) do
+		for _, allowedFrame in ipairs(department.allowedFrames or {}) do
+			if allowedFrame == frame then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 RegisterCommand('adminskinchange', function(source, args, rawCommand)
 	if IsPlayerAceAllowed(source, 'sonoranradio.admin') then
 		local validFrames = {};
@@ -127,7 +138,7 @@ RegisterCommand('adminskinchange', function(source, args, rawCommand)
 				table.insert(validFrames, frame)
 			end
 		end
-		if not validFrames[args[1]] then
+		if not validFrame(args[1]) then
 			TriggerClientEvent('chat:addMessage', source, {
 				args = {
 					'^1SonoranRadio',
