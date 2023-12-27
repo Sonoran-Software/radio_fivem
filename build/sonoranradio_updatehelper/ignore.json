@@ -1,4 +1,5 @@
 [
     "sonoranradio/config.lua",
-    "sonoranradio/towers.json"
+    "sonoranradio/towers.json",
+    "sonoranradio/skins/**/*"
 ]

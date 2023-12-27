@@ -28,6 +28,34 @@ Config.notifications = {
     end
 }
 
+-- Radio Item Settings --
+Config.frames = {
+    permissionMode = "ace", -- ace, qbcore, esx or none
+    adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
+    departments = {
+        ["sahp"] = {
+            label = "San Andreas Highway Patrol",
+            permissions = {
+                jobs = {"sahp"}, -- Jobs that can use this department
+                ace = {"sahp"} -- ACE Permissions that can use this department
+            },
+            -- Radio frames that can be used by this department
+            allowedFrames = {
+                "moto_42069"
+            },
+        }
+    },
+    vehicles = {
+        ["police"] = {
+            label = "Police Cruiser",
+            -- Radio frames that can be used by this vehicle
+            allowedFrames = {
+                "moto_42069"
+            },
+        }
+
+    }
+}
 
 -- Only Run This on Client
 if not IsDuplicityVersion() then
