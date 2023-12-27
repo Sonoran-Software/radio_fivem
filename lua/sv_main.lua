@@ -136,6 +136,13 @@ RegisterCommand('adminskinchange', function(source, args, rawCommand)
 			})
 		end
 		TriggerClientEvent('SonoranRadio::AdminSkinChange', source, args[1])
+	else
+		TriggerClientEvent('chat:addMessage', source, {
+			args = {
+				'^1SonoranRadio',
+				'You do not have permission to use this command.'
+			}
+		})
 	end
 end)
 
@@ -155,5 +162,8 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 end)
 
 TriggerClientEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
-	{ name = 'frame', help = 'The frame name to change to' }
+	{
+		name = 'frame',
+		help = 'The frame name to change to'
+	}
 })
