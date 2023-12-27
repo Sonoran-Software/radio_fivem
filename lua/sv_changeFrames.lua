@@ -20,7 +20,7 @@ function checkFramePermissions(player)
 		local QBPlayer = QBCore.Functions.GetPlayer(player)
 		for _, department in pairs(Config.frames.departments) do
 			-- Check if department has 'qbcore' permissions defined
-			if department.permissions and department.permissions.jobs then
+			if department.permissions and department.permissions.jobs and QBPlayer then
 				for _, qbPermission in ipairs(department.permissions.jobs) do
 					if QBPlayer.PlayerData.job.name == qbPermission then
 						-- Add allowed frames for this department to the list
@@ -36,7 +36,7 @@ function checkFramePermissions(player)
 		local ESXPlayer = ESX.GetPlayerFromId(player)
 		for _, department in pairs(Config.frames.departments) do
 			-- Check if department has 'esx' permissions defined
-			if department.permissions and department.permissions.jobs then
+			if department.permissions and department.permissions.jobs and ESXPlayer then
 				for _, esxPermission in ipairs(department.permissions.jobs) do
 					if ESXPlayer.job.name == esxPermission then
 						-- Add allowed frames for this department to the list
