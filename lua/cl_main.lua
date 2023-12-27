@@ -194,23 +194,26 @@ RegisterCommand('radiotalk', function()
 	end
 end)
 
-RegisterCommand('radioreset', function()
+RegisterCommand('radioreset', function(source, args)
 	SendNUIMessage({
 		type = 'reset'
 	})
+	if args[1] == 'ui' then
+		SetResourceKvp('ui_pos_dic', '{}')
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = {}
+		})
+	end
 end)
 
 RegisterCommand('radiohud', function(source, args, rawCommand)
-	if #args < 1 then
-		SendNotification('~r~Error: ~w~Please specify hud size using ~b~/radiohud (size)')
-		SendNotification('~b~small~w~, ~b~medium~w~, ~b~large~w~, or ~b~off~w~.')
-	else
-		Radio.Hud = args[1]
-		SendNUIMessage({
-			type = 'radioHud',
-			size = args[1]
-		})
-	end
+	-- toggle Radio.Hud
+	Radio.Hud = Radio.Hud == 'off' and 'on' or 'off'
+	SendNUIMessage({
+		type = 'radioHud',
+		size = Radio.Hud,
+	})
 end)
 
 -- Talking Animation

@@ -1,11 +1,10 @@
 <template>
   <div>
-    <div
-      class="draggable"
-      :class="{ 'drag-mode': dragEnabled }"
-      :style="`bottom: ${posY}px; right: ${posX}px`"
-      @mousedown="handleStartDrag"
-    >
+    <div class="draggable" :class="{ 'drag-mode': dragEnabled }" :style="{
+      right: `${posX}px`,
+      bottom: `${posY}px`,
+      fontSize: `${size}px`,
+    }" @mousedown="handleStartDrag">
       <slot />
     </div>
   </div>
@@ -19,59 +18,76 @@ export default {
   },
   data: () => ({
     drag: {
-      isDragging: false,
+      // 'move' | 'resize' | null
+      dragMode: null,
       prevX: 0,
       prevY: 0,
     },
   }),
   created() {
-    document.addEventListener('pointermove', this.handleDoDrag.bind(this));
-    document.addEventListener('mouseup', this.handleStopDrag.bind(this));
+    document.addEventListener('pointermove', this.handleDoDrag);
+    document.addEventListener('mouseup', this.handleStopDrag);
   },
   destroyed() {
-    document.removeEventListener('pointermove', this.handleDoDrag.bind(this));
-    document.removeEventListener('mouseup', this.handleStopDrag.bind(this));
+    document.removeEventListener('pointermove', this.handleDoDrag);
+    document.removeEventListener('mouseup', this.handleStopDrag);
   },
   computed: {
     posX() {
-      if (this.value && this.value.length === 2)
+      if (this.value && this.value.length >= 2)
         return this.value[0];
       return 0;
     },
     posY() {
-      if (this.value && this.value.length === 2)
+      if (this.value && this.value.length >= 2)
         return this.value[1];
       return 0;
+    },
+    size() {
+      if (this.value && this.value.length >= 3)
+        return Math.max(this.value[2], 4); // prevent too small, 1/4 the default size should be fine
+      return 16; // default
     }
   },
   methods: {
-    updateValue(newVal) {
-      this.$emit('input', newVal);
-    },
     handleStartDrag(e) {
-    if (!this.dragEnabled) return;
-      this.drag.isDragging = true;
+      if (!this.dragEnabled) return;
+      this.drag.dragMode = e.ctrlKey ? 'resize' : 'move';
       this.drag.prevX = e.clientX;
       this.drag.prevY = e.clientY;
     },
+    moveValue(diffX, diffY) {
+      const value = [...this.value];
+      value[0] -= diffX; // minus because it's based on bottom/right
+      value[1] -= diffY;
+      return value;
+    },
+    resizeValue(diffX, diffY) {
+      const value = [...this.value];
+      if (!value[2]) value[2] = this.size; // add default size if not set
+      value[2] -= diffY * 0.02;
+      return value;
+    },
     handleDoDrag(e) {
-      if (!this.drag.isDragging) return;
+      if (!this.drag.dragMode) return;
 
       const diffX = e.clientX - this.drag.prevX;
       const diffY = e.clientY - this.drag.prevY;
+
       this.drag.prevX = e.clientX;
       this.drag.prevY = e.clientY;
 
-      this.$emit('input', [this.posX - diffX, this.posY - diffY]);
+      const value = this.drag.dragMode === 'move' ? this.moveValue(diffX, diffY) : this.resizeValue(diffX, diffY);
+      this.$emit('input', value);
     },
     handleStopDrag(e) {
-      this.drag.isDragging = false;
+      this.drag.dragMode = false;
     },
   },
   watch: {
     dragEnabled(newVal) {
-      if (!newVal && this.drag.dragEnabled)
-        this.drag.dragEnabled = false;
+      if (!newVal && this.drag.dragMode)
+        this.drag.dragMode = null;
     }
   }
 };
@@ -89,6 +105,7 @@ export default {
 /* overlay background and border on */
 .drag-mode {
   box-sizing: border-box;
+  user-select: none;
 }
 
 .drag-mode:after {
@@ -96,8 +113,9 @@ export default {
   z-index: 10;
   display: block;
   position: absolute;
-  height: 100%;
+  /* height: 100%; */
   top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   background: rgba(0, 0, 0, 0.5);

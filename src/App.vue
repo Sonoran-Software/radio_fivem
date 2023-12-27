@@ -2,132 +2,86 @@
     <div class="appcontainer">
         <div v-if="dragMode" class="drag-instructions">
             <div>
-                Click and drag to move the components. Press <code>ESC</code> to save.
+                Click and drag to move the components.
+                Hold <code>CTRL</code> to resize.
+                Press <code>ESC</code> to save.
             </div>
         </div>
 
+        <pre>{{ positions }}</pre>
         <draggable-box
-            v-if="showRadio"
-            v-model="radioBodyPos"
-            :class="( showRadio ? 'radio-open' : 'radio-close')"
+            v-for="frame in activeFrames"
+            :key="frame.type"
             :drag-enabled="dragMode"
+            :value="positions[frame.key] || defaultPositions[frame.type]"
+            @input="$set(positions, frame.key, $event)"
         >
-            <div id="radio-body" class="radio-body" :style="{backgroundImage: 'url(../static/radio-portable.png)'}">
-                <div class="radio-controls">
-                    <input type="button" class="ctrl ctrl-panic" v-on:click="buttonPanic();" />
-                    <input type="button" class="ctrl ctrl-prev" v-on:click="buttonPrev();" />
-                    <input type="button" class="ctrl ctrl-next" v-on:click="buttonNext();" />
-                    <input type="button" class="ctrl ctrl-power" v-on:click="buttonPower();" />
-                </div>
-                <div class="radio-screen">
-                    <div class="radio-content" v-if="radioPower">
-                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)"
-                            v-on:set-frequency="setFrequency($event)" />
-                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)"
-                            v-on:send-message="sendRadioMessage($event)" />
-                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)"
-                            v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
-                    </div>
-                </div>
-                <div class="radio-buttons">
-                    <input type="button" class="ctrl ctrl-home" @click="setScreen('');" />
-                </div>
+            <div class="radio-body">
+                <skin-body-img v-if="frame.body" :body-skin="frame.body" />
+
+                <skin-body-component v-if="frame.screen" :bounds="frame.screen">
+                    <primary-screen :on="radioPower">
+                        <component
+                            v-if="radioPower && screenDynComponent"
+                            :is="screenDynComponent"
+                            :skin-options="selectSkinOptions()"
+                            @set-screen="setScreen($event)"
+                            @go-home="goToPreset(0)"
+                            @set-frequency="setFrequency($event)"
+                            @send-message="sendRadioMessage($event)"
+                            @add-scanned="addScanned($event)"
+                            @del-scanned="delScanned($event)"
+                            @toggle-scan="toggleScan($event)"
+                            @set-skin-id="selectSkin($event)"
+                            @set-drag="dragMode = true"
+                        />
+                    </primary-screen>
+                </skin-body-component>
+
+                <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
+                    <mini-screen v-if="radioPower" />
+                </skin-body-component>
+
+                <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
+                    <button class="radio-control" v-on="ctrl.events"></button>
+                </skin-body-component>
             </div>
         </draggable-box>
-
-        <draggable-box v-if="showTopRadio" v-model="topRadioPos" :drag-enabled="dragMode">
-            <div id="top-radio-body" class="top-radio-body"
-                :style="{backgroundImage: 'url(../static/radio-portable-top.png)'}"
-                v-bind:class="'top-radio-body-' + topRadioSize">
-                <div class="top-radio-screen"
-                v-bind:style="{ backgroundColor: $store.getters.connColor }"
-                v-bind:class="'backlight-' + $store.getters.connColor"
-                v-if="radioPower">
-                    <div class="top-radio-header">
-                        {{ $store.getters.statusText }}
-                    </div>
-                    <div class="top-radio-content">
-                        {{ $store.getters.freqName || "Custom" }}
-                    </div>
-                    <div v-if="$store.state.talkers.length === 0" class="top-radio-frequency">
-                        {{ $store.state.currFreq.recv[0] }}.{{ $store.state.currFreq.recv[1] }} /
-                        {{ $store.state.currFreq.xmit[0] }}.{{ $store.state.currFreq.xmit[1] }} <br/>
-                    </div>
-                    <div v-else class="content">
-                        <div v-for="t in $store.state.talkers" :key="t.id">
-                            {{ t.nickname }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </draggable-box>
-
-        <draggable-box v-if="showMobileRadio" v-model="mobileRadioBodyPos" :drag-enabled="dragMode">
-            <div id="mobile-radio-body" class="mobile-radio-body"
-                :style="{backgroundImage: 'url(../static/radio-mobile.png)'}">
-                <div class="mobile-radio-buttons">
-                    <input type="button" class="mobile-ctrl mobile-ctrl-power" v-on:click="buttonPower();" />
-                </div>
-                <div class="mobile-radio-screen">
-                    <div class="mobile-radio-content" v-if="radioPower">
-                        <Home v-if="currScreen == ''" v-on:set-screen="setScreen($event)" v-on:go-home="goToPreset(0)" />
-                        <CallDetails v-if="currScreen == 'calldetails'" v-on:set-screen="setScreen($event)" />
-                        <Channels v-if="currScreen == 'channels'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                        <Channel v-if="currScreen == 'channel'" v-on:set-screen="setScreen($event)" v-on:set-frequency="setFrequency($event)" />
-                        <Contacts v-if="currScreen == 'contacts'" v-on:set-screen="setScreen($event)" />
-                        <Message v-if="currScreen == 'message'" v-on:set-screen="setScreen($event)" />
-                        <Messages v-if="currScreen == 'messages'" v-on:set-screen="setScreen($event)" />
-                        <NewMessage v-if="currScreen == 'newmessage'" v-on:set-screen="setScreen($event)" />
-                        <ScanList v-if="currScreen == 'scanlist'" v-on:set-screen="setScreen($event)" v-on:add-scanned="addScanned($event)" v-on:del-scanned="delScanned($event)" v-on:toggle-scan="toggleScan($event)" />
-                        <Settings v-if="currScreen == 'settings'" v-on:set-screen="setScreen($event)" v-on:set-drag="dragMode = true" />
-                    </div>
-                </div>
-                <div class="mobile-radio-controls">
-                    <input type="button" class="mobile-ctrl mobile-ctrl-prev" v-on:click="buttonPrev();" />
-                    <input type="button" class="mobile-ctrl mobile-ctrl-next" v-on:click="buttonNext();" />
-                    <input type="button" class="mobile-ctrl mobile-ctrl-hide" v-on:click="hideRadio(true);" />
-                    <input type="button" class="mobile-ctrl mobile-ctrl-home" @click="setScreen('');" />
-                </div>
-                <input type="button" class="mobile-ctrl mobile-ctrl-panic" v-on:click="buttonPanic();" />
-            </div>
-        </draggable-box>
-
     </div>
 </template>
 
 <script>
+import SkinBodyImg from './components/skin/BodyImage.vue'
+import SkinBodyComponent from './components/skin/BodyComp.vue'
+import DraggableBox from './components/util/DraggableBox.vue'
+import MiniScreen from './components/MiniScreen.vue'
+import Screen from './components/Screen.vue'
+
 import Home from './components/Home.vue'
 import Channels from './components/Channels.vue'
 import Channel from './components/Channel.vue'
 import Message from './components/Message.vue'
-import NewMessage from './components/NewMessage.vue'
 import ScanList from './components/ScanList.vue'
 import Settings from './components/Settings.vue'
 import Contacts from './components/Contacts.vue'
-import Messages from './components/Messages.vue'
 import CallDetails from './components/CallDetails.vue'
-import DraggableBox from './components/util/DraggableBox.vue'
 
 export default {
     components: {
+        SkinBodyImg,
+        SkinBodyComponent,
         DraggableBox,
+        MiniScreen,
+        PrimaryScreen: Screen,
+
         Home,
         Channels,
         Channel,
         Message,
-        NewMessage,
         ScanList,
         Settings,
         Contacts,
-        Messages,
-        CallDetails
+        CallDetails,
     },
     data: () => {
         return {
@@ -141,15 +95,69 @@ export default {
             inVehicle: false,
 
             dragMode: false,
-            radioBodyPos: [0, 0],
-            topRadioPos: [400, 0],
-            mobileRadioBodyPos: [0, 0],
+            defaultPositions: {
+                portable: [0, 0, 16],
+                vehicle: [0, 0, 16],
+                hud: [400, 0, 16]
+            },
+            positions: {},
+
+            // promises of queried skin data (so we don't query twice)
+            // Record<string, Promise<SkinData> | SkinData>
+            skinCache: {},
+            selectSkinIds: [], // list of skin ids that can be selected
+            curSkin: null,
         }
     },
     computed: {
         stateFreqName() {
             return this.$store.getters.freqName;
-        }
+        },
+        screenDynComponent() {
+            const c = this.$options.components;
+            const ROUTES = {
+                '': c.Home,
+                'calldetails': c.CallDetails,
+                'channels': c.Channels,
+                'channel': c.Channel,
+                'contacts': c.Contacts,
+                'message': c.Message,
+                'scanlist': c.ScanList,
+                'settings': c.Settings,
+            };
+            return ROUTES[this.currScreen];
+        },
+        activeFrames() {
+            if (!this.curSkin) return; // no skin for the frames
+
+            const getFrame = (type) => {
+                const find = this.curSkin.frames.find(x => x.type === type)
+                if (find) return find;
+                const first = this.curSkin.frames[0];
+                return { ...first, type };
+            };
+
+            const frames = [];
+            if (this.showRadio) frames.push(getFrame('portable'));
+            if (this.showMobileRadio) frames.push(getFrame('vehicle'));
+            if (this.showTopRadio) frames.push(getFrame('hud'));
+
+            const ACTIONS = {
+                'power': this.buttonPower,
+                'next_preset': this.buttonNext,
+                'prev_preset': this.buttonPrev,
+                'panic': this.buttonPanic,
+                'home': () => this.setScreen(''),
+                'hide': () => this.hideRadio(true),
+            };
+            return frames.map((frame) => ({
+                ...frame,
+                controls: frame.controls.map((ctrl) => ({
+                    ...ctrl,
+                    events: { click: ACTIONS[ctrl.action] },
+                })),
+            }));
+        },
     },
     watch: {
         stateFreqName(newVal, oldVal) {
@@ -167,11 +175,7 @@ export default {
                         this.dragMode = false;
                         // save the positions by sending them back to the client
                         this.postClient({
-                            type: 'setUiPositions', data: {
-                                radioBodyPos: this.radioBodyPos,
-                                topRadioPos: this.topRadioPos,
-                                mobileRadioBodyPos: this.mobileRadioBodyPos,
-                            }
+                            type: 'setUiPositions', data: this.positions
                         });
                     } else {
                         this.hideRadio(false);
@@ -184,9 +188,8 @@ export default {
         })
     },
     mounted() {
+        this.selectSkin('default');
         window.addEventListener('message', (event) => {
-            const eventType = event.data.event;
-            //console.log(event);
             switch (event.data.type) {
                 case 'reset':
                     this.setupSocket();
@@ -219,26 +222,7 @@ export default {
                     }
                     break;
                 case 'radioHud':
-                    switch (event.data.size) {
-                        case 'off':
-                            this.showTopRadio = false;
-                            break;
-                        case 'small':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "sm";
-                            break;
-                        case 'medium':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "md";
-                            break;
-                        case 'large':
-                            this.showTopRadio = true;
-                            this.topRadioSize = "lg";
-                            break;
-                        default:
-                            console.error("Invalid Hud Size Specified.");
-                            break;
-                    }
+                    this.showTopRadio = event.data.size !== 'off';
                     break;
                 case 'setPos':
                     try {
@@ -293,14 +277,19 @@ export default {
                     //console.log("inVehicle: " + this.inVehicle);
                     this.updateRadioType();
                     break;
+                case 'time':
+                    this.$store.commit('setInGameTime', event.data.time);
+                    break;
                 case 'setUiPositions':
                     if (typeof event.data.data !== 'object') break;
-                    for (const k in event.data.data) {
-                        if (event.data.data[k] instanceof Array)
-                            this.$set(this, k, event.data.data[k]);
-                        else
-                            console.warn('WARNING: skip in setUiPositions', k);
-                    }
+                    this.positions = event.data.data;
+                    break;
+                case 'setSkins':
+                case 'setCurrentSkin':
+                    if (event.data.skins) // update available skins
+                        this.selectSkinIds = event.data.skins;
+                    if (event.data.skin) // update current ski
+                        this.selectSkin(event.data.skin);
                     break;
                 case 'incomingMessage':
                     // this.notifyPlayer("Radio: ~b~New Message");
@@ -338,6 +327,57 @@ export default {
             }).catch((err) => {
                 console.log(err);
             });
+        },
+        async querySkinNoCache(skinId) {
+            const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
+            const res = await fetch(`${BASE}/${skinId}/skin.json`)
+            const skinData = await  res.json()
+
+            skinData.id = skinId;
+            for (const frame of skinData.frames) {
+                // add the base url to the image paths
+                if (frame.body?.image)
+                    frame.body.image = `${BASE}/${skinId}/${frame.body.image}`;
+                frame.key = `${skinId}-${frame.type}`;
+            }
+            return skinData;
+        },
+        querySkin(skinId) {
+            if (this.skinCache[skinId] instanceof Promise) return this.skinCache[skinId];
+            else if (this.skinCache[skinId]) return Promise.resolve(this.skinCache[skinId]);
+
+            const promise = this.querySkinNoCache(skinId);
+            this.$set(this.skinCache, skinId, promise);
+            promise.then(res => this.$set(this.skinCache, skinId, res));
+            return promise;
+        },
+        extractSkin(skinId) {
+            // this will take a skin from the cache if the promise is resolved, otherwise it will return undefined
+            // in the event no cache entry exists, it will start a query
+            const skin = this.skinCache[skinId];
+            if (skin instanceof Promise) return undefined; // still loading
+            else if (skin !== undefined) return skin; // fully queried
+
+            this.querySkin(skinId);
+            return undefined;
+        },
+        selectSkin(skinId) {
+            this.querySkin(skinId).then(skin => this.curSkin = skin);
+        },
+        selectSkinOptions() {
+            // NOTE: this cannot be a computed property because of this.extractSkin
+            const skinOptions = [];
+            for (const skinId of this.selectSkinIds) {
+                const skin = this.extractSkin(skinId);
+                if (skin === null) continue; // skin queried but invalid
+                const name = skin?.name || "Loading...";
+
+                skinOptions.push({
+                    id: skinId,
+                    name,
+                });
+            }
+            return skinOptions;
         },
         updateRadioType() {
             if (this.showMobileRadio || this.showRadio) {
@@ -405,7 +445,7 @@ export default {
             })
         },
         setScreen(name) {
-            this.currScreen = name;
+            this.currScreen = name || '';
         },
         nextPreset() {
             if (this.$store.state.presets[this.currPreset + 1]) {
@@ -600,352 +640,13 @@ export default {
     color: white;
 }
 
-.hidden {
-    display: none;
-}
-
-.radio-open {
-    -webkit-animation: radio-open 1s;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    overflow: hidden;
-}
-@keyframes radio-open {
-    0% {
-        position: absolute;
-        transform: translate3d(0, 100vh, 0);
-    }
-    100% {
-        position: absolute;
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-.radio-close {
-    -webkit-animation: radio-close 1s;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-}
-@keyframes radio-close {
-    0% {
-        position: absolute;
-        transform: translate3d(0, 0, 0);
-    }
-    100% {
-        position: absolute;
-        transform: translate3d(0, 100vh, 0);
-    }
-}
-
-.mobile-radio-body {
-    background-repeat: round;
-    width: 722px;
-    /* height: 240px; */
-    height: 250px;
-    display: flex;
-    flex-direction: row;
-}
-
 .radio-body {
-    background-repeat: round;
-    width: 275px;
-    height: 982px;
+    position: relative;
 }
-
-.mobile-radio-controls {
-    /*background-color: rgba(255, 0, 0, 0.5);*/
-    /*margin-top: 482px;*/
-    border-width: 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-top: 30px;
-    height: 100%;
-    width: 51px;
-}
-
-.mobile-radio-controls .mobile-ctrl:focus {
+.radio-control {
     outline: none;
-}
-
-.mobile-radio-controls .mobile-ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0;
-}
-
-.radio-controls {
-    margin-top: 482px;
-    height: 67px;
-    /* border-width: 0px; */
-    display: flex;
-}
-
-.radio-controls .ctrl:focus {
-    outline: none;
-}
-
-.radio-controls .ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-}
-
-.mobile-radio-controls .ctrl:focus {
-    outline: none;
-}
-
-/* .mobile-radio-controls .ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-    /* for development only */
-    /*opacity: 0.3;
-} */
-
-.mobile-ctrl-panic {
-    opacity: 0.0;
-    margin-top: 25px;
-    margin-left: 167px;
-    height: 52px;
-    border-radius: 35px;
-    width: 38px;
-    height: 52px;
-}
-
-
-.mobile-radio-controls .mobile-ctrl-prev {
-    height: 43px;
-    width: 100%;
-}
-
-.mobile-radio-controls .mobile-ctrl-next {
-    height: 40px; /* Originally 10px */
-    width: 100%;
-    margin-top: 5px;
-}
-
-.mobile-radio-buttons .mobile-ctrl-power {
-    margin-left: 0px;
-    margin-top: 0px;
-    height: 32px;
-    width: 30px;
-    border-radius: 11px;
-}
-
-.radio-controls .ctrl-panic {
-    margin-left: 74px;
-    border-radius: 35px;
-    width: 30px;
-    height: 18px; /* Originally 10px */
-    margin-top: 48px; /* Originally 50px */ 
-}
-
-
-.radio-controls .ctrl-prev {
-    height: 65px;
-    margin-left: 10px;
-    width: 22px;
-}
-
-.radio-controls .ctrl-next {
-    height: 65px; /* Originally 10px */
-    margin-left: 0px;
-    width: 22px;
-}
-
-.radio-controls .ctrl-power {
-    height: 45px; /* Originally 10px */
-    margin-left: 44px;
-    width: 50px;
-    margin-top: 28px;
-    border-radius: 20px;
-}
-
-.radio-screen {
-    background-color:black;
-    margin: 86px 51px 16px 52px;
-    height: 264px;
-}
-
-.mobile-radio-screen {
-    background-color:black;
-    margin: 43px 15px 18px 0px;
-    height: 167px;
-    width: 216px;
-}
-
-.radio-brand {
-    margin: 1px 1px 0px 1px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 20px;
-    justify-content: center;
-    background: linear-gradient(to bottom, rgba(80,80,80,0.5) 0%, rgba(20,20,20,1) 100%);
-
-}
-
-.radio-logo {
-    height: 12px;
-    padding-top: 1px;
-    /* transform: skewX(-20deg); */
-}
-
-.mobile-radio-content {
-    border: 0px;
-    height: 167px;
-    margin: 0px 1px 1px 1px;
-    width: 216px;
-    overflow-y: scroll;
-    /*overflow-x: hidden;*/
-}
-
-.mobile-radio-content::-webkit-scrollbar {
-    display: none;
-}
-
-.radio-content {
-    border: 0px;
-    height: 264px;
-    margin: 0px 1px 1px 1px;
-    width: 169px;
-    overflow-y: scroll;
-    overflow-x: hidden;
-}
-
-.radio-content::-webkit-scrollbar {
-    display: none;
-}
-
-.mobile-radio-buttons {
-    width: 0px;
-    margin: 35px 76px 169px 100px;
-    height: 25px;
-}
-
-.mobile-radio-buttons .mobile-ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-}
-
-.mobile-radio-controls .mobile-ctrl-hide {
-    margin-top: 15px;
-    margin-left: 10px;
-    width: 30px;
-    height: 30px;
-    border-radius: 20px;
-}
-
-.mobile-radio-controls .mobile-ctrl-home {
-    margin-top: 16px;
-    margin-left: 10px;
-    width: 30px;
-    height: 30px;
-    border-radius: 20px;
-}
-
-.radio-buttons {
-    /* background-color: rgba(0,0,255,0.5); */
-    height: 25px;
-    margin: 0px 110px;
-    display: flex;
-}
-
-.radio-buttons .ctrl {
-    position: relative;
-    visibility: visible;
-    opacity: 0.0;
-    /* for development only */
-    /* opacity: 0.3; */
-}
-
-.radio-buttons .ctrl-home {
-    width: 100%;
-    border-radius: 20px;
-}
-
-/* TOP RADIO VIEW */
-.top-radio-body {
-    background-repeat: no-repeat;
-    background-size: cover;
-    /* position: fixed; */
-
-    /* right: 400px; Direct Input from user */
-    /* bottom: 0px; Direct Input from user */
-}
-
-.top-radio-body-lg {
-    /* Largest Radio Body */
-    width: 439px; /* Variable Width & Height */
-    height: 439px; /* Variable Width & Height */
-}
-
-.top-radio-body-md {
-    height: 300px;
-    width: 300px;
-}
-
-.top-radio-body-sm {
-    height: 200px;
-    width: 200px;
-}
-
-.top-radio-screen {
-    margin: 224px 143px 0px 149px;
-    height: 81px;
-    border-radius: 11px;
-    /*background-color: black;*/
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-}
-
-.top-radio-body-lg .top-radio-screen {
-    font-size: 17px;
-}
-
-.top-radio-body-md .top-radio-screen {
-    border-radius: 4px;
-    height: 55px;
-    margin: 153px 99px 0px 102px;
-    font-size: 11px;
-}
-
-.top-radio-body-sm .top-radio-screen {
-    height: 39px;
-    margin: 102px 65px 0 66px;
-    font-size: 8px;
-}
-
-.backlight-gray {
-    background-color: unset;
-}
-
-.backlight-red {
-    background-color: rgb(254 69 69 / 30%);
-
-}
-
-.backlight-yellow {
-    background-color: rgb(217 254 69 / 30%);
-
-}
-
-.backlight-green {
-    background-color: rgb(80 254 69 / 30%);
-
-}
-
-.backlight-lightblue {
-    background-color: rgb(69 152 254 / 30%);
-
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
 }
 </style>
