@@ -9,9 +9,6 @@
             <div v-for="(skin, i) in skinOptions" :key="i" class="sc-row" @click="setSkin(skin.id)">
                 <div class="sc-row-label">{{ skin.name }}</div>
             </div>
-            <div class="sc-row">
-                <div class="sc-row-label">More Coming Soon</div>
-            </div>
         </div>
     </main>
 </template>
