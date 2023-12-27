@@ -41,7 +41,8 @@ Config.frames = {
             },
             -- Radio frames that can be used by this department
             allowedFrames = {
-                "default"
+                "default",
+                "ems"
             },
         }
     },
