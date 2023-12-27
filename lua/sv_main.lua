@@ -153,3 +153,7 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		end
 	end
 end)
+
+TriggerClientEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
+	{ name = 'frame', help = 'The frame name to change to' }
+})
