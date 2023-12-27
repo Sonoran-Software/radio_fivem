@@ -1,6 +1,9 @@
 <template>
-  <div class="body-component" :style="componentStyles">
-    <slot />
+  <div class="body-component" :style="componentStyles" @click="$emit('click', $event)">
+    <div v-if="scale" :style="{ fontSize: scale }">
+      <slot></slot>
+    </div>
+    <slot v-else></slot>
   </div>
 </template>
 
@@ -11,6 +14,7 @@ export default {
   props: {
     bounds: { type: Object },
   },
+  emits: ['click'],
   computed: {
     componentStyles() {
       const convertProperties = [
@@ -28,6 +32,10 @@ export default {
         return acc;
       }, {});
     },
+    scale() {
+      if (!this.bounds.scale) return null;
+      return unitToSize(this.bounds.scale);
+    },
   },
 };
 </script>
@@ -36,7 +44,8 @@ export default {
 .body-component {
   position: absolute;
 }
-.body-component > *:first-child {
+
+.body-component>*:first-child {
   display: block;
   width: 100%;
   height: 100%;

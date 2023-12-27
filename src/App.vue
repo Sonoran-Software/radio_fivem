@@ -1,5 +1,5 @@
 <template>
-    <div class="appcontainer">
+    <div class="appcontainer" :class="{ debug }">
         <div v-if="dragMode" class="drag-instructions">
             <div>
                 Click and drag to move the components.
@@ -8,7 +8,6 @@
             </div>
         </div>
 
-        <pre>{{ positions }}</pre>
         <draggable-box
             v-for="frame in activeFrames"
             :key="frame.type"
@@ -19,7 +18,11 @@
             <div class="radio-body">
                 <skin-body-img v-if="frame.body" :body-skin="frame.body" />
 
-                <skin-body-component v-if="frame.screen" :bounds="frame.screen">
+                <skin-body-component
+                    v-if="frame.screen"
+                    :bounds="frame.screen"
+                    @click="nudgePath = [frame.type, 'screen']"
+                >
                     <primary-screen :on="radioPower">
                         <component
                             v-if="radioPower && screenDynComponent"
@@ -43,7 +46,11 @@
                 </skin-body-component>
 
                 <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
-                    <button class="radio-control" v-on="ctrl.events"></button>
+                    <button
+                        class="radio-control"
+                        v-on="ctrl.events"
+                        @click="nudgePath = [frame.type, 'controls', i]"
+                    ></button>
                 </skin-body-component>
             </div>
         </draggable-box>
@@ -85,6 +92,7 @@ export default {
     },
     data: () => {
         return {
+            debug: false,
             showRadio: false,
             showTopRadio: false,
             showMobileRadio: false,
@@ -105,8 +113,10 @@ export default {
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
             skinCache: {},
-            selectSkinIds: [], // list of skin ids that can be selected
+            // selectSkinIds: [], // list of skin ids that can be selected
+            selectSkinIds: ['default', 'hi-vis', 'voxguard', 'echolink'], // TODO: remove me
             curSkin: null,
+            nudgePath: null,
         }
     },
     computed: {
@@ -148,7 +158,7 @@ export default {
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
                 'home': () => this.setScreen(''),
-                'hide': () => this.hideRadio(true),
+                'hide': () => !this.debug && this.hideRadio(true),
             };
             return frames.map((frame) => ({
                 ...frame,
@@ -181,6 +191,14 @@ export default {
                         this.hideRadio(false);
                     }
                     break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    if (this.debug)
+                        this.debugNudgeSkinProperty(event.code);
+                    break;
+
             
                 default:
                     break;
@@ -188,6 +206,7 @@ export default {
         })
     },
     mounted() {
+        // TODO: set to default
         this.selectSkin('default');
         window.addEventListener('message', (event) => {
             switch (event.data.type) {
@@ -363,6 +382,31 @@ export default {
         },
         selectSkin(skinId) {
             this.querySkin(skinId).then(skin => this.curSkin = skin);
+        },
+        debugNudgeSkinProperty(direction) {
+            if (!this.nudgePath) return;
+
+            const NUDGE = 1 / 8;
+            let wNudge = 0;
+            let hNudge = 0;
+            if (direction === 'ArrowUp') hNudge = -NUDGE;
+            else if (direction === 'ArrowDown') hNudge = NUDGE;
+            else if (direction === 'ArrowLeft') wNudge = -NUDGE;
+            else if (direction === 'ArrowRight') wNudge = NUDGE;
+
+            const [frameType, ...path] = this.nudgePath;
+            let prop = this.curSkin.frames.find(x => x.type === frameType);
+            for (const key of path) prop = prop[key];
+
+            if (prop.top)
+                this.$set(prop, 'top', prop.top + hNudge);
+            if (prop.bottom)
+                this.$set(prop, 'bottom', prop.bottom - hNudge);
+            if (prop.left)
+                this.$set(prop, 'left', prop.left + wNudge);
+            if (prop.right)
+                this.$set(prop, 'right', prop.right - wNudge);
+            console.log(JSON.stringify(prop));
         },
         selectSkinOptions() {
             // NOTE: this cannot be a computed property because of this.extractSkin
@@ -648,5 +692,12 @@ export default {
     border: none;
     background-color: transparent;
     cursor: pointer;
+}
+
+.debug .radio-body {
+    outline: 3px solid red;
+}
+.debug .radio-control {
+    outline: 2px solid green;
 }
 </style>
