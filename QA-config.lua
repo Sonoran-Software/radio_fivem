@@ -1,6 +1,6 @@
 Config = {}
 
-Config.debug = false
+Config.debug = true
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.updateBranch = "master"
@@ -17,7 +17,7 @@ Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 
 -- Notification Settings --
 Config.notifications = {
-    type = "native", -- Available options: native, pNotify, okokNotify or custom
+    type = "native", -- Available options: native, pNotify, okokNotify, or custom
     notificationTitle = "SonoranRadio", -- Notification Title for methods that support it
     -- Uncomment line below and comment line 105 if you plan to use pNotify
     -- notificationMessage = "<b>SonoranRadio</b></br>{{MESSAGE}}"
@@ -28,6 +28,34 @@ Config.notifications = {
     end
 }
 
+-- Radio Item Settings --
+Config.frames = {
+    permissionMode = "qbcore", -- ace, qbcore, esx or none
+    adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
+    departments = {
+        ["sahp"] = {
+            label = "San Andreas Highway Patrol",
+            permissions = {
+                jobs = {"police"}, -- Jobs that can use this department
+                ace = {"sahp"} -- ACE Permissions that can use this department
+            },
+            -- Radio frames that can be used by this department
+            allowedFrames = {
+                "default"
+            },
+        }
+    },
+    vehicles = {
+        ["police"] = {
+            label = "Police Cruiser",
+            -- Radio frames that can be used by this vehicle
+            allowedFrames = {
+                "moto_42069"
+            },
+        }
+
+    }
+}
 
 -- Only Run This on Client
 if not IsDuplicityVersion() then
