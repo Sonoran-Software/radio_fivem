@@ -453,10 +453,10 @@ CreateThread(function()
 	while true do
 		local hours = GetClockHours()
 		local minutes = GetClockMinutes()
-		if hours < 9 then
+		if hours <= 9 then
 			hours = '0' .. tostring(hours)
 		end
-		if minutes < 9 then
+		if minutes <= 9 then
 			minutes = '0' .. tostring(minutes)
 		end
 		SendNUIMessage({
