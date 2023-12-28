@@ -23,9 +23,13 @@ function checkFramePermissions(player)
 			if department.permissions and department.permissions.jobs and QBPlayer then
 				for _, qbPermission in ipairs(department.permissions.jobs) do
 					if QBPlayer.PlayerData.job.name == qbPermission then
-						-- Add allowed frames for this department to the list
-						for _, frame in ipairs(department.allowedFrames or {}) do
-							table.insert(allowedFrames, frame)
+						for _, grade in ipairs(department.permissions.jobs[qbPermission].grades or {}) do
+							if QBPlayer.PlayerData.job.grade.level == grade then
+								-- Add allowed frames for this department to the list
+								for _, frame in ipairs(department.allowedFrames or {}) do
+									table.insert(allowedFrames, frame)
+								end
+							end
 						end
 					end
 				end
@@ -39,9 +43,13 @@ function checkFramePermissions(player)
 			if department.permissions and department.permissions.jobs and ESXPlayer then
 				for _, esxPermission in ipairs(department.permissions.jobs) do
 					if ESXPlayer.job.name == esxPermission then
-						-- Add allowed frames for this department to the list
-						for _, frame in ipairs(department.allowedFrames or {}) do
-							table.insert(allowedFrames, frame)
+						for _, grade in ipairs(department.permissions.jobs[esxPermission].grades or {}) do
+							if ESXPlayer.job.grade == grade then
+								-- Add allowed frames for this department to the list
+								for _, frame in ipairs(department.allowedFrames or {}) do
+									table.insert(allowedFrames, frame)
+								end
+							end
 						end
 					end
 				end

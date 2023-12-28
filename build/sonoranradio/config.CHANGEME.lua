@@ -41,21 +41,22 @@ Config.frames = {
 			permissions = {
 				jobs = { -- Jobs that can use this department
 					['police'] = {
-						grades = {
+						grades = { -- Job grades that can use this department
 							1,
 							2,
 							3
 						}
 					}
 				},
-				ace = {
+				ace = { -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
 					'sahp'
-				} -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
+				}
 			},
 			-- Radio frames that can be used by this department
 			allowedFrames = {
 				'default',
-				'echolink'
+				'echolink',
+                'voxguard'
 			}
 		}
 	},
