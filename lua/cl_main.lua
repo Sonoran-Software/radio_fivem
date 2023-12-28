@@ -178,6 +178,20 @@ function radioToggle(frame)
 			local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
 			-- if inVeh then SetNuiFocus(false, false) end
 		else
+			if Config.enforceRadioItem then
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Sonoran Radio',
+						'You must have a radio to use this command.'
+					}
+				})
+			end
 			DebugPrint('Radio Requested, but player doesn\'t have a radio.')
 		end
 
