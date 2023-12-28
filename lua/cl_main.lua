@@ -98,6 +98,13 @@ CreateThread(function()
 	end
 end)
 
+if Config.debug then
+	SendNUIMessage({
+		type = 'literally anything lol',
+		debug = true -- or false
+	})
+end
+
 CreateThread(function()
 	while Config.enforceRadioItem do
 		Wait(1000)
@@ -237,7 +244,7 @@ RegisterCommand('radiohud', function(source, args, rawCommand)
 	Radio.Hud = Radio.Hud == 'off' and 'on' or 'off'
 	SendNUIMessage({
 		type = 'radioHud',
-		size = Radio.Hud,
+		size = Radio.Hud
 	})
 end)
 
