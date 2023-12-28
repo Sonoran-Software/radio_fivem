@@ -10,7 +10,7 @@ Config.noPhysicalTowers = false
 Config.towerRepairTimer = 20
 Config.acePermsForRadio = false
 Config.acePermsForTowerRepair = false
-Config.enforceRadioItem = true
+Config.enforceRadioItem = tru
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
@@ -36,7 +36,11 @@ Config.frames = {
         ["sahp"] = {
             label = "San Andreas Highway Patrol",
             permissions = {
-                jobs = {"police"}, -- Jobs that can use this department
+                jobs = {
+                    ['police'] = {
+                        grades = {1, 2, 3 }
+                    }
+                }, -- Jobs that can use this department
                 ace = {"sahp"} -- ACE Permissions that can use this department
             },
             -- Radio frames that can be used by this department
