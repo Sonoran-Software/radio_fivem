@@ -18,17 +18,18 @@ export default {
   computed: {
     componentStyles() {
       const convertProperties = [
-        "top",
-        "bottom",
-        "left",
-        "right",
-        "width",
-        "height",
+        { prop: "top" },
+        { prop: "bottom" },
+        { prop: "left" },
+        { prop: "right" },
+        { prop: "width" },
+        { prop: "height" },
+        { prop: 'zIndex', unitless: true },
       ];
 
       // convert "bounds" numbers to CSS units
-      return convertProperties.reduce((acc, prop) => {
-        acc[prop] = unitToSize(this.bounds[prop]);
+      return convertProperties.reduce((acc, { prop, unitless }) => {
+        acc[prop] = unitless ? this.bounds[prop] : unitToSize(this.bounds[prop]);
         return acc;
       }, {});
     },
@@ -42,6 +43,7 @@ export default {
 
 <style scoped>
 .body-component {
+  z-index: 30;
   position: absolute;
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "EchoLink XR-500",
+  "name": "SignalPro XR-500",
   "frames": [
     {
       "type": "portable",
@@ -27,18 +27,26 @@
           "height": 3.75
         },
         {
+          "action": "panic",
+          "bottom": 28.5,
+          "left": 0.875,
+          "width": 1.625,
+          "height": 2.125
+        },
+        {
           "action": "home",
-          "bottom": 9.375,
-          "left": 4.75,
+          "bottom": 9.25,
+          "left": 11.75,
           "right": 3.125,
-          "height": 3.75
+          "height": 2
         }
       ],
       "screen": {
         "bottom": 14,
         "height": 14.875,
         "left": 4.25,
-        "right": 3
+        "right": 3,
+        "zIndex": 5
       }
     },
     {
@@ -74,6 +82,13 @@
           "height": 3.75
         },
         {
+          "action": "panic",
+          "top": 12.875,
+          "right": 9.25,
+          "width": 2.25,
+          "height": 2
+        },
+        {
           "action": "home",
           "top": 10.125,
           "left": 6.75,
@@ -85,7 +100,8 @@
         "top": 5.4,
         "height": 11,
         "left": 8.625,
-        "width": 14.5
+        "width": 14.5,
+        "zIndex": 5
       }
     }
   ]

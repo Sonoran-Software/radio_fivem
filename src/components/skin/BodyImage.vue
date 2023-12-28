@@ -1,5 +1,5 @@
 <template>
-  <img v-if="bodySkin" :src="bodySkin.image" :style="imgStyle" draggable="false" />
+  <img v-if="bodySkin" :src="bodySkin.image" class="body-image" :style="imgStyle" draggable="false" />
   <div v-else :style="imgStyle"></div>
 </template>
 
@@ -19,3 +19,11 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.body-image {
+  position: relative;
+  z-index: 15;
+  pointer-events: none;
+}
+</style>

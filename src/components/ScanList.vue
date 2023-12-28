@@ -4,7 +4,13 @@
             <span @click="$emit('add-scanned', '')">&plus;</span>
         </top-bar>
 
-        <div class="sc-body" v-if="$store.state.sublvl <= 1">
+        <div v-if="!$store.state.connected" class="sc-body">
+            <div class="sc-ch">
+                <div class="sc-ch-header">Radio Not Connected</div>
+                <div class="sc-ch-freq">Your radio is not connected to TeamSpeak</div>
+            </div>
+        </div>
+        <div v-else-if="$store.state.sublvl <= 1" class="sc-body">
             <div class="sc-ch">
                 <div class="sc-ch-header">View Only</div>
                 <div class="sc-ch-freq">Upgrade to Pro</div>
@@ -14,7 +20,7 @@
                 <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
         </div>
-        <div class="sc-body" v-if="$store.state.sublvl > 1">
+        <div v-else class="sc-body">
             <div class="sc-row" v-on:click="$emit('toggle-scan', '')">
                 <div class="sc-row-label">Scan {{ ($store.state.scanning ? "enabled" : "disabled") }}</div>
                 <div class="sc-row-icon">

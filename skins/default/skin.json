@@ -35,17 +35,18 @@
         },
         {
           "action": "home",
-          "bottom": 3,
+          "bottom": 3.25,
           "left": 6.75,
           "right": 6.75,
           "height": 1.5
         }
       ],
       "screen": {
-        "bottom": 5.75,
-        "height": 18.067,
+        "bottom": 5.875,
+        "height": 18.125,
         "left": 3.2185,
-        "right": 3.2185
+        "right": 3.2,
+        "zIndex": 5
       }
     },
     {
@@ -95,7 +96,13 @@
           "height": 2
         }
       ],
-      "screen": { "top": 2.65, "height": 10.2, "left": 11, "width": 13.45 }
+      "screen": {
+        "top": 2.65,
+        "height": 10.2,
+        "left": 11,
+        "width": 13.45,
+        "zIndex": 5
+      }
     },
     {
       "type": "hud",

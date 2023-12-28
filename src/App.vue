@@ -8,6 +8,13 @@
             </div>
         </div>
 
+        <div v-if="debug && activeFrames">
+            <div style="display:inline-block" class="label-on-top">
+                <code>path = {{ nudgePath }}</code>
+                <pre>{{ nudgeProp }}</pre>
+            </div>
+        </div>
+
         <draggable-box
             v-for="frame in activeFrames"
             :key="frame.type"
@@ -21,7 +28,7 @@
                 <skin-body-component
                     v-if="frame.screen"
                     :bounds="frame.screen"
-                    @click="nudgePath = [frame.type, 'screen']"
+                    @click="(nudgePath = [frame.type, 'screen'])"
                 >
                     <primary-screen :on="radioPower">
                         <component
@@ -49,8 +56,9 @@
                     <button
                         class="radio-control"
                         v-on="ctrl.events"
-                        @click="nudgePath = [frame.type, 'controls', i]"
+                        @click.right="nudgePath = [frame.type, 'controls', i]"
                     ></button>
+                    <code v-if="debug" class="label-on-top">{{ ctrl.action }}</code>
                 </skin-body-component>
             </div>
         </draggable-box>
@@ -92,7 +100,7 @@ export default {
     },
     data: () => {
         return {
-            debug: false,
+            debug: true,
             showRadio: false,
             showTopRadio: false,
             showMobileRadio: false,
@@ -144,13 +152,16 @@ export default {
                 const find = this.curSkin.frames.find(x => x.type === type)
                 if (find) return find;
                 const first = this.curSkin.frames[0];
-                return { ...first, type };
+                return first;
             };
 
-            const frames = [];
+            let frames = [];
             if (this.showRadio) frames.push(getFrame('portable'));
             if (this.showMobileRadio) frames.push(getFrame('vehicle'));
             if (this.showTopRadio) frames.push(getFrame('hud'));
+
+            // dedupe frames by type
+            frames = frames.filter((frame, i) => frames.findIndex((x) => x.type === frame.type) === i);
 
             const ACTIONS = {
                 'power': this.buttonPower,
@@ -158,16 +169,27 @@ export default {
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
                 'home': () => this.setScreen(''),
-                'hide': () => !this.debug && this.hideRadio(true),
+                'hide': () => this.hideRadio(true),
             };
             return frames.map((frame) => ({
                 ...frame,
                 controls: frame.controls.map((ctrl) => ({
                     ...ctrl,
-                    events: { click: ACTIONS[ctrl.action] },
+                    events: {
+                        click: (e) => e.button === 0 && ACTIONS[ctrl.action](e)
+                    }
                 })),
             }));
         },
+        nudgeProp() {
+            if (!this.nudgePath) return null;
+
+            const [frameType, ...path] = this.nudgePath;
+            let prop = this.curSkin.frames.find(x => x.type === frameType);
+            for (const key of path) prop = prop[key];
+
+            return prop;
+        }
     },
     watch: {
         stateFreqName(newVal, oldVal) {
@@ -178,7 +200,6 @@ export default {
     created() {
         this.setupSocket();
         window.addEventListener('keyup', (event) => {
-            //console.log(event.code);
             switch (event.code) {
                 case "Escape":
                     if (this.dragMode) {
@@ -195,8 +216,7 @@ export default {
                 case 'ArrowDown':
                 case 'ArrowLeft':
                 case 'ArrowRight':
-                    if (this.debug)
-                        this.debugNudgeSkinProperty(event.code);
+                    this.debug && this.debugNudgeSkinProperty(event);
                     break;
 
             
@@ -209,6 +229,10 @@ export default {
         // TODO: set to default
         this.selectSkin('default');
         window.addEventListener('message', (event) => {
+            // accept a "debug" field with every message type to toggle ui dbg
+            if (typeof event.data.debug === 'boolean')
+                this.debug = event.data.debug;
+
             switch (event.data.type) {
                 case 'reset':
                     this.setupSocket();
@@ -383,8 +407,8 @@ export default {
         selectSkin(skinId) {
             this.querySkin(skinId).then(skin => this.curSkin = skin);
         },
-        debugNudgeSkinProperty(direction) {
-            if (!this.nudgePath) return;
+        debugNudgeSkinProperty({ code: direction, shiftKey }) {
+            if (!this.nudgeProp) return;
 
             const NUDGE = 1 / 8;
             let wNudge = 0;
@@ -394,19 +418,33 @@ export default {
             else if (direction === 'ArrowLeft') wNudge = -NUDGE;
             else if (direction === 'ArrowRight') wNudge = NUDGE;
 
-            const [frameType, ...path] = this.nudgePath;
-            let prop = this.curSkin.frames.find(x => x.type === frameType);
-            for (const key of path) prop = prop[key];
+            // even though this is a computed property, it pulls directly from
+            // the data so it's fine to mutate it
+            const prop = this.nudgeProp;
+            if (shiftKey) {
+                if (prop.height !== undefined)
+                    this.$set(prop, 'height', prop.height - hNudge);
+                else if (prop.bottom !== undefined)
+                    this.$set(prop, 'bottom', prop.bottom + hNudge);
+                else if (prop.top !== undefined)
+                    this.$set(prop, 'top', prop.top - hNudge);
 
-            if (prop.top)
-                this.$set(prop, 'top', prop.top + hNudge);
-            if (prop.bottom)
-                this.$set(prop, 'bottom', prop.bottom - hNudge);
-            if (prop.left)
-                this.$set(prop, 'left', prop.left + wNudge);
-            if (prop.right)
-                this.$set(prop, 'right', prop.right - wNudge);
-            console.log(JSON.stringify(prop));
+                if (prop.width !== undefined)
+                    this.$set(prop, 'width', prop.width + wNudge);
+                else if (prop.right !== undefined)
+                    this.$set(prop, 'right', prop.right - wNudge);
+                else if (prop.left !== undefined)
+                    this.$set(prop, 'left', prop.left + wNudge);
+            } else {
+                if (prop.top !== undefined)
+                    this.$set(prop, 'top', prop.top + hNudge);
+                if (prop.bottom !== undefined)
+                    this.$set(prop, 'bottom', prop.bottom - hNudge);
+                if (prop.left !== undefined)
+                    this.$set(prop, 'left', prop.left + wNudge);
+                if (prop.right !== undefined)
+                    this.$set(prop, 'right', prop.right - wNudge);
+            }
         },
         selectSkinOptions() {
             // NOTE: this cannot be a computed property because of this.extractSkin
@@ -634,20 +672,20 @@ export default {
             });
         },
         buttonPrev() {
-            if (this.$store.state.sublvl == 0) {
-                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
-            } else {
-                this.notifyPlayer("Radio: ~y~Prev Preset");
-                this.prevPreset();
-            }
+            if (!this.$store.state.connected)
+                return void this.notifyPlayer("Radio: ~r~Not Connected")
+            if (this.$store.state.sublvl == 0)
+                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            this.notifyPlayer("Radio: ~y~Prev Preset");
+            this.prevPreset();
         },
         buttonNext() {
-            if (this.$store.state.sublvl == 0) {
-                this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
-            } else {
-                this.notifyPlayer("Radio: ~y~Next Preset");
-                this.nextPreset();
-            }
+            if (!this.$store.state.connected)
+                return void this.notifyPlayer("Radio: ~r~Not Connected")
+            if (this.$store.state.sublvl == 0)
+                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
+            this.notifyPlayer("Radio: ~y~Next Preset");
+            this.nextPreset();
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
@@ -692,6 +730,11 @@ export default {
     border: none;
     background-color: transparent;
     cursor: pointer;
+}
+.label-on-top {
+    font-size: 12px; /* the only instance where px values are ok */
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .debug .radio-body {

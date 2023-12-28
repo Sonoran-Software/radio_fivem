@@ -1,37 +1,37 @@
 {
-  "name": "Moto AX Hi-Vis",
+  "name": "Moto AX Hi-Vis (portable only)",
   "frames": [
     {
       "type": "portable",
-      "body": { "image": "radio-portable.webp", "width": 17 },
+      "body": { "image": "radio-portable.webp", "width": 17.5 },
       "controls": [
         {
           "action": "power",
-          "bottom": 29.6,
-          "right": 0.8,
-          "width": 2.7,
+          "bottom": 29.225,
+          "right": 0.55,
+          "width": 3.7,
           "height": 2.7
         },
         {
           "action": "next_preset",
-          "bottom": 30,
-          "right": 7.25,
+          "bottom": 30.25,
+          "right": 7.375,
           "width": 1.25,
-          "height": 4.25
+          "height": 4.625
         },
         {
           "action": "prev_preset",
-          "bottom": 30,
-          "left": 7.25,
+          "bottom": 30.25,
+          "left": 7.375,
           "width": 1.25,
-          "height": 4.25
+          "height": 4.625
         },
         {
           "action": "panic",
-          "bottom": 29.75,
-          "left": 4,
+          "bottom": 28.625,
+          "left": 4.5,
           "width": 2,
-          "height": 1.25
+          "height": 1
         },
         {
           "action": "home",
@@ -42,10 +42,11 @@
         }
       ],
       "screen": {
-        "bottom": 5.25,
-        "height": 16.30,
-        "left": 3.4685,
-        "right": 3.4685
+        "bottom": 5.375,
+        "height": 16.8,
+        "left": 3.5935,
+        "right": 3.5935,
+        "zIndex": 5
       }
     },
     {
@@ -95,7 +96,13 @@
           "height": 2
         }
       ],
-      "screen": { "top": 2.65, "height": 10.2, "left": 11, "width": 13.45 }
+      "screen": {
+        "top": 2.65,
+        "height": 10.2,
+        "left": 11,
+        "width": 13.45,
+        "zIndex": 5
+      }
     },
     {
       "type": "hud",

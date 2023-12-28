@@ -1,7 +1,13 @@
 <template>
     <main>
         <top-bar title="Channels" @click-back="$emit('set-screen', '')" />
-        <div class="sc-body" v-if="$store.state.sublvl == 0">
+        <div class="sc-body" v-if="!$store.state.connected">
+            <div class="sc-ch">
+                <div class="sc-ch-header">Radio Not Connected</div>
+                <div class="sc-ch-freq">Your radio is not connected to TeamSpeak</div>
+            </div>
+        </div>
+        <div class="sc-body" v-else-if="$store.state.sublvl === 0">
             <div class="sc-ch">
                 <div class="sc-ch-header">View Only</div>
                 <div class="sc-ch-freq">Upgrade to Plus</div>
@@ -11,7 +17,7 @@
                 <div class="sc-ch-freq">Recv: {{ preset.freq_recv[0] }}.{{ preset.freq_recv[1] }}<br /> Xmit: {{ preset.freq_xmit[0] }}.{{ preset.freq_xmit[1] }}  </div>
             </div>
         </div>
-        <div class="sc-body" v-if="$store.state.sublvl > 0">
+        <div v-else class="sc-body">
             <div class="sc-row" v-on:click="$emit('set-screen', 'channel')">
                 <div class="sc-row-label">Custom</div>
                 <div class="sc-row-icon"><i class="fas fa-arrow-right"></i></div>
