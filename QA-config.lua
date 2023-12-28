@@ -56,19 +56,9 @@ Config.frames = {
 			allowedFrames = {
 				'default',
 				'echolink',
-                'voxguard'
-			}
-		}
-	},
-	vehicles = {
-		['police'] = {
-			label = 'Police Cruiser',
-			-- Radio frames that can be used by this vehicle
-			allowedFrames = {
 				'voxguard'
 			}
 		}
-
 	}
 }
 
