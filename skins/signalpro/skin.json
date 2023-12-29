@@ -1,0 +1,108 @@
+{
+  "name": "SignalPro XR-500",
+  "frames": [
+    {
+      "type": "portable",
+      "body": { "image": "radio-portable.webp", "width": 17 },
+      "controls": [
+        {
+          "action": "power",
+          "bottom": 32.725,
+          "right": 10.55,
+          "width": 2.7,
+          "height": 2.5
+        },
+        {
+          "action": "next_preset",
+          "bottom": 32.875,
+          "right": 7.125,
+          "width": 1,
+          "height": 3.75
+        },
+        {
+          "action": "prev_preset",
+          "bottom": 32.875,
+          "left": 7.625,
+          "width": 1,
+          "height": 3.75
+        },
+        {
+          "action": "panic",
+          "bottom": 28.5,
+          "left": 0.875,
+          "width": 1.625,
+          "height": 2.125
+        },
+        {
+          "action": "home",
+          "bottom": 9.25,
+          "left": 11.75,
+          "right": 3.125,
+          "height": 2
+        }
+      ],
+      "screen": {
+        "bottom": 14,
+        "height": 14.875,
+        "left": 4.25,
+        "right": 3,
+        "zIndex": 5
+      }
+    },
+    {
+      "type": "vehicle",
+      "body": { "image": "radio-mobile.webp", "width": 35 },
+      "controls": [
+        {
+          "action": "power",
+          "top": 7.5,
+          "left": 3.775,
+          "width": 2,
+          "height": 2
+        },
+        {
+          "action": "hide",
+          "top": 7.125,
+          "left": 6.75,
+          "width": 1.5,
+          "height": 1.5
+        },
+        {
+          "action": "prev_preset",
+          "top": 12.25,
+          "left": 2.625,
+          "width": 1.5,
+          "height": 3.75
+        },
+        {
+          "action": "next_preset",
+          "top": 12.25,
+          "left": 4.25,
+          "width": 1.5,
+          "height": 3.75
+        },
+        {
+          "action": "panic",
+          "top": 12.875,
+          "right": 9.25,
+          "width": 2.25,
+          "height": 2
+        },
+        {
+          "action": "home",
+          "top": 10.125,
+          "left": 6.75,
+          "width": 1.5,
+          "height": 1.5
+        }
+      ],
+      "screen": {
+        "top": 5.4,
+        "height": 11,
+        "left": 8.625,
+        "width": 14.5,
+        "zIndex": 5
+      }
+    }
+  ]
+}

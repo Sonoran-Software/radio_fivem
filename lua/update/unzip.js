@@ -1,4 +1,5 @@
 var unzipper = require("unzipper");
+var { minimatch } = require("minimatch");
 var fs = require("fs");
 var path = require("path");
 
@@ -43,10 +44,19 @@ function unzipUpdate(file, dest) {
     const ignoreFile = path.join(GetResourcePath("sonoranradio_updatehelper"), "ignore.json");
     const ignore = fs.existsSync(ignoreFile) ? JSON.parse(fs.readFileSync(ignoreFile)) : [];
 
+    const isIgnored = (file) => {
+        for (const pattern of ignore)
+            if (minimatch(file, pattern))
+                return true;
+        return false;
+    };
+
     return new Promise((resolve, reject) => {
         fs.createReadStream(file).pipe(unzipper.Parse()).on('entry', (entry) => {
             const {path: file, type} = entry;
             const fullPath = path.resolve(dest, file);
+
+            if (isIgnored(file)) return void entry.autodrain();
 
             // ensure the directory exists and *is* a directory
             if (type === 'Directory') {
@@ -60,7 +70,6 @@ function unzipUpdate(file, dest) {
                 return void entry.autodrain();
             }
 
-            if (ignore.includes(file) && fs.existsSync(fullPath)) return void entry.autodrain();
             entry.pipe(fs.createWriteStream(fullPath));
         })
         .on('close', resolve)

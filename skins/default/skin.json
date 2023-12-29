@@ -1,0 +1,119 @@
+{
+  "name": "Moto AX",
+  "frames": [
+    {
+      "type": "portable",
+      "body": { "image": "radio-portable.png", "width": 17 },
+      "controls": [
+        {
+          "action": "power",
+          "bottom": 29.6,
+          "right": 0.8,
+          "width": 2.7,
+          "height": 2.7
+        },
+        {
+          "action": "next_preset",
+          "bottom": 30,
+          "right": 7.25,
+          "width": 1.25,
+          "height": 4.25
+        },
+        {
+          "action": "prev_preset",
+          "bottom": 30,
+          "left": 7.125,
+          "width": 1.25,
+          "height": 4.25
+        },
+        {
+          "action": "panic",
+          "bottom": 29.75,
+          "left": 4,
+          "width": 2,
+          "height": 1.25
+        },
+        {
+          "action": "home",
+          "bottom": 3.25,
+          "left": 6.75,
+          "right": 6.75,
+          "height": 1.5
+        }
+      ],
+      "screen": {
+        "bottom": 5.875,
+        "height": 18.125,
+        "left": 3.2185,
+        "right": 3.2,
+        "zIndex": 5
+      }
+    },
+    {
+      "type": "vehicle",
+      "body": { "image": "radio-mobile.png", "width": 45.125 },
+      "controls": [
+        {
+          "action": "power",
+          "top": 2.25,
+          "left": 6.15,
+          "width": 2,
+          "height": 2
+        },
+        {
+          "action": "prev_preset",
+          "top": 2.25,
+          "right": 17.25,
+          "width": 1.5,
+          "height": 2
+        },
+        {
+          "action": "next_preset",
+          "top": 5,
+          "right": 17.25,
+          "width": 1.5,
+          "height": 2
+        },
+        {
+          "action": "hide",
+          "top": 8.25,
+          "right": 17.25,
+          "width": 1.5,
+          "height": 1.5
+        },
+        {
+          "action": "home",
+          "top": 11.25,
+          "right": 17.25,
+          "width": 1.5,
+          "height": 1.5
+        },
+        {
+          "action": "panic",
+          "top": 2.25,
+          "right": 3.75,
+          "width": 2,
+          "height": 2
+        }
+      ],
+      "screen": {
+        "top": 2.65,
+        "height": 10.2,
+        "left": 11,
+        "width": 13.45,
+        "zIndex": 5
+      }
+    },
+    {
+      "type": "hud",
+      "body": { "image": "radio-portable-top.png", "width": 22.25 },
+      "controls": [],
+      "miniScreen": {
+        "bottom": 7.2,
+        "height": 3.75,
+        "left": 7.75,
+        "right": 7.5
+      }
+    }
+  ]
+}

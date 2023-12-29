@@ -1,0 +1,108 @@
+{
+  "name": "VoxGuard X-150",
+  "frames": [
+    {
+      "type": "portable",
+      "body": { "image": "radio-portable.webp", "width": 17 },
+      "controls": [
+        {
+          "action": "power",
+          "bottom": 27.1,
+          "right": 2.3,
+          "width": 2.7,
+          "height": 2.5
+        },
+        {
+          "action": "next_preset",
+          "bottom": 28,
+          "right": 7.75,
+          "width": 1,
+          "height": 3
+        },
+        {
+          "action": "prev_preset",
+          "bottom": 28,
+          "left": 7.125,
+          "width": 1,
+          "height": 3
+        },
+        {
+          "action": "panic",
+          "bottom": 27.75,
+          "left": 4.75,
+          "width": 1.25,
+          "height": 1
+        },
+        {
+          "action": "home",
+          "bottom": 12.625,
+          "left": 4.875,
+          "width": 1,
+          "height": 2.5
+        }
+      ],
+      "screen": {
+        "bottom": 17.625,
+        "height": 7.875,
+        "left": 5.125,
+        "right": 5.875,
+        "scale": 0.65
+      }
+    },
+    {
+      "type": "vehicle",
+      "body": { "image": "radio-mobile.webp", "width": 50 },
+      "controls": [
+        {
+          "action": "power",
+          "top": 5.875,
+          "left": 3.9,
+          "width": 2,
+          "height": 2
+        },
+        {
+          "action": "prev_preset",
+          "top": 5.625,
+          "right": 14.25,
+          "width": 3,
+          "height": 1.75
+        },
+        {
+          "action": "next_preset",
+          "top": 11,
+          "right": 14.5,
+          "width": 3,
+          "height": 1.75
+        },
+        {
+          "action": "home",
+          "top": 14.625,
+          "right": 14.625,
+          "width": 2.75,
+          "height": 1.5
+        },
+        {
+          "action": "hide",
+          "top": 14.625,
+          "right": 24.125,
+          "width": 3,
+          "height": 1.5
+        },
+        {
+          "action": "panic",
+          "top": 14.625,
+          "right": 19.875,
+          "width": 3,
+          "height": 1.5
+        }
+      ],
+      "screen": {
+        "top": 5.4,
+        "height": 7.375,
+        "left": 13.875,
+        "width": 16.625,
+        "scale": 0.9
+      }
+    }
+  ]
+}
