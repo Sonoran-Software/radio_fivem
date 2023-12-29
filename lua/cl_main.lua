@@ -143,10 +143,10 @@ end)
 
 function radioToggle(frame)
 	if authorized then
+		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not Config.enforceRadioItem then
 			Radio.Has = true
 		end
-
 		if Radio.Has then
 			SendNUIMessage({
 				type = 'setSkins',
