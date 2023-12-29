@@ -15,14 +15,14 @@
         {
           "action": "next_preset",
           "bottom": 30,
-          "left": 7.125,
+          "right": 7.25,
           "width": 1.25,
           "height": 4.25
         },
         {
           "action": "prev_preset",
           "bottom": 30,
-          "left": 7.25,
+          "left": 7.125,
           "width": 1.25,
           "height": 4.25
         },
