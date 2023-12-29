@@ -161,7 +161,7 @@ function radioToggle(frame)
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
-				debug = Config.debug,
+				debug = Config.debug
 			})
 			if frame == nil then
 				frame = 'default'
@@ -725,6 +725,12 @@ RegisterCommand('refreshradioperms', function()
 end)
 
 TriggerEvent('chat:addSuggestion', '/refreshradioperms', 'Refresh your radio permissions')
+
+if Config.frames.permissionMode == 'qbcore' then
+	RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+		TriggerServerEvent('SonoranRadio::CheckPermissions')
+	end)
+end
 
 Citizen.CreateThread(function()
 	while true do
