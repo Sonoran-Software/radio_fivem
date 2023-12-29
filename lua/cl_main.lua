@@ -98,13 +98,6 @@ CreateThread(function()
 	end
 end)
 
-if Config.debug then
-	SendNUIMessage({
-		type = 'literally anything lol',
-		debug = true -- or false
-	})
-end
-
 CreateThread(function()
 	while Config.enforceRadioItem do
 		Wait(1000)
@@ -167,7 +160,8 @@ function radioToggle(frame)
 			})
 			SendNUIMessage({
 				type = 'setVisible',
-				visibility = radActive
+				visibility = radActive,
+				debug = Config.debug,
 			})
 			if frame == nil then
 				frame = 'default'
@@ -181,9 +175,6 @@ function radioToggle(frame)
 			else
 				SetNuiFocus(false, false)
 			end
-
-			local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
-			-- if inVeh then SetNuiFocus(false, false) end
 		else
 			if Config.enforceRadioItem then
 				TriggerEvent('chat:addMessage', {

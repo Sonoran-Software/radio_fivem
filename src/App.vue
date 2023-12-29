@@ -1,5 +1,5 @@
 <template>
-    <div class="appcontainer" :class="{ debug }">
+    <div class="appcontainer" :class="{ debug, help }">
         <div v-if="dragMode" class="drag-instructions">
             <div>
                 Click and drag to move the components.
@@ -34,6 +34,7 @@
                         <component
                             v-if="radioPower && screenDynComponent"
                             :is="screenDynComponent"
+                            :help-enabled="help"
                             :skin-options="selectSkinOptions()"
                             @set-screen="setScreen($event)"
                             @go-home="goToPreset(0)"
@@ -43,7 +44,8 @@
                             @del-scanned="delScanned($event)"
                             @toggle-scan="toggleScan($event)"
                             @set-skin-id="selectSkin($event)"
-                            @set-drag="dragMode = true"
+                            @set-help="help = $event"
+                            @enable-drag="dragMode = true"
                         />
                     </primary-screen>
                 </skin-body-component>
@@ -58,7 +60,11 @@
                         v-on="ctrl.events"
                         @click.right="nudgePath = [frame.type, 'controls', i]"
                     ></button>
-                    <code v-if="debug" class="label-on-top">{{ ctrl.action }}</code>
+                    <code
+                        v-if="debug || help"
+                        class="label-on-top"
+                        :class="{ 'hack': ctrl.action === 'next_preset'}"
+                    >{{ ctrl.action }}</code>
                 </skin-body-component>
             </div>
         </draggable-box>
@@ -100,7 +106,9 @@ export default {
     },
     data: () => {
         return {
-            debug: true,
+            debug: false,
+            help: false,
+
             showRadio: false,
             showTopRadio: false,
             showMobileRadio: false,
@@ -121,8 +129,7 @@ export default {
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
             skinCache: {},
-            // selectSkinIds: [], // list of skin ids that can be selected
-            selectSkinIds: ['default', 'hi-vis', 'voxguard', 'echolink'], // TODO: remove me
+            selectSkinIds: [], // list of skin ids that can be selected
             curSkin: null,
             nudgePath: null,
         }
@@ -226,8 +233,7 @@ export default {
         })
     },
     mounted() {
-        // TODO: set to default
-        this.selectSkin('default');
+        this.selectSkin('voxguard');
         window.addEventListener('message', (event) => {
             // accept a "debug" field with every message type to toggle ui dbg
             if (typeof event.data.debug === 'boolean')
@@ -735,12 +741,17 @@ export default {
     font-size: 12px; /* the only instance where px values are ok */
     color: white;
     background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+.label-on-top.hack {
+    display: inline-block;
+    transform: translateY(-16px); /* label-on-top uses pixel values */
 }
 
 .debug .radio-body {
     outline: 3px solid red;
 }
-.debug .radio-control {
+.debug .radio-control, .help .radio-control {
     outline: 2px solid green;
 }
 </style>

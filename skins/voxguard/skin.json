@@ -27,6 +27,13 @@
           "height": 3
         },
         {
+          "action": "panic",
+          "bottom": 27.75,
+          "left": 4.75,
+          "width": 1.25,
+          "height": 1
+        },
+        {
           "action": "home",
           "bottom": 12.625,
           "left": 4.875,
