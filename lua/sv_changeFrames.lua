@@ -20,8 +20,8 @@ function checkFramePermissions(player)
 		local QBPlayer = QBCore.Functions.GetPlayer(player)
 		for _, department in pairs(Config.frames.departments) do
 			-- Check if department has 'qbcore' permissions defined
-			if department.permissions and department.permissions.jobs and QBPlayer then
-				for _, qbPermission in ipairs(department.permissions.jobs) do
+			if department.permissions and department.permissions.jobs and QBPlayer ~= nil then
+				for qbPermission, _ in pairs(department.permissions.jobs) do
 					if QBPlayer.PlayerData.job.name == qbPermission then
 						for _, grade in ipairs(department.permissions.jobs[qbPermission].grades or {}) do
 							if QBPlayer.PlayerData.job.grade.level == grade then
@@ -40,8 +40,8 @@ function checkFramePermissions(player)
 		local ESXPlayer = ESX.GetPlayerFromId(player)
 		for _, department in pairs(Config.frames.departments) do
 			-- Check if department has 'esx' permissions defined
-			if department.permissions and department.permissions.jobs and ESXPlayer then
-				for _, esxPermission in ipairs(department.permissions.jobs) do
+			if department.permissions and department.permissions.jobs and ESXPlayer ~= nil then
+				for esxPermission, _ in ipairs(department.permissions.jobs) do
 					if ESXPlayer.job.name == esxPermission then
 						for _, grade in ipairs(department.permissions.jobs[esxPermission].grades or {}) do
 							if ESXPlayer.job.grade == grade then
