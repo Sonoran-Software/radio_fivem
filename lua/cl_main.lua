@@ -707,34 +707,3 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		end
 	end
 end)
-
-RegisterCommand('refreshradioperms', function()
-	TriggerServerEvent('SonoranRadio::CheckPermissions')
-	TriggerEvent('chat:addMessage', {
-		color = {
-			255,
-			0,
-			0
-		},
-		multiline = true,
-		args = {
-			'Sonoran Radio',
-			'Radio permissions refreshed.'
-		}
-	})
-end)
-
-TriggerEvent('chat:addSuggestion', '/refreshradioperms', 'Refresh your radio permissions')
-
-if Config.frames.permissionMode == 'qbcore' then
-	RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
-		TriggerServerEvent('SonoranRadio::CheckPermissions')
-	end)
-end
-
-Citizen.CreateThread(function()
-	while true do
-		TriggerServerEvent('SonoranRadio::CheckPermissions')
-		Wait(300000)
-	end
-end)
