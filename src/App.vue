@@ -233,7 +233,7 @@ export default {
         })
     },
     mounted() {
-        this.selectSkin('voxguard');
+        this.selectSkin('default');
         window.addEventListener('message', (event) => {
             // accept a "debug" field with every message type to toggle ui dbg
             if (typeof event.data.debug === 'boolean')
@@ -317,7 +317,13 @@ export default {
                     this.$store.commit('setUnitStatus', event.data.status);
                     break;
                 case 'getRadios': 
-                    let activeRadios = event.data.radios.filter(radio => radio && radio.id && radio.name);
+                    if (!event.data.radios) {
+                        console.log('no radios!');
+                        break;
+                    }
+                    // really event.data.radios is Record<number, object> but
+                    // it could be provided as object[] if lua is dumb
+                    let activeRadios = Object.values(event.data.radios).filter(radio => radio && radio.id && radio.name);
                     this.$store.commit('setActiveRadios', activeRadios);
                     break;
                 case 'inVehicle':
