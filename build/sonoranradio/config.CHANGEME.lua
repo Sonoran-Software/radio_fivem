@@ -49,7 +49,7 @@ Config.frames = {
 					}
 				},
 				ace = { -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
-					'sahp'
+					'group.sahp'
 				}
 			},
 			-- Radio frames that can be used by this department
