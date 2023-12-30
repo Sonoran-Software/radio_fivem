@@ -179,3 +179,16 @@ TriggerClientEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio 
 		help = 'The frame name to change to'
 	}
 })
+
+
+AddEventHandler('onResourceStart', function(resourceName)
+	if (GetCurrentResourceName() ~= resourceName) then
+		return
+	end
+	if Config.frames == nil or Config.frames.departments == nil or not Config.frames then
+		print('!!! CRITICAL ERROR !!!')
+		print('Config file not found or is outdated. Please ensure your config contains the Config.frames section, did you forget to rename it?')
+		print('!!! CRITICAL ERROR !!!')
+		return
+	end
+end)
