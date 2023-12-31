@@ -31,10 +31,10 @@ else
 			description = 'Communicate with others through the Sonoran Radio'
 		})
 		QBCore.Functions.CreateUseableItem('sonoran_radio', function(source, item)
-			if not item.frame then
+			if not item.info.frame then
 				TriggerClientEvent('qb-sonrad:use', source, 'default')
 			else
-				TriggerClientEvent('qb-sonrad:use', source, item.frame)
+				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
 			end
 		end)
 

@@ -689,7 +689,17 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 			local QBCore = exports['qb-core']:GetCoreObject()
 			local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
 			if hasRadio then
+				TriggerEvent('chat:addMessage', {
+					args = {
+						'^1SonoranRadio',
+						'Changed your radio skin to ' .. frame .. ''
+					}
+				})
 				TriggerServerEvent('SonoranRadio::AdminSkinChange', frame)
+				SendNUIMessage({
+					type = 'setCurrentSkin',
+					skin = frame
+				})
 			else
 				TriggerEvent('chat:addMessage', {
 					color = {
