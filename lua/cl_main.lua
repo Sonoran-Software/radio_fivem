@@ -666,54 +666,46 @@ CreateThread(function()
 end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
-	if not self.Open then
-		TriggerEvent('chat:addMessage', {
-			color = {
-				255,
-				0,
-				0
-			},
-			multiline = true,
-			args = {
-				'Sonoran Radio',
-				'You must have your radio open to change frames.'
-			}
+	if Config.frames.permissionMode == 'ace' then
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
 		})
-	else
-		if Config.frames.permissionMode == 'ace' then
+	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
+		local QBCore = exports['qb-core']:GetCoreObject()
+		local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
+		if hasRadio then
+			TriggerEvent('chat:addMessage', {
+				args = {
+					'^1SonoranRadio',
+					'Changed your radio skin to ' .. frame .. ''
+				}
+			})
+			TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
 			SendNUIMessage({
 				type = 'setCurrentSkin',
 				skin = frame
 			})
-		elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
-			local QBCore = exports['qb-core']:GetCoreObject()
-			local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
-			if hasRadio then
-				TriggerEvent('chat:addMessage', {
-					args = {
-						'^1SonoranRadio',
-						'Changed your radio skin to ' .. frame .. ''
-					}
-				})
-				TriggerServerEvent('SonoranRadio::AdminSkinChange', frame)
-				SendNUIMessage({
-					type = 'setCurrentSkin',
-					skin = frame
-				})
-			else
-				TriggerEvent('chat:addMessage', {
-					color = {
-						255,
-						0,
-						0
-					},
-					multiline = true,
-					args = {
-						'Sonoran Radio',
-						'You must have a radio to change frames.'
-					}
-				})
-			end
+		else
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Sonoran Radio',
+					'You must have a radio to change frames.'
+				}
+			})
 		end
 	end
 end)
+
+TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
+	{
+		name = 'frame',
+		help = 'The frame name to change to'
+	}
+})
