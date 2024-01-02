@@ -33,7 +33,7 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = 'ace', -- ace, qbcore, esx or none
+	permissionMode = 'qbcore', -- ace, qbcore, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['sahp'] = {

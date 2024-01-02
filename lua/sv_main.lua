@@ -31,10 +31,14 @@ else
 			description = 'Communicate with others through the Sonoran Radio'
 		})
 		QBCore.Functions.CreateUseableItem('sonoran_radio', function(source, item)
-			if not item.frame then
+			local src = source
+			local Player = QBCore.Functions.GetPlayer(src)
+			local radio = Player.Functions.GetItemByName('sonoran_radio')
+			if not radio then return end
+			if not radio.info.frame then
 				TriggerClientEvent('qb-sonrad:use', source, 'default')
 			else
-				TriggerClientEvent('qb-sonrad:use', source, item.frame)
+				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
 			end
 		end)
 
@@ -158,7 +162,7 @@ RegisterCommand('adminskinchange', function(source, args, rawCommand)
 	end
 end)
 
-RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
+RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local Player = QBCore.Functions.GetPlayer(source)
@@ -167,19 +171,11 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 			local radioSlot = radio.slot
 			Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
 			Player.Functions.AddItem('sonoran_radio', 1, radioSlot, {
-				['frame'] = frame
+				frame = newFrame
 			})
 		end
 	end
 end)
-
-TriggerClientEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
-	{
-		name = 'frame',
-		help = 'The frame name to change to'
-	}
-})
-
 
 AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
