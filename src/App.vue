@@ -31,8 +31,14 @@
                     @click="(nudgePath = [frame.type, 'screen'])"
                 >
                     <primary-screen :on="radioPower">
+                        <iframe
+                            v-if="standaloneServerId !== null"
+                            v-show="radioPower"
+                            id="standalone-screen"
+                            :src="`http://localhost:8080/view/${standaloneServerId}`"
+                        ></iframe>
                         <component
-                            v-if="radioPower && screenDynComponent"
+                            v-else-if="radioPower && screenDynComponent"
                             :is="screenDynComponent"
                             :help-enabled="help"
                             :skin-options="selectSkinOptions()"
@@ -108,6 +114,7 @@ export default {
         return {
             debug: false,
             help: false,
+            standaloneServerId: 6,
 
             showRadio: false,
             showTopRadio: false,
@@ -715,6 +722,15 @@ export default {
 
 <style scoped>
 .appcontainer {
+    overflow: hidden;
+}
+
+#standalone-screen {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
     overflow: hidden;
 }
 
