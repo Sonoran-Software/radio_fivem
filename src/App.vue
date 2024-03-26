@@ -22,9 +22,9 @@
 
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
-                    <primary-screen v-if="standaloneServerId" :on="radioPower" v-standalone-portal></primary-screen>
-                    <primary-screen v-else :on="radioPower">
-                        <component v-if="radioPower && screenDynComponent" :is="screenDynComponent"
+                    <primary-screen :on="radioPower">
+                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId" />
+                        <component v-else-if="radioPower && screenDynComponent" :is="screenDynComponent"
                             :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
                             @go-home="goToPreset(0)" @set-frequency="setFrequency($event)"
                             @send-message="sendRadioMessage($event)" @add-scanned="addScanned($event)"
@@ -55,6 +55,7 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
+import FloatingScreen from './components/util/FloatingScreen.vue'
 
 import Home from './components/Home.vue'
 import Channels from './components/Channels.vue'
@@ -72,6 +73,7 @@ export default {
         DraggableBox,
         MiniScreen,
         PrimaryScreen: Screen,
+        FloatingScreen,
 
         Home,
         Channels,
@@ -691,17 +693,6 @@ export default {
     }
 };
 </script>
-
-<style>
-#standalone-screen {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    overflow: hidden;
-}
-</style>
 
 <style scoped>
 .appcontainer {
