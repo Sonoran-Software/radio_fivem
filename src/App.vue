@@ -15,44 +15,22 @@
             </div>
         </div>
 
-        <draggable-box
-            v-for="frame in activeFrames"
-            :key="frame.type"
-            :drag-enabled="dragMode"
-            :value="positions[frame.key] || defaultPositions[frame.type]"
-            @input="$set(positions, frame.key, $event)"
-        >
+        <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
+            :value="positions[frame.key] || defaultPositions[frame.type]" @input="$set(positions, frame.key, $event)">
             <div class="radio-body">
                 <skin-body-img v-if="frame.body" :body-skin="frame.body" />
 
-                <skin-body-component
-                    v-if="frame.screen"
-                    :bounds="frame.screen"
-                    @click="(nudgePath = [frame.type, 'screen'])"
-                >
-                    <primary-screen :on="radioPower">
-                        <iframe
-                            v-if="standaloneServerId !== null"
-                            v-show="radioPower"
-                            id="standalone-screen"
-                            :src="`http://localhost:8080/view/${standaloneServerId}`"
-                        ></iframe>
-                        <component
-                            v-else-if="radioPower && screenDynComponent"
-                            :is="screenDynComponent"
-                            :help-enabled="help"
-                            :skin-options="selectSkinOptions()"
-                            @set-screen="setScreen($event)"
-                            @go-home="goToPreset(0)"
-                            @set-frequency="setFrequency($event)"
-                            @send-message="sendRadioMessage($event)"
-                            @add-scanned="addScanned($event)"
-                            @del-scanned="delScanned($event)"
-                            @toggle-scan="toggleScan($event)"
-                            @set-skin-id="selectSkin($event)"
-                            @set-help="help = $event"
-                            @enable-drag="dragMode = true"
-                        />
+                <skin-body-component v-if="frame.screen" :bounds="frame.screen"
+                    @click="(nudgePath = [frame.type, 'screen'])">
+                    <primary-screen v-if="standaloneServerId" :on="radioPower" v-standalone-portal></primary-screen>
+                    <primary-screen v-else :on="radioPower">
+                        <component v-if="radioPower && screenDynComponent" :is="screenDynComponent"
+                            :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
+                            @go-home="goToPreset(0)" @set-frequency="setFrequency($event)"
+                            @send-message="sendRadioMessage($event)" @add-scanned="addScanned($event)"
+                            @del-scanned="delScanned($event)" @toggle-scan="toggleScan($event)"
+                            @set-skin-id="selectSkin($event)" @set-help="help = $event"
+                            @enable-drag="dragMode = true" />
                     </primary-screen>
                 </skin-body-component>
 
@@ -61,16 +39,10 @@
                 </skin-body-component>
 
                 <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
-                    <button
-                        class="radio-control"
-                        v-on="ctrl.events"
-                        @click.right="nudgePath = [frame.type, 'controls', i]"
-                    ></button>
-                    <code
-                        v-if="debug || help"
-                        class="label-on-top"
-                        :class="{ 'hack': ctrl.action === 'next_preset'}"
-                    >{{ ctrl.action }}</code>
+                    <button class="radio-control" v-on="ctrl.events"
+                        @click.right="nudgePath = [frame.type, 'controls', i]"></button>
+                    <code v-if="debug || help" class="label-on-top"
+                        :class="{ 'hack': ctrl.action === 'next_preset'}">{{ ctrl.action }}</code>
                 </skin-body-component>
             </div>
         </draggable-box>
@@ -720,11 +692,7 @@ export default {
 };
 </script>
 
-<style scoped>
-.appcontainer {
-    overflow: hidden;
-}
-
+<style>
 #standalone-screen {
     width: 100%;
     height: 100%;
@@ -733,6 +701,13 @@ export default {
     border: none;
     overflow: hidden;
 }
+</style>
+
+<style scoped>
+.appcontainer {
+    overflow: hidden;
+}
+
 
 .drag-instructions {
     position: fixed;
