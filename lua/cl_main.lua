@@ -161,7 +161,8 @@ function radioToggle(frame)
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
-				debug = Config.debug
+				debug = Config.debug,
+				standaloneId = Config.standaloneId,
 			})
 			if frame == nil then
 				frame = 'default'
@@ -308,6 +309,17 @@ RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
 RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
 RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
+
+-- add PTT if in standalone mode
+if Config.standaloneId then
+	RegisterCommand('+sonradptt', function()
+		SendNUIMessage({type = 'ptt', state = true})
+	end)
+	RegisterCommand('-sonradptt', function()
+		SendNUIMessage({type = 'ptt', state = false})
+	end)
+	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
+end
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)

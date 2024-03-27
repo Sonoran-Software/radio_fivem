@@ -55,7 +55,7 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
-import FloatingScreen from './components/util/FloatingScreen.vue'
+import FloatingScreen, { frameEl } from './components/util/FloatingScreen.vue'
 
 import Home from './components/Home.vue'
 import Channels from './components/Channels.vue'
@@ -88,7 +88,7 @@ export default {
         return {
             debug: false,
             help: false,
-            standaloneServerId: 6,
+            standaloneServerId: null,
 
             showRadio: false,
             showTopRadio: false,
@@ -216,9 +216,15 @@ export default {
     mounted() {
         this.selectSkin('default');
         window.addEventListener('message', (event) => {
+            // if event is from frameEl (standalone screen), treat as socket message
+            if (event.source === frameEl?.contentWindow)
+                return void this.socketMessage({ data: event.data });
+
             // accept a "debug" field with every message type to toggle ui dbg
             if (typeof event.data.debug === 'boolean')
                 this.debug = event.data.debug;
+            if (typeof event.data.standaloneId !== 'undefined')
+                this.standaloneServerId = event.data.standaloneId;
 
             switch (event.data.type) {
                 case 'reset':
@@ -243,6 +249,8 @@ export default {
                     }
                     // this.showMobileRadio = event.data.visibility;
                     break;
+                case 'ptt':
+                    this.sendToSocket({ type: 'ptt', state: event.data.state });
                 case 'setTowerQuality':
                     try {
                         this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
@@ -550,13 +558,16 @@ export default {
             }
         },
         setupSocket() {
-            //console.log("Establishing Websocket connection...");
+            // don't setup a websocket if using standalone
+            if (this.standaloneServerId)
+                return void (this.connection = null);
             this.connection = new WebSocket("ws://[::1]:33802");
             this.connection.onmessage = this.socketMessage;
             this.connection.onopen = this.socketOpen;
             this.connection.onclose = this.socketClose;
         },
         socketMessage(event) {
+            console.log('socketMessage', event);
             if (event.data) {
                 let data = JSON.parse(event.data);
                 if (data.error) {
@@ -648,7 +659,9 @@ export default {
             this.setupSocket();
         },
         sendToSocket(data) {
-            if (this.connection.readyState === WebSocket.OPEN)
+            if (frameEl)
+                frameEl.contentWindow.postMessage(data, '*');
+            else if (this.connection?.readyState === WebSocket.OPEN)
                 this.connection.send(JSON.stringify(data));
         },
         toggleScan(event) {

@@ -1,5 +1,6 @@
 Config = {}
 
+Config.standaloneId = 0 -- set to 0 if using TeamSpeak
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false

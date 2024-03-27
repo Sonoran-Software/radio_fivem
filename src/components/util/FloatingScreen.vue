@@ -3,7 +3,8 @@
 </template>
 
 <script>
-let frame, refs = 0;
+export let frameEl;
+let refs = 0;
 
 /**
  * @param {DOMRect} bounds
@@ -13,42 +14,43 @@ function push(el, svId) {
 
     // create frame if not exists
     const src = `http://localhost:8080/view/${svId}`;
-    if (!frame) {
-        frame = document.createElement('iframe');
-        frame.src = src;
-        frame.allow = 'microphone';
-        frame.id = 'standalone-screen';
-        document.body.appendChild(frame);
+    if (!frameEl) {
+        frameEl = document.createElement('iframe');
+        frameEl.src = src;
+        frameEl.allow = 'microphone';
+        frameEl.id = 'standalone-screen';
+        document.body.appendChild(frameEl);
     }
-    if (frame.src !== src)
-        frame.src = src;
+    if (frameEl.src !== src)
+        frameEl.src = src;
 
     // scale iframe based on guide font size
     const elStyles = window.getComputedStyle(el);
     const bodyStyles = window.getComputedStyle(document.body);
     const scale = parseFloat(elStyles.fontSize) / parseFloat(bodyStyles.fontSize);
-    frame.style.transform = `scale(${scale})`;
+    frameEl.style.transform = `scale(${scale})`;
 
     // line up frame to guide
     const rect = el.getBoundingClientRect();
-    frame.style.top = `${rect.top}px`;
-    frame.style.left = `${rect.left}px`;
-    frame.style.width = `${rect.width / scale}px`;
-    frame.style.height = `${rect.height / scale}px`;
-    frame.style.zIndex = elStyles.zIndex + 1;
-    frame.style.visibility = 'visible';
+    frameEl.style.top = `${rect.top}px`;
+    frameEl.style.left = `${rect.left}px`;
+    frameEl.style.width = `${rect.width / scale}px`;
+    frameEl.style.height = `${rect.height / scale}px`;
+    frameEl.style.zIndex = elStyles.zIndex + 1;
+    frameEl.style.visibility = 'visible';
 }
 function pop() {
     refs--;
     if (refs !== 0) return;
 
-    frame.style.visibility = 'hidden';
+    frameEl.style.visibility = 'hidden';
 }
 
 export default {
     props: {
         serverId: { type: Number, required: true },
     },
+    emits: ['msg'],
     data: () => ({
         ro: null,
     }),
@@ -57,10 +59,12 @@ export default {
 
         this.ro = new ResizeObserver(() => this.flush());
         this.ro.observe(this.$refs.guide);
+        window.addEventListener('message', this.onMessage);
     },
     beforeDestroy() {
         this.ro.disconnect();
         this.ro = null;
+        window.removeEventListener('message', this.onMessage);
         pop();
     },
     watch: {
@@ -72,7 +76,7 @@ export default {
         flush() {
             pop();
             push(this.$refs.guide, this.serverId);
-        }
+        },
     },
 };
 </script>
