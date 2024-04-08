@@ -42,7 +42,7 @@
                     <button class="radio-control" v-on="ctrl.events"
                         @click.right="nudgePath = [frame.type, 'controls', i]"></button>
                     <code v-if="debug || help" class="label-on-top"
-                        :class="{ 'hack': ctrl.action === 'next_preset'}">{{ ctrl.action }}</code>
+                        :class="{ 'hack': ctrl.action === 'next_preset' }">{{ ctrl.action }}</code>
                 </skin-body-component>
             </div>
         </draggable-box>
@@ -207,7 +207,7 @@ export default {
                     this.debug && this.debugNudgeSkinProperty(event);
                     break;
 
-            
+
                 default:
                     break;
             }
@@ -235,7 +235,7 @@ export default {
                     this.$store.state.gamestate.radio_powered = this.radioPower;
                     this.postClient({
                         type: 'power',
-                        power: this.radioPower 
+                        power: this.radioPower
                     });
                     this.updateGamestate();
                     break;
@@ -291,7 +291,7 @@ export default {
                         case 'panic':
                             this.buttonPanic();
                             break;
-                    
+
                         default:
                             break;
                     }
@@ -305,7 +305,7 @@ export default {
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios': 
+                case 'getRadios':
                     if (!event.data.radios) {
                         console.log('no radios!');
                         break;
@@ -375,7 +375,7 @@ export default {
         async querySkinNoCache(skinId) {
             const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
             const res = await fetch(`${BASE}/${skinId}/skin.json`)
-            const skinData = await  res.json()
+            const skinData = await res.json()
 
             skinData.id = skinId;
             for (const frame of skinData.frames) {
@@ -480,11 +480,11 @@ export default {
             let recipient = event.recipient;
             let payload = event.payload;
             console.log(`msgOutbound: ${recipient} ${payload}`);
-            this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload});
+            this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload });
             this.notifyPlayer("Radio: ~g~Message Sent");
         },
         notifyPlayer(message, ignorestate) {
-            if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message});
+            if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
             let message = {
@@ -508,7 +508,7 @@ export default {
             let freqs = [];
             this.$store.state.scanned.forEach(el => {
                 if (el[0] == freq[0] && el[1] == freq[1]) {
-                    console.log("Removed scanned freq: "  +freq[0] + "." + freq[1]);
+                    console.log("Removed scanned freq: " + freq[0] + "." + freq[1]);
                 } else {
                     freqs.push(el);
                 }
@@ -520,11 +520,11 @@ export default {
             })
         },
         setFrequency(event) {
-            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString() );
+            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString());
             this.sendToSocket({
                 type: "set_frequencies",
-                freq_recv: [parseInt(this.$store.state.currFreq.recv[0]),parseInt(this.$store.state.currFreq.recv[1])],
-                freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]),parseInt(this.$store.state.currFreq.xmit[1])]
+                freq_recv: [parseInt(this.$store.state.currFreq.recv[0]), parseInt(this.$store.state.currFreq.recv[1])],
+                freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]), parseInt(this.$store.state.currFreq.xmit[1])]
             })
         },
         setScreen(name) {
@@ -583,67 +583,67 @@ export default {
                     if (typeof data.cid !== 'undefined' && data.cid !== 1) return;
 
                     switch (data.type) {
-                    case "recv_controller_data": {
-                        const { state: currstate, config } = data.data;
-                        this.$store.commit('setConnected', true);
-                        this.$store.commit('setFreqs', {
-                            recv: currstate.freq_recv,
-                            xmit: currstate.freq_xmit
-                        });
-                        this.$store.commit('setScanList', currstate.freq_scan);
-                        this.$store.commit('setScanState', currstate.enable_scan);
-                        this.$store.commit('setConfig', config);
-                        break;
-                    }
-                    case "frequencies_updated": {
-                        const { freq_recv, freq_xmit } = data;
-                        this.$store.commit('setFreqs', {
-                            recv: freq_recv,
-                            xmit: freq_xmit,
-                        });
-                        break;
-                    }
-                    case "frequencies_scanned_updated":
-                        this.$store.commit('setScanList', data.freqs);
-                        this.$store.commit('setScanState', data.enabled);
-                        break;
-                    case "channel_clients_changed":
-                        // Ignore for Now, will be needed for messaging and status.
-
-                        break;
-                    case "controller_created": {
-                        // Needs to set all of the controller config and status.
-                        let {state, config} = data.data;
-                        this.$store.commit('setConnected', true);
-                        this.$store.commit('setFreqs', {
-                            recv: state.freq_recv,
-                            xmit: state.freq_xmit,
-                        });
-                        this.$store.commit('setScanList', state.freq_scan);
-                        this.$store.commit('setScanState', state.enable_scan);
-                        this.$store.commit('setConfig', config);
-                        break;
-                    }
-                    case "controller_destroyed":
-                        // Needs to zero out all of the controller config and status, and possibly display disconnected message.
-                        this.$store.commit('setConnected', false);
-                        break;
-                    case "config_changed":
-                        this.$store.commit('setConfig', data.data);
-                        break;
-                    case "client_xmit_change":
-                        if (data.xmit_type.startsWith('self'))
-                            this.postClient({
-                                type: 'talking',
-                                talking: data.xmit_type.includes('talk_permit')
+                        case "recv_controller_data": {
+                            const { state: currstate, config } = data.data;
+                            this.$store.commit('setConnected', true);
+                            this.$store.commit('setFreqs', {
+                                recv: currstate.freq_recv,
+                                xmit: currstate.freq_xmit
                             });
-                        this.$store.commit('addXmitState', data);
-                        break;
-                    default:
-                        console.log("**Unhandled Socket Message**");
-                        console.log(JSON.stringify(event.data))
-                        break;
-                }
+                            this.$store.commit('setScanList', currstate.freq_scan);
+                            this.$store.commit('setScanState', currstate.enable_scan);
+                            this.$store.commit('setConfig', config);
+                            break;
+                        }
+                        case "frequencies_updated": {
+                            const { freq_recv, freq_xmit } = data;
+                            this.$store.commit('setFreqs', {
+                                recv: freq_recv,
+                                xmit: freq_xmit,
+                            });
+                            break;
+                        }
+                        case "frequencies_scanned_updated":
+                            this.$store.commit('setScanList', data.freqs);
+                            this.$store.commit('setScanState', data.enabled);
+                            break;
+                        case "channel_clients_changed":
+                            // Ignore for Now, will be needed for messaging and status.
+
+                            break;
+                        case "controller_created": {
+                            // Needs to set all of the controller config and status.
+                            let { state, config } = data.data;
+                            this.$store.commit('setConnected', true);
+                            this.$store.commit('setFreqs', {
+                                recv: state.freq_recv,
+                                xmit: state.freq_xmit,
+                            });
+                            this.$store.commit('setScanList', state.freq_scan);
+                            this.$store.commit('setScanState', state.enable_scan);
+                            this.$store.commit('setConfig', config);
+                            break;
+                        }
+                        case "controller_destroyed":
+                            // Needs to zero out all of the controller config and status, and possibly display disconnected message.
+                            this.$store.commit('setConnected', false);
+                            break;
+                        case "config_changed":
+                            this.$store.commit('setConfig', data.data);
+                            break;
+                        case "client_xmit_change":
+                            if (data.xmit_type.startsWith('self'))
+                                this.postClient({
+                                    type: 'talking',
+                                    talking: data.xmit_type.includes('talk_permit')
+                                });
+                            this.$store.commit('addXmitState', data);
+                            break;
+                        default:
+                            console.log("**Unhandled Socket Message**");
+                            console.log(JSON.stringify(event.data))
+                            break;
+                    }
 
                 }
 
@@ -651,17 +651,17 @@ export default {
                 console.error("Empty Message from Socket!");
             }
         },
-        socketOpen(event) {
+        socketOpen() {
             console.log("Connected to teamspeak plugin...");
-            this.sendToSocket({ "type" : "get_controller_data", "to_cid": 1 });
+            this.sendToSocket({ "type": "get_controller_data", "to_cid": 1 });
         },
-        socketClose(event) {
+        socketClose() {
             this.setupSocket();
         },
-        sendToSocket(data) {
+        sendToSocket(data, opts) {
             if (frameEl)
                 frameEl.contentWindow.postMessage(data, '*');
-            else if (this.connection?.readyState === WebSocket.OPEN)
+            else if (this.connection?.readyState === WebSocket.OPEN && !opts?.frameOnly)
                 this.connection.send(JSON.stringify(data));
         },
         toggleScan(event) {
@@ -696,10 +696,11 @@ export default {
         buttonPower() {
             this.radioPower = !this.radioPower;
             this.$store.state.gamestate.radio_powered = this.radioPower;
-            this.notifyPlayer("Radio: " + (this.radioPower?"~g~On~g~":"~r~Off~r~"), true);
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+            this.sendToSocket({ type: 'power', power: this.radioPower }, { frameOnly: true });
             this.postClient({
                 type: 'power',
-                power: this.radioPower 
+                power: this.radioPower
             });
             this.updateGamestate();
         }
@@ -722,37 +723,45 @@ export default {
     display: flex;
     justify-content: center;
 }
-.drag-instructions > div {
+
+.drag-instructions>div {
     font-family: sans-serif;
     padding: 1rem;
-    background-color: rgba(0,0,0,0.75);
+    background-color: rgba(0, 0, 0, 0.75);
     color: white;
 }
 
 .radio-body {
     position: relative;
 }
+
 .radio-control {
     outline: none;
     border: none;
     background-color: transparent;
     cursor: pointer;
 }
+
 .label-on-top {
-    font-size: 12px; /* the only instance where px values are ok */
+    font-size: 12px;
+    /* the only instance where px values are ok */
     color: white;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
 }
+
 .label-on-top.hack {
     display: inline-block;
-    transform: translateY(-16px); /* label-on-top uses pixel values */
+    transform: translateY(-16px);
+    /* label-on-top uses pixel values */
 }
 
 .debug .radio-body {
     outline: 3px solid red;
 }
-.debug .radio-control, .help .radio-control {
+
+.debug .radio-control,
+.help .radio-control {
     outline: 2px solid green;
 }
 </style>
