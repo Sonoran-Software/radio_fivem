@@ -13,7 +13,7 @@ function push(el, svId) {
     refs++;
 
     // create frame if not exists
-    const src = `http://localhost:8080/view/${svId}`;
+    const src = `https://radiov2.dev.sonoransoftware.com/view/${svId}`;
     if (!frameEl) {
         frameEl = document.createElement('iframe');
         frameEl.src = src;
