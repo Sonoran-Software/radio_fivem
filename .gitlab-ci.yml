@@ -54,6 +54,7 @@ resource-deploy-QAServer:
   only:
     - master
     - development
+    - standalone
 
 resource-deploy-prod:
   stage: deploy
