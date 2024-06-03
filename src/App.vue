@@ -23,7 +23,7 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId" />
+                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId" :url="standaloneUrl" />
                         <component v-else-if="radioPower && screenDynComponent" :is="screenDynComponent"
                             :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
                             @go-home="goToPreset(0)" @set-frequency="setFrequency($event)"
@@ -89,6 +89,7 @@ export default {
             debug: false,
             help: false,
             standaloneServerId: null,
+            standaloneUrl: null,
 
             showRadio: false,
             showTopRadio: false,
@@ -186,7 +187,6 @@ export default {
         }
     },
     created() {
-        this.setupSocket();
         window.addEventListener('keyup', (event) => {
             switch (event.code) {
                 case "Escape":
@@ -218,18 +218,17 @@ export default {
         window.addEventListener('message', (event) => {
             // if event is from frameEl (standalone screen), treat as socket message
             if (event.source === frameEl?.contentWindow)
-                return void this.socketMessage({ data: event.data });
+                return void this.socketMessage(event.data);
 
             // accept a "debug" field with every message type to toggle ui dbg
             if (typeof event.data.debug === 'boolean')
                 this.debug = event.data.debug;
             if (typeof event.data.standaloneId !== 'undefined')
                 this.standaloneServerId = event.data.standaloneId;
+            if (typeof event.data.standaloneUrl !== 'undefined')
+                this.standaloneUrl = event.data.standaloneUrl;
 
             switch (event.data.type) {
-                case 'reset':
-                    this.setupSocket();
-                    break;
                 case 'power':
                     this.radioPower = event.data.power || !this.radioPower;
                     this.$store.state.gamestate.radio_powered = this.radioPower;
@@ -251,6 +250,7 @@ export default {
                     break;
                 case 'ptt':
                     this.sendToSocket({ type: 'ptt', state: event.data.state });
+                    break;
                 case 'setTowerQuality':
                     try {
                         this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
@@ -489,13 +489,11 @@ export default {
         updateGamestate() {
             let message = {
                 type: "set_gamestate",
-                to_cid: 1,
                 state: this.$store.state.gamestate
             }
             this.sendToSocket(message);
         },
         addScanned(event) {
-            //console.log(event);
             this.$store.state.scanned.push(this.$store.state.currFreq.recv);
             this.sendToSocket({
                 type: "set_frequencies_scanned",
@@ -519,150 +517,33 @@ export default {
                 freqs: freqs
             })
         },
-        setFrequency(event) {
-            console.log("Setting Frequency: " + this.$store.state.currFreq.recv.toString() + this.$store.state.currFreq.xmit.toString());
-            this.sendToSocket({
-                type: "set_frequencies",
-                freq_recv: [parseInt(this.$store.state.currFreq.recv[0]), parseInt(this.$store.state.currFreq.recv[1])],
-                freq_xmit: [parseInt(this.$store.state.currFreq.xmit[0]), parseInt(this.$store.state.currFreq.xmit[1])]
-            })
-        },
         setScreen(name) {
             this.currScreen = name || '';
         },
         nextPreset() {
-            if (this.$store.state.presets[this.currPreset + 1]) {
-                let nextPreset = this.$store.state.presets[this.currPreset + 1];
-                this.$store.state.currFreq.recv = nextPreset.freq_recv;
-                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
-                this.setFrequency();
-                this.currPreset++;
-            }
+            this.sendToSocket({
+                type: 'preset_next',
+            })
         },
         prevPreset() {
-            if (this.$store.state.presets[this.currPreset - 1]) {
-                let nextPreset = this.$store.state.presets[this.currPreset - 1];
-                this.$store.state.currFreq.recv = nextPreset.freq_recv;
-                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
-                this.setFrequency();
-                this.currPreset--;
-            }
-        },
-        goToPreset(number) {
-            if (this.$store.state.presets[number]) {
-                let nextPreset = this.$store.state.presets[number];
-                this.$store.state.currFreq.recv = nextPreset.freq_recv;
-                this.$store.state.currFreq.xmit = nextPreset.freq_xmit;
-                this.setFrequency();
-                this.currPreset = number;
-            }
-        },
-        setupSocket() {
-            // don't setup a websocket if using standalone
-            if (this.standaloneServerId)
-                return void (this.connection = null);
-            this.connection = new WebSocket("ws://[::1]:33802");
-            this.connection.onmessage = this.socketMessage;
-            this.connection.onopen = this.socketOpen;
-            this.connection.onclose = this.socketClose;
+            this.sendToSocket({
+                type: 'preset_prev',
+            })
         },
         socketMessage(event) {
-            console.log('socketMessage', event);
-            if (event.data) {
-                let data = JSON.parse(event.data);
-                if (data.error) {
-                    // Handle Error Status
-                    if (data.msg) {
-                        if (data.msg == "ws api endpoint blocked for subscription level") {
-                            // Invalid Subscription Level
-                            console.log("Sending to Socket Failed: Not available for sub level " + this.$store.state.sublvl);
-                        }
-                    }
-                } else {
-                    // for now, only accept events coming globally OR from the first connection
-                    if (typeof data.cid !== 'undefined' && data.cid !== 1) return;
-
-                    switch (data.type) {
-                        case "recv_controller_data": {
-                            const { state: currstate, config } = data.data;
-                            this.$store.commit('setConnected', true);
-                            this.$store.commit('setFreqs', {
-                                recv: currstate.freq_recv,
-                                xmit: currstate.freq_xmit
-                            });
-                            this.$store.commit('setScanList', currstate.freq_scan);
-                            this.$store.commit('setScanState', currstate.enable_scan);
-                            this.$store.commit('setConfig', config);
-                            break;
-                        }
-                        case "frequencies_updated": {
-                            const { freq_recv, freq_xmit } = data;
-                            this.$store.commit('setFreqs', {
-                                recv: freq_recv,
-                                xmit: freq_xmit,
-                            });
-                            break;
-                        }
-                        case "frequencies_scanned_updated":
-                            this.$store.commit('setScanList', data.freqs);
-                            this.$store.commit('setScanState', data.enabled);
-                            break;
-                        case "channel_clients_changed":
-                            // Ignore for Now, will be needed for messaging and status.
-
-                            break;
-                        case "controller_created": {
-                            // Needs to set all of the controller config and status.
-                            let { state, config } = data.data;
-                            this.$store.commit('setConnected', true);
-                            this.$store.commit('setFreqs', {
-                                recv: state.freq_recv,
-                                xmit: state.freq_xmit,
-                            });
-                            this.$store.commit('setScanList', state.freq_scan);
-                            this.$store.commit('setScanState', state.enable_scan);
-                            this.$store.commit('setConfig', config);
-                            break;
-                        }
-                        case "controller_destroyed":
-                            // Needs to zero out all of the controller config and status, and possibly display disconnected message.
-                            this.$store.commit('setConnected', false);
-                            break;
-                        case "config_changed":
-                            this.$store.commit('setConfig', data.data);
-                            break;
-                        case "client_xmit_change":
-                            if (data.xmit_type.startsWith('self'))
-                                this.postClient({
-                                    type: 'talking',
-                                    talking: data.xmit_type.includes('talk_permit')
-                                });
-                            this.$store.commit('addXmitState', data);
-                            break;
-                        default:
-                            console.log("**Unhandled Socket Message**");
-                            console.log(JSON.stringify(event.data))
-                            break;
-                    }
-
-                }
-
-            } else {
-                console.error("Empty Message from Socket!");
+            switch (event.type) {
+                case "radio_connected":
+                    this.$store.commit('setConnected', true);
+                    this.$store.commit('setSublvl', event.subscription);
+                    break;
+                case "radio_disconnected": 
+                    this.$store.commit('setConnected', false);
+                    break;
             }
         },
-        socketOpen() {
-            console.log("Connected to teamspeak plugin...");
-            this.sendToSocket({ "type": "get_controller_data", "to_cid": 1 });
-        },
-        socketClose() {
-            this.setupSocket();
-        },
-        sendToSocket(data, opts) {
-            if (frameEl)
-                frameEl.contentWindow.postMessage(data, '*');
-            else if (this.connection?.readyState === WebSocket.OPEN && !opts?.frameOnly)
-                this.connection.send(JSON.stringify(data));
+        sendToSocket(data) {
+            if (frameEl) frameEl.contentWindow.postMessage(data, '*');
+            else console.warn("frameEl does not exist, but tried to send message", data);
         },
         toggleScan(event) {
             this.$store.commit('setScanState', !this.$store.state.scanning);
@@ -695,9 +576,12 @@ export default {
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
+            if (this.standaloneServerId)
+                this.$store.commit('setConnected', this.radioPower);
+
             this.$store.state.gamestate.radio_powered = this.radioPower;
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
-            this.sendToSocket({ type: 'power', power: this.radioPower }, { frameOnly: true });
+            this.sendToSocket({ type: 'power', power: this.radioPower });
             this.postClient({
                 type: 'power',
                 power: this.radioPower

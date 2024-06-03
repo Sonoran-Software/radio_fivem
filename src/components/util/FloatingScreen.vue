@@ -9,11 +9,12 @@ let refs = 0;
 /**
  * @param {DOMRect} bounds
  */
-function push(el, svId) {
+function push(el, svId, url) {
     refs++;
 
     // create frame if not exists
-    const src = `https://radiov2.dev.sonoransoftware.com/view/${svId}`;
+    url = url || 'https://sonoranradio.com'
+    const src = `${url}/view/${svId}`;
     if (!frameEl) {
         frameEl = document.createElement('iframe');
         frameEl.src = src;
@@ -49,6 +50,7 @@ function pop() {
 export default {
     props: {
         serverId: { type: Number, required: true },
+        url: { type: String },
     },
     emits: ['msg'],
     data: () => ({
@@ -59,24 +61,25 @@ export default {
 
         this.ro = new ResizeObserver(() => this.flush());
         this.ro.observe(this.$refs.guide);
-        window.addEventListener('message', this.onMessage);
     },
     beforeDestroy() {
         this.ro.disconnect();
         this.ro = null;
-        window.removeEventListener('message', this.onMessage);
         pop();
     },
     watch: {
         serverId() {
             this.flush();
         },
+        url() {
+            this.flush();
+        },
     },
     methods: {
         flush() {
             pop();
-            push(this.$refs.guide, this.serverId);
-        },
+            push(this.$refs.guide, this.serverId, this.url);
+        }
     },
 };
 </script>

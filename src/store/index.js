@@ -105,6 +105,9 @@ export default new Vuex.Store({
                 state.scanning = false;
             }
         },
+        setSublvl(state, sublvl) {
+            state.sublvl = sublvl;
+        },
         setConfig(state, config) {
             state.sublvl = config.sublvl;
             state.presets = config.profiles.map(x => ({

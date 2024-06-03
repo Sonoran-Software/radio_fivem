@@ -1,6 +1,8 @@
 Config = {}
 
 Config.debug = true
+Config.standaloneId = 11
+Config.radioUrl = 'https://radiov2.dev.sonoransoftware.com'
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.updateBranch = 'master'

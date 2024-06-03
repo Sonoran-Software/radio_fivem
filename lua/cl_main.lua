@@ -163,6 +163,7 @@ function radioToggle(frame)
 				visibility = radActive,
 				debug = Config.debug,
 				standaloneId = Config.standaloneId,
+				standaloneUrl = Config.radioUrl,
 			})
 			if frame == nil then
 				frame = 'default'
