@@ -23,7 +23,8 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId" :url="standaloneUrl" />
+                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId"
+                            :url="standaloneUrl" />
                         <component v-else-if="radioPower && screenDynComponent" :is="screenDynComponent"
                             :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
                             @go-home="goToPreset(0)" @set-frequency="setFrequency($event)"
@@ -90,6 +91,7 @@ export default {
             help: false,
             standaloneServerId: null,
             standaloneUrl: null,
+            pttKeyName: null,
 
             showRadio: false,
             showTopRadio: false,
@@ -188,6 +190,7 @@ export default {
     },
     created() {
         window.addEventListener('keyup', (event) => {
+            this.onKeyPressed(event, 'keyup');
             switch (event.code) {
                 case "Escape":
                     if (this.dragMode) {
@@ -206,12 +209,13 @@ export default {
                 case 'ArrowRight':
                     this.debug && this.debugNudgeSkinProperty(event);
                     break;
-
-
                 default:
                     break;
             }
-        })
+        });
+        window.addEventListener('keydown', (event) => {
+            this.onKeyPressed(event, 'keydown');
+        });
     },
     mounted() {
         this.selectSkin('default');
@@ -246,6 +250,7 @@ export default {
                         this.showMobileRadio = false;
                         this.showRadio = event.data.visibility;
                     }
+                    this.pttKeyName = event.data.pttKey;
                     // this.showMobileRadio = event.data.visibility;
                     break;
                 case 'ptt':
@@ -371,6 +376,13 @@ export default {
             }).catch((err) => {
                 console.log(err);
             });
+        },
+        onKeyPressed(e, type) {
+            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
+            if (matchesPtt && !e.repeat) {
+                e.preventDefault();
+                this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
+            }
         },
         async querySkinNoCache(skinId) {
             const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
@@ -536,14 +548,14 @@ export default {
                     this.$store.commit('setConnected', true);
                     this.$store.commit('setSublvl', event.subscription);
                     break;
-                case "radio_disconnected": 
+                case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
             }
         },
         sendToSocket(data) {
             if (frameEl) frameEl.contentWindow.postMessage(data, '*');
-            else console.warn("frameEl does not exist, but tried to send message", data);
+            // else console.warn("frameEl does not exist, but tried to send message", data);
         },
         toggleScan(event) {
             this.$store.commit('setScanState', !this.$store.state.scanning);

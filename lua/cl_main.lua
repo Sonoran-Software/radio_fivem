@@ -141,6 +141,86 @@ AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
 	})
 end)
 
+local specialKeyCodes = {
+	['b_100'] = 'MouseClick.LeftClick',
+	['b_101'] = 'MouseClick.RightClick',
+	['b_102'] = 'MouseClick.MiddleClick',
+	['b_103'] = 'MouseClick.ExtraBtn1',
+	['b_104'] = 'MouseClick.ExtraBtn2',
+	['b_105'] = 'MouseClick.ExtraBtn3',
+	['b_106'] = 'MouseClick.ExtraBtn4',
+	['b_107'] = 'MouseClick.ExtraBtn5',
+	['b_108'] = 'MouseClick.ExtraBtn6',
+	['b_109'] = 'MouseClick.ExtraBtn7',
+	['b_110'] = 'MouseClick.ExtraBtn8',
+	['b_115'] = 'WheelMouseMove.Up',
+	['b_116'] = 'WheelMouseMove.Up',
+	['b_130'] = 'NumpadSubstract',
+	['b_131'] = 'NumpadAdd',
+	['b_132'] = 'NumpadDecimal',
+	['b_134'] = 'NumpadMultiply',
+	['b_135'] = 'NumpadEnter',
+	['b_136'] = 'Numpad0',
+	['b_137'] = 'Numpad1',
+	['b_138'] = 'Numpad2',
+	['b_139'] = 'Numpad3',
+	['b_140'] = 'Numpad4',
+	['b_142'] = 'Numpad6',
+	['b_144'] = 'Numpad8',
+	['b_141'] = 'Numpad5',
+	['b_143'] = 'Numpad7',
+	['b_145'] = 'Numpad9',
+	['b_170'] = 'F1',
+	['b_171'] = 'F2',
+	['b_172'] = 'F3',
+	['b_173'] = 'F4',
+	['b_174'] = 'F5',
+	['b_175'] = 'F6',
+	['b_176'] = 'F7',
+	['b_177'] = 'F8',
+	['b_178'] = 'F9',
+	['b_179'] = 'F10',
+	['b_180'] = 'F11',
+	['b_181'] = 'F12',
+	['b_194'] = 'ArrowUp',
+	['b_195'] = 'ArrowDown',
+	['b_196'] = 'ArrowLeft',
+	['b_197'] = 'ArrowRight',
+	['b_198'] = 'Delete',
+	['b_199'] = 'Escape',
+	['b_200'] = 'Insert',
+	['b_210'] = 'Delete',
+	['b_211'] = 'Insert',
+	['b_212'] = 'End',
+	['b_1000'] = 'ShiftLeft',
+	['b_1001'] = 'ShiftRight',
+	['b_1002'] = 'Tab',
+	['b_1003'] = 'Enter',
+	['b_1004'] = 'Backspace',
+	['b_1006'] = 'ScrollLock',
+	['b_1007'] = 'Pause',
+	['b_1008'] = 'Home',
+	['b_1009'] = 'PageUp',
+	['b_1010'] = 'PageDown',
+	['b_1011'] = 'NumLock',
+	['b_1012'] = 'CapsLock',
+	['b_1013'] = 'ControlLeft',
+	['b_1014'] = 'ControlRight',
+	['b_1015'] = 'AltLeft',
+	['b_1016'] = 'AltRight',
+	['b_2000'] = 'Space',
+}
+local function getPttKey()
+	local key = GetControlInstructionalButton(0, 0xE364B8EC, true)
+	if key:sub(1, 2) == 't_' then
+		return key:sub(3)
+	elseif specialKeyCodes[key] then
+		return 'SpecialKey.'..specialKeyCodes[key], key
+	else
+		print('warning: unknown ptt key code '..key)
+	end
+end
+
 function radioToggle(frame)
 	if authorized then
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
@@ -158,12 +238,14 @@ function radioToggle(frame)
 				type = 'setUiPositions',
 				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
 			})
+
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
 				debug = Config.debug,
 				standaloneId = Config.standaloneId,
 				standaloneUrl = Config.radioUrl,
+				pttKey = getPttKey(),
 			})
 			if frame == nil then
 				frame = 'default'
@@ -194,7 +276,6 @@ function radioToggle(frame)
 			end
 			DebugPrint('Radio Requested, but player doesn\'t have a radio.')
 		end
-
 	else
 		SendNotification('Radio: ~r~No Permission~r~')
 	end
@@ -314,10 +395,10 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 -- add PTT if in standalone mode
 if Config.standaloneId then
 	RegisterCommand('+sonradptt', function()
-		SendNUIMessage({type = 'ptt', state = true})
+		SendNUIMessage({ type = 'ptt', state = true })
 	end)
 	RegisterCommand('-sonradptt', function()
-		SendNUIMessage({type = 'ptt', state = false})
+		SendNUIMessage({ type = 'ptt', state = false })
 	end)
 	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 end
@@ -331,7 +412,8 @@ function Radio:Talking(toggle)
 				while not HasAnimDictLoaded('cellphone@') do
 					Wait(5)
 				end
-				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false, false)
+				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false,
+					false)
 
 				-- Wait(300)
 				-- RequestAnimDict("cellphone@str")
@@ -339,7 +421,6 @@ function Radio:Talking(toggle)
 				-- TaskPlayAnim(PlayerPedId(), "cellphone@str","cellphone_call_listen_a", 8.0, 0.0, -1, 50, 0, false, false, false)
 
 				isTalking = true
-
 			else
 				RequestAnimDict('random@arrests')
 				while not HasAnimDictLoaded('random@arrests') do
@@ -364,7 +445,8 @@ function Radio:Talking(toggle)
 					Wait(5)
 				end
 				-- TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
-				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
+				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false,
+					false)
 				isTalking = false
 			else
 				StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
@@ -421,7 +503,8 @@ function Radio:Toggle(toggle)
 		self.Handle = CreateObject(self.Prop, 0.0, 0.0, 0.0, true, true, false)
 		local bone = GetPedBoneIndex(playerPed, self.Bone)
 		SetCurrentPedWeapon(playerPed, GetHashKey('weapon_unarmed'), true)
-		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
+		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x,
+			self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
 	elseif DoesEntityExist(self.Handle) then
@@ -570,7 +653,6 @@ end)
 
 CreateThread(function()
 	while true do
-
 		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
 		local prevState = inVehicle
 		-- DebugPrint("Getting Players Vehicle")

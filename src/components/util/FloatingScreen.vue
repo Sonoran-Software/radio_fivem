@@ -7,14 +7,16 @@ export let frameEl;
 let refs = 0;
 
 /**
- * @param {DOMRect} bounds
+ * @param {HTMLElement} el
+ * @param {number} svId
+ * @param {string} url
  */
 function push(el, svId, url) {
     refs++;
 
     // create frame if not exists
     url = url || 'https://sonoranradio.com'
-    const src = `${url}/view/${svId}`;
+    const src = `${url}/view/${svId}?fivem=true`;
     if (!frameEl) {
         frameEl = document.createElement('iframe');
         frameEl.src = src;
@@ -57,7 +59,7 @@ export default {
         ro: null,
     }),
     mounted() {
-        push(this.$refs.guide, this.serverId);
+        push(this.$refs.guide, this.serverId, this.url);
 
         this.ro = new ResizeObserver(() => this.flush());
         this.ro.observe(this.$refs.guide);
