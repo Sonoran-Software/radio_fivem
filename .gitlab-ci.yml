@@ -66,8 +66,14 @@ resource-deploy-prod:
     - zip -r latest sonoranradio_updatehelper
     - cd ..
     # send files over to the webserver
-    - rsync build/latest.zip git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
-    - rsync build/version.json git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "master" ]; then
+        rsync build/latest.zip git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
+        rsync build/version.json git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
+      elif [ "$CI_COMMIT_REF_NAME" == "standalone" ]; then
+        rsync build/latest.zip git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/fivem/latest.zip
+        rsync build/version.json git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/fivem/version.json
+      fi
     # clear cloudflare cache
     - >-
       curl -X POST "https://api.cloudflare.com/client/v4/zones/5e892b9b03facaf059df71c6154a823b/purge_cache" 
