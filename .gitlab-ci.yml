@@ -67,10 +67,10 @@ resource-deploy-prod:
     - cd ..
     # send files over to the webserver
     - |
-      if [ "$CI_COMMIT_REF_NAME" == "master" ]; then
+      if [[ "$CI_COMMIT_TAG" =~ ^1\. ]]; then
         rsync build/latest.zip git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/archive/latest.zip
         rsync build/version.json git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/version.json
-      elif [ "$CI_COMMIT_REF_NAME" == "standalone" ]; then
+      else
         rsync build/latest.zip git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/fivem/latest.zip
         rsync build/version.json git@$PROD01_IP:/home/services/frontend/www/download.sonoransoftware.com/sonoranradio/fivem/version.json
       fi
@@ -85,7 +85,5 @@ resource-deploy-prod:
   dependencies:
     - resource-build
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_NAME == "standalone"'
-      when: always
-    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
       when: always
