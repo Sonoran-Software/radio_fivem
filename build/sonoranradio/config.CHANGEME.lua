@@ -1,6 +1,6 @@
 Config = {}
 
-Config.standaloneId = 0 -- set to 0 if using TeamSpeak
+Config.standaloneId = 0 -- IMPORTANT set your standalone ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
