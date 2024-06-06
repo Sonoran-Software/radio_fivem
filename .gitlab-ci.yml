@@ -55,6 +55,7 @@ resource-deploy-QAServer:
     - master
     - development
     - standalone
+    - standalone_dev
 
 resource-deploy-prod:
   stage: deploy
@@ -78,5 +79,8 @@ resource-deploy-prod:
   dependencies:
     - resource-build
   when: manual
-  only:
-    - /^[0-9]+\.[0-9]+\.[0-9]+$/
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_NAME == "standalone"'
+      when: always
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_NAME == "master"'
+      when: always
