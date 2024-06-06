@@ -1,4 +1,6 @@
 local pendingRestart = false
+local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/latest.zip'
+local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json '
 
 function PerformHttpRequestS(url, cb, method, data, headers)
     if not data then
@@ -37,11 +39,7 @@ AddEventHandler("UnzipFileComplete", function(success, err)
 end)
 
 local function doUpdate(latest)
-    -- best way to do this...
-    local releaseUrl = ("https://download.sonoransoftware.com/sonoranradio/archive/latest.zip"):format(latest, latest)
-    if Config.enableCanary then
-        releaseUrl = ("https://download.sonoransoftware.com/sonoranradio/archive/latest.zip"):format(latest, latest)
-    end
+    local releaseUrl = releaseDownloadUrl
     PerformHttpRequest(releaseUrl, function(code, data, headers)
         if code == 200 then
             local savePath = GetResourcePath(GetCurrentResourceName()).."/update.zip"
@@ -60,9 +58,6 @@ local function doUpdate(latest)
 end
 
 function RunAutoUpdater(manualRun)
-    if Config.updateBranch == nil then
-        return
-    end
     local f = LoadResourceFile(GetCurrentResourceName(), "/update.zip")
     if f ~= nil then
         -- remove the update file and stop the helper
@@ -70,14 +65,7 @@ function RunAutoUpdater(manualRun)
         os.remove(GetResourcePath(GetCurrentResourceName()).."/update.zip")
         os.remove(GetResourcePath("sonoranradio_updatehelper").."/run.lock")
     end
-    local versionFile = Config.autoUpdateUrl
-    if versionFile == nil then
-        versionFile = "https://download.sonoransoftware.com/sonoranradio/version.json"
-    end
-    versionFile = string.gsub(versionFile, "{branch}", Config.updateBranch)
-    if Config.enableCanary then
-        versionFile = string.gsub(versionFile, "{branch}", "canary")
-    end
+    local versionFile = releaseVersionUrl
     local myVersion = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
     PerformHttpRequestS(versionFile, function(code, data, headers)
@@ -103,10 +91,10 @@ function RunAutoUpdater(manualRun)
                 if latestVersion > localVersion then
                     if not Config.allowAutoUpdate then
                         print("^3|===========================================================================|")
-                        print("^3|                        ^5SonoranRadio Update Available                        ^3|")
-                        print("^3|                             ^8Current : " .. localVersion .. "                               ^3|")
-                        print("^3|                             ^2Latest  : " .. latestVersion .. "                               ^3|")
-                        print("^3| Download at: ^4https://download.sonoransoftware.com/sonoranradio/archive/latest.zip ^3|")
+                        print("^3|                        ^5SonoranRadio Update Available")
+                        print("^3|                             ^8Current : " .. localVersion)
+                        print("^3|                             ^2Latest  : " .. latestVersion)
+                        print("^3| Download at: ^4"..releaseDownloadUrl)
                         print("^3|===========================================================================|^7")
                         if Config.allowAutoUpdate == nil then
                             print("You have not configured the automatic updater. Please set allowAutoUpdate in config.json to allow updates.")
