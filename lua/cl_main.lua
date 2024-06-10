@@ -11,7 +11,9 @@ local inVehicle = false
 
 local authorized = false
 
-local allowedFrames = {};
+local allowedFrames = {}
+
+local comId = Config.comId or Config.communityId or Config.standaloneId
 
 RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
 AddEventHandler('SonoranCAD::sonrad:GetUnitInfo:Return', function(unit)
@@ -243,7 +245,7 @@ function radioToggle(frame)
 				type = 'setVisible',
 				visibility = radActive,
 				debug = Config.debug,
-				standaloneId = Config.standaloneId,
+				standaloneId = comId,
 				standaloneUrl = Config.radioUrl,
 				pttKey = getPttKey(),
 			})
@@ -392,16 +394,14 @@ RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
 RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
 RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
--- add PTT if in standalone mode
-if Config.standaloneId then
-	RegisterCommand('+sonradptt', function()
-		SendNUIMessage({ type = 'ptt', state = true })
-	end)
-	RegisterCommand('-sonradptt', function()
-		SendNUIMessage({ type = 'ptt', state = false })
-	end)
-	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
-end
+-- add PTT for the standalone radio
+RegisterCommand('+sonradptt', function()
+	SendNUIMessage({ type = 'ptt', state = true })
+end)
+RegisterCommand('-sonradptt', function()
+	SendNUIMessage({ type = 'ptt', state = false })
+end)
+RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)

@@ -1,6 +1,6 @@
 Config = {}
 
-Config.standaloneId = 0 -- IMPORTANT set your standalone ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
+Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
