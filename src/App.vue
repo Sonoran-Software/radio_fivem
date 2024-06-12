@@ -378,6 +378,7 @@ export default {
             });
         },
         onKeyPressed(e, type) {
+            if (!this.pttKeyName) return;
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 e.preventDefault();
