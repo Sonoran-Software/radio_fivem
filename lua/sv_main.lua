@@ -181,7 +181,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
-	if Config.frames == nil or Config.frames.departments == nil or not Config.frames then
+	if Config.frames == nil or not Config.frames then
 		print('!!! CRITICAL ERROR !!!')
 		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
 		print('!!! CRITICAL ERROR !!!')
