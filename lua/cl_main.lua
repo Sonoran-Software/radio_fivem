@@ -82,8 +82,14 @@ local Radio = {
 		'generic_radio_chatter'
 	},
 	Clicks = true, -- Radio clicks
-	TalkAnim = true
+	TalkAnim = false
 }
+
+if Config.disableAnimation then
+	Radio.TalkAnim = false
+else
+	Radio.TalkAnim = true
+end
 
 local QBCore = nil
 local PlayerData = nil
