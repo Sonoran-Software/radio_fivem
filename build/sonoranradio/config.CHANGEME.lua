@@ -14,6 +14,7 @@ Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
+Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
 
 -- Notification Settings --
 Config.notifications = {
