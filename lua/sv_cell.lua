@@ -176,7 +176,7 @@ AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then
 		return
 	end
-	local t = LoadResourceFile(GetCurrentResourceName(), 'CellRepeaters.json')
+	local t = LoadResourceFile(GetCurrentResourceName(), 'cellRepeaters.json')
 	local CellRepeaters = json.decode(t)
 	for i = 1, #CellRepeaters do
 		local obj = shallowcopy(CellRepeater)
