@@ -12,7 +12,7 @@ local CellRepeater = {
 	DontSaveMe = false
 }
 
-CellRepeaters = {}
+local CellRepeaters = {}
 function GetCellRepeaters(coords)
 	for i = 1, #CellRepeaters do
 		if CellRepeaters[i].PropPosition == coords then
@@ -92,9 +92,11 @@ end, true)
 
 RegisterCommand('spawncellrepeater', function(source)
 	local coords = GetEntityCoords(GetPlayerPed(source))
+	local heading = GetEntityHeading(GetPlayerPed(source))
 	local tower = shallowcopy(CellRepeater)
 	tower.Id = uuid()
 	tower.PropPosition = coords
+	tower.heading = heading
 	table.insert(CellRepeaters, tower)
 
 	TriggerClientEvent('CellRepeater:SpawnCell', -1, tower)
@@ -177,21 +179,22 @@ AddEventHandler('onResourceStart', function(resource)
 		return
 	end
 	local t = LoadResourceFile(GetCurrentResourceName(), 'cellRepeaters.json')
-	local CellRepeaters = json.decode(t)
-	for i = 1, #CellRepeaters do
+	local CellRepeatersJson = json.decode(t)
+	for i = 1, #CellRepeatersJson do
 		local obj = shallowcopy(CellRepeater)
-		if CellRepeaters[i].Id == nil then
+		if CellRepeatersJson[i].Id == nil then
 			obj.Id = uuid()
 		else
-			obj.Id = CellRepeaters[i].Id
+			obj.Id = CellRepeatersJson[i].Id
 		end
 		-- obj.Id = uuid()
-		obj.PropPosition = vec3(CellRepeaters[i].PropPosition.x, CellRepeaters[i].PropPosition.y, CellRepeaters[i].PropPosition.z)
-		obj.Swankiness = CellRepeaters[i].Swankiness
-		obj.Range = CellRepeaters[i].Range
-		obj.Destruction = CellRepeaters[i].Destruction
+		obj.PropPosition = vec3(CellRepeatersJson[i].PropPosition.x, CellRepeatersJson[i].PropPosition.y, CellRepeatersJson[i].PropPosition.z)
+		obj.heading = CellRepeatersJson[i].heading
+		obj.Swankiness = CellRepeatersJson[i].Swankiness
+		obj.Range = CellRepeatersJson[i].Range
+		obj.Destruction = CellRepeatersJson[i].Destruction
 
-		DebugPrint('setting up tower', json.encode(obj))
+		DebugPrint('setting up cell repeater', json.encode(obj))
 		table.insert(CellRepeaters, obj)
 	end
 end)
@@ -225,7 +228,6 @@ exports('updateCellRepeater', function(towerId, config)
 					CellRepeaters[i][k] = v
 				end
 				TriggerClientEvent('CellRepeater:SyncOneTower', -1, towerId, CellRepeaters[i])
-				print('triggering events')
 				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, CellRepeaters[i])
 			end
 			return config and CellRepeaters[i].Id or ''

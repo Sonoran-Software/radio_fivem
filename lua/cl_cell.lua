@@ -1,4 +1,4 @@
-CellRepeaters = {}
+local CellRepeaters = {}
 
 local rightToRepair = false
 
@@ -30,22 +30,22 @@ local function GetCellRepeaterCoords(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		return GetOffsetFromEntityInWorldCoords(cellRepeater.Handle, 0.0, 0.0, 1.0)
 	else
-		return cellRepeater.PropPosition
+		return vec3(cellRepeater.PropPosition.x, cellRepeater.PropPosition.y, cellRepeater.PropPosition.z)
 	end
 end
 -- returns a value from 0-1 representing the percentage of active dishes
 local function GetCellRepeaterCapacity(cellRepeater)
-	if #cellRepeater.antennaStatus < 1 then
+	if #cellRepeater.AntennaStatus < 1 then
 		return 1.0
 	end
 
 	local n = 0.0
-	for i = 1, #cellRepeater.antennaStatus do
-		if cellRepeater.antennaStatus[i] == 'alive' then
+	for i = 1, #cellRepeater.AntennaStatus do
+		if cellRepeater.AntennaStatus[i] == 'alive' then
 			n = n + 1.0
 		end
 	end
-	return n / #cellRepeater.antennaStatus
+	return n / #cellRepeater.AntennaStatus
 end
 
 local function AddCellRepeaterRange(t)
@@ -73,6 +73,7 @@ local function CreateCellRepeater(cellRepeater)
 	end
 	FreezeEntityPosition(cellRepeater.Handle, true)
 	SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
+	SetEntityHeading(cellRepeater.Handle, cellRepeater.heading)
 	SetModelAsNoLongerNeeded(CellRepeaterModel)
 	cellRepeater.Spawned = true
 end
@@ -93,13 +94,13 @@ local function DestroyCellRepeater(cellRepeater)
 end
 
 RegisterNetEvent('CellRepeater:SyncCellRepeaters')
-AddEventHandler('CellRepeater:SyncCellRepeaters', function(CellRepeaters)
+AddEventHandler('CellRepeater:SyncCellRepeaters', function(CellRepeatersServer)
 	-- make sure all CellRepeaters are cleared before we sync
 	for i = 1, #CellRepeaters do
 		DestroyCellRepeater(CellRepeaters[i])
 	end
 
-	CellRepeaters = CellRepeaters
+	CellRepeaters = CellRepeatersServer
 	for i = 1, #CellRepeaters do
 		AddCellRepeaterRange(CellRepeaters[i])
 	end
@@ -127,12 +128,12 @@ AddEventHandler('CellRepeater:SpawnCell', function(cellRepeater)
 end)
 
 RegisterNetEvent('CellRepeater:SetAntennaStatus')
-AddEventHandler('CellRepeater:SetAntennaStatus', function(cellRepeaterId, antennaStatus)
+AddEventHandler('CellRepeater:SetAntennaStatus', function(cellRepeaterId, AntennaStatus)
 	local cellRepeater = GetCellRepeaterFromId(cellRepeaterId)
 	if not cellRepeater then
 		return
 	end
-	cellRepeater.antennaStatus = antennaStatus
+	cellRepeater.AntennaStatus = AntennaStatus
 	SyncAntennaStatus(cellRepeater, true)
 end)
 
