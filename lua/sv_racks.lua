@@ -7,7 +7,7 @@ local RadioRacks = {
 	PropPosition = nil,
 	-- the range of the rack
 	Range = 1500.0,
-	ServerStatus = {},
+	serverStatus = {},
 	Powered = true,
 	DontSaveMe = false
 }
@@ -49,11 +49,11 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		local rack = GetServerFromId(v)
 		DebugPrint(json.encode(rack))
 		rack.Powered = false
-		for i = 1, #rack.ServerStatus do
-			rack.ServerStatus[i] = 'dead'
+		for i = 1, #rack.serverStatus do
+			rack.serverStatus[i] = 'dead'
 		end
-		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.ServerStatus)
-		TriggerEvent('SonoranCAD::sonrad:SetServerStatus', v, rack.ServerStatus)
+		TriggerClientEvent('RadioRacks:SetserverStatus', -1, v, rack.serverStatus)
+		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	-- TriggerClientEvent("RadioRacks:SyncServers", source, Servers)
 	-- TriggerEvent("SonoranCAD::sonrad:SyncServers", Servers)
@@ -66,11 +66,11 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 	for _, v in pairs(affectedDevices['radioServerRack']) do
 		local rack = GetServerFromId(v)
 		rack.Powered = true
-		for i = 1, #rack.ServerStatus do
-			rack.ServerStatus[i] = 'alive'
+		for i = 1, #rack.serverStatus do
+			rack.serverStatus[i] = 'alive'
 		end
-		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.ServerStatus)
-		TriggerEvent('SonoranCAD::sonrad:SetServerStatus', v, rack.ServerStatus)
+		TriggerClientEvent('RadioRacks:SetserverStatus', -1, v, rack.serverStatus)
+		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	-- TriggerClientEvent("RadioRacks:SyncServers", source, Servers)
 	-- TriggerEvent("SonoranCAD::sonrad:SyncServers", Servers)
@@ -95,7 +95,7 @@ RegisterCommand('saveServers', function()
 end, true)
 
 RegisterCommand('spawnRack', function(source, args)
-    if args < 1 then
+    if #args < 1 then
         return print('Usage: /spawnRack <numberOfServers>')
     end
     if not tonumber(args[1]) then
@@ -105,7 +105,7 @@ RegisterCommand('spawnRack', function(source, args)
 	local coords = GetEntityCoords(GetPlayerPed(source))
 	local rack = shallowcopy(RadioRacks)
     for i = 1, serverCount do
-        table.insert(rack.ServerStatus, 'alive')
+        table.insert(rack.serverStatus, 'alive')
     end
 	rack.Id = uuid()
 	rack.PropPosition = coords
@@ -142,9 +142,9 @@ AddEventHandler('RadioRacks:KillServer', function(towerId, dishIndex)
 		return
 	end
 
-	rack.ServerStatus[dishIndex] = 'dead'
-	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.ServerStatus)
-	TriggerEvent('SonoranCAD::sonrad:SetServerStatus', towerId, rack.ServerStatus)
+	rack.serverStatus[dishIndex] = 'dead'
+	TriggerClientEvent('RadioRacks:SetserverStatus', -1, towerId, rack.serverStatus)
+	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
 end)
 
 RegisterNetEvent('RadioRacks:RepairRack')
@@ -155,11 +155,11 @@ AddEventHandler('RadioRacks:RepairRack', function(towerId)
 		return
 	end
 
-	for i = 1, #rack.ServerStatus do
-		rack.ServerStatus[i] = 'alive'
+	for i = 1, #rack.serverStatus do
+		rack.serverStatus[i] = 'alive'
 	end
-	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.ServerStatus)
-	TriggerEvent('SonoranCAD::sonrad:SetServerStatus', towerId, rack.ServerStatus)
+	TriggerClientEvent('RadioRacks:SetserverStatus', -1, towerId, rack.serverStatus)
+	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
 end)
 
 RegisterNetEvent('RadioRacks:clientLocationVerify')

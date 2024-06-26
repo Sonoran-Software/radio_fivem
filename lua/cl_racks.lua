@@ -39,6 +39,21 @@ local function GetRackCoords(rack)
 	end
 end
 
+-- returns a value from 0-1 representing the percentage of active dishes
+local function GetrackCapacity(tower)
+	if #tower.serverStatus < 1 then
+		return 1.0
+	end
+
+	local n = 0.0
+	for i = 1, #tower.serverStatus do
+		if tower.serverStatus[i] == 'alive' then
+			n = n + 1.0
+		end
+	end
+	return n / #tower.serverStatus
+end
+
 --[[
     Destroys the specified rack
     @param rack The rack to destroy (object)
@@ -80,15 +95,7 @@ local function CreateServerInRack(rack, index, n)
 	-- set the decorator to "1" to alert lower functions that this is a server
 	-- NOTE: later, this is set to 0 when the server is killed. this is so that the server doesn't get "destroyed" when it's killed
 	DecorSetInt(serverHndl, 'sonrad_server', 1)
-
-	local theta = ((index - 1) * math.pi * 2) / n
-	-- in a normal unit circle, cos is x and sin is y. however, we need y to be the forward direction (and 1 @ theta=0.0)
-	-- so we do some unconventional stuff here to ascertain the offsets
-	local offx = -math.sin(theta) * 1.6
-	local offy = math.cos(theta) * 1.6
-
-	local zRot = (theta * 180.0 / math.pi)
-	AttachEntityToEntity(serverHndl, rack.Handle, -1, offx, offy, 11.7, 0.0, 0.0, zRot, false, false, true, false, 0, true)
+	AttachEntityToEntity(serverHndl, rack.Handle, -1, 0, 1, 0.0, 0.0, 0.0, 0, false, false, true, false, 0, true)
 
 	SetModelAsNoLongerNeeded(serverModel)
 	if not rack.Servers then
@@ -110,7 +117,7 @@ local function SyncServerStatus(rack, playSound)
 		local server = rack.Servers[i]
 		local dead = IsEntityDead(server)
 
-		if rack.ServerStatus[i] ~= 'alive' and not dead then
+		if rack.serverStatus[i] ~= 'alive' and not dead then
 			NetworkExplodeVehicle(server, false, false)
 			DecorSetInt(server, 'sonrad_server', 0)
 			-- play a power-down sound for the player
@@ -118,8 +125,8 @@ local function SyncServerStatus(rack, playSound)
 				local coords = GetEntityCoords(server)
 				PlaySoundFromCoord(-1, 'Power_Down', coords, 'DLC_HEIST_HACKING_SNAKE_SOUNDS', 0, 80)
 			end
-		elseif rack.ServerStatus[i] == 'alive' and dead then
-			CreateServerInRack(rack, i, #rack.ServerStatus)
+		elseif rack.serverStatus[i] == 'alive' and dead then
+			CreateServerInRack(rack, i, #rack.serverStatus)
 			if playSound then
 				local coords = GetEntityCoords(server)
 				PlaySoundFromCoord(-1, 'Success', coords, 'DLC_HEIST_HACKING_SNAKE_SOUNDS', 0, 80)
@@ -148,7 +155,6 @@ local function CreateRack(rack)
 	FreezeEntityPosition(rack.Handle, true)
 	SetEntityCoords(rack.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
 	PlaceObjectOnGroundProperly(rack.Handle)
-
 	SetModelAsNoLongerNeeded(rackModel)
 	for i = 1, #rack.serverStatus do
 		CreateServerInRack(rack, i, #rack.serverStatus)
@@ -221,12 +227,12 @@ end)
     Event to set a server status
 ]]
 RegisterNetEvent('RadioRacks:SetServerStatus')
-AddEventHandler('RadioRacks:SetServerStatus', function(rackId, ServerStatus)
+AddEventHandler('RadioRacks:SetServerStatus', function(rackId, serverStatus)
 	local rack = GetRackFromId(rackId)
 	if not rack then
 		return
 	end
-	rack.ServerStatus = ServerStatus
+	rack.serverStatus = serverStatus
 	SyncServerStatus(rack, true)
 end)
 
