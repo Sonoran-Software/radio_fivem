@@ -1,4 +1,4 @@
-racks = {}
+local racks = {}
 
 local rightToRepair = false
 
@@ -10,8 +10,6 @@ AddEventHandler('SonoranRadio::AuthorizeRacks', function()
 	DebugPrint('Authorized for Rack Repair')
 	rightToRepair = true
 end)
-
-
 
 -- FUNCTIONS FOR RACKS
 
@@ -77,25 +75,27 @@ end
     @param n The power output of the server (number)
 ]]
 local function CreateServerInRack(rack, index, n)
-	local serverModel = GetHashKey('server')
+	local initial_zOffset = 0.5
+	local zOffset_increment = 0.3
+	local zOffset = initial_zOffset + zOffset_increment * (index - 1)
+	local serverModel = GetHashKey('sonoranserver')
 	LoadModelSync(serverModel)
-
 	local spawnPos = GetEntityCoords(rack.Handle)
 	local serverHndl = CreateVehicle(serverModel, spawnPos.x, spawnPos.y, spawnPos.z, 0.0, false, false)
-	SetEntityAsMissionEntity(serverHndl, true, true)
-	FreezeEntityPosition(serverHndl, true)
 	if rack.Destruction then
 		SetVehicleStrong(serverHndl, true)
+		SetDisableVehicleEngineFires(serverHndl, true)
+		SetDisableVehiclePetrolTankFires(serverHndl, true)
+		SetVehicleExplodesOnHighExplosionDamage(serverHndl, true)
 	else
-		-- turning each server invincible will make it impossible to destroy the servers
-		-- in turn, disabling rack destruction
+		-- turning each dish invincible will make it impossible to destroy the dishes
+		-- in turn, disabling tower destruction
 		SetEntityInvincible(serverHndl, true)
 	end
-
 	-- set the decorator to "1" to alert lower functions that this is a server
 	-- NOTE: later, this is set to 0 when the server is killed. this is so that the server doesn't get "destroyed" when it's killed
 	DecorSetInt(serverHndl, 'sonrad_server', 1)
-	AttachEntityToEntity(serverHndl, rack.Handle, -1, 0, 1, 0.0, 0.0, 0.0, 0, false, false, true, false, 0, true)
+	AttachEntityToEntity(serverHndl, rack.Handle, -1, 0.05, 0, zOffset, 0.0, 0.0, 0, false, false, false, false, 0, true)
 
 	SetModelAsNoLongerNeeded(serverModel)
 	if not rack.Servers then
@@ -113,11 +113,71 @@ end
     @param playSound Whether to play a sound when the status is updated (boolean)
 ]]
 local function SyncServerStatus(rack, playSound)
+	if not rack.Servers then
+		return
+	end
 	for i = 1, #rack.Servers do
 		local server = rack.Servers[i]
 		local dead = IsEntityDead(server)
 
 		if rack.serverStatus[i] ~= 'alive' and not dead then
+			FreezeEntityPosition(server, false)
+			DetachEntity(server, false, false)
+			local serverCoords = GetEntityCoords(server)
+			local moveOffsetX = 0;
+			local moveOffsetY = 0;
+			local serverHeading = GetEntityHeading(server)
+			serverHeading = serverHeading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+			if serverHeading > 360.0 then
+				serverHeading = serverHeading - 360.0
+			end
+			if serverHeading < 45 or serverHeading > 315 then -- Facing "North"
+				local varianceFromTrue = 0; -- 0 degrees is true north
+				if serverHeading > 0 then -- Facing "North" and "West"
+					varianceFromTrue = serverHeading;
+				elseif serverHeading > 315 then -- Facing "North" and "East"
+					varianceFromTrue = serverHeading - 360;
+				end
+				moveOffsetY = 0.5 -- move the server to the north
+				if varianceFromTrue ~= 0 then
+					moveOffsetX = varianceFromTrue / 45 * 0.5 -- move the server to the east or west based on percentage of 45 degrees
+					moveOffsetX = moveOffsetX * -1 -- invert the offset because if the server is facing "North East" X should be positive | If the server is facing "North West" X should be negative
+				end
+			elseif serverHeading >= 225 and serverHeading <= 315 then -- Facing "East"
+				local varianceFromTrue = 0; -- 0 degrees is true east
+				if serverHeading < 315 and serverHeading > 270 then -- Facing "East" and "North"
+					varianceFromTrue = 315 - serverHeading; -- Facing "North East" Y should be positive | If the server is facing "South East" Y should be negative
+				elseif serverHeading > 225 then -- Facing "East" and "South"
+					varianceFromTrue = serverHeading - 270;
+				end
+				moveOffsetX = 0.5
+				if varianceFromTrue ~= 0 then
+					moveOffsetY = varianceFromTrue / 45 * 0.5
+				end
+			elseif serverHeading >= 135 and serverHeading <= 225 then -- Facing "South"
+				local varianceFromTrue = 0; -- 0 degrees is true south
+				if serverHeading < 225 and serverHeading > 180 then -- Facing "South" and "East"
+					varianceFromTrue = 225 - serverHeading; -- Facing "South East" Y should be positive | If the server is facing "South West" Y should be negative
+				elseif serverHeading > 135 then -- Facing "South" and "West"
+					varianceFromTrue = serverHeading - 180;
+				end
+				moveOffsetY = -0.5
+				if varianceFromTrue ~= 0 then
+					moveOffsetX = varianceFromTrue / 45 * 0.5 -- move the server to the east or west based on percentage of 45 degrees
+				end
+			elseif serverHeading >= 45 and serverHeading <= 135 then -- Facing "West"
+				local varianceFromTrue = 0; -- 0 degrees is true west
+				if serverHeading < 135 and serverHeading > 90 then -- Facing "West" and "South"
+					varianceFromTrue = 135 - serverHeading; -- Facing "South West" Y should be positive | If the server is facing "North West" Y should be negative
+				elseif serverHeading > 45 then -- Facing "West" and "North"
+					varianceFromTrue = serverHeading - 90;
+				end
+				if varianceFromTrue ~= 0 then
+					moveOffsetY = varianceFromTrue / 45 * 0.5 -- move the server to the north or south based on percentage of 45 degrees
+				end
+				moveOffsetX = -0.5
+			end
+			SetEntityCoords(server, serverCoords.x + moveOffsetX, serverCoords.y + moveOffsetY, serverCoords.z, false, false, false, false)
 			NetworkExplodeVehicle(server, false, false)
 			DecorSetInt(server, 'sonrad_server', 0)
 			-- play a power-down sound for the player
@@ -135,7 +195,6 @@ local function SyncServerStatus(rack, playSound)
 	end
 end
 
-
 --[[
     Create the rack for servers to go into
     @param rack The rack to create (object)
@@ -146,15 +205,20 @@ local function CreateRack(rack)
 	end
 	local rackModel = GetHashKey('serverrack')
 	LoadModelSync(rackModel)
-
 	local coords = rack.PropPosition
-	rack.Handle = CreateObject(rackModel, coords, false, false, false)
+	rack.Handle = CreateVehicle(rackModel, coords, false, false, false)
 	while not DoesEntityExist(rack.Handle) do
 		Wait(0)
 	end
+	SetDisableVehicleEngineFires(rack.Handle, true)
+	SetDisableVehiclePetrolTankFires(rack.Handle, true)
+	SetEntityCoordsNoOffset(rack.Handle, coords.x, coords.y, coords.z - 1.1, false, false, false, false)
 	FreezeEntityPosition(rack.Handle, true)
-	SetEntityCoords(rack.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
-	PlaceObjectOnGroundProperly(rack.Handle)
+	local calculatedHeading = rack.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+	if calculatedHeading > 360.0 then
+		calculatedHeading = calculatedHeading - 360.0
+	end
+	SetEntityHeading(rack.Handle, calculatedHeading)
 	SetModelAsNoLongerNeeded(rackModel)
 	for i = 1, #rack.serverStatus do
 		CreateServerInRack(rack, i, #rack.serverStatus)
@@ -177,8 +241,6 @@ local function AddRackRange(t)
 	SetBlipColour(blip, 3)
 end
 
-
-
 -- EVENTS
 
 --[[
@@ -195,13 +257,13 @@ end)
     Event to sync racks between server and clients
 ]]
 RegisterNetEvent('RadioRacks:SyncRacks')
-AddEventHandler('RadioRacks:SyncRacks', function(racks)
+AddEventHandler('RadioRacks:SyncRacks', function(racksFromServer)
 	-- make sure all racks are cleared before we sync
 	for i = 1, #racks do
 		DestroyRack(racks[i])
 	end
 
-	racks = racks
+	racks = racksFromServer
 	for i = 1, #racks do
 		AddRackRange(racks[i])
 	end
@@ -358,7 +420,6 @@ CreateThread(function()
 				end
 			end
 		end
-
 		if rack ~= nil and d < 2.0 and GetrackCapacity(rack) < 1.0 then
 			BeginTextCommandDisplayHelp('STRING')
 			AddTextComponentSubstringPlayerName('Press ~INPUT_DETONATE~ to repair this rack.')
@@ -378,25 +439,60 @@ end)
 
 CreateThread(function()
 	while true do
+		Wait(0)
+		local coords = GetEntityCoords(GetPlayerPed(-1))
+		local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z, 2.0, GetHashKey('serverrack'), 70)
+		if closestRack ~= 0 then
+			if GetVehicleBodyHealth(closestRack) < 950 or IsVehicleDoorDamaged(closestRack, 1) or GetVehicleEngineHealth(closestRack) < 950 then
+				goto continue
+			end
+			local doorOpen = false;
+			if IsVehicleDoorFullyOpen(closestRack, 1) then
+				doorOpen = true
+			end
+			BeginTextCommandDisplayHelp('STRING')
+			if doorOpen then
+				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to close this rack.')
+			else
+				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to open this rack.')
+			end
+			EndTextCommandDisplayHelp(0, false, true, -1)
+			DisableControlAction(0, 54, true)
+			if IsDisabledControlJustReleased(0, 54) then
+				local Vehicle = closestRack
+				if doorOpen then
+					SetVehicleDoorShut(Vehicle, 1, false)
+				else
+					SetVehicleDoorOpen(Vehicle, 1, false, false)
+				end
+			end
+		end
+		::continue::
+	end
+end)
+
+CreateThread(function()
+	while true do
 		for i = 1, #racks do
 			local rack = racks[i]
 			if rack then
 				local n = rack.Servers and #rack.Servers or 0
 				for j = 1, n do
 					local e = rack.Servers[j]
+					if IsVehicleEngineOnFire(e) or IsEntityOnFire(e) then
+						StopFireInRange(GetEntityCoords(e), 3.0)
+						StopEntityFire(e)
+					end
 					if DecorGetInt(e, 'sonrad_server') ~= 1 then
 						goto continue
 					end
 					if not IsEntityDead(e) then
-						-- make sure it doesn't explode from gunshots
 						SetVehiclePetrolTankHealth(e, 1000.0)
 					end
-
-					local health = GetVehicleBodyHealth(e)
-					if health > 500.0 then
+					local health = GetEntityHealth(e)
+					if health > 980.0 then
 						goto continue
 					end
-
 					-- here we kill the dish
 					DecorSetInt(e, 'sonrad_server', 0)
 					DebugPrint('sending dish destroyed server event')

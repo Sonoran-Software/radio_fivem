@@ -9,10 +9,11 @@ local RadioRacks = {
 	Range = 1500.0,
 	serverStatus = {},
 	Powered = true,
-	DontSaveMe = false
+	DontSaveMe = false,
+	heading = 0.0,
 }
 
-Servers = {}
+local Servers = {}
 function GetRack(coords)
 	for i = 1, #Servers do
 		if Servers[i].PropPosition == coords then
@@ -52,7 +53,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		for i = 1, #rack.serverStatus do
 			rack.serverStatus[i] = 'dead'
 		end
-		TriggerClientEvent('RadioRacks:SetserverStatus', -1, v, rack.serverStatus)
+		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	-- TriggerClientEvent("RadioRacks:SyncServers", source, Servers)
@@ -69,7 +70,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		for i = 1, #rack.serverStatus do
 			rack.serverStatus[i] = 'alive'
 		end
-		TriggerClientEvent('RadioRacks:SetserverStatus', -1, v, rack.serverStatus)
+		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	-- TriggerClientEvent("RadioRacks:SyncServers", source, Servers)
@@ -96,11 +97,14 @@ end, true)
 
 RegisterCommand('spawnRack', function(source, args)
     if #args < 1 then
-        return print('Usage: /spawnRack <numberOfServers>')
+        return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
     end
     if not tonumber(args[1]) then
-        return print('Usage: /spawnRack <numberOfServers>')
+        return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
     end
+	if tonumber(args[1]) > 5 then
+		return TriggerClientEvent('chat:addMessage', source, {args = {'^1You can only spawn up to 5 servers at a time.'}})
+	end
     local serverCount = tonumber(args[1])
 	local coords = GetEntityCoords(GetPlayerPed(source))
 	local rack = shallowcopy(RadioRacks)
@@ -109,6 +113,7 @@ RegisterCommand('spawnRack', function(source, args)
     end
 	rack.Id = uuid()
 	rack.PropPosition = coords
+	rack.heading = GetEntityHeading(GetPlayerPed(source))
 	table.insert(Servers, rack)
 	TriggerClientEvent('RadioRacks:SpawnRack', -1, rack)
 end, true)
@@ -143,7 +148,7 @@ AddEventHandler('RadioRacks:KillServer', function(towerId, dishIndex)
 	end
 
 	rack.serverStatus[dishIndex] = 'dead'
-	TriggerClientEvent('RadioRacks:SetserverStatus', -1, towerId, rack.serverStatus)
+	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.serverStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
 end)
 
@@ -158,7 +163,7 @@ AddEventHandler('RadioRacks:RepairRack', function(towerId)
 	for i = 1, #rack.serverStatus do
 		rack.serverStatus[i] = 'alive'
 	end
-	TriggerClientEvent('RadioRacks:SetserverStatus', -1, towerId, rack.serverStatus)
+	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.serverStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
 end)
 
@@ -193,20 +198,21 @@ AddEventHandler('onResourceStart', function(resource)
 		return
 	end
 	local t = LoadResourceFile(GetCurrentResourceName(), 'servers.json')
-	local Servers = json.decode(t)
-	for i = 1, #Servers do
+	local jsonServers = json.decode(t)
+	for i = 1, #jsonServers do
 		local obj = shallowcopy(RadioRacks)
-		if Servers[i].Id == nil then
+		if jsonServers[i].Id == nil then
 			obj.Id = uuid()
 		else
-			obj.Id = Servers[i].Id
+			obj.Id = jsonServers[i].Id
 		end
 		-- obj.Id = uuid()
-		obj.PropPosition = vec3(Servers[i].PropPosition.x, Servers[i].PropPosition.y, Servers[i].PropPosition.z)
-		obj.Swankiness = Servers[i].Swankiness
-		obj.Range = Servers[i].Range
-		obj.Destruction = Servers[i].Destruction
-
+		obj.PropPosition = vec3(jsonServers[i].PropPosition.x, jsonServers[i].PropPosition.y, jsonServers[i].PropPosition.z)
+		obj.Swankiness = jsonServers[i].Swankiness
+		obj.Range = jsonServers[i].Range
+		obj.Destruction = jsonServers[i].Destruction
+		obj.serverStatus = jsonServers[i].serverStatus
+		obj.heading = jsonServers[i].heading
 		DebugPrint('setting up rack', json.encode(obj))
 		table.insert(Servers, obj)
 	end
@@ -241,7 +247,6 @@ exports('updateRack', function(towerId, config)
 					Servers[i][k] = v
 				end
 				TriggerClientEvent('RadioRacks:SyncOneRack', -1, towerId, Servers[i])
-				print('triggering events')
 				TriggerEvent('SonoranCAD::sonrad:SyncOneRack', towerId, Servers[i])
 			end
 			return config and Servers[i].Id or ''
