@@ -2,8 +2,8 @@ local CellRepeaters = {}
 
 local rightToRepair = false
 
-RegisterNetEvent('SonoranRadio::AuthorizeCellRepeaters')
-AddEventHandler('SonoranRadio::AuthorizeCellRepeaters', function()
+RegisterNetEvent('SonoranRadio::AuthorizeAntennas')
+AddEventHandler('SonoranRadio::AuthorizeAntennas', function()
 	DebugPrint('Authorized for cellRepeater Repair')
 	rightToRepair = true
 end)
@@ -67,10 +67,11 @@ local function CreateCellRepeater(cellRepeater)
 	LoadModelSync(CellRepeaterModel)
 
 	local coords = cellRepeater.PropPosition
-	cellRepeater.Handle = CreateObject(CellRepeaterModel, coords, false, false, false)
+	cellRepeater.Handle = CreateVehicle(CellRepeaterModel, coords, false, false, false)
 	while not DoesEntityExist(cellRepeater.Handle) do
 		Wait(0)
 	end
+	DecorSetInt(cellRepeater.Handle, 'sonrad_cellRepeater', 1)
 	FreezeEntityPosition(cellRepeater.Handle, true)
 	SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
 	SetEntityHeading(cellRepeater.Handle, cellRepeater.heading)
@@ -219,7 +220,7 @@ local function RepairCellRepeater(cellRepeater)
 			34,
 			35
 		}
-		while (start + (Config.towerRepairTimer or 20) * 1000) > GetGameTimer() do
+		while (start + (Config.antennaRepairTimer or 20) * 1000) > GetGameTimer() do
 			for _, c in ipairs(controls) do
 				if IsControlPressed(0, c) then
 					ClearPedTasksImmediately(ped)
@@ -279,28 +280,25 @@ CreateThread(function()
 		for i = 1, #CellRepeaters do
 			local cellRepeater = CellRepeaters[i]
 			if cellRepeater then
-				local n = cellRepeater.Dishes and #cellRepeater.Dishes or 0
-				for j = 1, n do
-					local e = cellRepeater.Dishes[j]
-					if DecorGetInt(e, 'sonrad_dish') ~= 1 then
-						goto continue
-					end
-					if not IsEntityDead(e) then
-						-- make sure it doesn't explode from gunshots
-						SetVehiclePetrolTankHealth(e, 1000.0)
-					end
-
-					local health = GetVehicleBodyHealth(e)
-					if health > 500.0 then
-						goto continue
-					end
-
-					-- here we kill the dish
-					DecorSetInt(e, 'sonrad_dish', 0)
-					DebugPrint('sending dish destroyed server event')
-					TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
-					::continue::
+				local e = cellRepeater.Handle
+				if DecorGetInt(e, 'sonrad_cellRepeater') ~= 1 then
+					goto continue
 				end
+				if not IsEntityDead(e) then
+					-- make sure it doesn't explode from gunshots
+					SetVehiclePetrolTankHealth(e, 1000.0)
+				end
+
+				local health = GetVehicleBodyHealth(e)
+				if health > 500.0 then
+					goto continue
+				end
+
+				-- here we kill the dish
+				DecorSetInt(e, 'sonrad_cellRepeater', 0)
+				DebugPrint('sending dish destroyed server event')
+				TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
+				::continue::
 			end
 		end
 		Wait(250)
