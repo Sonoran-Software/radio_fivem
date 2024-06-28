@@ -1,0 +1,68 @@
+[
+    {
+        "heading": 90.0,
+        "Powered": true,
+        "PropPosition": {
+            "x": 454.79779052734377,
+            "y": -987.5076904296875,
+            "z": 26.6680908203125
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "ac10ec6a-612b-4252-a213-c6eb0043d3b8",
+        "Destruction": true,
+        "DontSaveMe": false
+    },
+    {
+        "heading": 315,
+        "Powered": true,
+        "PropPosition": {
+            "x": -448.6000061035156,
+            "y": 6008.89990234375,
+            "z": 31.7061767578125
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "e79f6650-c638-498a-8bc5-724224762b1a",
+        "Destruction": true,
+        "DontSaveMe": false
+    },
+    {
+        "heading": 210,
+        "Powered": true,
+        "PropPosition": {
+            "x": 1849.4769287109376,
+            "y": 3690.43505859375,
+            "z": 34.2506103515625
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "9949fbe0-8530-4ecb-8776-eaa0cf83234d",
+        "Destruction": true,
+        "DontSaveMe": false
+    }
+]
