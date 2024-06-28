@@ -1,6 +1,6 @@
 local acePermsForRadio = false
 local acePermsForTowerRepair = false
-
+local acePermsForAntennaRepair = false
 local QBCore = nil
 
 if Config == nil then
@@ -98,6 +98,13 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 		end
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeTowers', source)
+	end
+	if acePermsForAntennaRepair then
+		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
+			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+		end
+	else
+		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
 	end
 end)
 
