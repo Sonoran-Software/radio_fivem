@@ -2,6 +2,7 @@ Config = {}
 
 Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
+Config.radioUrl = 'https://radiov2.dev.sonoransoftware.com'
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = false
