@@ -35,17 +35,11 @@ local function GetCellRepeaterCoords(cellRepeater)
 end
 -- returns a value from 0-1 representing the percentage of active dishes
 local function GetCellRepeaterCapacity(cellRepeater)
-	if #cellRepeater.AntennaStatus < 1 then
-		return 1.0
-	end
-
 	local n = 0.0
-	for i = 1, #cellRepeater.AntennaStatus do
-		if cellRepeater.AntennaStatus[i] == 'alive' then
-			n = n + 1.0
-		end
+	if cellRepeater.AntennaStatus == 'alive' then
+		n = 1.0
 	end
-	return n / #cellRepeater.AntennaStatus
+	return n
 end
 
 local function AddCellRepeaterRange(t)
@@ -128,8 +122,29 @@ AddEventHandler('CellRepeater:SpawnCell', function(cellRepeater)
 	DebugPrint('new cellRepeater spawned', cellRepeater.Id)
 end)
 
-RegisterNetEvent('CellRepeater:SetAntennaStatus')
-AddEventHandler('CellRepeater:SetAntennaStatus', function(cellRepeaterId, AntennaStatus)
+local function SyncAntennaStatus(antenna, playSound)
+	local antennaHandle = antenna.Handle
+	local dead = IsEntityDead(antennaHandle)
+
+	if antenna.AntennaStatus ~= 'alive' and not dead then
+		NetworkExplodeVehicle(antennaHandle, false, false)
+		DecorSetInt(antennaHandle, 'sonrad_cellRepeater', 0)
+		-- play a power-down sound for the player
+		if playSound then
+			local coords = GetEntityCoords(antennaHandle)
+			PlaySoundFromCoord(-1, 'Power_Down', coords, 'DLC_HEIST_HACKING_SNAKE_SOUNDS', 0, 80)
+		end
+	elseif antenna.AntennaStatus == 'alive' and dead then
+		CreateCellRepeater(antenna)
+		if playSound then
+			local coords = GetEntityCoords(antennaHandle)
+			PlaySoundFromCoord(-1, 'Success', coords, 'DLC_HEIST_HACKING_SNAKE_SOUNDS', 0, 80)
+		end
+	end
+end
+
+RegisterNetEvent('CellRepeater:AntennaStatus')
+AddEventHandler('CellRepeater:AntennaStatus', function(cellRepeaterId, AntennaStatus)
 	local cellRepeater = GetCellRepeaterFromId(cellRepeaterId)
 	if not cellRepeater then
 		return
@@ -146,6 +161,7 @@ CreateThread(function()
 	while #CellRepeaters == 0 do
 		Wait(50)
 	end
+	DecorRegister('sonrad_cellRepeater', 3)
 	while true do
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
 		local quality = 0.0
@@ -234,7 +250,7 @@ local function RepairCellRepeater(cellRepeater)
 
 		-- recreate the dishes so they don't accidentally repair the cellRepeater twice
 		-- waiting for the event to propogate
-		TriggerServerEvent('CellRepeater:RepairCellRepeater', cellRepeater.Id)
+		TriggerServerEvent('CellRepeater:RepairAntenna', cellRepeater.Id)
 	else
 		SendNotification('Radio: ~r~No Repair Permission~r~')
 	end
