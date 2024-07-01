@@ -8,7 +8,7 @@ resource-build:
     - yarn
     - NODE_ENV=production yarn build
     - cp -r sonrad_tower/stream sonrad_tower/data build/sonoranradio
-    - cp -r lua dist skins towers.json servers.json cellRepeaters.json build/sonoranradio
+    - cp -r lua dist skins towers.json build/sonoranradio
     # set the version of version.json and fxmanifest.lua
     - >-
       if [[ -n "$CI_COMMIT_TAG" ]]; then
@@ -76,9 +76,9 @@ resource-deploy-prod:
       fi
     # clear cloudflare cache
     - >-
-      curl -X POST "https://api.cloudflare.com/client/v4/zones/5e892b9b03facaf059df71c6154a823b/purge_cache" 
-      -H "Authorization: Bearer $CF_Cache_Key" 
-      -H "Content-Type: application/json" 
+      curl -X POST "https://api.cloudflare.com/client/v4/zones/5e892b9b03facaf059df71c6154a823b/purge_cache"
+      -H "Authorization: Bearer $CF_Cache_Key"
+      -H "Content-Type: application/json"
       --data '{"files":["https://download.sonoransoftware.com/sonoranradio/archive/latest.zip","https://download.sonoransoftware.com/sonoranradio/version.json"]}'
   tags:
     - linux, build, shell, development
