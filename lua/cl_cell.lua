@@ -210,7 +210,7 @@ CreateThread(function()
 		if bestCellRepeaterQuality == 0.0 then
 			DebugPrint('closest cell repeater out of range')
 		else
-			DebugPrint(('best cell repeater quality:%.4f'):format(quality))
+			DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
 		end
 		-- SendNUIMessage({
 		-- 	type = 'setTowerQuality',

@@ -357,7 +357,7 @@ CreateThread(function()
 		if bestRackQuality == 0.0 then
 			DebugPrint('closest rack out of range')
 		else
-			DebugPrint(('best rack quality:%.4f'):format(quality))
+			DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
 		end
 		-- SendNUIMessage({
 		-- 	type = 'setrackQuality',

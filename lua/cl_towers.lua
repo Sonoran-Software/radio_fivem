@@ -289,7 +289,7 @@ CreateThread(function()
 		if bestTowerQuality == 0.0 then
 			DebugPrint('closest tower out of range')
 		else
-			DebugPrint(('best tower quality:%.4f'):format(quality))
+			DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
 		end
 		-- SendNUIMessage({
 		-- 	type = 'setTowerQuality',
