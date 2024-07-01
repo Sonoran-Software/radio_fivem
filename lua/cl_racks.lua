@@ -1,5 +1,5 @@
 local racks = {}
-
+bestRackQuality = 0.0
 local rightToRepair = false
 
 --[[
@@ -310,7 +310,6 @@ CreateThread(function()
 	DecorRegister('sonrad_server', 3)
 	while true do
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		local quality = 0.0
 		for i = 1, #racks do
 			local rack = racks[i]
 			if not rack then
@@ -349,23 +348,23 @@ CreateThread(function()
 			end
 
 			local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
-			if quality < tQuality then
-				quality = tQuality
+			if bestRackQuality < tQuality then
+				bestRackQuality = tQuality
 			end
 			::continue::
 		end
 
-		if quality == 0.0 then
+		if bestRackQuality == 0.0 then
 			DebugPrint('closest rack out of range')
 		else
 			DebugPrint(('best rack quality:%.4f'):format(quality))
 		end
-		SendNUIMessage({
-			type = 'setrackQuality',
-			state = {
-				rack_quality = quality
-			}
-		})
+		-- SendNUIMessage({
+		-- 	type = 'setrackQuality',
+		-- 	state = {
+		-- 		rack_quality = quality
+		-- 	}
+		-- })
 		Wait(3000)
 	end
 end)

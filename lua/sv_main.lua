@@ -39,7 +39,9 @@ else
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			local radio = Player.Functions.GetItemByName('sonoran_radio')
-			if not radio then return end
+			if not radio then
+				return
+			end
 			if not radio.info.frame then
 				TriggerClientEvent('qb-sonrad:use', source, 'default')
 			else
@@ -205,5 +207,177 @@ AddEventHandler('onResourceStart', function(resourceName)
 		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
 		print('!!! CRITICAL ERROR !!!')
 		return
+	end
+end)
+
+--[[
+	Jordan - Radio Consolidation Update
+]]
+
+AddEventHandler('onResourceStart', function(resource)
+	if GetCurrentResourceName() ~= resource then
+		return
+	end
+	local t = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
+	local towers = json.decode(t)
+	for i = 1, #towers do
+		if towers[i].type == 'radioTower' then
+			local obj = shallowcopy(RadioTower)
+			if towers[i].Id == nil then
+				obj.Id = uuid()
+			else
+				obj.Id = towers[i].Id
+			end
+			-- obj.Id = uuid()
+			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
+			obj.Swankiness = towers[i].Swankiness
+			obj.Range = towers[i].Range
+			obj.Destruction = towers[i].Destruction
+
+			DebugPrint('setting up tower', json.encode(obj))
+			table.insert(Towers, obj)
+		elseif towers[i].type == 'serverRack' then
+			local obj = shallowcopy(RadioRacks)
+			if towers[i].Id == nil then
+				obj.Id = uuid()
+			else
+				obj.Id = towers[i].Id
+			end
+			-- obj.Id = uuid()
+			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
+			obj.Swankiness = towers[i].Swankiness
+			obj.Range = towers[i].Range
+			obj.Destruction = towers[i].Destruction
+			obj.serverStatus = towers[i].serverStatus
+			obj.heading = towers[i].heading
+			DebugPrint('setting up rack', json.encode(obj))
+			table.insert(Servers, obj)
+		elseif towers[i].type == 'cellRepeater' then
+			local obj = shallowcopy(CellRepeater)
+			if towers[i].Id == nil then
+				obj.Id = uuid()
+			else
+				obj.Id = towers[i].Id
+			end
+			-- obj.Id = uuid()
+			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
+			obj.heading = towers[i].heading
+			obj.Swankiness = towers[i].Swankiness
+			obj.Range = towers[i].Range
+			obj.Destruction = towers[i].Destruction
+
+			DebugPrint('setting up cell repeater', json.encode(obj))
+			table.insert(CellRepeaters, obj)
+		end
+	end
+end)
+
+RegisterCommand('removeRadioTower', function()
+	local playerCoords = GetEntityCoords(GetPlayerPed(-1))
+	local closestTower = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('prop_radio_tower'), false, false, false)
+	local closestServerRack = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('serverrack'), false, false, false)
+	local closestCellRepeater = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('mobilecell'), false, false, false)
+
+	local closestDist = 10.0
+	local closestObj = nil
+	local closestType = nil
+
+	if closestTower ~= 0 then
+		local towerCoords = GetEntityCoords(closestTower)
+		local dist = #(playerCoords - towerCoords)
+		if dist < closestDist then
+			closestDist = dist
+			closestObj = closestTower
+			closestType = 'radioTower'
+		end
+	end
+	if closestServerRack ~= 0 then
+		local serverRackCoords = GetEntityCoords(closestServerRack)
+		local dist = #(playerCoords - serverRackCoords)
+		if dist < closestDist then
+			closestDist = dist
+			closestObj = closestServerRack
+			closestType = 'serverRack'
+		end
+	end
+	if closestCellRepeater ~= 0 then
+		local cellRepeaterCoords = GetEntityCoords(closestCellRepeater)
+		local dist = #(playerCoords - cellRepeaterCoords)
+		if dist < closestDist then
+			closestDist = dist
+			closestObj = closestCellRepeater
+			closestType = 'cellRepeater'
+		end
+	end
+	if closestObj ~= nil then
+		if closestType == 'radioTower' then
+			for i = 1, #Towers do
+				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(Towers[i].PropPosition))
+				if distBetweenSpawn <= 0.5 then
+					table.remove(Towers, i)
+					TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
+					TriggerClientEvent('chat:addMessage', source, {
+						args = {
+							'^1Radio tower removed'
+						}
+					})
+					break
+				end
+			end
+		elseif closestType == 'serverRack' then
+			for i = 1, #Servers do
+				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(Servers[i].PropPosition))
+				if distBetweenSpawn <= 0.5 then
+					table.remove(Servers, i)
+					TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+					TriggerClientEvent('chat:addMessage', source, {
+						args = {
+							'^1Server rack removed'
+						}
+					})
+					break
+				end
+			end
+		elseif closestType == 'cellRepeater' then
+			for i = 1, #CellRepeaters do
+				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(CellRepeaters[i].PropPosition))
+				if distBetweenSpawn <= 0.5 then
+					table.remove(CellRepeaters, i)
+					TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+					TriggerClientEvent('chat:addMessage', source, {
+						args = {
+							'^1Cell repeater removed'
+						}
+					})
+					break
+				end
+			end
+		end
+		local saveData = {};
+		for _, t in ipairs(Towers) do
+			if not t.DontSaveMe then
+				table.insert(saveData, t)
+			end
+		end
+		for _, t in ipairs(Servers) do
+			if not t.DontSaveMe then
+				table.insert(saveData, t)
+			end
+		end
+		for _, t in ipairs(CellRepeaters) do
+			if not t.DontSaveMe then
+				table.insert(saveData, t)
+			end
+		end
+		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+		f:write(json.encode(saveData))
+		f:close()
+		print('ok')
+	else
+		TriggerClientEvent('chat:addMessage', source, {
+			args = {
+				'^1No radio tower, server rack, or cell repeater found.'
+			}
+		})
 	end
 end)

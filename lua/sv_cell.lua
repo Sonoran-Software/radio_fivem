@@ -9,10 +9,12 @@ local CellRepeater = {
 	Range = 1500.0,
 	AntennaStatus = 'alive',
 	Powered = true,
-	DontSaveMe = false
+	DontSaveMe = false,
+	heading = 0.0,
+	type = 'cellRepeater'
 }
 
-local CellRepeaters = {}
+CellRepeaters = {}
 function GetCellRepeaters(coords)
 	for i = 1, #CellRepeaters do
 		if CellRepeaters[i].PropPosition == coords then
@@ -72,25 +74,25 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 	-- TriggerEvent("SonoranCAD::sonrad:SyncCellRepeaters", CellRepeaters)
 end)
 
-RegisterCommand('removeCellRepeaters', function()
-	TriggerClientEvent('CellRepeater:Shutdown', -1)
-	CellRepeaters = {}
-end, true)
+-- RegisterCommand('removeCellRepeaters', function()
+-- 	TriggerClientEvent('CellRepeater:Shutdown', -1)
+-- 	CellRepeaters = {}
+-- end, true)
 
-RegisterCommand('saveCellRepeaters', function()
-	local saveCellRepeaters = {}
-	for _, t in ipairs(CellRepeaters) do
-		if not t.DontSaveMe then
-			table.insert(saveCellRepeaters, t)
-		end
-	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/cellRepeaters.json', 'w+'))
-	f:write(json.encode(saveCellRepeaters))
-	f:close()
-	print('ok')
-end, true)
+-- RegisterCommand('saveCellRepeaters', function()
+-- 	local saveCellRepeaters = {}
+-- 	for _, t in ipairs(CellRepeaters) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveCellRepeaters, t)
+-- 		end
+-- 	end
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/cellRepeaters.json', 'w+'))
+-- 	f:write(json.encode(saveCellRepeaters))
+-- 	f:close()
+-- 	print('ok')
+-- end, true)
 
-RegisterCommand('spawncellrepeater', function(source)
+RegisterCommand('spawnRadioCellRepeater', function(source)
 	local coords = GetEntityCoords(GetPlayerPed(source))
 	local heading = GetEntityHeading(GetPlayerPed(source))
 	local tower = shallowcopy(CellRepeater)
@@ -100,6 +102,27 @@ RegisterCommand('spawncellrepeater', function(source)
 	table.insert(CellRepeaters, tower)
 
 	TriggerClientEvent('CellRepeater:SpawnCell', -1, tower)
+	local saveData = {};
+	for _, t in ipairs(Towers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(Servers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(CellRepeaters) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	print('ok')
+
 end, true)
 
 RegisterNetEvent('CellRepeater:clientCellRepeatersync')
@@ -171,31 +194,6 @@ AddEventHandler('CellRepeater:clientLocationVerify', function(coords, handshake)
 		CellRepeaters[idx] = tower
 		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1)
 		TriggerClientEvent('CellRepeater:DestroyedTower', source, dist2)
-	end
-end)
-
-AddEventHandler('onResourceStart', function(resource)
-	if GetCurrentResourceName() ~= resource then
-		return
-	end
-	local t = LoadResourceFile(GetCurrentResourceName(), 'cellRepeaters.json')
-	local CellRepeatersJson = json.decode(t)
-	for i = 1, #CellRepeatersJson do
-		local obj = shallowcopy(CellRepeater)
-		if CellRepeatersJson[i].Id == nil then
-			obj.Id = uuid()
-		else
-			obj.Id = CellRepeatersJson[i].Id
-		end
-		-- obj.Id = uuid()
-		obj.PropPosition = vec3(CellRepeatersJson[i].PropPosition.x, CellRepeatersJson[i].PropPosition.y, CellRepeatersJson[i].PropPosition.z)
-		obj.heading = CellRepeatersJson[i].heading
-		obj.Swankiness = CellRepeatersJson[i].Swankiness
-		obj.Range = CellRepeatersJson[i].Range
-		obj.Destruction = CellRepeatersJson[i].Destruction
-
-		DebugPrint('setting up cell repeater', json.encode(obj))
-		table.insert(CellRepeaters, obj)
 	end
 end)
 

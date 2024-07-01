@@ -1,5 +1,5 @@
 local CellRepeaters = {}
-
+bestCellRepeaterQuality = 0.0
 local rightToRepair = false
 
 RegisterNetEvent('SonoranRadio::AuthorizeAntennas')
@@ -164,7 +164,6 @@ CreateThread(function()
 	DecorRegister('sonrad_cellRepeater', 3)
 	while true do
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		local quality = 0.0
 		for i = 1, #CellRepeaters do
 			local cellRepeater = CellRepeaters[i]
 			if not cellRepeater then
@@ -202,23 +201,23 @@ CreateThread(function()
 			end
 
 			local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
-			if quality < tQuality then
-				quality = tQuality
+			if bestCellRepeaterQuality < tQuality then
+				bestCellRepeaterQuality = tQuality
 			end
 			::continue::
 		end
 
-		if quality == 0.0 then
+		if bestCellRepeaterQuality == 0.0 then
 			DebugPrint('closest cell repeater out of range')
 		else
 			DebugPrint(('best cell repeater quality:%.4f'):format(quality))
 		end
-		SendNUIMessage({
-			type = 'setTowerQuality',
-			state = {
-				tower_quality = quality
-			}
-		})
+		-- SendNUIMessage({
+		-- 	type = 'setTowerQuality',
+		-- 	state = {
+		-- 		tower_quality = quality
+		-- 	}
+		-- })
 		Wait(3000)
 	end
 end)

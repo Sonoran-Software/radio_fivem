@@ -8,7 +8,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "74d910e5-5705-4b58-baaf-88a8ca82734c"
+        "Id": "74d910e5-5705-4b58-baaf-88a8ca82734c",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -19,7 +20,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "59b10dcc-2879-4278-9e69-352b684f1da0"
+        "Id": "59b10dcc-2879-4278-9e69-352b684f1da0",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -30,7 +32,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "7a4cb19d-e158-4afa-9e56-6de0c5446626"
+        "Id": "7a4cb19d-e158-4afa-9e56-6de0c5446626",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -41,7 +44,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "18f31533-49dd-4fa2-a177-56192d6f4773"
+        "Id": "18f31533-49dd-4fa2-a177-56192d6f4773",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -52,7 +56,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "96640bea-02c8-4294-b65b-de8b950ade34"
+        "Id": "96640bea-02c8-4294-b65b-de8b950ade34",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -63,7 +68,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "6fe8994c-9197-468c-ad77-a220cde5f514"
+        "Id": "6fe8994c-9197-468c-ad77-a220cde5f514",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -74,7 +80,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "31e815ff-dc2a-4817-a3d1-0e73fc1f132c"
+        "Id": "31e815ff-dc2a-4817-a3d1-0e73fc1f132c",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -85,7 +92,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "ee495635-63e8-47d7-92f6-29323aad1424"
+        "Id": "ee495635-63e8-47d7-92f6-29323aad1424",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -96,7 +104,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "4c8da773-1c95-4340-a6b4-94a0bb2b6c36"
+        "Id": "4c8da773-1c95-4340-a6b4-94a0bb2b6c36",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -107,7 +116,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "2d0a68d5-9aff-4405-a32a-e7aed24faee1"
+        "Id": "2d0a68d5-9aff-4405-a32a-e7aed24faee1",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -118,7 +128,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "84f9344b-edc1-4ba2-b4dd-0ee1df981a13"
+        "Id": "84f9344b-edc1-4ba2-b4dd-0ee1df981a13",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -129,7 +140,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "2f75a8c9-2eb2-41c5-a056-96e634c7823c"
+        "Id": "2f75a8c9-2eb2-41c5-a056-96e634c7823c",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -140,7 +152,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "0c2fc16d-c627-4e24-a232-5ced52c58234"
+        "Id": "0c2fc16d-c627-4e24-a232-5ced52c58234",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -151,7 +164,8 @@
         },
         "Range": 1000,
         "Destruction": true,
-        "Id": "3424223f-1d84-4504-b40d-e2112dc2ddce"
+        "Id": "3424223f-1d84-4504-b40d-e2112dc2ddce",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -162,7 +176,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "3b9b9cbe-d39f-4c0d-bcf1-3bc128c912aa"
+        "Id": "3b9b9cbe-d39f-4c0d-bcf1-3bc128c912aa",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -173,7 +188,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "7c44e2c9-bf73-4d18-bb3a-1ba3bc3fb637"
+        "Id": "7c44e2c9-bf73-4d18-bb3a-1ba3bc3fb637",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -184,7 +200,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "470950f7-57cd-4b88-b863-23cbef3cc0fc"
+        "Id": "470950f7-57cd-4b88-b863-23cbef3cc0fc",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -195,7 +212,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "474b33ad-58a0-45d4-9dbe-ec6eaae228e8"
+        "Id": "474b33ad-58a0-45d4-9dbe-ec6eaae228e8",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -206,7 +224,8 @@
         },
         "Range": 1500,
         "Destruction": true,
-        "Id": "a2e8a852-b5d6-4e8b-adf5-b1c4945ffd38"
+        "Id": "a2e8a852-b5d6-4e8b-adf5-b1c4945ffd38",
+        "type": "radioTower"
     },
     {
         "Swankiness": 0.0,
@@ -217,6 +236,195 @@
         },
         "Range": 1000,
         "Destruction": true,
-        "Id": "058994a8-1373-420e-9be7-6ed2154396ab"
+        "Id": "058994a8-1373-420e-9be7-6ed2154396ab",
+        "type": "radioTower"
+    },
+    {
+        "heading": 90.0,
+        "Powered": true,
+        "PropPosition": {
+            "x": 454.79779052734377,
+            "y": -987.5076904296875,
+            "z": 26.6680908203125
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "ac10ec6a-612b-4252-a213-c6eb0043d3b8",
+        "Destruction": true,
+        "DontSaveMe": false,
+        "type": "serverRack"
+    },
+    {
+        "heading": 315,
+        "Powered": true,
+        "PropPosition": {
+            "x": -448.6000061035156,
+            "y": 6008.89990234375,
+            "z": 31.7061767578125
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "e79f6650-c638-498a-8bc5-724224762b1a",
+        "Destruction": true,
+        "DontSaveMe": false,
+        "type": "serverRack"
+    },
+    {
+        "heading": 210,
+        "Powered": true,
+        "PropPosition": {
+            "x": 1849.4769287109376,
+            "y": 3690.43505859375,
+            "z": 34.2506103515625
+        },
+        "serverStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "NotPhysical": false,
+        "Swankiness": 0.0,
+        "Range": 1500.0,
+        "Id": "9949fbe0-8530-4ecb-8776-eaa0cf83234d",
+        "Destruction": true,
+        "DontSaveMe": false,
+        "type": "serverRack"
+    },
+    {
+        "PropPosition": {
+            "x": 152.5,
+            "y": -775.9000244140625,
+            "z": 264.29998779296877
+        },
+        "heading": 340.0,
+        "Id": "1f68f034-500b-4b29-9356-8c8bf63fda04",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": -68.56999969482422,
+            "y": -833.2999877929688,
+            "z": 319.5076599121094
+        },
+        "heading": 340.0,
+        "Id": "bfa4fb73-084c-4465-aab1-289e7f16db71",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": 105.0,
+            "y": -653.7999877929688,
+            "z": 264.3399963378906
+        },
+        "heading": 340.0,
+        "Id": "77cb673a-8ce4-405a-af5b-1d4f441b2c34",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": -184.74000549316407,
+            "y": -759.4000244140625,
+            "z": 218.6999969482422
+        },
+        "heading": 340.157470703125,
+        "Id": "4a00073a-0094-40ef-ad46-f2be7f022c66",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": -54.7599983215332,
+            "y": -601.9000244140625,
+            "z": 109.2659912109375
+        },
+        "heading": 340.0,
+        "Id": "10611e5c-e553-4532-8177-092f02f35c9b",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": -748.4000244140625,
+            "y": 328.29998779296877,
+            "z": 230.8000030517578
+        },
+        "heading": 90.70865631103516,
+        "Id": "da2eb147-f9d3-4f15-82d8-26a16d192d2e",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
+    },
+    {
+        "PropPosition": {
+            "x": -871.8,
+            "y": -2101.9,
+            "z": 94.0
+        },
+        "heading": 135.0,
+        "Id": "ac0981e0-18d4-48fa-a171-4dc6497dc50a",
+        "Swankiness": 0.0,
+        "Powered": true,
+        "Destruction": true,
+        "Range": 1500.0,
+        "NotPhysical": false,
+        "DontSaveMe": false,
+        "AntennaStatus": "alive",
+        "type": "cellRepeater"
     }
 ]

@@ -1,4 +1,5 @@
 Towers = {}
+bestTowerQuality = 0.0
 
 local rightToRepair = false
 
@@ -241,7 +242,6 @@ CreateThread(function()
 	DecorRegister('sonrad_dish', 3)
 	while true do
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		local quality = 0.0
 		for i = 1, #Towers do
 			local tower = Towers[i]
 			if not tower then
@@ -280,23 +280,23 @@ CreateThread(function()
 			end
 
 			local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
-			if quality < tQuality then
-				quality = tQuality
+			if bestTowerQuality < tQuality then
+				bestTowerQuality = tQuality
 			end
 			::continue::
 		end
 
-		if quality == 0.0 then
+		if bestTowerQuality == 0.0 then
 			DebugPrint('closest tower out of range')
 		else
 			DebugPrint(('best tower quality:%.4f'):format(quality))
 		end
-		SendNUIMessage({
-			type = 'setTowerQuality',
-			state = {
-				tower_quality = quality
-			}
-		})
+		-- SendNUIMessage({
+		-- 	type = 'setTowerQuality',
+		-- 	state = {
+		-- 		tower_quality = quality
+		-- 	}
+		-- })
 		Wait(3000)
 	end
 end)

@@ -762,6 +762,13 @@ CreateThread(function()
 		-- print("QBDeath:" .. tostring(QBDeath))
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
+		SendNUIMessage({
+			type = 'setTowerQuality',
+			state = {
+				tower_quality = bestQuality
+			}
+		})
 		Wait(1000)
 	end
 end)
@@ -810,3 +817,13 @@ TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin',
 		help = 'The frame name to change to'
 	}
 })
+
+TriggerEvent('chat:addSuggestion', '/spawnRadioTower', 'Spawn a radio tower')
+TriggerEvent('chat:addSuggestion', '/spawnRadioRack', 'Spawn a radio rack', {
+	{
+		name = 'numberOfServers',
+		help = 'The number of servers to spawn'
+	}
+})
+TriggerEvent('chat:addSuggestion', '/spawnRadioCellRepeater', 'Spawn a radio cell repeater')
+TriggerEvent('chat:addSuggestion', '/removeRadioTower', 'Remove the nearest radio tower')
