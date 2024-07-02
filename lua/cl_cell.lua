@@ -49,7 +49,7 @@ local function AddCellRepeaterRange(t)
 	-- create a radius blip that indicates the range of the cellRepeater (where edge of circle = 50% capacity)
 	local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
 	SetBlipAlpha(blip, 127)
-	SetBlipColour(blip, 3)
+	SetBlipColour(blip, 2)
 end
 
 -- fully creates a cellRepeater based on the given cellRepeater object
