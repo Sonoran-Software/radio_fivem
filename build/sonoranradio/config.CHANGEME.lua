@@ -1,6 +1,6 @@
 Config = {}
 
-Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
+Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your Community ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.apiKey = 'YOUR API KEY' -- IMPORTANT set your API Key here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
 Config.allowUpdateWithPlayers = true
