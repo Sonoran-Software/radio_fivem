@@ -272,38 +272,37 @@ AddEventHandler('onResourceStart', function(resource)
 	end
 end)
 
-RegisterCommand('removeRadioTower', function()
-	local playerCoords = GetEntityCoords(GetPlayerPed(-1))
-	local closestTower = 0
-	local closestServerRack = 0
-	local closestCellRepeater = 0
+RegisterCommand('removeRadioTower', function(source)
+	local playerCoords = GetEntityCoords(GetPlayerPed(source))
+	local closestTower = nil
+	local closestServerRack = nil
+	local closestCellRepeater = nil
 	for i = 1, #Towers do
 		local distBetweenSpawn = #(playerCoords - vec3(Towers[i].PropPosition))
 		if distBetweenSpawn <= 10.0 then
-			closestTower = Towers[i].Prop
+			closestTower = Towers[i]
 			break
 		end
 	end
 	for i = 1, #Servers do
 		local distBetweenSpawn = #(playerCoords - vec3(Servers[i].PropPosition))
 		if distBetweenSpawn <= 10.0 then
-			closestServerRack = Servers[i].Prop
+			closestServerRack = Servers[i]
 			break
 		end
 	end
 	for i = 1, #CellRepeaters do
 		local distBetweenSpawn = #(playerCoords - vec3(CellRepeaters[i].PropPosition))
 		if distBetweenSpawn <= 10.0 then
-			closestCellRepeater = CellRepeaters[i].Prop
+			closestCellRepeater = CellRepeaters[i]
 			break
 		end
 	end
 	local closestDist = 10.0
 	local closestObj = nil
 	local closestType = nil
-
-	if closestTower ~= 0 then
-		local towerCoords = GetEntityCoords(closestTower)
+	if closestTower ~= nil then
+		local towerCoords = vec3(closestTower.PropPosition)
 		local dist = #(playerCoords - towerCoords)
 		if dist < closestDist then
 			closestDist = dist
@@ -311,8 +310,8 @@ RegisterCommand('removeRadioTower', function()
 			closestType = 'radioTower'
 		end
 	end
-	if closestServerRack ~= 0 then
-		local serverRackCoords = GetEntityCoords(closestServerRack)
+	if closestServerRack ~= nil then
+		local serverRackCoords = vec3(closestServerRack.PropPosition)
 		local dist = #(playerCoords - serverRackCoords)
 		if dist < closestDist then
 			closestDist = dist
@@ -320,8 +319,8 @@ RegisterCommand('removeRadioTower', function()
 			closestType = 'serverRack'
 		end
 	end
-	if closestCellRepeater ~= 0 then
-		local cellRepeaterCoords = GetEntityCoords(closestCellRepeater)
+	if closestCellRepeater ~= nil then
+		local cellRepeaterCoords = vec3(closestCellRepeater.PropPosition)
 		local dist = #(playerCoords - cellRepeaterCoords)
 		if dist < closestDist then
 			closestDist = dist
@@ -332,13 +331,13 @@ RegisterCommand('removeRadioTower', function()
 	if closestObj ~= nil then
 		if closestType == 'radioTower' then
 			for i = 1, #Towers do
-				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(Towers[i].PropPosition))
-				if distBetweenSpawn <= 0.5 then
+				local towerIndex = Towers[i]
+				if towerIndex.Id == closestObj.Id then
 					table.remove(Towers, i)
 					TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 					TriggerClientEvent('chat:addMessage', source, {
 						args = {
-							'^1Radio tower removed'
+							'[SonoranRadio] ^1Radio tower removed'
 						}
 					})
 					break
@@ -346,13 +345,13 @@ RegisterCommand('removeRadioTower', function()
 			end
 		elseif closestType == 'serverRack' then
 			for i = 1, #Servers do
-				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(Servers[i].PropPosition))
-				if distBetweenSpawn <= 0.5 then
+				local towerIndex = Servers[i]
+				if towerIndex.Id == closestObj.Id then
 					table.remove(Servers, i)
 					TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 					TriggerClientEvent('chat:addMessage', source, {
 						args = {
-							'^1Server rack removed'
+							'[SonoranRadio] ^1Server rack removed'
 						}
 					})
 					break
@@ -360,13 +359,13 @@ RegisterCommand('removeRadioTower', function()
 			end
 		elseif closestType == 'cellRepeater' then
 			for i = 1, #CellRepeaters do
-				local distBetweenSpawn = #(GetEntityCoords(closestObj) - vec3(CellRepeaters[i].PropPosition))
-				if distBetweenSpawn <= 0.5 then
+				local towerIndex = CellRepeaters[i]
+				if towerIndex.Id == closestObj.Id then
 					table.remove(CellRepeaters, i)
 					TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
 					TriggerClientEvent('chat:addMessage', source, {
 						args = {
-							'^1Cell repeater removed'
+							'[SonoranRadio] ^1Cell repeater removed'
 						}
 					})
 					break
@@ -396,7 +395,7 @@ RegisterCommand('removeRadioTower', function()
 	else
 		TriggerClientEvent('chat:addMessage', source, {
 			args = {
-				'^1No radio tower, server rack, or cell repeater found.'
+				'[SonoranRadio] ^1No radio tower, server rack, or cell repeater found.'
 			}
 		})
 	end
