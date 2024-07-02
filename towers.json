@@ -1,275 +1,144 @@
 [
     {
-        "Swankiness": 0.0,
         "PropPosition": {
-            "x": -577.4769287109375,
-            "y": -138.4747314453125,
-            "z": 51.9765625
+            "x": 600.1318969726562,
+            "y": 5555.09033203125,
+            "z": 716.75244140625
+        },
+        "Range": 3000,
+        "Swankiness": 0,
+        "Destruction": true,
+        "Id": "77cb673a-8ce4-405a-af5b-1d4f441b2c34",
+        "DishStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "DontSaveMe": false,
+        "NotPhysical": false,
+        "Powered": true,
+        "type": "radioTower"
+    },
+    {
+        "PropPosition": {
+            "x": 3445.068115234375,
+            "y": 4200.61962890625,
+            "z": 240.205810546875
         },
         "Range": 1500,
+        "Swankiness": 0,
         "Destruction": true,
-        "Id": "74d910e5-5705-4b58-baaf-88a8ca82734c",
+        "Id": "10611e5c-e553-4532-8177-092f02f35c9b",
+        "DishStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "DontSaveMe": false,
+        "NotPhysical": false,
+        "Powered": true,
         "type": "radioTower"
     },
     {
-        "Swankiness": 0.0,
         "PropPosition": {
-            "x": 697.3450317382813,
-            "y": 1283.142822265625,
-            "z": 360.29443359375
+            "x": -1632.01318359375,
+            "y": 3092.16259765625,
+            "z": 31.1669921875
         },
-        "Range": 1500,
+        "Range": 2500,
+        "Swankiness": 0,
         "Destruction": true,
-        "Id": "59b10dcc-2879-4278-9e69-352b684f1da0",
+        "Id": "ac0981e0-18d4-48fa-a171-4dc6497dc50a",
+        "DishStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "DontSaveMe": false,
+        "NotPhysical": false,
+        "Powered": true,
         "type": "radioTower"
     },
     {
-        "Swankiness": 0.0,
         "PropPosition": {
-            "x": 937.5560302734375,
-            "y": -208.57582092285157,
-            "z": 82.7274169921875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "7a4cb19d-e158-4afa-9e56-6de0c5446626",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 339.70550537109377,
-            "y": -1426.852783203125,
-            "z": 76.1728515625
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "18f31533-49dd-4fa2-a177-56192d6f4773",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -882.3560180664063,
-            "y": -2366.505615234375,
-            "z": 20.972900390625
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "96640bea-02c8-4294-b65b-de8b950ade34",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -1074.5010986328126,
-            "y": -814.12744140625,
-            "z": 31.2513427734375
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "6fe8994c-9197-468c-ad77-a220cde5f514",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 796.945068359375,
-            "y": -2978.822021484375,
-            "z": 17.771484375
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "31e815ff-dc2a-4817-a3d1-0e73fc1f132c",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -2343.388916015625,
-            "y": 1364.901123046875,
-            "z": 335.2557373046875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "ee495635-63e8-47d7-92f6-29323aad1424",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -2223.75830078125,
-            "y": 192.76483154296876,
-            "z": 194.5933837890625
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "4c8da773-1c95-4340-a6b4-94a0bb2b6c36",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -2097.322998046875,
-            "y": 2821.6220703125,
-            "z": 38.901123046875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "2d0a68d5-9aff-4405-a32a-e7aed24faee1",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 2520.03955078125,
-            "y": -330.5670166015625,
-            "z": 114.068115234375
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "84f9344b-edc1-4ba2-b4dd-0ee1df981a13",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 2808.474609375,
-            "y": 1454.6109619140626,
-            "z": 34.3348388671875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "2f75a8c9-2eb2-41c5-a056-96e634c7823c",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 1875.4549560546876,
-            "y": 3721.041748046875,
-            "z": 33.071044921875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "0c2fc16d-c627-4e24-a232-5ced52c58234",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": -432.5538330078125,
-            "y": 5995.87255859375,
-            "z": 35.3121337890625
-        },
-        "Range": 1000,
-        "Destruction": true,
-        "Id": "3424223f-1d84-4504-b40d-e2112dc2ddce",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 2103.243896484375,
-            "y": 4773.3759765625,
-            "z": 41.00732421875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "3b9b9cbe-d39f-4c0d-bcf1-3bc128c912aa",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 3570.593505859375,
-            "y": 3743.419677734375,
-            "z": 41.748779296875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "7c44e2c9-bf73-4d18-bb3a-1ba3bc3fb637",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 1402.04833984375,
-            "y": 2117.51220703125,
+            "x": 1401.2703857421875,
+            "y": 2117.208740234375,
             "z": 105.019775390625
         },
-        "Range": 1500,
+        "Range": 2000,
+        "Swankiness": 0,
         "Destruction": true,
-        "Id": "470950f7-57cd-4b88-b863-23cbef3cc0fc",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 736.02197265625,
-            "y": 2582.29443359375,
-            "z": 79.6270751953125
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "474b33ad-58a0-45d4-9dbe-ec6eaae228e8",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 2052.698974609375,
-            "y": 6502.52294921875,
-            "z": 106.89013671875
-        },
-        "Range": 1500,
-        "Destruction": true,
-        "Id": "a2e8a852-b5d6-4e8b-adf5-b1c4945ffd38",
-        "type": "radioTower"
-    },
-    {
-        "Swankiness": 0.0,
-        "PropPosition": {
-            "x": 148.76043701171876,
-            "y": 6707.30126953125,
-            "z": 41.057861328125
-        },
-        "Range": 1000,
-        "Destruction": true,
-        "Id": "058994a8-1373-420e-9be7-6ed2154396ab",
-        "type": "radioTower"
-    },
-    {
-        "heading": 90.0,
-        "Powered": true,
-        "PropPosition": {
-            "x": 454.79779052734377,
-            "y": -987.5076904296875,
-            "z": 26.6680908203125
-        },
-        "serverStatus": [
-            "alive",
+        "Id": "fda96c76-d041-483c-8542-a2e068844d4f",
+        "DishStatus": [
             "alive",
             "alive",
             "alive",
             "alive"
         ],
-        "NotPhysical": false,
-        "Swankiness": 0.0,
-        "Range": 1500.0,
-        "Id": "ac10ec6a-612b-4252-a213-c6eb0043d3b8",
-        "Destruction": true,
         "DontSaveMe": false,
-        "type": "serverRack"
+        "NotPhysical": false,
+        "Powered": true,
+        "type": "radioTower"
     },
     {
-        "heading": 315,
-        "Powered": true,
         "PropPosition": {
-            "x": -448.6000061035156,
-            "y": 6008.89990234375,
+            "x": -1287.4285888671875,
+            "y": 1118.4527587890625,
+            "z": 280.5948486328125
+        },
+        "Range": 2500,
+        "Swankiness": 0,
+        "Destruction": true,
+        "Id": "d29685ef-3e35-4771-ad6a-7897e1f36d75",
+        "DishStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "DontSaveMe": false,
+        "NotPhysical": false,
+        "Powered": true,
+        "type": "radioTower"
+    },
+    {
+        "PropPosition": {
+            "x": 1408.5362548828125,
+            "y": -747.982421875,
+            "z": 67.2255859375
+        },
+        "Range": 2000,
+        "Swankiness": 0,
+        "Destruction": true,
+        "Id": "aaf135f2-8e5e-46d0-ba69-1e39d590b681",
+        "DishStatus": [
+            "alive",
+            "alive",
+            "alive",
+            "alive"
+        ],
+        "DontSaveMe": false,
+        "NotPhysical": false,
+        "Powered": true,
+        "type": "radioTower"
+    },
+    {
+        "PropPosition": {
+            "x": -449.3999938964844,
+            "y": 6010.7001953125,
             "z": 31.7061767578125
         },
+        "Range": 1500,
+        "Swankiness": 0,
+        "Destruction": true,
+        "Id": "4a00073a-0094-40ef-ad46-f2be7f022c66",
+        "heading": 315,
+        "Powered": true,
+        "DontSaveMe": false,
+        "type": "serverRack",
         "serverStatus": [
             "alive",
             "alive",
@@ -277,22 +146,22 @@
             "alive",
             "alive"
         ],
-        "NotPhysical": false,
-        "Swankiness": 0.0,
-        "Range": 1500.0,
-        "Id": "e79f6650-c638-498a-8bc5-724224762b1a",
-        "Destruction": true,
-        "DontSaveMe": false,
-        "type": "serverRack"
+        "NotPhysical": false
     },
     {
-        "heading": 210,
-        "Powered": true,
         "PropPosition": {
-            "x": 1849.4769287109376,
-            "y": 3690.43505859375,
+            "x": 1851.3363037109375,
+            "y": 3690.698974609375,
             "z": 34.2506103515625
         },
+        "Range": 1500,
+        "Swankiness": 0,
+        "Destruction": true,
+        "Id": "da2eb147-f9d3-4f15-82d8-26a16d192d2e",
+        "heading": 210,
+        "Powered": true,
+        "DontSaveMe": false,
+        "type": "serverRack",
         "serverStatus": [
             "alive",
             "alive",
@@ -300,131 +169,36 @@
             "alive",
             "alive"
         ],
-        "NotPhysical": false,
-        "Swankiness": 0.0,
-        "Range": 1500.0,
-        "Id": "9949fbe0-8530-4ecb-8776-eaa0cf83234d",
+        "NotPhysical": false
+    },
+    {
         "Destruction": true,
-        "DontSaveMe": false,
-        "type": "serverRack"
+        "AntennaStatus": "alive",
+        "Range": 1500,
+        "Id": "02115618-f0ed-46bd-964e-821106a02194",
+        "PropPosition": {
+            "x": -813.2000122070312,
+            "y": -726.2999877929688,
+            "z": 121.2630615234375
+        },
+        "heading": 0,
+        "Swankiness": 0
     },
     {
         "PropPosition": {
-            "x": 152.5,
-            "y": -775.9000244140625,
-            "z": 264.29998779296877
+            "x": -887.79,
+            "y": -2117.8,
+            "z": 93.6
         },
-        "heading": 340.0,
-        "Id": "1f68f034-500b-4b29-9356-8c8bf63fda04",
-        "Swankiness": 0.0,
-        "Powered": true,
+        "Range": 2000,
+        "Swankiness": 0,
         "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
-        "DontSaveMe": false,
+        "Id": "134550af-bf84-4cbb-b56d-74fb38914993",
         "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": -68.56999969482422,
-            "y": -833.2999877929688,
-            "z": 319.5076599121094
-        },
-        "heading": 340.0,
-        "Id": "bfa4fb73-084c-4465-aab1-289e7f16db71",
-        "Swankiness": 0.0,
         "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
         "DontSaveMe": false,
-        "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": 105.0,
-            "y": -653.7999877929688,
-            "z": 264.3399963378906
-        },
-        "heading": 340.0,
-        "Id": "77cb673a-8ce4-405a-af5b-1d4f441b2c34",
-        "Swankiness": 0.0,
-        "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
         "NotPhysical": false,
-        "DontSaveMe": false,
-        "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": -184.74000549316407,
-            "y": -759.4000244140625,
-            "z": 218.6999969482422
-        },
-        "heading": 340.157470703125,
-        "Id": "4a00073a-0094-40ef-ad46-f2be7f022c66",
-        "Swankiness": 0.0,
-        "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
-        "DontSaveMe": false,
-        "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": -54.7599983215332,
-            "y": -601.9000244140625,
-            "z": 109.2659912109375
-        },
-        "heading": 340.0,
-        "Id": "10611e5c-e553-4532-8177-092f02f35c9b",
-        "Swankiness": 0.0,
-        "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
-        "DontSaveMe": false,
-        "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": -748.4000244140625,
-            "y": 328.29998779296877,
-            "z": 230.8000030517578
-        },
-        "heading": 90.70865631103516,
-        "Id": "da2eb147-f9d3-4f15-82d8-26a16d192d2e",
-        "Swankiness": 0.0,
-        "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
-        "DontSaveMe": false,
-        "AntennaStatus": "alive",
-        "type": "cellRepeater"
-    },
-    {
-        "PropPosition": {
-            "x": -871.8,
-            "y": -2101.9,
-            "z": 94.0
-        },
-        "heading": 135.0,
-        "Id": "ac0981e0-18d4-48fa-a171-4dc6497dc50a",
-        "Swankiness": 0.0,
-        "Powered": true,
-        "Destruction": true,
-        "Range": 1500.0,
-        "NotPhysical": false,
-        "DontSaveMe": false,
-        "AntennaStatus": "alive",
+        "heading": 317.4803161621094,
         "type": "cellRepeater"
     }
 ]
