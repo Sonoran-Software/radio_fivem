@@ -94,7 +94,7 @@ end)
 -- 			table.insert(saveTowers, t)
 -- 		end
 -- 	end
--- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 -- 	f:write(json.encode(saveTowers))
 -- 	f:close()
 -- 	print('ok')
@@ -123,7 +123,7 @@ RegisterCommand('spawnRadioTower', function(source)
 			table.insert(saveData, t)
 		end
 	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
 	print('ok')
@@ -208,7 +208,7 @@ end)
 -- 	if GetCurrentResourceName() ~= resource then
 -- 		return
 -- 	end
--- 	local t = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
+-- 	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
 -- 	local towers = json.decode(t)
 -- 	for i = 1, #towers do
 -- 		local obj = shallowcopy(RadioTower)

@@ -3,6 +3,7 @@ local acePermsForTowerRepair = false
 local acePermsForServerRepair = false
 local acePermsForAntennaRepair = false
 local QBCore = nil
+jsonFileName = 'towers.DEFAULT.json'
 
 if Config == nil then
 	print('!!! CRITICAL ERROR !!!')
@@ -234,16 +235,20 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
-	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
+	local jsonFile = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
 	if not jsonFile then -- Request default if there was an issue getting the regular
 		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
 		print('[SonoranRadio] - Using default tower locations - Please update your towers.json file name to prevent this message from appearing.')
 		print('[SonoranRadio] - Attempting to rename towers.DEFAULT.json to towers.json')
 		if not CopyFile(GetResourcePath(resourceName) .. '/towers.DEFAULT.json', GetResourcePath(resourceName) .. '/towers.json') then
 			print('[SonoranRadio] - Failed to rename towers.DEFAULT.json to towers.json')
+			jsonFileName = 'towers.DEFAULT.json'
 		else
 			print('[SonoranRadio] - Successfully renamed towers.DEFAULT.json to towers.json')
+			jsonFileName = 'towers.json'
 		end
+	else
+		jsonFileName = 'towers.json'
 	end
 	if Config.frames == nil or not Config.frames then
 		print('!!! CRITICAL ERROR !!!')
@@ -261,7 +266,7 @@ AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() ~= resource then
 		return
 	end
-	local t = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
+	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
 	local towers = json.decode(t)
 	for i = 1, #towers do
 		if towers[i].type == 'radioTower' then
@@ -315,7 +320,7 @@ AddEventHandler('onResourceStart', function(resource)
 	end
 end)
 
-RegisterCommand('removeRadioTower', function(source)
+RegisterCommand('removeRadioRepeater', function(source)
 	local playerCoords = GetEntityCoords(GetPlayerPed(source))
 	local closestTower = nil
 	local closestServerRack = nil
@@ -431,7 +436,7 @@ RegisterCommand('removeRadioTower', function(source)
 				table.insert(saveData, t)
 			end
 		end
-		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 		f:write(json.encode(saveData))
 		f:close()
 		print('ok')

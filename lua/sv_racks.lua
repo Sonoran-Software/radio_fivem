@@ -133,7 +133,7 @@ RegisterCommand('spawnRadioRack', function(source, args)
 			table.insert(saveData, t)
 		end
 	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
 	print('ok')

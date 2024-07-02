@@ -820,12 +820,12 @@ TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin',
 	}
 })
 
-TriggerEvent('chat:addSuggestion', '/spawnRadioTower', 'Spawn a radio tower')
-TriggerEvent('chat:addSuggestion', '/spawnRadioRack', 'Spawn a radio rack', {
+TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
+TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
 	{
 		name = 'numberOfServers',
 		help = 'The number of servers to spawn'
 	}
 })
-TriggerEvent('chat:addSuggestion', '/spawnRadioCellRepeater', 'Spawn a radio cell repeater')
-TriggerEvent('chat:addSuggestion', '/removeRadioTower', 'Remove the nearest radio tower')
+TriggerEvent('chat:addSuggestion', '/spawnradiorellrepeater', 'Spawn a radio cell repeater')
+TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
