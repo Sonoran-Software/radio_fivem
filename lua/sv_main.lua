@@ -198,9 +198,52 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	end
 end)
 
+local function CopyFile(old_path, new_path)
+	local old_file = io.open(old_path, 'rb')
+	local new_file = io.open(new_path, 'wb')
+	if not old_file then
+		print('Failed to open source file: ' .. old_path .. ' - please check your folder permissions or rename file manually.')
+		return false
+	end
+	if not new_file then
+		print('Failed to create target file: ' .. new_path .. ' - please check your folder permissions or rename file manually.')
+		old_file:close()
+		return false
+	end
+
+	local old_file_sz, new_file_sz
+	while true do
+		local block = old_file:read(2 ^ 13)
+		if not block then
+			old_file_sz = old_file:seek('end')
+			break
+		end
+		new_file:write(block)
+	end
+	old_file:close()
+	new_file_sz = new_file:seek('end')
+	new_file:close()
+	if new_file_sz ~= old_file_sz then
+		print('File copy size mismatch')
+		return false
+	end
+	return true
+end
+
 AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
+	end
+	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
+	if not jsonFile then -- Request default if there was an issue getting the regular
+		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
+		print('[SonoranRadio] - Using default tower locations - Please update your towers.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename towers.DEFAULT.json to towers.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/towers.DEFAULT.json', GetResourcePath(resourceName) .. '/towers.json') then
+			print('[SonoranRadio] - Failed to rename towers.DEFAULT.json to towers.json')
+		else
+			print('[SonoranRadio] - Successfully renamed towers.DEFAULT.json to towers.json')
+		end
 	end
 	if Config.frames == nil or not Config.frames then
 		print('!!! CRITICAL ERROR !!!')
