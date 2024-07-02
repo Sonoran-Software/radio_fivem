@@ -274,10 +274,30 @@ end)
 
 RegisterCommand('removeRadioTower', function()
 	local playerCoords = GetEntityCoords(GetPlayerPed(-1))
-	local closestTower = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('prop_radio_tower'), false, false, false)
-	local closestServerRack = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('serverrack'), false, false, false)
-	local closestCellRepeater = GetClosestObjectOfType(playerCoords, 10.0, GetHashKey('mobilecell'), false, false, false)
-
+	local closestTower = 0
+	local closestServerRack = 0
+	local closestCellRepeater = 0
+	for i = 1, #Towers do
+		local distBetweenSpawn = #(playerCoords - vec3(Towers[i].PropPosition))
+		if distBetweenSpawn <= 10.0 then
+			closestTower = Towers[i].Prop
+			break
+		end
+	end
+	for i = 1, #Servers do
+		local distBetweenSpawn = #(playerCoords - vec3(Servers[i].PropPosition))
+		if distBetweenSpawn <= 10.0 then
+			closestServerRack = Servers[i].Prop
+			break
+		end
+	end
+	for i = 1, #CellRepeaters do
+		local distBetweenSpawn = #(playerCoords - vec3(CellRepeaters[i].PropPosition))
+		if distBetweenSpawn <= 10.0 then
+			closestCellRepeater = CellRepeaters[i].Prop
+			break
+		end
+	end
 	local closestDist = 10.0
 	local closestObj = nil
 	local closestType = nil
