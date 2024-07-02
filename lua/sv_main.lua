@@ -253,7 +253,7 @@ AddEventHandler('onResourceStart', function(resource)
 			DebugPrint('setting up rack', json.encode(obj))
 			table.insert(Servers, obj)
 		elseif towers[i].type == 'cellRepeater' then
-			local obj = shallowcopy(CellRepeater)
+			local obj = shallowcopy(CellRepeaters)
 			if towers[i].Id == nil then
 				obj.Id = uuid()
 			else
