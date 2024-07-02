@@ -1,4 +1,5 @@
 Towers = {}
+bestTowerQuality = 0.0
 
 local rightToRepair = false
 
@@ -55,7 +56,7 @@ local function AddTowerRange(t)
 	-- create a radius blip that indicates the range of the tower (where edge of circle = 50% capacity)
 	local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
 	SetBlipAlpha(blip, 127)
-	SetBlipColour(blip, 3)
+	SetBlipColour(blip, 1)
 end
 
 -- creates one dish on a tower
@@ -241,7 +242,6 @@ CreateThread(function()
 	DecorRegister('sonrad_dish', 3)
 	while true do
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		local quality = 0.0
 		for i = 1, #Towers do
 			local tower = Towers[i]
 			if not tower then
@@ -278,25 +278,25 @@ CreateThread(function()
 			if d > tower.Range then
 				goto continue
 			end
-
+			bestTowerQuality = 0.0
 			local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
-			if quality < tQuality then
-				quality = tQuality
+			if bestTowerQuality < tQuality then
+				bestTowerQuality = tQuality
 			end
 			::continue::
 		end
 
-		if quality == 0.0 then
+		if bestTowerQuality == 0.0 then
 			DebugPrint('closest tower out of range')
 		else
-			DebugPrint(('best tower quality:%.4f'):format(quality))
+			DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
 		end
-		SendNUIMessage({
-			type = 'setTowerQuality',
-			state = {
-				tower_quality = quality
-			}
-		})
+		-- SendNUIMessage({
+		-- 	type = 'setTowerQuality',
+		-- 	state = {
+		-- 		tower_quality = quality
+		-- 	}
+		-- })
 		Wait(3000)
 	end
 end)

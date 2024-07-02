@@ -82,8 +82,14 @@ local Radio = {
 		'generic_radio_chatter'
 	},
 	Clicks = true, -- Radio clicks
-	TalkAnim = true
+	TalkAnim = false
 }
+
+if Config.disableAnimation then
+	Radio.TalkAnim = false
+else
+	Radio.TalkAnim = true
+end
 
 local QBCore = nil
 local PlayerData = nil
@@ -397,9 +403,11 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 -- add PTT for the standalone radio
 RegisterCommand('+sonradptt', function()
 	SendNUIMessage({ type = 'ptt', state = true })
+	Radio:Talking(true)
 end)
 RegisterCommand('-sonradptt', function()
 	SendNUIMessage({ type = 'ptt', state = false })
+	Radio:Talking(false)
 end)
 RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
@@ -756,6 +764,13 @@ CreateThread(function()
 		-- print("QBDeath:" .. tostring(QBDeath))
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
+		SendNUIMessage({
+			type = 'setTowerQuality',
+			state = {
+				tower_quality = bestQuality
+			}
+		})
 		Wait(1000)
 	end
 end)
@@ -804,3 +819,13 @@ TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin',
 		help = 'The frame name to change to'
 	}
 })
+
+TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
+TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
+	{
+		name = 'numberOfServers',
+		help = 'The number of servers to spawn'
+	}
+})
+TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
+TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')

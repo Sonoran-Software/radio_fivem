@@ -23,7 +23,7 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId" :server-id="standaloneServerId"
+                        <floating-screen v-if="radioPower && standaloneServerId && !dragMode" :server-id="standaloneServerId"
                             :url="standaloneUrl" />
                         <component v-else-if="radioPower && screenDynComponent" :is="screenDynComponent"
                             :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
@@ -551,6 +551,9 @@ export default {
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
+                    break;
+                case 'reposition':
+                    this.dragMode = true;
                     break;
             }
         },

@@ -1,18 +1,26 @@
 Config = {}
 
-Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
+Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your Community ID here! https://sonoran.link/radioconfig
+Config.apiKey = 'YOUR API KEY' -- IMPORTANT set your API Key here! https://sonoran.link/radioconfig
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = true
-Config.noPhysicalTowers = false
-Config.towerRepairTimer = 20
-Config.acePermsForRadio = false
-Config.acePermsForTowerRepair = false
+Config.towerRepairTimer = 20 -- Time in seconds to repair towers
+Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
+Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
+Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
+Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
+Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
+Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.enforceRadioItem = false
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
+Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
+Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
+Config.noPhysicalRacks = false -- Set to true to disable physical server racks
+Config.noPhysicalTowers = false -- Set to true to disable physical towers
 
 -- Notification Settings --
 Config.notifications = {

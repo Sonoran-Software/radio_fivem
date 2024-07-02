@@ -1,4 +1,4 @@
-local RadioTower = {
+RadioTower = {
 	-- whether the tower can be destroyed or not
 	Destruction = true,
 	NotPhysical = false,
@@ -14,7 +14,8 @@ local RadioTower = {
 		'alive'
 	},
 	Powered = true,
-	DontSaveMe = false
+	DontSaveMe = false,
+	type = 'radioTower'
 }
 
 Towers = {}
@@ -81,32 +82,51 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 	-- TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
 end)
 
-RegisterCommand('removetowers', function()
-	TriggerClientEvent('RadioTower:Shutdown', -1)
-	Towers = {}
-end, true)
+-- RegisterCommand('removetowers', function()
+-- 	TriggerClientEvent('RadioTower:Shutdown', -1)
+-- 	Towers = {}
+-- end, true)
 
-RegisterCommand('savetowers', function()
-	local saveTowers = {}
-	for _, t in ipairs(Towers) do
-		if not t.DontSaveMe then
-			table.insert(saveTowers, t)
-		end
-	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/towers.json', 'w+'))
-	f:write(json.encode(saveTowers))
-	f:close()
-	print('ok')
-end, true)
+-- RegisterCommand('savetowers', function()
+-- 	local saveTowers = {}
+-- 	for _, t in ipairs(Towers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveTowers, t)
+-- 		end
+-- 	end
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+-- 	f:write(json.encode(saveTowers))
+-- 	f:close()
+-- 	print('ok')
+-- end, true)
 
-RegisterCommand('spawntower', function(source)
+RegisterCommand('spawnRadioTower', function(source)
 	local coords = GetEntityCoords(GetPlayerPed(source))
 	local tower = shallowcopy(RadioTower)
 	tower.Id = uuid()
 	tower.PropPosition = coords
 	table.insert(Towers, tower)
-
 	TriggerClientEvent('RadioTower:SpawnTower', -1, tower)
+	local saveData = {};
+	for _, t in ipairs(Towers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(Servers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(CellRepeaters) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	print('ok')
 end, true)
 
 RegisterNetEvent('RadioTower:clientTowerSync')
@@ -184,29 +204,29 @@ AddEventHandler('RadioTower:clientLocationVerify', function(coords, handshake)
 	end
 end)
 
-AddEventHandler('onResourceStart', function(resource)
-	if GetCurrentResourceName() ~= resource then
-		return
-	end
-	local t = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
-	local towers = json.decode(t)
-	for i = 1, #towers do
-		local obj = shallowcopy(RadioTower)
-		if towers[i].Id == nil then
-			obj.Id = uuid()
-		else
-			obj.Id = towers[i].Id
-		end
-		-- obj.Id = uuid()
-		obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
-		obj.Swankiness = towers[i].Swankiness
-		obj.Range = towers[i].Range
-		obj.Destruction = towers[i].Destruction
+-- AddEventHandler('onResourceStart', function(resource)
+-- 	if GetCurrentResourceName() ~= resource then
+-- 		return
+-- 	end
+-- 	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
+-- 	local towers = json.decode(t)
+-- 	for i = 1, #towers do
+-- 		local obj = shallowcopy(RadioTower)
+-- 		if towers[i].Id == nil then
+-- 			obj.Id = uuid()
+-- 		else
+-- 			obj.Id = towers[i].Id
+-- 		end
+-- 		-- obj.Id = uuid()
+-- 		obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
+-- 		obj.Swankiness = towers[i].Swankiness
+-- 		obj.Range = towers[i].Range
+-- 		obj.Destruction = towers[i].Destruction
 
-		DebugPrint('setting up tower', json.encode(obj))
-		table.insert(Towers, obj)
-	end
-end)
+-- 		DebugPrint('setting up tower', json.encode(obj))
+-- 		table.insert(Towers, obj)
+-- 	end
+-- end)
 
 -- API
 exports('createTower', function(config)
