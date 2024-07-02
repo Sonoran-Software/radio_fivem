@@ -346,7 +346,7 @@ CreateThread(function()
 			if d > rack.Range then
 				goto continue
 			end
-
+			bestRackQuality = 0.0
 			local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
 			if bestRackQuality < tQuality then
 				bestRackQuality = tQuality

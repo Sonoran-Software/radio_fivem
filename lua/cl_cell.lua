@@ -199,7 +199,7 @@ CreateThread(function()
 			if d > cellRepeater.Range then
 				goto continue
 			end
-
+			bestCellRepeaterQuality = 0.0
 			local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
 			if bestCellRepeaterQuality < tQuality then
 				bestCellRepeaterQuality = tQuality

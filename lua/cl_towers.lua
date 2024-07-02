@@ -278,7 +278,7 @@ CreateThread(function()
 			if d > tower.Range then
 				goto continue
 			end
-
+			bestTowerQuality = 0.0
 			local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
 			if bestTowerQuality < tQuality then
 				bestTowerQuality = tQuality
