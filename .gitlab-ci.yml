@@ -77,8 +77,8 @@ resource-deploy-prod:
     # clear cloudflare cache
     - >-
       curl -X POST "https://api.cloudflare.com/client/v4/zones/5e892b9b03facaf059df71c6154a823b/purge_cache"
-      -H "Authorization: Bearer $CF_Cache_Key"
-      -H "Content-Type: application/json"
+      -H "Authorization: Bearer $CF_Cache_Key" 
+      -H "Content-Type: application/json" 
       --data '{"files":["https://download.sonoransoftware.com/sonoranradio/archive/latest.zip","https://download.sonoransoftware.com/sonoranradio/version.json"]}'
   tags:
     - linux, build, shell, development
