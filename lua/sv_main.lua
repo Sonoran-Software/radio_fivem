@@ -265,7 +265,7 @@ AddEventHandler('onResourceStart', function(resource)
 			obj.Swankiness = towers[i].Swankiness
 			obj.Range = towers[i].Range
 			obj.Destruction = towers[i].Destruction
-
+			obj.AntennaStatus = towers[i].AntennaStatus
 			DebugPrint('setting up cell repeater', json.encode(obj))
 			table.insert(CellRepeaters, obj)
 		end
