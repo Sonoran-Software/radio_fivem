@@ -411,9 +411,9 @@ RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
-	if Radio.TalkAnim then
+	if self.TalkAnim then
 		if toggle and not inVeh then
-			if Radio.Open then
+			if self.Open then
 				RequestAnimDict('cellphone@')
 				while not HasAnimDictLoaded('cellphone@') do
 					Wait(5)
@@ -436,7 +436,7 @@ function Radio:Talking(toggle)
 				isTalking = true
 			end
 		else
-			if Radio.Open then
+			if self.Open then
 				-- cellphone@cellphone_call_to_text
 				-- cellphone@cellphone_text_read_base
 				--
