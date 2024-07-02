@@ -235,7 +235,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
-	local jsonFile = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
+	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
 	if not jsonFile then -- Request default if there was an issue getting the regular
 		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
 		print('[SonoranRadio] - Using default tower locations - Please update your towers.json file name to prevent this message from appearing.')
