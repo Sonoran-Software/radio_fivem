@@ -403,9 +403,11 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 -- add PTT for the standalone radio
 RegisterCommand('+sonradptt', function()
 	SendNUIMessage({ type = 'ptt', state = true })
+	Radio:Talking(true)
 end)
 RegisterCommand('-sonradptt', function()
 	SendNUIMessage({ type = 'ptt', state = false })
+	Radio:Talking(false)
 end)
 RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
