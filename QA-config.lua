@@ -6,7 +6,6 @@ Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = false
-Config.noPhysicalTowers = false
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
@@ -20,6 +19,8 @@ Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
 Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
+Config.noPhysicalRacks = false -- Set to true to disable physical server racks
+Config.noPhysicalTowers = false -- Set to true to disable physical towers
 
 -- Notification Settings --
 Config.notifications = {

@@ -317,7 +317,7 @@ CreateThread(function()
 			end
 			local d = #(GetRackCoords(rack) - pCoords)
 			-- if the player is within range (750m), then spawn a physical rack
-			local physical = not Config.noPhysicalracks and not rack.NotPhysical
+			local physical = not Config.noPhysicalRacks and not rack.NotPhysical
 			if d < 750.0 and not rack.Spawned and physical then
 				CreateRack(rack)
 				DebugPrint(('spawn physical rack (%f) %s'):format(d, rack.Id))
