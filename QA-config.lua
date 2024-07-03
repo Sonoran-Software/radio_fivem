@@ -1,6 +1,7 @@
 Config = {}
 
 Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
+Config.apiKey = 'c7d748d9-0184-458a-bc05-d0a9c53d2122' -- IMPORTANT set your API Key here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
 Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
 Config.allowUpdateWithPlayers = true

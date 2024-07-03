@@ -827,5 +827,5 @@ TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
 		help = 'The number of servers to spawn'
 	}
 })
-TriggerEvent('chat:addSuggestion', '/spawnradiorellrepeater', 'Spawn a radio cell repeater')
+TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
 TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')

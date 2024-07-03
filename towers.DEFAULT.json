@@ -184,6 +184,7 @@
         "AntennaStatus": "alive",
         "heading": 317.4803161621094,
         "Id": "bd8038a3-4ab9-4675-9dc2-40204a95e3f2",
-        "Range": 2000
+        "Range": 2000,
+        "type": "cellRepeater"
     }
 ]
