@@ -241,6 +241,7 @@ CreateThread(function()
 
 	DecorRegister('sonrad_dish', 3)
 	while true do
+		bestTowerQuality = 0.0
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
 		for i = 1, #Towers do
 			local tower = Towers[i]
@@ -278,7 +279,6 @@ CreateThread(function()
 			if d > tower.Range then
 				goto continue
 			end
-			bestTowerQuality = 0.0
 			local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
 			if bestTowerQuality < tQuality then
 				bestTowerQuality = tQuality

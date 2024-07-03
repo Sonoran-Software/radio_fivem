@@ -163,6 +163,7 @@ CreateThread(function()
 	end
 	DecorRegister('sonrad_cellRepeater', 3)
 	while true do
+		bestCellRepeaterQuality = 0.0
 		local pCoords = GetEntityCoords(GetPlayerPed(-1))
 		for i = 1, #CellRepeaters do
 			local cellRepeater = CellRepeaters[i]
@@ -199,7 +200,6 @@ CreateThread(function()
 			if d > cellRepeater.Range then
 				goto continue
 			end
-			bestCellRepeaterQuality = 0.0
 			local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
 			if bestCellRepeaterQuality < tQuality then
 				bestCellRepeaterQuality = tQuality
