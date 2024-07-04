@@ -25,7 +25,7 @@ function performApiRequest(postData, type, cb)
 	else
 		return warnLog(('API request failed: endpoint %s is not registered. Use the registerApiType function to register this endpoint with the appropriate type.'):format(type))
 	end
-	local url = Config.radioUrl .. '/' .. tostring(endpoint) .. '/' .. tostring(type:lower())
+	local url = Config.apiUrl .. tostring(endpoint) .. '/' .. tostring(type:lower())
 	assert(type ~= nil, 'No type specified, invalid request.')
 	if Config.critError then
 		errorLog('API request failed: critical error encountered, API version too low, aborting request.')
