@@ -14,7 +14,8 @@ shared_scripts {
 server_scripts {
     'lua/**/sv_*.lua',
     'lua/update/unzip.js',
-    'lua/update/updater.lua'
+    'lua/update/updater.lua',
+    'lua/**/sv_*.js'
 }
 
 client_scripts {
@@ -25,7 +26,7 @@ client_scripts {
 files {
     'dist/**/*',
     'skins/**/*',
-} 
+}
 ui_page 'dist/ui.html'
 
 -- setup for streamed files

@@ -1,9 +1,3 @@
-const { format } = require("path");
-
-function byteCount(s) {
-    return encodeURI(s).split(/%..|./).length - 1;
-}
-
 exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     emit("SonoranRadio::core:writeLog", "debug", "[http] to: " + dest + " - data: " + dest, JSON.stringify(data));
     const urlObj = url.parse(dest)
