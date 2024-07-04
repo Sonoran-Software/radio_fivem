@@ -3,6 +3,9 @@ local acePermsForTowerRepair = false
 local acePermsForServerRepair = false
 local acePermsForAntennaRepair = false
 local QBCore = nil
+local MessageBuffer = {}
+local DebugBuffer = {}
+local ErrorBuffer = {}
 jsonFileName = 'towers.DEFAULT.json'
 
 if Config == nil then
@@ -235,6 +238,14 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key']= Config.apiKey
+	}, 'SET-SERVER-IP', function(data, success)
+		if not success then
+			errorLog('Failed to set server IP for radio service. Please check your configuration.')
+		end
+	end)
 	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
 	if not jsonFile then -- Request default if there was an issue getting the regular
 		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
@@ -258,6 +269,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 end)
 
+exports('performApiRequest', performApiRequest)
 --[[
 	Jordan - Radio Consolidation Update
 ]]
@@ -448,3 +460,82 @@ RegisterCommand('removeRadioRepeater', function(source)
 		})
 	end
 end)
+
+
+AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
+	if level == 'debug' then
+		debugLog(message)
+	elseif level == 'info' then
+		infoLog(message)
+	elseif level == 'error' then
+		errorLog(message)
+	elseif level == 'warn' then
+		warnLog(message)
+	else
+		debugLog(message)
+	end
+end)
+
+local function sendConsole(level, color, message)
+	local debugging = true
+	if Config ~= nil then
+		debugging = (Config.debug == true and Config.debug ~= 'false')
+	end
+	local time = os and os.date('%X') or LocalTime()
+	local info = debug.getinfo(3, 'S')
+	local source = '.'
+	if info.source:find('@@sonoranradio') then
+		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
+	end
+	local msg = ('[%s][%s:%s%s^7]%s %s^0'):format(time, debugging and source or 'SonoranRadio', color, level, color, message)
+	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
+		print(msg)
+	end
+	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
+		table.insert(ErrorBuffer, 1, msg)
+	end
+	if level == 'DEBUG' and IsDuplicityVersion() then
+		if #DebugBuffer > 50 then
+			table.remove(DebugBuffer)
+		end
+		table.insert(DebugBuffer, 1, msg)
+	else
+		if not IsDuplicityVersion() then
+			if #MessageBuffer > 10 then
+				table.remove(MessageBuffer)
+			end
+			table.insert(MessageBuffer, 1, msg)
+		end
+	end
+end
+
+
+function debugLog(message)
+	sendConsole('DEBUG', '^7', message)
+end
+
+local ErrorCodes = {
+	['INVALID_COMMUNITY_ID'] = 'You have set an invalid community ID, please check your Config and SonoranCMS integration'
+}
+
+function logError(err, msg)
+	local o = ''
+	if msg == nil then
+		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, ErrorCodes[err])
+	else
+		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, msg)
+	end
+	sendConsole('ERROR', '^1', o)
+end
+
+function errorLog(message)
+	sendConsole('ERROR', '^1', message)
+end
+
+function warnLog(message)
+	sendConsole('WARNING', '^3', message)
+end
+
+function infoLog(message)
+	sendConsole('INFO', '^5', message)
+end
