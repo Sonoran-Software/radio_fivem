@@ -2,7 +2,7 @@ Config = {}
 
 Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your Community ID here! https://sonoran.link/radioconfig
 Config.apiKey = 'YOUR API KEY' -- IMPORTANT set your API Key here! https://sonoran.link/radioconfig
-Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
+Config.radioUrl = 'https://radio.dev.sonoransoftware.com' -- IMPORTANT set your API URL here! | https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
