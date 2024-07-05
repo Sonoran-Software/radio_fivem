@@ -413,6 +413,7 @@ RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+	TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
 	if self.TalkAnim then
 		if toggle and not inVeh then
 			if self.Open then
