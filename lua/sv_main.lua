@@ -540,7 +540,7 @@ function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
 
-RegisterNetEvent('SonoranRadio::RequestConfig', function()
+AddEventHandler('playerJoining', function()
 	local configForClient = {}
 	for k, v in pairs(Config) do
 		if k ~= 'apiKey' then

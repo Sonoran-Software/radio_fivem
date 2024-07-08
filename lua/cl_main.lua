@@ -849,18 +849,7 @@ end)
 RegisterNetEvent('SonoranRadio::ReturnConfig', function(config)
 	Config = config
 	DebugPrint('Sonoran Radio Started!')
-end)
-
-Citizen.CreateThread(function()
-	while true do
-		Wait(500)
-		if #Config == 0 then
-			DebugPrint('Waiting for Config...')
-		else
-			clientReady = true
-			initialize()
-			TerminateThisThread()
-			return
-		end
-	end
+	clientReady = true
+	initialize()
+	TerminateThisThread()
 end)
