@@ -7,7 +7,6 @@ description 'Sonoran Radio FiveM Integration'
 version '$RESOURCE_VERSION'
 
 shared_scripts {
-    'config.lua',
     'lua/**/sh_*.lua'
 }
 
@@ -15,7 +14,8 @@ server_scripts {
     'lua/**/sv_*.lua',
     'lua/update/unzip.js',
     'lua/update/updater.lua',
-    'lua/**/sv_*.js'
+    'lua/**/sv_*.js',
+    'config.lua'
 }
 
 client_scripts {

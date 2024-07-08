@@ -539,3 +539,13 @@ end
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
+
+RegisterNetEvent('SonoranRadio::RequestConfig', function()
+	local configForClient = {}
+	for k, v in pairs(Config) do
+		if k ~= 'apiKey' then
+			configForClient[k] = v
+		end
+	end
+	TriggerClientEvent('SonoranRadio::ReturnConfig', source, configForClient)
+end)

@@ -1,0 +1,15 @@
+Citizen.CreateThread(function()
+    WarMenu.CreateMenu('sonoranRadioMenu', Config.lang.radarMenuHeader)
+	WarMenu.SetMenuTitleBackgroundSprite('sonoranRadioMenu', 'radio_menu_header', 'banner_3')
+	WarMenu.SetSubTitle('sonoranRadioMenu', Config.lang.creditsPanel ..' Sonoran Software')
+	WarMenu.CreateSubMenu('spawningRadarDetector', 'sonoranRadioMenu', Config.lang.spawningSubMenu)
+	WarMenu.SetMenuTitleBackgroundSprite('spawningRadarDetector', 'sonoran_menu_header', 'banner_3')
+	WarMenu.CreateSubMenu('attachingRadarDetector', 'sonoranRadioMenu', Config.lang.attachingSubMenu)
+	WarMenu.SetMenuTitleBackgroundSprite('attachingRadarDetector', 'sonoran_menu_header', 'banner_3')
+	WarMenu.CreateSubMenu('deleteRadarDetector', 'sonoranRadioMenu', Config.lang.deletionSubMenu)
+	WarMenu.SetMenuTitleBackgroundSprite('deleteRadarDetector', 'sonoran_menu_header', 'banner_3')
+	WarMenu.CreateSubMenu('radarDetectorRemote', 'sonoranRadioMenu', Config.lang.radarRemoteSubMenu)
+	WarMenu.SetMenuTitleBackgroundSprite('radarDetectorRemote', 'sonoran_menu_header', 'banner_3')
+
+
+end)
