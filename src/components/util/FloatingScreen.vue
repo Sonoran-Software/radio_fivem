@@ -51,7 +51,7 @@ function pop() {
 
 export default {
     props: {
-        serverId: { type: Number, required: true },
+        serverId: { type: [Number, String], required: true },
         url: { type: String },
     },
     emits: ['msg'],
