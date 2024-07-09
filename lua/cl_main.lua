@@ -833,3 +833,7 @@ TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
 })
 TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
 TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
+
+RegisterNetEvent('SonoranRadio::OpenRadioMenu', function()
+	WarMenu.OpenMenu('sonoranRadioMenu')
+end)

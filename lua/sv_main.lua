@@ -261,23 +261,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 	else
 		jsonFileName = 'towers.json'
 	end
-	if Config.frames == nil or not Config.frames then
-		print('!!! CRITICAL ERROR !!!')
-		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
-		print('!!! CRITICAL ERROR !!!')
-		return
-	end
-end)
-
-exports('performApiRequest', performApiRequest)
---[[
-	Jordan - Radio Consolidation Update
-]]
-
-AddEventHandler('onResourceStart', function(resource)
-	if GetCurrentResourceName() ~= resource then
-		return
-	end
 	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
 	local towers = json.decode(t)
 	for i = 1, #towers do
@@ -330,7 +313,18 @@ AddEventHandler('onResourceStart', function(resource)
 			table.insert(CellRepeaters, obj)
 		end
 	end
+	if Config.frames == nil or not Config.frames then
+		print('!!! CRITICAL ERROR !!!')
+		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
+		print('!!! CRITICAL ERROR !!!')
+		return
+	end
 end)
+
+exports('performApiRequest', performApiRequest)
+--[[
+	Jordan - Radio Consolidation Update
+]]
 
 RegisterCommand('removeRadioRepeater', function(source)
 	local playerCoords = GetEntityCoords(GetPlayerPed(source))
@@ -458,6 +452,12 @@ RegisterCommand('removeRadioRepeater', function(source)
 				'[SonoranRadio] ^1No radio tower, server rack, or cell repeater found.'
 			}
 		})
+	end
+end)
+
+RegisterCommand('radioMenu', function(source)
+	if IsPlayerAceAllowed(source, 'radio.towers') then
+		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
 	end
 end)
 
