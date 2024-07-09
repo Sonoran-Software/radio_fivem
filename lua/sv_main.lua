@@ -458,6 +458,12 @@ end)
 RegisterCommand('radioMenu', function(source)
 	if IsPlayerAceAllowed(source, 'radio.towers') then
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
+	else
+		TriggerClientEvent('chat:addMessage', source, {
+			args = {
+				'[SonoranRadio] ^1You do not have permission to use this command.'
+			}
+		})
 	end
 end)
 

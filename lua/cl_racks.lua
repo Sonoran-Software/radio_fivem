@@ -1,4 +1,4 @@
-local racks = {}
+racks = {}
 bestRackQuality = 0.0
 local rightToRepair = false
 
