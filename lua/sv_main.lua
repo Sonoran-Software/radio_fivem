@@ -240,7 +240,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
-		['key']= Config.apiKey
+		['key'] = Config.apiKey
 	}, 'SET-SERVER-IP', function(data, success)
 		if not success then
 			errorLog('Failed to set server IP for radio service. Please check your configuration.')
@@ -461,7 +461,6 @@ RegisterCommand('removeRadioRepeater', function(source)
 	end
 end)
 
-
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
 	if level == 'debug' then
 		debugLog(message)
@@ -509,7 +508,6 @@ local function sendConsole(level, color, message)
 	end
 end
 
-
 function debugLog(message)
 	sendConsole('DEBUG', '^7', message)
 end
@@ -539,13 +537,3 @@ end
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
-
-AddEventHandler('playerJoining', function()
-	local configForClient = {}
-	for k, v in pairs(Config) do
-		if k ~= 'apiKey' then
-			configForClient[k] = v
-		end
-	end
-	TriggerClientEvent('SonoranRadio::ReturnConfig', source, configForClient)
-end)
