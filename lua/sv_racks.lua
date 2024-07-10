@@ -96,48 +96,48 @@ end)
 -- 	print('ok')
 -- end, true)
 
-RegisterCommand('spawnRadioRack', function(source, args)
-    if #args < 1 then
-        return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
-    end
-    if not tonumber(args[1]) then
-        return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
-    end
-	if tonumber(args[1]) > 5 then
-		return TriggerClientEvent('chat:addMessage', source, {args = {'^1You can only spawn up to 5 servers at a time.'}})
-	end
-    local serverCount = tonumber(args[1])
-	local coords = GetEntityCoords(GetPlayerPed(source))
-	local rack = shallowcopy(RadioRacks)
-    for i = 1, serverCount do
-        table.insert(rack.serverStatus, 'alive')
-    end
-	rack.Id = uuid()
-	rack.PropPosition = coords
-	rack.heading = GetEntityHeading(GetPlayerPed(source))
-	table.insert(Servers, rack)
-	TriggerClientEvent('RadioRacks:SpawnRack', -1, rack)
-	local saveData = {};
-	for _, t in ipairs(Towers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(Servers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(CellRepeaters) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
-	f:write(json.encode(saveData))
-	f:close()
-	print('ok')
-end, true)
+-- RegisterCommand('spawnRadioRack', function(source, args)
+--     if #args < 1 then
+--         return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
+--     end
+--     if not tonumber(args[1]) then
+--         return TriggerClientEvent('chat:addMessage', source, {args = {'^1Usage: /spawnRack <numberOfServers>'}})
+--     end
+-- 	if tonumber(args[1]) > 5 then
+-- 		return TriggerClientEvent('chat:addMessage', source, {args = {'^1You can only spawn up to 5 servers at a time.'}})
+-- 	end
+--     local serverCount = tonumber(args[1])
+-- 	local coords = GetEntityCoords(GetPlayerPed(source))
+-- 	local rack = shallowcopy(RadioRacks)
+--     for i = 1, serverCount do
+--         table.insert(rack.serverStatus, 'alive')
+--     end
+-- 	rack.Id = uuid()
+-- 	rack.PropPosition = coords
+-- 	rack.heading = GetEntityHeading(GetPlayerPed(source))
+-- 	table.insert(Servers, rack)
+-- 	TriggerClientEvent('RadioRacks:SpawnRack', -1, rack)
+-- 	local saveData = {};
+-- 	for _, t in ipairs(Towers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(Servers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(CellRepeaters) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+-- 	f:write(json.encode(saveData))
+-- 	f:close()
+-- 	print('ok')
+-- end, true)
 
 RegisterNetEvent('RadioRacks:clientRackSync')
 AddEventHandler('RadioRacks:clientRackSync', function()

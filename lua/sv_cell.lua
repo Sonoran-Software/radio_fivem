@@ -92,38 +92,38 @@ end)
 -- 	print('ok')
 -- end, true)
 
-RegisterCommand('spawnRadioCellRepeater', function(source)
-	local coords = GetEntityCoords(GetPlayerPed(source))
-	local heading = GetEntityHeading(GetPlayerPed(source))
-	local tower = shallowcopy(CellRepeater)
-	tower.Id = uuid()
-	tower.PropPosition = coords
-	tower.heading = heading
-	table.insert(CellRepeaters, tower)
+-- RegisterCommand('spawnRadioCellRepeater', function(source)
+-- 	local coords = GetEntityCoords(GetPlayerPed(source))
+-- 	local heading = GetEntityHeading(GetPlayerPed(source))
+-- 	local tower = shallowcopy(CellRepeater)
+-- 	tower.Id = uuid()
+-- 	tower.PropPosition = coords
+-- 	tower.heading = heading
+-- 	table.insert(CellRepeaters, tower)
 
-	TriggerClientEvent('CellRepeater:SpawnCell', -1, tower)
-	local saveData = {};
-	for _, t in ipairs(Towers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(Servers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(CellRepeaters) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
-	f:write(json.encode(saveData))
-	f:close()
-	print('ok')
+-- 	TriggerClientEvent('CellRepeater:SpawnCell', -1, tower)
+-- 	local saveData = {};
+-- 	for _, t in ipairs(Towers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(Servers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(CellRepeaters) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+-- 	f:write(json.encode(saveData))
+-- 	f:close()
+-- 	print('ok')
 
-end, true)
+-- end, true)
 
 RegisterNetEvent('CellRepeater:clientCellRepeatersync')
 AddEventHandler('CellRepeater:clientCellRepeatersync', function()

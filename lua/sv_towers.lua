@@ -100,34 +100,34 @@ end)
 -- 	print('ok')
 -- end, true)
 
-RegisterCommand('spawnRadioTower', function(source)
-	local coords = GetEntityCoords(GetPlayerPed(source))
-	local tower = shallowcopy(RadioTower)
-	tower.Id = uuid()
-	tower.PropPosition = coords
-	table.insert(Towers, tower)
-	TriggerClientEvent('RadioTower:SpawnTower', -1, tower)
-	local saveData = {};
-	for _, t in ipairs(Towers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(Servers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	for _, t in ipairs(CellRepeaters) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
-	end
-	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
-	f:write(json.encode(saveData))
-	f:close()
-	print('ok')
-end, true)
+-- RegisterCommand('spawnRadioTower', function(source)
+-- 	local coords = GetEntityCoords(GetPlayerPed(source))
+-- 	local tower = shallowcopy(RadioTower)
+-- 	tower.Id = uuid()
+-- 	tower.PropPosition = coords
+-- 	table.insert(Towers, tower)
+-- 	TriggerClientEvent('RadioTower:SpawnTower', -1, tower)
+-- 	local saveData = {};
+-- 	for _, t in ipairs(Towers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(Servers) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	for _, t in ipairs(CellRepeaters) do
+-- 		if not t.DontSaveMe then
+-- 			table.insert(saveData, t)
+-- 		end
+-- 	end
+-- 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+-- 	f:write(json.encode(saveData))
+-- 	f:close()
+-- 	print('ok')
+-- end, true)
 
 RegisterNetEvent('RadioTower:clientTowerSync')
 AddEventHandler('RadioTower:clientTowerSync', function()
