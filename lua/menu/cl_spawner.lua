@@ -113,6 +113,76 @@ function spawningRadioRepeater()
 end
 
 function movingRadioRepeater()
+	if state.repeaterId == nil then
+		local radioRepeaters = {};
+		for _, repeater in ipairs(CellRepeaters) do
+			table.insert(radioRepeaters, repeater.Id)
+		end
+		for _, repeater in ipairs(Towers) do
+			table.insert(radioRepeaters, repeater.Id)
+		end
+		for _, repeater in ipairs(racks) do
+			table.insert(radioRepeaters, repeater.Id)
+		end
+		if WarMenu.ComboBox('Select Repeater:', radioRepeaters, state.index, state.index, function(current)
+			state.index = current
+			state.repeaterId = radioRepeaters[current]
+		end) then
+			local foundHandle = nil;
+			for _, repeater in ipairs(CellRepeaters) do
+				if repeater.Id == state.repeaterId then
+					foundHandle = repeater
+					break
+				end
+			end
+			for _, repeater in ipairs(Towers) do
+				if repeater.Id == state.repeaterId then
+					foundHandle = repeater
+					break
+				end
+			end
+			for _, repeater in ipairs(racks) do
+				if repeater.Id == state.repeaterId then
+					foundHandle = repeater
+					break
+				end
+			end
+			if not foundHandle then
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'No repeater found with that ID'
+					}
+				})
+				return
+			end
+			Citizen.CreateThread(function()
+				while true do
+					Citizen.Wait(1)
+					if IsPedInAnyVehicle(GetPlayerPed(-1), true) then
+						if not HasStreamedTextureDictLoaded('arrow_pointer') then
+							RequestStreamedTextureDict('arrow_pointer', true)
+							while not HasStreamedTextureDictLoaded('arrow_pointer') do
+								Wait(1)
+							end
+						else
+							DrawSprite('basejumping', 'arrow_pointer', 0.700, 0.760, 0.12, 0.185, 0.0, 255, 255, 255, 255)
+						end
+					end
+				end
+			end)
+		end
+	end
+	if WarMenu.Button('Confirm Placement') then
+		confirmRadioPlacement()
+		WarMenu.OpenMenu('sonoranRadioMenu')
+	end
 	local foundHandle = nil;
 	for _, repeater in ipairs(CellRepeaters) do
 		if repeater.Id == state.repeaterId then
@@ -126,7 +196,7 @@ function movingRadioRepeater()
 			break
 		end
 	end
-	for _, repeater in ipairs(ServerRacks) do
+	for _, repeater in ipairs(racks) do
 		if repeater.Id == state.repeaterId then
 			foundHandle = repeater
 			break
@@ -149,28 +219,64 @@ function movingRadioRepeater()
 	end
 	if foundHandle.type ~= 'serverRack' then
 		if IsControlPressed(0, 108) and GetLastInputMethod(0) then -- Movement Keys
-			foundHandle.PropPosition['x'] = foundHandle.PropPosition['x'] + state.moveSpeed
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.x = array.x + state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 		elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
-			foundHandle.PropPosition['x'] = foundHandle.PropPosition['x'] - state.moveSpeed
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.x = array.x - state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 		elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
-			foundHandle.PropPosition['y'] = foundHandle.PropPosition['y'] + state.moveSpeed
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.y = array.y + state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 		elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
-			foundHandle.PropPosition['y'] = foundHandle.PropPosition['y'] - state.moveSpeed
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.y = array.y - state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
-		elseif IsControlPressed(0, 313) and GetLastInputMethod(0) then
-			foundHandle.PropPosition['z'] = foundHandle.PropPosition['z'] + state.moveSpeed
-			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+		elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.z = array.z + state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
-		elseif IsControlPressed(0, 312) and GetLastInputMethod(0) then
-			foundHandle.PropPosition['z'] = foundHandle.PropPosition['z'] - state.moveSpeed
-			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+		elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.z = array.z - state.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 		elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 			foundHandle.heading = foundHandle.heading + state.moveSpeed
@@ -213,8 +319,8 @@ function movingRadioRepeater()
 
 	BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
 	ScaleformMovieMethodAddParamInt(2)
-	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 313))
-	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 312))
+	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
+	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
 	PushScaleformMovieMethodParameterString('Move Z')
 	EndScaleformMovieMethod()
 
@@ -222,14 +328,7 @@ function movingRadioRepeater()
 	ScaleformMovieMethodAddParamInt(3)
 	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 118))
 	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 117))
-	PushScaleformMovieMethodParameterString('Rotate East')
-	EndScaleformMovieMethod()
-
-	BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
-	ScaleformMovieMethodAddParamInt(4)
-	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 121))
-	PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 178))
-	PushScaleformMovieMethodParameterString('Rotate West')
+	PushScaleformMovieMethodParameterString('Rotate')
 	EndScaleformMovieMethod()
 
 	BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
@@ -243,4 +342,27 @@ function movingRadioRepeater()
 	ScaleformMovieMethodAddParamInt(0)
 	EndScaleformMovieMethod()
 	DrawScaleformMovieFullscreen(radioScaleform, 255, 255, 255, 255, 0)
+end
+
+function confirmRadioPlacement()
+	local foundHandle = nil;
+	for _, repeater in ipairs(CellRepeaters) do
+		if repeater.Id == state.repeaterId then
+			foundHandle = repeater
+			break
+		end
+	end
+	for _, repeater in ipairs(Towers) do
+		if repeater.Id == state.repeaterId then
+			foundHandle = repeater
+			break
+		end
+	end
+	for _, repeater in ipairs(racks) do
+		if repeater.Id == state.repeaterId then
+			foundHandle = repeater
+			break
+		end
+	end
+	TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
 end

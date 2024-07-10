@@ -455,6 +455,29 @@ RegisterCommand('removeRadioRepeater', function(source)
 	end
 end)
 
+RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	local saveData = {};
+	for _, t in ipairs(towers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(racks) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	for _, t in ipairs(cell) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
+		end
+	end
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	print('ok')
+end)
+
 RegisterCommand('radioMenu', function(source)
 	if IsPlayerAceAllowed(source, 'radio.towers') then
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
