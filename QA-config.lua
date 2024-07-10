@@ -1,10 +1,10 @@
 Config = {}
 
-Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819' -- IMPORTANT set your API ID here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
-Config.apiKey = 'c7d748d9-0184-458a-bc05-d0a9c53d2122' -- IMPORTANT set your API Key here! https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
-Config.debug = true
-Config.radioUrl = 'https://radio.dev.sonoransoftware.com' -- IMPORTANT set your API URL here! | https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
-Config.apiUrl = 'https://radioapi.dev.sonoransoftware.com/' -- IMPORTANT set your API URL here! | ENSURE THERE IS A "/" AT THE END | https://info.sonoranradio.com/standalone-alpha/getting-started/installing-the-in-game-resource
+Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819'
+Config.apiKey = 'c7d748d9-0184-458a-bc05-d0a9c53d2122'
+Config.debug = false -- PER MAX: NEVER set debug to enabled by default on QA. Please manually edit config file using SFTP or https://game.sonoranservers.com
+Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
+Config.apiUrl = 'https://radioapi.dev.sonoransoftware.com/'
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = false
