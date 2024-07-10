@@ -824,15 +824,16 @@ TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin',
 	}
 })
 
-TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
-TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
-	{
-		name = 'numberOfServers',
-		help = 'The number of servers to spawn'
-	}
-})
-TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
-TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
+-- TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
+-- TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
+-- 	{
+-- 		name = 'numberOfServers',
+-- 		help = 'The number of servers to spawn'
+-- 	}
+-- })
+-- TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
+-- TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
+TriggerEvent('chat:addSuggestion', '/radiomenu', 'Open the radio repeaters\' spawning/manipulation menu')
 
 RegisterNetEvent('SonoranRadio::OpenRadioMenu', function()
 	WarMenu.OpenMenu('sonoranRadioMenu')
