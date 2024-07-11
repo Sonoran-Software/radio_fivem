@@ -4,7 +4,7 @@ local state = {
 	moveSpeed = 0.05,
 	ogCoords = nil,
 	ogHeading = nil,
-	lastCoordUpdate = nil,
+	lastCoordUpdate = nil
 }
 local radioScaleform = nil
 
@@ -287,7 +287,17 @@ function movingRadioRepeater()
 	if foundHandle then
 		if state.repeaterId ~= state.lastCoordUpdate then
 			state.ogCoords = foundHandle.PropPosition
-			state.ogHeading = foundHandle.heading or 0.0
+			if foundHandle.type == 'serverRack' then
+				local calculatedHeading = foundHandle.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+				if calculatedHeading > 360.0 then
+					calculatedHeading = calculatedHeading - 360.0
+					state.ogHeading = calculatedHeading
+				else
+					state.ogHeading = calculatedHeading
+				end
+			else
+				state.ogHeading = foundHandle.heading or 0.0
+			end
 			state.lastCoordUpdate = state.repeaterId
 		end
 		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, tostring(foundHandle.Range))
@@ -297,6 +307,7 @@ function movingRadioRepeater()
 			else
 				foundHandle.Range = tonumber(input)
 			end
+			confirmRadioPlacement()
 		end
 		DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
 		           false)
@@ -383,6 +394,11 @@ function movingRadioRepeater()
 				end
 			end
 		else
+			local calculatedHeading = foundHandle.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+			if calculatedHeading > 360.0 then
+				calculatedHeading = calculatedHeading - 360.0
+			end
+			foundHandle.heading = calculatedHeading
 			if IsControlPressed(0, 108) and GetLastInputMethod(0) then -- Movement Keys
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -392,7 +408,7 @@ function movingRadioRepeater()
 				array.x = array.x + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 				local array = {
@@ -403,7 +419,7 @@ function movingRadioRepeater()
 				array.x = array.x - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 				local array = {
@@ -414,7 +430,7 @@ function movingRadioRepeater()
 				array.y = array.y + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 				local array = {
@@ -425,7 +441,7 @@ function movingRadioRepeater()
 				array.y = array.y - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 				local array = {
@@ -436,7 +452,7 @@ function movingRadioRepeater()
 				array.z = array.z + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 				local array = {
@@ -447,28 +463,28 @@ function movingRadioRepeater()
 				array.z = array.z - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading + state.moveSpeed
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading - state.moveSpeed
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 				if state.moveSpeed < 2.0 then
 					state.moveSpeed = state.moveSpeed + 0.001
 				else
-					ShowNotification('Cannot Move Faster')
+					showNotification('Cannot Move Faster')
 				end
 			elseif IsControlJustReleased(0, 132) and GetLastInputMethod(0) then
 				if state.moveSpeed > 0.001 then
 					state.moveSpeed = state.moveSpeed - 0.001
 				else
-					ShowNotification('Cannot move slower')
+					showNotification('Cannot move slower')
 				end
 			end
 		end
