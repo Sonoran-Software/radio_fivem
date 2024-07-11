@@ -90,7 +90,7 @@ function spawningRadioRepeater()
 					type = 'cellRepeater'
 				}
 				state.repeaterId = cellRepeaterData.Id
-				TriggerEvent('RadioTower:SpawnTower', cellRepeaterData)
+				TriggerEvent('CellRepeater:SpawnCell', cellRepeaterData)
 				WarMenu.OpenMenu('moveRadioMenu')
 			else
 				TriggerEvent('chat:addMessage', {
