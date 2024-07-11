@@ -94,6 +94,7 @@ function spawningRadioRepeater()
 				}
 				state.repeaterId = cellRepeaterData.Id
 				TriggerEvent('CellRepeater:SpawnCell', cellRepeaterData)
+				confirmRadioPlacement()
 				WarMenu.OpenMenu('moveRadioMenu')
 			else
 				TriggerEvent('chat:addMessage', {
@@ -148,6 +149,7 @@ function spawningRadioRepeater()
 				}
 				state.repeaterId = towerData.Id
 				TriggerEvent('RadioTower:SpawnTower', towerData)
+				confirmRadioPlacement()
 				WarMenu.OpenMenu('moveRadioMenu')
 			else
 				TriggerEvent('chat:addMessage', {
@@ -219,6 +221,7 @@ function spawningRadioRepeater()
 				end
 				state.repeaterId = rackData.Id
 				TriggerEvent('RadioRacks:SpawnRack', rackData)
+				confirmRadioPlacement()
 				WarMenu.OpenMenu('moveRadioMenu')
 			else
 				TriggerEvent('chat:addMessage', {
@@ -359,11 +362,11 @@ function movingRadioRepeater()
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
-				foundHandle.heading = (foundHandle.heading + 180) + state.moveSpeed
+				foundHandle.heading = foundHandle.heading + state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
-				foundHandle.heading = (foundHandle.heading + 180) - state.moveSpeed
+				foundHandle.heading = foundHandle.heading - state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
@@ -631,7 +634,7 @@ RegisterNetEvent('menu:back', function(menu)
 			else
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 			end
-			SetEntityHeading(foundHandle.Handle, state.ogHeading + 180)
+			SetEntityHeading(foundHandle.Handle, state.ogHeading)
 			state.repeaterId = nil
 			state.index = 1
 			state.ogHeading = nil
