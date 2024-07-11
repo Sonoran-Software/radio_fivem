@@ -3,7 +3,8 @@ local state = {
 	repeaterId = nil,
 	moveSpeed = 0.05,
 	ogCoords = nil,
-	ogHeading = nil
+	ogHeading = nil,
+	lastCoordUpdate = nil,
 }
 local radioScaleform = nil
 
@@ -281,9 +282,10 @@ function movingRadioRepeater()
 		end
 	end
 	if foundHandle then
-		if not state.ogCoords and not state.ogHeading then
+		if state.repeaterId ~= state.lastCoordUpdate then
 			state.ogCoords = foundHandle.PropPosition
 			state.ogHeading = foundHandle.heading or 0.0
+			state.lastCoordUpdate = state.repeaterId
 		end
 		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, tostring(foundHandle.Range))
 		if pressed then
@@ -305,7 +307,7 @@ function movingRadioRepeater()
 				array.x = array.x + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -315,7 +317,7 @@ function movingRadioRepeater()
 				array.x = array.x - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -325,7 +327,7 @@ function movingRadioRepeater()
 				array.y = array.y + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -335,7 +337,7 @@ function movingRadioRepeater()
 				array.y = array.y - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -345,7 +347,7 @@ function movingRadioRepeater()
 				array.z = array.z + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -355,15 +357,15 @@ function movingRadioRepeater()
 				array.z = array.z - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 				foundHandle.heading = (foundHandle.heading + 180) + state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 				foundHandle.heading = (foundHandle.heading + 180) - state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 				if state.moveSpeed < 2.0 then
 					state.moveSpeed = state.moveSpeed + 0.001
@@ -387,7 +389,8 @@ function movingRadioRepeater()
 				array.x = array.x + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -397,7 +400,8 @@ function movingRadioRepeater()
 				array.x = array.x - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -407,7 +411,8 @@ function movingRadioRepeater()
 				array.y = array.y + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -417,7 +422,8 @@ function movingRadioRepeater()
 				array.y = array.y - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -427,7 +433,8 @@ function movingRadioRepeater()
 				array.z = array.z + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -437,15 +444,17 @@ function movingRadioRepeater()
 				array.z = array.z - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading + state.moveSpeed
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading - state.moveSpeed
 				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 				if state.moveSpeed < 2.0 then
 					state.moveSpeed = state.moveSpeed + 0.001
@@ -510,6 +519,7 @@ function confirmRadioPlacement()
 	state.index = 1
 	state.ogHeading = nil
 	state.ogCoords = nil
+	state.lastCoordUpdate = nil
 	TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
 end
 
@@ -586,6 +596,7 @@ function deletingRadioRepeater()
 			})
 			state.repeaterId = nil
 			state.index = 1
+			state.lastCoordUpdate = nil
 			confirmRadioPlacement()
 			WarMenu.OpenMenu('sonoranRadioMenu')
 		end
@@ -625,11 +636,13 @@ RegisterNetEvent('menu:back', function(menu)
 			state.index = 1
 			state.ogHeading = nil
 			state.ogCoords = nil
+			state.lastCoordUpdate = nil
 		end
 	elseif menu.id == 'sonoranRadioMenu' and state.repeaterId then
 		state.repeaterId = nil
 		state.index = 1
 		state.ogHeading = nil
 		state.ogCoords = nil
+		state.lastCoordUpdate = nil
 	end
 end)
