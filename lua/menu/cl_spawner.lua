@@ -279,8 +279,10 @@ function movingRadioRepeater()
 		end
 	end
 	if foundHandle then
-		state.ogCoords = foundHandle.PropPosition
-		state.ogHeading = foundHandle.heading or 0.0
+		if not state.ogCoords and state.ogHeading then
+			state.ogCoords = foundHandle.PropPosition
+			state.ogHeading = foundHandle.heading or 0.0
+		end
 		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, tostring(foundHandle.Range))
 		if pressed then
 			if input == '' then
@@ -353,11 +355,11 @@ function movingRadioRepeater()
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
-				foundHandle.heading = foundHandle.heading + state.moveSpeed
+				foundHandle.heading = (foundHandle.heading + 180) + state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
-				foundHandle.heading = foundHandle.heading - state.moveSpeed
+				foundHandle.heading = (foundHandle.heading + 180) - state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
