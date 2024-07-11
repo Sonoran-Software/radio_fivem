@@ -281,7 +281,7 @@ function movingRadioRepeater()
 		end
 	end
 	if foundHandle then
-		if not state.ogCoords and state.ogHeading then
+		if not state.ogCoords and not state.ogHeading then
 			state.ogCoords = foundHandle.PropPosition
 			state.ogHeading = foundHandle.heading or 0.0
 		end
@@ -305,7 +305,7 @@ function movingRadioRepeater()
 				array.x = array.x + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -315,7 +315,7 @@ function movingRadioRepeater()
 				array.x = array.x - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -325,7 +325,7 @@ function movingRadioRepeater()
 				array.y = array.y + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -335,7 +335,7 @@ function movingRadioRepeater()
 				array.y = array.y - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -345,7 +345,7 @@ function movingRadioRepeater()
 				array.z = array.z + state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -355,15 +355,15 @@ function movingRadioRepeater()
 				array.z = array.z - state.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 				foundHandle.heading = (foundHandle.heading + 180) + state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 				foundHandle.heading = (foundHandle.heading + 180) - state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading + 180)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 				if state.moveSpeed < 2.0 then
 					state.moveSpeed = state.moveSpeed + 0.001
