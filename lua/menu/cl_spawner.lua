@@ -588,16 +588,6 @@ function deletingRadioRepeater()
 	end
 end
 
-Citizen.CreateThread(function()
-	while true do
-		Wait(0)
-		if state.repeaterId and WarMenu.IsMenuOpened('sonoranRadioMenu') then
-			state.repeaterId = nil
-			state.index = 1
-		end
-	end
-end)
-
 RegisterNetEvent('menu:back', function(menu)
 	if menu.id == 'moveRadioMenu' and state.repeaterId then
 		local foundHandle = nil;
@@ -632,5 +622,10 @@ RegisterNetEvent('menu:back', function(menu)
 			state.ogHeading = nil
 			state.ogCoords = nil
 		end
+	elseif menu.id == 'sonoranRadioMenu' and state.repeaterId then
+		state.repeaterId = nil
+		state.index = 1
+		state.ogHeading = nil
+		state.ogCoords = nil
 	end
 end)
