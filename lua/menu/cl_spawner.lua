@@ -1,7 +1,9 @@
 local state = {
 	index = 1,
 	repeaterId = nil,
-	moveSpeed = 0.05
+	moveSpeed = 0.05,
+	ogCoords = nil,
+	ogHeading = nil
 }
 local radioScaleform = nil
 
@@ -591,7 +593,7 @@ function deletingRadioRepeater()
 end
 
 RegisterNetEvent('menu:back', function(menu)
-	if menu.id == 'moveRadioMenu' and state.repeaterId then
+	if menu.id == 'moveRadioMenu' and state.repeaterId and state.ogCoords then
 		local foundHandle = nil;
 		for _, repeater in ipairs(CellRepeaters) do
 			if repeater.Id == state.repeaterId then
