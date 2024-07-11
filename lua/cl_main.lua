@@ -14,7 +14,7 @@ local authorized = false
 local allowedFrames = {}
 
 local comId = Config.comId or Config.communityId or Config.standaloneId
-
+TriggerEvent('SonoranRadio::ClientReady')
 RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
 AddEventHandler('SonoranCAD::sonrad:GetUnitInfo:Return', function(unit)
 	SendNUIMessage({
@@ -216,16 +216,16 @@ local specialKeyCodes = {
 	['b_1014'] = 'ControlRight',
 	['b_1015'] = 'AltLeft',
 	['b_1016'] = 'AltRight',
-	['b_2000'] = 'Space',
+	['b_2000'] = 'Space'
 }
 local function getPttKey()
 	local key = GetControlInstructionalButton(0, 0xE364B8EC, true)
 	if key:sub(1, 2) == 't_' then
 		return key:sub(3)
 	elseif specialKeyCodes[key] then
-		return 'SpecialKey.'..specialKeyCodes[key], key
+		return 'SpecialKey.' .. specialKeyCodes[key], key
 	else
-		print('warning: unknown ptt key code '..key)
+		print('warning: unknown ptt key code ' .. key)
 	end
 end
 
@@ -253,7 +253,7 @@ function radioToggle(frame)
 				debug = Config.debug,
 				standaloneId = comId,
 				standaloneUrl = Config.radioUrl,
-				pttKey = getPttKey(),
+				pttKey = getPttKey()
 			})
 			if frame == nil then
 				frame = 'default'
@@ -402,17 +402,24 @@ RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
 
 -- add PTT for the standalone radio
 RegisterCommand('+sonradptt', function()
-	SendNUIMessage({ type = 'ptt', state = true })
+	SendNUIMessage({
+		type = 'ptt',
+		state = true
+	})
 	Radio:Talking(true)
 end)
 RegisterCommand('-sonradptt', function()
-	SendNUIMessage({ type = 'ptt', state = false })
+	SendNUIMessage({
+		type = 'ptt',
+		state = false
+	})
 	Radio:Talking(false)
 end)
 RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
 function Radio:Talking(toggle)
 	local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+	TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
 	if self.TalkAnim then
 		if toggle and not inVeh then
 			if self.Open then
@@ -420,8 +427,7 @@ function Radio:Talking(toggle)
 				while not HasAnimDictLoaded('cellphone@') do
 					Wait(5)
 				end
-				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false,
-					false)
+				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false, false)
 
 				-- Wait(300)
 				-- RequestAnimDict("cellphone@str")
@@ -453,8 +459,7 @@ function Radio:Talking(toggle)
 					Wait(5)
 				end
 				-- TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
-				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false,
-					false)
+				TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
 				isTalking = false
 			else
 				StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
@@ -511,8 +516,7 @@ function Radio:Toggle(toggle)
 		self.Handle = CreateObject(self.Prop, 0.0, 0.0, 0.0, true, true, false)
 		local bone = GetPedBoneIndex(playerPed, self.Bone)
 		SetCurrentPedWeapon(playerPed, GetHashKey('weapon_unarmed'), true)
-		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x,
-			self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
+		AttachEntityToEntity(self.Handle, playerPed, bone, self.Offset.x, self.Offset.y, self.Offset.z, self.Rotation.x, self.Rotation.y, self.Rotation.z, true, false, false, false, 2, true)
 		SetModelAsNoLongerNeeded(self.Handle)
 		TaskPlayAnim(playerPed, dictionary, animation, 4.0, -1, -1, 50, 0, false, false, false)
 	elseif DoesEntityExist(self.Handle) then
@@ -820,12 +824,17 @@ TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin',
 	}
 })
 
-TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
-TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
-	{
-		name = 'numberOfServers',
-		help = 'The number of servers to spawn'
-	}
-})
-TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
-TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
+-- TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
+-- TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {
+-- 	{
+-- 		name = 'numberOfServers',
+-- 		help = 'The number of servers to spawn'
+-- 	}
+-- })
+-- TriggerEvent('chat:addSuggestion', '/spawnradiocellrepeater', 'Spawn a radio cell repeater')
+-- TriggerEvent('chat:addSuggestion', '/removeradiorepeater', 'Remove the nearest radio repeater')
+TriggerEvent('chat:addSuggestion', '/radiomenu', 'Open the radio repeaters\' spawning/manipulation menu')
+
+RegisterNetEvent('SonoranRadio::OpenRadioMenu', function()
+	WarMenu.OpenMenu('sonoranRadioMenu')
+end)

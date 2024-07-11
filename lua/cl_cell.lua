@@ -1,4 +1,4 @@
-local CellRepeaters = {}
+CellRepeaters = {}
 bestCellRepeaterQuality = 0.0
 local rightToRepair = false
 

@@ -3,6 +3,9 @@ local acePermsForTowerRepair = false
 local acePermsForServerRepair = false
 local acePermsForAntennaRepair = false
 local QBCore = nil
+local MessageBuffer = {}
+local DebugBuffer = {}
+local ErrorBuffer = {}
 jsonFileName = 'towers.DEFAULT.json'
 
 if Config == nil then
@@ -235,6 +238,14 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey
+	}, 'SET-SERVER-IP', function(data, success)
+		if not success then
+			errorLog('Failed to set server IP for radio service. Please check your configuration.')
+		end
+	end)
 	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
 	if not jsonFile then -- Request default if there was an issue getting the regular
 		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
@@ -249,22 +260,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	else
 		jsonFileName = 'towers.json'
-	end
-	if Config.frames == nil or not Config.frames then
-		print('!!! CRITICAL ERROR !!!')
-		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
-		print('!!! CRITICAL ERROR !!!')
-		return
-	end
-end)
-
---[[
-	Jordan - Radio Consolidation Update
-]]
-
-AddEventHandler('onResourceStart', function(resource)
-	if GetCurrentResourceName() ~= resource then
-		return
 	end
 	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
 	local towers = json.decode(t)
@@ -318,133 +313,254 @@ AddEventHandler('onResourceStart', function(resource)
 			table.insert(CellRepeaters, obj)
 		end
 	end
+	if Config.frames == nil or not Config.frames then
+		print('!!! CRITICAL ERROR !!!')
+		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
+		print('!!! CRITICAL ERROR !!!')
+		return
+	end
 end)
 
-RegisterCommand('removeRadioRepeater', function(source)
-	local playerCoords = GetEntityCoords(GetPlayerPed(source))
-	local closestTower = nil
-	local closestServerRack = nil
-	local closestCellRepeater = nil
-	for i = 1, #Towers do
-		local distBetweenSpawn = #(playerCoords - vec3(Towers[i].PropPosition))
-		if distBetweenSpawn <= 10.0 then
-			closestTower = Towers[i]
-			break
+exports('performApiRequest', performApiRequest)
+--[[
+	Jordan - Radio Consolidation Update
+]]
+
+-- RegisterCommand('removeRadioRepeater', function(source)
+-- 	local playerCoords = GetEntityCoords(GetPlayerPed(source))
+-- 	local closestTower = nil
+-- 	local closestServerRack = nil
+-- 	local closestCellRepeater = nil
+-- 	for i = 1, #Towers do
+-- 		local distBetweenSpawn = #(playerCoords - vec3(Towers[i].PropPosition))
+-- 		if distBetweenSpawn <= 10.0 then
+-- 			closestTower = Towers[i]
+-- 			break
+-- 		end
+-- 	end
+-- 	for i = 1, #Servers do
+-- 		local distBetweenSpawn = #(playerCoords - vec3(Servers[i].PropPosition))
+-- 		if distBetweenSpawn <= 10.0 then
+-- 			closestServerRack = Servers[i]
+-- 			break
+-- 		end
+-- 	end
+-- 	for i = 1, #CellRepeaters do
+-- 		local distBetweenSpawn = #(playerCoords - vec3(CellRepeaters[i].PropPosition))
+-- 		if distBetweenSpawn <= 10.0 then
+-- 			closestCellRepeater = CellRepeaters[i]
+-- 			break
+-- 		end
+-- 	end
+-- 	local closestDist = 10.0
+-- 	local closestObj = nil
+-- 	local closestType = nil
+-- 	if closestTower ~= nil then
+-- 		local towerCoords = vec3(closestTower.PropPosition)
+-- 		local dist = #(playerCoords - towerCoords)
+-- 		if dist < closestDist then
+-- 			closestDist = dist
+-- 			closestObj = closestTower
+-- 			closestType = 'radioTower'
+-- 		end
+-- 	end
+-- 	if closestServerRack ~= nil then
+-- 		local serverRackCoords = vec3(closestServerRack.PropPosition)
+-- 		local dist = #(playerCoords - serverRackCoords)
+-- 		if dist < closestDist then
+-- 			closestDist = dist
+-- 			closestObj = closestServerRack
+-- 			closestType = 'serverRack'
+-- 		end
+-- 	end
+-- 	if closestCellRepeater ~= nil then
+-- 		local cellRepeaterCoords = vec3(closestCellRepeater.PropPosition)
+-- 		local dist = #(playerCoords - cellRepeaterCoords)
+-- 		if dist < closestDist then
+-- 			closestDist = dist
+-- 			closestObj = closestCellRepeater
+-- 			closestType = 'cellRepeater'
+-- 		end
+-- 	end
+-- 	if closestObj ~= nil then
+-- 		if closestType == 'radioTower' then
+-- 			for i = 1, #Towers do
+-- 				local towerIndex = Towers[i]
+-- 				if towerIndex.Id == closestObj.Id then
+-- 					table.remove(Towers, i)
+-- 					TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
+-- 					TriggerClientEvent('chat:addMessage', source, {
+-- 						args = {
+-- 							'[SonoranRadio] ^1Radio tower removed'
+-- 						}
+-- 					})
+-- 					break
+-- 				end
+-- 			end
+-- 		elseif closestType == 'serverRack' then
+-- 			for i = 1, #Servers do
+-- 				local towerIndex = Servers[i]
+-- 				if towerIndex.Id == closestObj.Id then
+-- 					table.remove(Servers, i)
+-- 					TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+-- 					TriggerClientEvent('chat:addMessage', source, {
+-- 						args = {
+-- 							'[SonoranRadio] ^1Server rack removed'
+-- 						}
+-- 					})
+-- 					break
+-- 				end
+-- 			end
+-- 		elseif closestType == 'cellRepeater' then
+-- 			for i = 1, #CellRepeaters do
+-- 				local towerIndex = CellRepeaters[i]
+-- 				if towerIndex.Id == closestObj.Id then
+-- 					table.remove(CellRepeaters, i)
+-- 					TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+-- 					TriggerClientEvent('chat:addMessage', source, {
+-- 						args = {
+-- 							'[SonoranRadio] ^1Cell repeater removed'
+-- 						}
+-- 					})
+-- 					break
+-- 				end
+-- 			end
+-- 		end
+-- 		local saveData = {};
+-- 		for _, t in ipairs(Towers) do
+-- 			if not t.DontSaveMe then
+-- 				table.insert(saveData, t)
+-- 			end
+-- 		end
+-- 		for _, t in ipairs(Servers) do
+-- 			if not t.DontSaveMe then
+-- 				table.insert(saveData, t)
+-- 			end
+-- 		end
+-- 		for _, t in ipairs(CellRepeaters) do
+-- 			if not t.DontSaveMe then
+-- 				table.insert(saveData, t)
+-- 			end
+-- 		end
+-- 		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+-- 		f:write(json.encode(saveData))
+-- 		f:close()
+-- 		print('ok')
+-- 	else
+-- 		TriggerClientEvent('chat:addMessage', source, {
+-- 			args = {
+-- 				'[SonoranRadio] ^1No radio tower, server rack, or cell repeater found.'
+-- 			}
+-- 		})
+-- 	end
+-- end)
+
+RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	local saveData = {};
+	for _, t in ipairs(towers) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
 		end
 	end
-	for i = 1, #Servers do
-		local distBetweenSpawn = #(playerCoords - vec3(Servers[i].PropPosition))
-		if distBetweenSpawn <= 10.0 then
-			closestServerRack = Servers[i]
-			break
+	for _, t in ipairs(racks) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
 		end
 	end
-	for i = 1, #CellRepeaters do
-		local distBetweenSpawn = #(playerCoords - vec3(CellRepeaters[i].PropPosition))
-		if distBetweenSpawn <= 10.0 then
-			closestCellRepeater = CellRepeaters[i]
-			break
+	for _, t in ipairs(cell) do
+		if not t.DontSaveMe then
+			table.insert(saveData, t)
 		end
 	end
-	local closestDist = 10.0
-	local closestObj = nil
-	local closestType = nil
-	if closestTower ~= nil then
-		local towerCoords = vec3(closestTower.PropPosition)
-		local dist = #(playerCoords - towerCoords)
-		if dist < closestDist then
-			closestDist = dist
-			closestObj = closestTower
-			closestType = 'radioTower'
-		end
-	end
-	if closestServerRack ~= nil then
-		local serverRackCoords = vec3(closestServerRack.PropPosition)
-		local dist = #(playerCoords - serverRackCoords)
-		if dist < closestDist then
-			closestDist = dist
-			closestObj = closestServerRack
-			closestType = 'serverRack'
-		end
-	end
-	if closestCellRepeater ~= nil then
-		local cellRepeaterCoords = vec3(closestCellRepeater.PropPosition)
-		local dist = #(playerCoords - cellRepeaterCoords)
-		if dist < closestDist then
-			closestDist = dist
-			closestObj = closestCellRepeater
-			closestType = 'cellRepeater'
-		end
-	end
-	if closestObj ~= nil then
-		if closestType == 'radioTower' then
-			for i = 1, #Towers do
-				local towerIndex = Towers[i]
-				if towerIndex.Id == closestObj.Id then
-					table.remove(Towers, i)
-					TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
-					TriggerClientEvent('chat:addMessage', source, {
-						args = {
-							'[SonoranRadio] ^1Radio tower removed'
-						}
-					})
-					break
-				end
-			end
-		elseif closestType == 'serverRack' then
-			for i = 1, #Servers do
-				local towerIndex = Servers[i]
-				if towerIndex.Id == closestObj.Id then
-					table.remove(Servers, i)
-					TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
-					TriggerClientEvent('chat:addMessage', source, {
-						args = {
-							'[SonoranRadio] ^1Server rack removed'
-						}
-					})
-					break
-				end
-			end
-		elseif closestType == 'cellRepeater' then
-			for i = 1, #CellRepeaters do
-				local towerIndex = CellRepeaters[i]
-				if towerIndex.Id == closestObj.Id then
-					table.remove(CellRepeaters, i)
-					TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
-					TriggerClientEvent('chat:addMessage', source, {
-						args = {
-							'[SonoranRadio] ^1Cell repeater removed'
-						}
-					})
-					break
-				end
-			end
-		end
-		local saveData = {};
-		for _, t in ipairs(Towers) do
-			if not t.DontSaveMe then
-				table.insert(saveData, t)
-			end
-		end
-		for _, t in ipairs(Servers) do
-			if not t.DontSaveMe then
-				table.insert(saveData, t)
-			end
-		end
-		for _, t in ipairs(CellRepeaters) do
-			if not t.DontSaveMe then
-				table.insert(saveData, t)
-			end
-		end
-		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
-		f:write(json.encode(saveData))
-		f:close()
-		print('ok')
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	print('ok')
+	Towers = towers
+	Servers = racks
+	CellRepeaters = cell
+	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
+	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+end)
+
+RegisterCommand('radioMenu', function(source)
+		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
+end, true)
+
+AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
+	if level == 'debug' then
+		debugLog(message)
+	elseif level == 'info' then
+		infoLog(message)
+	elseif level == 'error' then
+		errorLog(message)
+	elseif level == 'warn' then
+		warnLog(message)
 	else
-		TriggerClientEvent('chat:addMessage', source, {
-			args = {
-				'[SonoranRadio] ^1No radio tower, server rack, or cell repeater found.'
-			}
-		})
+		debugLog(message)
 	end
 end)
+
+local function sendConsole(level, color, message)
+	local debugging = true
+	if Config ~= nil then
+		debugging = (Config.debug == true and Config.debug ~= 'false')
+	end
+	local time = os and os.date('%X') or LocalTime()
+	local info = debug.getinfo(3, 'S')
+	local source = '.'
+	if info.source:find('@@sonoranradio') then
+		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
+	end
+	local msg = ('[%s][%s:%s%s^7]%s %s^0'):format(time, debugging and source or 'SonoranRadio', color, level, color, message)
+	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
+		print(msg)
+	end
+	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
+		table.insert(ErrorBuffer, 1, msg)
+	end
+	if level == 'DEBUG' and IsDuplicityVersion() then
+		if #DebugBuffer > 50 then
+			table.remove(DebugBuffer)
+		end
+		table.insert(DebugBuffer, 1, msg)
+	else
+		if not IsDuplicityVersion() then
+			if #MessageBuffer > 10 then
+				table.remove(MessageBuffer)
+			end
+			table.insert(MessageBuffer, 1, msg)
+		end
+	end
+end
+
+function debugLog(message)
+	sendConsole('DEBUG', '^7', message)
+end
+
+local ErrorCodes = {
+	['INVALID_COMMUNITY_ID'] = 'You have set an invalid community ID, please check your Config and SonoranCMS integration'
+}
+
+function logError(err, msg)
+	local o = ''
+	if msg == nil then
+		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, ErrorCodes[err])
+	else
+		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, msg)
+	end
+	sendConsole('ERROR', '^1', o)
+end
+
+function errorLog(message)
+	sendConsole('ERROR', '^1', message)
+end
+
+function warnLog(message)
+	sendConsole('WARNING', '^3', message)
+end
+
+function infoLog(message)
+	sendConsole('INFO', '^5', message)
+end

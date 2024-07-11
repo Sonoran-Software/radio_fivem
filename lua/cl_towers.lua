@@ -2,7 +2,6 @@ Towers = {}
 bestTowerQuality = 0.0
 
 local rightToRepair = false
-
 RegisterNetEvent('SonoranRadio::AuthorizeTowers')
 AddEventHandler('SonoranRadio::AuthorizeTowers', function()
 	DebugPrint('Authorized for Tower Repair')
