@@ -479,7 +479,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 end)
 
 RegisterCommand('radioMenu', function(source)
-	if IsPlayerAceAllowed(source, 'radio.towers') then
+	if IsPlayerAceAllowed(source, 'sonoranradio.towers') then
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
 	else
 		TriggerClientEvent('chat:addMessage', source, {
