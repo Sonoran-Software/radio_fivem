@@ -279,7 +279,9 @@ function movingRadioRepeater()
 		end
 	end
 	if foundHandle then
-		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, 20)
+		state.ogCoords = foundHandle.PropPosition
+		state.ogHeading = foundHandle.heading or 0.0
+		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, tostring(foundHandle.Range))
 		if pressed then
 			if input == '' then
 				foundHandle.Range = 1500.0
@@ -502,7 +504,9 @@ end
 function confirmRadioPlacement()
 	state.repeaterId = nil
 	state.index = 1
-	TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
+	state.ogHeading = nil
+	state.ogCoords = nil
+TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
 end
 
 function deletingRadioRepeater()
@@ -595,7 +599,34 @@ Citizen.CreateThread(function()
 end)
 
 RegisterNetEvent('menu:back', function(menu)
-	if menu.id == 'sonoranRadioMenu' then
-		print('back', json.encode(menu))
+	if menu.id == 'moveRadioMenu' and state.repeaterId then
+		local foundHandle = nil;
+		for _, repeater in ipairs(CellRepeaters) do
+			if repeater.Id == state.repeaterId then
+				foundHandle = repeater
+				break
+			end
+		end
+		for _, repeater in ipairs(Towers) do
+			if repeater.Id == state.repeaterId then
+				foundHandle = repeater
+				break
+			end
+		end
+		for _, repeater in ipairs(racks) do
+			if repeater.Id == state.repeaterId then
+				foundHandle = repeater
+				break
+			end
+		end
+		if foundHandle then
+			foundHandle.PropPosition = state.ogCoords
+			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+			SetEntityHeading(foundHandle.Handle, state.ogHeading)
+			state.repeaterId = nil
+			state.index = 1
+			state.ogHeading = nil
+			state.ogCoords = nil
+		end
 	end
 end)
