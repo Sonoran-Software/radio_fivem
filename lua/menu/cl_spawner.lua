@@ -279,6 +279,14 @@ function movingRadioRepeater()
 		end
 	end
 	if foundHandle then
+		local pressed, input = WarMenu.InputButton('Repeater Range', 'Rpeater Range (Default 1500.0)', tostring(foundHandle.Range), 20, 20)
+		if pressed then
+			if input == '' then
+				foundHandle.Range = 1500.0
+			else
+				foundHandle.Range = tonumber(input)
+			end
+		end
 		DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
 		           false)
 		if foundHandle.type ~= 'serverRack' then
