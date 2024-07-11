@@ -593,3 +593,9 @@ Citizen.CreateThread(function()
 		end
 	end
 end)
+
+RegisterNetEvent('menu:back', function(menu)
+	if menu.id == 'sonoranRadioMenu' then
+		print('back', json.encode(menu))
+	end
+end)

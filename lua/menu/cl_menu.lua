@@ -541,6 +541,7 @@ function WarMenu.Display()
 			currentKey = keys.select
 		elseif IsControlJustReleased(2, keys.back) then
 			if menus[currentMenu.previousMenu] then
+				TriggerEvent('menu:back', currentMenu)
 				setMenuVisible(currentMenu.previousMenu, true)
 				PlaySoundFrontend(-1, 'BACK', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
 			else
