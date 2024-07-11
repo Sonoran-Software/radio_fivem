@@ -476,6 +476,9 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	f:write(json.encode(saveData))
 	f:close()
 	print('ok')
+	Towers = towers
+	Servers = racks
+	CellRepeaters = cell
 	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
