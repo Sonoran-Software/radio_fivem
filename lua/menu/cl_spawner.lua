@@ -506,7 +506,7 @@ function confirmRadioPlacement()
 	state.index = 1
 	state.ogHeading = nil
 	state.ogCoords = nil
-TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
+	TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
 end
 
 function deletingRadioRepeater()
@@ -621,8 +621,12 @@ RegisterNetEvent('menu:back', function(menu)
 		end
 		if foundHandle then
 			foundHandle.PropPosition = state.ogCoords
-			SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
-			SetEntityHeading(foundHandle.Handle, state.ogHeading)
+			if foundHandle.type ~= 'serverRack' then
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+			else
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+			end
+			SetEntityHeading(foundHandle.Handle, state.ogHeading + 180)
 			state.repeaterId = nil
 			state.index = 1
 			state.ogHeading = nil
