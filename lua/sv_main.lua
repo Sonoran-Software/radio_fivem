@@ -479,16 +479,8 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 end)
 
 RegisterCommand('radioMenu', function(source)
-	if IsPlayerAceAllowed(source, 'sonoranradio.towers') then
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
-	else
-		TriggerClientEvent('chat:addMessage', source, {
-			args = {
-				'[SonoranRadio] ^1You do not have permission to use this command.'
-			}
-		})
-	end
-end)
+end, true)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
 	if level == 'debug' then
