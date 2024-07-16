@@ -3,7 +3,8 @@
 </template>
 
 <script>
-export let frameEl;
+/** @type {HTMLIFrameElement | null} */
+export let frameEl = null;
 let refs = 0;
 
 /**
@@ -79,8 +80,12 @@ export default {
         },
     },
     methods: {
-        flush() {
+        flush(force) {
             pop();
+            if (force) {
+                frameEl.remove();
+                frameEl = null;
+            }
             push(this.$refs.guide, this.serverId, this.url);
         }
     },
