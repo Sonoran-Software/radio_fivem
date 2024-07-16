@@ -74,7 +74,7 @@ function performApiRequest(postData, type, cb)
 				errorLog(('API error returned (%s). Check status.sonoransoftware.com or our Discord to see if there\'s an outage.'):format(statusCode))
 				debugLog(('API_ERROR Error returned: %s %s'):format(statusCode, res))
 			else
-				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, res))
+				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
 			end
 		end, 'POST', json.encode(payload), {
 			['Content-Type'] = 'application/json'

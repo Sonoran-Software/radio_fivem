@@ -23,15 +23,8 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId && !dragMode" :server-id="standaloneServerId"
+                        <floating-screen v-if="radioPower && standaloneServerId && !dragMode" ref="floatingScreen" :server-id="standaloneServerId"
                             :url="standaloneUrl" />
-                        <component v-else-if="radioPower && screenDynComponent" :is="screenDynComponent"
-                            :help-enabled="help" :skin-options="selectSkinOptions()" @set-screen="setScreen($event)"
-                            @go-home="goToPreset(0)" @set-frequency="setFrequency($event)"
-                            @send-message="sendRadioMessage($event)" @add-scanned="addScanned($event)"
-                            @del-scanned="delScanned($event)" @toggle-scan="toggleScan($event)"
-                            @set-skin-id="selectSkin($event)" @set-help="help = $event"
-                            @enable-drag="dragMode = true" />
                     </primary-screen>
                 </skin-body-component>
 
@@ -58,15 +51,6 @@ import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
 import FloatingScreen, { frameEl } from './components/util/FloatingScreen.vue'
 
-import Home from './components/Home.vue'
-import Channels from './components/Channels.vue'
-import Channel from './components/Channel.vue'
-import Message from './components/Message.vue'
-import ScanList from './components/ScanList.vue'
-import Settings from './components/Settings.vue'
-import Contacts from './components/Contacts.vue'
-import CallDetails from './components/CallDetails.vue'
-
 export default {
     components: {
         SkinBodyImg,
@@ -75,15 +59,6 @@ export default {
         MiniScreen,
         PrimaryScreen: Screen,
         FloatingScreen,
-
-        Home,
-        Channels,
-        Channel,
-        Message,
-        ScanList,
-        Settings,
-        Contacts,
-        CallDetails,
     },
     data: () => {
         return {
@@ -122,20 +97,6 @@ export default {
         stateFreqName() {
             return this.$store.getters.freqName;
         },
-        screenDynComponent() {
-            const c = this.$options.components;
-            const ROUTES = {
-                '': c.Home,
-                'calldetails': c.CallDetails,
-                'channels': c.Channels,
-                'channel': c.Channel,
-                'contacts': c.Contacts,
-                'message': c.Message,
-                'scanlist': c.ScanList,
-                'settings': c.Settings,
-            };
-            return ROUTES[this.currScreen];
-        },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
 
@@ -159,7 +120,7 @@ export default {
                 'next_preset': this.buttonNext,
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
-                'home': () => this.setScreen(''),
+                'home': this.buttonHome,
                 'hide': () => this.hideRadio(true),
             };
             return frames.map((frame) => ({
@@ -183,7 +144,7 @@ export default {
         }
     },
     watch: {
-        stateFreqName(newVal, oldVal) {
+        stateFreqName(newVal) {
             if (!this.$store.state.connected) return;
             this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
         }
@@ -552,6 +513,9 @@ export default {
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case 'mic_status':
+                    this.postClient({type: 'talking', talking: event.micOpen});
+                    break;
                 case 'reposition':
                     this.dragMode = true;
                     break;
@@ -573,6 +537,10 @@ export default {
             this.postClient({
                 type: "panic"
             });
+        },
+        buttonHome() {
+            if (this.$refs.floatingScreen.length === 0) return;
+            this.$refs.floatingScreen[0].flush(true);
         },
         buttonPrev() {
             if (!this.$store.state.connected)
