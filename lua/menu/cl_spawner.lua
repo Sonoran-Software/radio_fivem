@@ -600,11 +600,22 @@ function deletingRadioRepeater()
 			end
 			for k, repeater in ipairs(Towers) do
 				if repeater.Id == state.repeaterId then
+					if DoesEntityExist(k.Ladder) then
+						DeleteEntity(k.Ladder)
+					end
+					local n = k.Dishes and #k.Dishes or 0
+					for j = 1, n do
+						DeleteEntity(k.Dishes[j])
+					end
 					table.remove(Towers, k)
 				end
 			end
 			for k, repeater in ipairs(racks) do
 				if repeater.Id == state.repeaterId then
+					local n = k.Servers and #rkack.Servers or 0
+					for j = 1, n do
+						DeleteEntity(k.Servers[j])
+					end
 					table.remove(racks, k)
 				end
 			end
