@@ -36,7 +36,7 @@ resource-deploy-QAServer:
   script:
     - cd build
     - zip -r sonoranradio sonoranradio
-    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; rmdir /resources/[sonoranradio]; mkdir -p /resources/[sonoranradio]; cd /resources/[sonoranradio]; put sonoranradio.zip; bye"
+    - lftp -e "set sftp:auto-confirm yes; open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; rmdir /resources/[sonoranradio]; mkdir -p /resources/[sonoranradio]; cd /resources/[sonoranradio]; put sonoranradio.zip; bye"
     - >-
         curl "https://game.sonoranservers.com/api/client/servers/$FiveM01_ID/files/decompress"
         -H "Content-Type: application/json"
