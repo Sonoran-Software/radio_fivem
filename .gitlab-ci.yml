@@ -1,5 +1,6 @@
 resource-build:
   stage: build
+  image: node:alpine
   script:
     # copy a clean node_modules for the build
     - yarn --prod
@@ -26,7 +27,7 @@ resource-build:
     - branches
     - tags
   tags:
-    - linux, build, shell, development
+    - linux, build, docker
 
 resource-deploy-QAServer:
   stage: deploy
