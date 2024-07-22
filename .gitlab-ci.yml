@@ -2,6 +2,8 @@ resource-build:
   stage: build
   image: node:alpine
   script:
+    # node:alpline doesn't bundle envsubst by default, add it
+    - apk add envsubst
     # copy a clean node_modules for the build
     - yarn --prod
     - cp -r node_modules build/sonoranradio
