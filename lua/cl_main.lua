@@ -565,6 +565,10 @@ Citizen.CreateThread(function()
 	end
 	-- For Development Only
 	DebugPrint('Sonoran Radio Started!')
+	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
+		DebugPrint('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		Radio.TalkAnim = false
+	end
 end)
 
 CreateThread(function()
@@ -835,4 +839,11 @@ TriggerEvent('chat:addSuggestion', '/radiomenu', 'Open the radio repeaters\' spa
 
 RegisterNetEvent('SonoranRadio::OpenRadioMenu', function()
 	WarMenu.OpenMenu('sonoranRadioMenu')
+end)
+
+AddEventHandler('onResourceStart', function(resourceName)
+	if resourceName == 'BigDaddy-RadioAnimation' then
+		DebugPrint('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		Radio.TalkAnim = false
+	end
 end)
