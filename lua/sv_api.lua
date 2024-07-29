@@ -15,6 +15,10 @@ function PerformHttpRequestS(url, cb, method, data, headers)
 end
 local rateLimitedEndpoints = {}
 function performApiRequest(postData, type, cb)
+	if Config.apiKey == nil or Config.comId == nil then
+		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
+		return
+	end
 	local payload = {}
 	payload['id'] = Config.comId
 	payload['key'] = Config.apiKey

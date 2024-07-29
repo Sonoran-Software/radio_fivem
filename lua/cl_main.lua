@@ -230,6 +230,21 @@ local function getPttKey()
 end
 
 function radioToggle(frame)
+	if Config.comId == nil or Config.comId == '' then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is no community ID set for SonoranRadio. Please contact the server owner.'
+			}
+		})
+		return
+	end
 	if authorized then
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not Config.enforceRadioItem then
