@@ -12,6 +12,23 @@ local inVehicle = false
 local authorized = false
 
 local allowedFrames = {}
+local critError = false
+
+if Config.comId == nil or Config.comId == '' then
+	TriggerEvent('chat:addMessage', {
+		color = {
+			255,
+			0,
+			0
+		},
+		multiline = true,
+		args = {
+			'Sonoran Radio',
+			'There is no community ID set for SonoranRadio. Please contact the server owner.'
+		}
+	})
+	critError = true
+end
 
 local comId = Config.comId or Config.communityId or Config.standaloneId
 TriggerEvent('SonoranRadio::ClientReady')
@@ -230,6 +247,21 @@ local function getPttKey()
 end
 
 function radioToggle(frame)
+	if critError or Config.critError then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
+			}
+		})
+		return
+	end
 	if Config.comId == nil or Config.comId == '' then
 		TriggerEvent('chat:addMessage', {
 			color = {
@@ -861,4 +893,20 @@ AddEventHandler('onResourceStart', function(resourceName)
 		DebugPrint('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 		Radio.TalkAnim = false
 	end
+end)
+
+RegisterNetEvent('SonoranRadio::CritError', function()
+	critError = true
+	TriggerEvent('chat:addMessage', {
+		color = {
+			255,
+			0,
+			0
+		},
+		multiline = true,
+		args = {
+			'Sonoran Radio',
+			'There is a critical error with SonoranRadio configuration. The API key is incorrect or missing. Please contact the server owner.'
+		}
+	})
 end)

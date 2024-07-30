@@ -6,9 +6,11 @@ local QBCore = nil
 local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
+local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 
 if Config == nil then
+	critError = true
 	print('!!! CRITICAL ERROR !!!')
 	print('Config file not found, did you forget to rename it?')
 	print('!!! CRITICAL ERROR !!!')
@@ -236,6 +238,11 @@ end
 
 AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
+		return
+	end
+	if not Config.apiKey or not Config.comId then
+		errorLog('API Key or Community ID not set. Please check your configuration.')
+		critError = true
 		return
 	end
 	exports['sonoranradio']:performApiRequest({
