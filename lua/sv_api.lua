@@ -55,12 +55,13 @@ function performApiRequest(postData, type, cb)
 				if res == 'INVALID COMMUNITY ID' or res == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(res, 'IS NOT ENABLED FOR THIS COMMUNITY') or res == 'INVALID API KEY' then
 					errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
 					Config.critError = true
+					sendCritError()
 				end
 				cb(res, false)
 			elseif statusCode == 404 then -- handle 404 requests, like from CHECK_APIID
 				errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
 				Config.critError = true
-				TriggerClientEvent('SonoranRadio::CritError', -1)
+				sendCritError()
 				cb(res, false)
 			elseif statusCode == 429 then -- rate limited :(
 				if rateLimitedEndpoints[type] then
@@ -88,4 +89,16 @@ function performApiRequest(postData, type, cb)
 	else
 		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(payload)))
 	end
+end
+
+AddEventHandler('playerJoining', function()
+	if Config.critError then
+		TriggerClientEvent('SonoranRadio::CritError', source, true)
+	end
+end)
+
+function sendCritError()
+	SetTimeout(5000, function()
+		TriggerClientEvent('SonoranRadio::CritError', -1, true)
+	end)
 end

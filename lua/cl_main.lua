@@ -925,18 +925,22 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 end)
 
-RegisterNetEvent('SonoranRadio::CritError', function()
-	critError = true
-	TriggerEvent('chat:addMessage', {
-		color = {
-			255,
-			0,
-			0
-		},
-		multiline = true,
-		args = {
-			'Sonoran Radio',
-			'There is a critical error with SonoranRadio configuration. The API key is incorrect or missing. Please contact the server owner.'
-		}
-	})
+RegisterNetEvent('SonoranRadio::CritError', function(toggle)
+	if toggle then
+		critError = true
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. The API key is incorrect or missing. Please contact the server owner.'
+			}
+		})
+	else
+		critError = false
+	end
 end)
