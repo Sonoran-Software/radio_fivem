@@ -74,7 +74,6 @@ local function CreateTowerDish(tower, index, n)
 		-- in turn, disabling tower destruction
 		SetEntityInvincible(dishHndl, true)
 	end
-
 	-- set the decorator to "1" to alert lower functions that this is a dish
 	-- NOTE: later, this is set to 0 when the dish is killed. this is so that the dish doesn't get "destroyed" when it's killed
 	DecorSetInt(dishHndl, 'sonrad_dish', 1)
@@ -96,6 +95,8 @@ local function CreateTowerDish(tower, index, n)
 		DeleteEntity(tower.Dishes[index])
 	end
 	tower.Dishes[index] = dishHndl
+	DebugPrint('Created tower dish ' .. index .. ' on tower ' .. tower.Id .. ' | Data: spawnPos: ' .. spawnPos .. ' | theta: ' .. theta .. ' | zRot: ' .. zRot .. ' | dishHndl: ' .. dishHndl)
+	DebugPrint('Listing current dishes for tower #' .. tower.Id .. ' | ' .. json.encode(tower.Dishes))
 end
 -- syncs the dead/alive state of dishes to their physical vehicles
 local function SyncDishStatus(tower, playSound)
@@ -141,6 +142,7 @@ local function CreateTowerLadder(tower)
 
 	tower.Ladder = ladder
 	SetModelAsNoLongerNeeded(model)
+	DebugPrint('Created ladder for tower ' .. tower.Id .. ' | Data: off: ' .. off .. ' | ladderHndl: ' .. ladder)
 end
 -- fully creates a tower based on the given tower object
 local function CreateTower(tower)
@@ -172,13 +174,16 @@ end
 -- delete the physical tower entities
 local function DestroyTower(tower)
 	if DoesEntityExist(tower.Handle) then
+		DebugPrint('Tower with ID ' .. tower.Id .. ' was physical, deleting handle: ' .. tower.Handle)
 		DeleteEntity(tower.Handle)
 	end
 	if DoesEntityExist(tower.Ladder) then
+		DebugPrint('Tower with ID ' .. tower.Id .. ' has ladder, deleting ladder: ' .. tower.Ladder)
 		DeleteEntity(tower.Ladder)
 	end
 	local n = tower.Dishes and #tower.Dishes or 0
 	for j = 1, n do
+		DebugPrint('Tower with ID ' .. tower.Id .. ' has dishs, deleting dish #' .. j .. ' handle: ' .. tower.Dishes[j])
 		DeleteEntity(tower.Dishes[j])
 	end
 	tower.Dishes = {}

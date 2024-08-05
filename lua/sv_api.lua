@@ -15,6 +15,10 @@ function PerformHttpRequestS(url, cb, method, data, headers)
 end
 local rateLimitedEndpoints = {}
 function performApiRequest(postData, type, cb)
+	if Config.apiKey == nil or Config.comId == nil then
+		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
+		return
+	end
 	local payload = {}
 	payload['id'] = Config.comId
 	payload['key'] = Config.apiKey
@@ -51,10 +55,13 @@ function performApiRequest(postData, type, cb)
 				if res == 'INVALID COMMUNITY ID' or res == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(res, 'IS NOT ENABLED FOR THIS COMMUNITY') or res == 'INVALID API KEY' then
 					errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
 					Config.critError = true
+					sendCritError()
 				end
 				cb(res, false)
 			elseif statusCode == 404 then -- handle 404 requests, like from CHECK_APIID
-				debugLog('404 response found')
+				errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
+				Config.critError = true
+				sendCritError()
 				cb(res, false)
 			elseif statusCode == 429 then -- rate limited :(
 				if rateLimitedEndpoints[type] then
@@ -74,7 +81,7 @@ function performApiRequest(postData, type, cb)
 				errorLog(('API error returned (%s). Check status.sonoransoftware.com or our Discord to see if there\'s an outage.'):format(statusCode))
 				debugLog(('API_ERROR Error returned: %s %s'):format(statusCode, res))
 			else
-				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, res))
+				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
 			end
 		end, 'POST', json.encode(payload), {
 			['Content-Type'] = 'application/json'
@@ -82,4 +89,16 @@ function performApiRequest(postData, type, cb)
 	else
 		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(payload)))
 	end
+end
+
+AddEventHandler('playerJoining', function()
+	if Config.critError then
+		TriggerClientEvent('SonoranRadio::CritError', source, true)
+	end
+end)
+
+function sendCritError()
+	SetTimeout(5000, function()
+		TriggerClientEvent('SonoranRadio::CritError', -1, true)
+	end)
 end

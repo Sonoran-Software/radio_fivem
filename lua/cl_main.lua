@@ -12,6 +12,23 @@ local inVehicle = false
 local authorized = false
 
 local allowedFrames = {}
+local critError = false
+
+if Config.comId == nil or Config.comId == '' then
+	TriggerEvent('chat:addMessage', {
+		color = {
+			255,
+			0,
+			0
+		},
+		multiline = true,
+		args = {
+			'Sonoran Radio',
+			'There is no community ID set for SonoranRadio. Please contact the server owner.'
+		}
+	})
+	critError = true
+end
 
 local comId = Config.comId or Config.communityId or Config.standaloneId
 TriggerEvent('SonoranRadio::ClientReady')
@@ -230,6 +247,36 @@ local function getPttKey()
 end
 
 function radioToggle(frame)
+	if critError or Config.critError then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
+			}
+		})
+		return
+	end
+	if Config.comId == nil or Config.comId == '' then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is no community ID set for SonoranRadio. Please contact the server owner.'
+			}
+		})
+		return
+	end
 	if authorized then
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not Config.enforceRadioItem then
@@ -406,14 +453,12 @@ RegisterCommand('+sonradptt', function()
 		type = 'ptt',
 		state = true
 	})
-	Radio:Talking(true)
 end)
 RegisterCommand('-sonradptt', function()
 	SendNUIMessage({
 		type = 'ptt',
 		state = false
 	})
-	Radio:Talking(false)
 end)
 RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
 
@@ -476,6 +521,36 @@ function Radio:Talking(toggle)
 end
 
 function Radio:Toggle(toggle)
+	if critError or Config.critError then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
+			}
+		})
+		return
+	end
+	if Config.comId == nil or Config.comId == '' then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is no community ID set for SonoranRadio. Please contact the server owner.'
+			}
+		})
+		return
+	end
 	local playerPed = PlayerPedId()
 	local count = 0
 
@@ -642,6 +717,10 @@ AddEventHandler('onResourceStart', function(resource)
 	TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')
 	TriggerEvent('chat:addSuggestion', '/radiotalk', 'Toggle your radio talk animation')
 	DebugPrint('Sonoran Radio Started!')
+	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
+		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		Radio.TalkAnim = false
+	end
 end)
 
 AddEventHandler('onResourceStop', function(resource)
@@ -837,4 +916,31 @@ TriggerEvent('chat:addSuggestion', '/radiomenu', 'Open the radio repeaters\' spa
 
 RegisterNetEvent('SonoranRadio::OpenRadioMenu', function()
 	WarMenu.OpenMenu('sonoranRadioMenu')
+end)
+
+AddEventHandler('onResourceStart', function(resourceName)
+	if resourceName == 'BigDaddy-RadioAnimation' then
+		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		Radio.TalkAnim = false
+	end
+end)
+
+RegisterNetEvent('SonoranRadio::CritError', function(toggle)
+	if toggle then
+		critError = true
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. The API key is incorrect or missing. Please contact the server owner.'
+			}
+		})
+	else
+		critError = false
+	end
 end)
