@@ -920,7 +920,7 @@ end)
 
 AddEventHandler('onResourceStart', function(resourceName)
 	if resourceName == 'BigDaddy-RadioAnimation' then
-		DebugPrint('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 		Radio.TalkAnim = false
 	end
 end)
