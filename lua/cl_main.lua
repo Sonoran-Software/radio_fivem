@@ -521,6 +521,36 @@ function Radio:Talking(toggle)
 end
 
 function Radio:Toggle(toggle)
+	if critError or Config.critError then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
+			}
+		})
+		return
+	end
+	if Config.comId == nil or Config.comId == '' then
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Sonoran Radio',
+				'There is no community ID set for SonoranRadio. Please contact the server owner.'
+			}
+		})
+		return
+	end
 	local playerPed = PlayerPedId()
 	local count = 0
 
