@@ -642,10 +642,6 @@ Citizen.CreateThread(function()
 	end
 	-- For Development Only
 	DebugPrint('Sonoran Radio Started!')
-	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
-		DebugPrint('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
-		Radio.TalkAnim = false
-	end
 end)
 
 CreateThread(function()
@@ -721,6 +717,10 @@ AddEventHandler('onResourceStart', function(resource)
 	TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')
 	TriggerEvent('chat:addSuggestion', '/radiotalk', 'Toggle your radio talk animation')
 	DebugPrint('Sonoran Radio Started!')
+	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
+		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
+		Radio.TalkAnim = false
+	end
 end)
 
 AddEventHandler('onResourceStop', function(resource)
