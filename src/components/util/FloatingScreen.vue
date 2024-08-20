@@ -56,19 +56,21 @@ export default {
         serverId: { type: [Number, String], required: true },
         url: { type: String },
     },
-    emits: ['msg'],
+    emits: ['load'],
     data: () => ({
         ro: null,
     }),
     mounted() {
         push(this.$refs.guide, this.serverId, this.url);
 
+        frameEl.addEventListener('load', this.onLoad);
         this.ro = new ResizeObserver(() => this.flush());
         this.ro.observe(this.$refs.guide);
     },
     beforeDestroy() {
         this.ro.disconnect();
         this.ro = null;
+        frameEl.removeEventListener('load', this.onLoad);
         pop();
     },
     watch: {
@@ -80,6 +82,9 @@ export default {
         },
     },
     methods: {
+        onLoad() {
+            this.$emit('load');
+        },
         flush(force) {
             pop();
             if (force) {

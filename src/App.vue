@@ -23,8 +23,13 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId && !dragMode" ref="floatingScreen" :server-id="standaloneServerId"
-                            :url="standaloneUrl" />
+                        <floating-screen
+                            v-if="radioPower && standaloneServerId && !dragMode"
+                            ref="floatingScreen"
+                            :server-id="standaloneServerId"
+                            :url="standaloneUrl"
+                            @load="onScreenLoad"
+                        />
                     </primary-screen>
                 </skin-body-component>
 
@@ -141,6 +146,13 @@ export default {
             for (const key of path) prop = prop[key];
 
             return prop;
+        },
+        skinNames() {
+            const skinNames = {};
+            for (const key in this.skinCache)
+                if ('name' in this.skinCache[key])
+                    skinNames[key] = this.skinCache[key].name;
+            return skinNames;
         }
     },
     watch: {
@@ -148,8 +160,8 @@ export default {
             if (!this.$store.state.connected) return;
             this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
         },
-        selectSkinOptions(opts) {
-            this.updateAvailableSkins(opts);
+        skinNames() {
+            this.updateAvailableSkins();
         }
     },
     created() {
@@ -530,7 +542,7 @@ export default {
             if (frameEl) frameEl.contentWindow.postMessage(data, '*');
             // else console.warn("frameEl does not exist, but tried to send message", data);
         },
-        toggleScan(event) {
+        toggleScan() {
             this.$store.commit('setScanState', !this.$store.state.scanning);
             this.sendToSocket({
                 type: "set_scanning_enabled",
@@ -538,7 +550,7 @@ export default {
             })
         },
         updateAvailableSkins() {
-            this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions, current: this.curSkin?.id })
+            this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
@@ -576,13 +588,17 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
+            this.sendToSocket({
+                type: 'power',
+                power: this.radioPower
+            });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
-
-            this.$nextTick(() => {
-                this.sendToSocket({ type: 'power', power: this.radioPower });
+        },
+        onScreenLoad() {
+            setTimeout(() => {
                 this.updateAvailableSkins();
                 this.updateGamestate();
-            });
+            }, 1000);
         }
     }
 };
