@@ -147,6 +147,9 @@ export default {
         stateFreqName(newVal) {
             if (!this.$store.state.connected) return;
             this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
+        },
+        selectSkinOptions(opts) {
+            this.updateAvailableSkins(opts);
         }
     },
     created() {
@@ -461,11 +464,10 @@ export default {
             if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
-            let message = {
+            this.sendToSocket({
                 type: "set_gamestate",
                 state: this.$store.state.gamestate
-            }
-            this.sendToSocket(message);
+            });
         },
         addScanned(event) {
             this.$store.state.scanned.push(this.$store.state.currFreq.recv);
@@ -516,6 +518,9 @@ export default {
                 case 'mic_status':
                     this.postClient({type: 'talking', talking: event.micOpen});
                     break;
+                case 'set_skin':
+                    this.selectSkin(event.skinId || 'default');
+                    break;
                 case 'reposition':
                     this.dragMode = true;
                     break;
@@ -531,6 +536,9 @@ export default {
                 type: "set_scanning_enabled",
                 enabled: this.$store.state.scanning
             })
+        },
+        updateAvailableSkins() {
+            this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions, current: this.curSkin?.id })
         },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
@@ -564,13 +572,17 @@ export default {
                 this.$store.commit('setConnected', this.radioPower);
 
             this.$store.state.gamestate.radio_powered = this.radioPower;
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
-            this.sendToSocket({ type: 'power', power: this.radioPower });
             this.postClient({
                 type: 'power',
                 power: this.radioPower
             });
-            this.updateGamestate();
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+
+            this.$nextTick(() => {
+                this.sendToSocket({ type: 'power', power: this.radioPower });
+                this.updateAvailableSkins();
+                this.updateGamestate();
+            });
         }
     }
 };
