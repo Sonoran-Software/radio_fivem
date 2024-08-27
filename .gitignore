@@ -1,6 +1,8 @@
-dist/
 /node_modules
+/.vscode
+/dist*
 /config.lua
 /towers.json
+
 yarn-error.log
 .yarn.installed
