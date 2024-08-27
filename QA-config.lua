@@ -42,31 +42,15 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = 'qbcore', -- ace, qbcore, esx or none
-	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
+	permissionMode = "none",
 	departments = {
-		['sahp'] = {
-			label = 'San Andreas Highway Patrol',
-			permissions = {
-				jobs = { -- Jobs that can use this department
-					['police'] = {
-						grades = { -- Job grades that can use this department
-							1,
-							2,
-							3
-						}
-					}
-				},
-				ace = { -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
-					'sonoranradio.sahp'
-				}
-			},
-			-- Radio frames that can be used by this department
+		['common'] = {
+			label = 'Common',
 			allowedFrames = {
 				'default',
 				'signalpro',
 				'voxguard',
-                'hi-vis'
+				'hi-vis'
 			}
 		}
 	}
