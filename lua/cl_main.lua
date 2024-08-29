@@ -864,6 +864,12 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 			type = 'setCurrentSkin',
 			skin = frame
 		})
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
 	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
@@ -893,6 +899,18 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 				}
 			})
 		end
+	elseif Config.frames.permissionMode == 'qbcore' and not Config.enforceRadioItem then
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
+		TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
 	end
 end)
 
