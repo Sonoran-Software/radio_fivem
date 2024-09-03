@@ -283,8 +283,12 @@ function radioToggle(frame)
 			Radio.Has = true
 		end
 		if Radio.Has then
+			if frame == nil then
+				frame = 'default'
+			end
 			SendNUIMessage({
-				type = 'setSkins',
+				type = 'setCurrentSkin',
+				skin = frame,
 				skins = allowedFrames
 			})
 			radActive = not radActive
@@ -293,7 +297,6 @@ function radioToggle(frame)
 				type = 'setUiPositions',
 				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
 			})
-
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
@@ -301,13 +304,6 @@ function radioToggle(frame)
 				standaloneId = comId,
 				standaloneUrl = Config.radioUrl,
 				pttKey = getPttKey()
-			})
-			if frame == nil then
-				frame = 'default'
-			end
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
 			})
 			if radActive then
 				SetNuiFocus(true, true)
