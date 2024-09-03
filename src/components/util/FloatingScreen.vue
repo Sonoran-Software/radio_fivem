@@ -90,6 +90,7 @@ export default {
             if (force) {
                 frameEl.remove();
                 frameEl = null;
+                cacheBust = Date.now();
             }
             push(this.$refs.guide, this.serverId, this.url);
         }
