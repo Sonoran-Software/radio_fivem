@@ -206,7 +206,7 @@ export default {
             if (typeof event.data.standaloneId !== 'undefined')
                 this.standaloneServerId = event.data.standaloneId;
             if (typeof event.data.standaloneUrl !== 'undefined')
-                this.standaloneUrl = event.data.standaloneUrl + "?cachebuster=" + Date.now();
+                this.standaloneUrl = event.data.standaloneUrl;
 
             switch (event.data.type) {
                 case 'power':

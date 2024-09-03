@@ -17,7 +17,7 @@ function push(el, svId, url) {
 
     // create frame if not exists
     url = url || 'https://sonoranradio.com'
-    const src = `${url}/view/${svId}?fivem=true`;
+    const src = `${url}/view/${svId}?fivem=true&cachebuster=${Date.now()}`;
     if (!frameEl) {
         frameEl = document.createElement('iframe');
         frameEl.src = src;
