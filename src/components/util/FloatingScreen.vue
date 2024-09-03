@@ -6,7 +6,7 @@
 /** @type {HTMLIFrameElement | null} */
 export let frameEl = null;
 let refs = 0;
-
+let cacheBust = Date.now();
 /**
  * @param {HTMLElement} el
  * @param {number} svId
@@ -17,7 +17,7 @@ function push(el, svId, url) {
 
     // create frame if not exists
     url = url || 'https://sonoranradio.com'
-    const src = `${url}/view/${svId}?fivem=true&cachebuster=${Date.now()}`;
+    const src = `${url}/view/${svId}?fivem=true&cachebuster=${cacheBust}`;
     if (!frameEl) {
         frameEl = document.createElement('iframe');
         frameEl.src = src;
