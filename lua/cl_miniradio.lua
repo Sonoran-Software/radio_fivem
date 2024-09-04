@@ -38,7 +38,7 @@ function InitModuleSize(module)
         DebugMessage("retrieving saved presets", module)
         -- Send message to NUI to resize the specified module.
         SetModuleSize(module, moduleWidth, moduleHeight)
-        SendNUIMessage({type = "refresh", module = module})
+        SendNUIMessage({type = "refresh", module = module, miniradio = true})
     end
 end
 
@@ -48,13 +48,19 @@ function InitModuleConfig(module)
         DebugMessage("retrieving config presets", module)
         -- Send messsage to NUI to update config of specified module.
         SetModuleConfigValue(module, "maxrows", moduleMaxRows)
-        SendNUIMessage({type = "refresh", module = module})
+        SendNUIMessage({type = "refresh", module = module, miniradio = true})
     end
 end
 
 function SetModuleConfigValue(module, key, value)
     DebugMessage(("MODULE %s Setting %s to %s"):format(module, key, value))
-    SendNUIMessage({type = "config", module = module, key = key, value = value})
+    SendNUIMessage({
+        type = "config",
+        module = module,
+        key = key,
+        value = value,
+        miniradio = true
+    })
     DebugMessage("saving config value to kvp")
     SetResourceKvp(module .. key, value)
 end
@@ -68,7 +74,8 @@ function SetModuleSize(module, width, height)
         type = "resize",
         module = module,
         newWidth = width,
-        newHeight = height
+        newHeight = height,
+        miniradio = true
     })
 
     DebugMessage("saving module size to kvp")
@@ -79,7 +86,7 @@ end
 -- Refresh a Module
 function RefreshModule(module)
     DebugMessage("sending refresh message to nui", module)
-    SendNUIMessage({type = "refresh", module = module})
+    SendNUIMessage({type = "refresh", module = module, miniradio = true})
 end
 
 -- Display a Module
@@ -88,7 +95,8 @@ function DisplayModule(module, show)
     SendNUIMessage({
         type = "display",
         module = module,
-        enabled = show
+        enabled = show,
+        miniradio = true
     })
 end
 
@@ -167,7 +175,7 @@ end)
 
 -- Mini-Radio Events
 function setActiveUsers(users)
-    SendNUIMessage({type = 'userSync', activeUsers = users})
+    SendNUIMessage({type = 'userSync', activeUsers = users, miniradio = true})
 end
 
 AddEventHandler('onClientResourceStart',
