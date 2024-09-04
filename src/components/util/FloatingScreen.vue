@@ -43,12 +43,15 @@ function push(el, svId, url) {
     frameEl.style.height = `${rect.height / scale}px`;
     frameEl.style.zIndex = elStyles.zIndex + 1;
     frameEl.style.visibility = 'visible';
+    console.log("sonoranradio: show floating screen", rect);
 }
 function pop() {
     refs--;
+    console.log("sonoranradio: pop flating screen", refs);
     if (refs !== 0) return;
 
     frameEl.style.visibility = 'hidden';
+    console.log("sonoranradio: hide flating screen");
 }
 
 export default {
