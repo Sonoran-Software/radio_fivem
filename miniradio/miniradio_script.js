@@ -79,7 +79,6 @@ $(function () {
 		}
 	};
 	dragElement(document.getElementById("hudDiv"));
-	window.addEventListener("message", receiveMessage, false);
 });
 
 function dragElement(elmnt) {

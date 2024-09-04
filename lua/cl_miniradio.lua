@@ -85,7 +85,6 @@ end
 -- Display a Module
 function DisplayModule(module, show)
     DebugMessage("sending display message to nui " .. tostring(show), module)
-    if not isRegistered then apiCheck = true end
     SendNUIMessage({
         type = "display",
         module = module,
