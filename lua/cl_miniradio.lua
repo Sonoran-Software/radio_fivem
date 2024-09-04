@@ -89,10 +89,8 @@ function DisplayModule(module, show)
     SendNUIMessage({
         type = "display",
         module = module,
-        apiCheck = apiCheck,
         enabled = show
     })
-    if module == "hud" then isMiniVisible = show end
 end
 
 -- Print a chat message to the current player
