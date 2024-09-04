@@ -25,11 +25,11 @@ client_scripts {
 -- setup for nui
 files {
     'dist/**/*',
-    'skins/**/*',
     'miniradio/**/*',
+    'skins/**/*',
 }
 ui_page 'dist/ui.html'
-ui_page 'miniradio/miniradio.html'
+
 -- setup for streamed files
 files {
     'data/vehicles.meta',
