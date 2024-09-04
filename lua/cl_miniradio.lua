@@ -112,7 +112,11 @@ function SetFocused(focused)
 end
 
 -- Remove NUI focus
-RegisterNUICallback('NUIFocusOff', function() SetFocused(false) end)
+RegisterNUICallback('NUIFocusOff', function()
+    SetFocused(false)
+    PrintChatMessage("Mini-Radio focus " ..
+                         (nuiFocused and "enabled" or "disabled"))
+end)
 
 function openMiniRadio()
     isMiniVisible = not isMiniVisible
@@ -174,8 +178,12 @@ RegisterNUICallback("VisibleEvent", function(data, cb)
 end)
 
 -- Mini-Radio Events
-function setActiveUsers(users)
-    SendNUIMessage({type = 'userSync', activeUsers = users, miniradio = true})
+function setActiveUsers(channels)
+    SendNUIMessage({
+        type = 'channelSync',
+        channels = channels,
+        miniradio = true
+    })
 end
 
 AddEventHandler('onClientResourceStart',
@@ -185,13 +193,40 @@ AddEventHandler('onClientResourceStart',
 end)
 
 RegisterCommand('testminiradio', function()
-    local users = {}
-    local randomNames = {
-        "John Doe", "Jane Doe", "John Smith", "Jane Smith", "John Johnson",
-        "Jane Johnson", "John Brown", "Jane Brown", "John White", "Jane White"
+    local channels = {}
+    local randomUserNames = {
+        "John Doe", "Jane Doe", "John Smghjkghkjkhgghkjith", "Jane Smifghjhfgjfhjgth", "John Johnson",
+        "Jane Johnson", "John Bghjkhgghkjghjkrown", "Jane Brown", "John Whifghjfgfjghte", "Jane White",
+        "John Black", "Jane Black", "John Green", "Jane Green", "John Blue",
+        "Jane Blue", "John Red", "Jane Red", "John Orfghjfghjange", "Jane Orange",
+        "John Purple", "Jane Purple", "John Pinghfhjgffghjk", "Jane Pink", "John Gray",
+        "Jane Gray", "John Silvegjhkghjkgjhkr", "Jane Silveghjkhgjkhgjr", "John Goghjkghjkghkjld", "Jane Golghjkghghkjgkhjd",
+        "John Copper", "Jane Copper", "John Bronze", "Jane Bronze", "John Brghjkgjhkjkghass",
     }
-    for i = 1, 10 do
-        table.insert(users, {name = randomNames[math.random(1, #randomNames)]})
-        i = i + 1
+    local randomFrequencies = {
+        '154.750', '154.800', '154.850', '154.900', '154.950', '155.000',
+    }
+
+    -- Loop to create 5 channels
+    for i = 1, 5 do
+        local activeUsers = {}
+
+        -- Generate between 5 to 10 random users for the channel
+        local numUsers = math.random(20, 40)
+
+        for j = 1, numUsers do
+            table.insert(activeUsers, {
+                name = randomUserNames[math.random(1, #randomUserNames)]
+            })
+        end
+
+        -- Insert the channel with its users and a random frequency
+        table.insert(channels, {
+            activeUsers = activeUsers,  -- List of users for this channel
+            channelName = randomFrequencies[math.random(1, #randomFrequencies)]
+        })
     end
+
+    -- Function to handle the channels and their users (assuming this is defined elsewhere)
+    setActiveUsers(channels)
 end)
