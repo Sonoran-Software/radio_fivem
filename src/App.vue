@@ -21,7 +21,7 @@
 
         <!-- acts as standalone radio for hearing radios around the player -->
         <standalone-frame
-            v-if="standaloneServerId && !radioPower"
+            v-if="chatterEnabled"
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
@@ -103,6 +103,7 @@ export default {
             },
             positions: {},
 
+            chatterFeatureEnabled: false,
             chatterNeedsInput: false,
             chatterNeedsInputHelp: false,
 
@@ -169,6 +170,9 @@ export default {
                 if ('name' in this.skinCache[key])
                     skinNames[key] = this.skinCache[key].name;
             return skinNames;
+        },
+        chatterEnabled() {
+            return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
         }
     },
     watch: {
@@ -220,8 +224,8 @@ export default {
                 case 'setStandalone':
                     this.standaloneServerId = event.data.standaloneId;
                     this.standaloneUrl = event.data.standaloneUrl;
+                    this.chatterFeatureEnabled = event.data.chatter;
                     this.debug = event.data.debug;
-                    // TODO: move setting standaloneServerId and standaloneUrl in here
                     break;
                 case 'power':
                     this.radioPower = event.data.power || !this.radioPower;
@@ -333,6 +337,29 @@ export default {
                     // this is received after we sent chatterNeedsInput
                     // the event means we now have NUI focus, so we can set this.chatterNeedsInputHelp and wait for input
                     this.chatterNeedsInputHelp = true;
+                    break;
+                case 'chatterFrequenciesUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_scanner_freqs',
+                        freqs: event.data.freqs,
+                    })
+                    break;
+                case 'chatterCameraUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_audio_listener_orientation',
+                        coord: event.data.coord,
+                        forward: event.data.forward,
+                        up: event.data.up
+                    });
+                    break;
+                case 'chatterSourcesUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_audio_source_positions',
+                        sources: event.data.sources,
+                    });
                     break;
                 default:
                     break;
@@ -534,6 +561,9 @@ export default {
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
+                    break;
+                case 'state_updated':
+                    this.postClient({ type: 'stateUpdated', state: this.radioPower ? event.state : null });
                     break;
                 case 'mic_status':
                     this.postClient({type: 'talking', talking: event.micOpen});

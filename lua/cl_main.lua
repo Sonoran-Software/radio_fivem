@@ -623,6 +623,7 @@ local function initNui()
 		type = 'setStandalone',
 		standaloneId = comId,
 		standaloneUrl = Config.radioUrl,
+		chatter = Config.chatter,
 		debug = Config.debug,
 	})
 end
@@ -631,6 +632,7 @@ Citizen.CreateThread(function()
 	SetNuiFocus(false, false)
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
 	initNui()
+	LocalPlayer.state:set('sonoranradio_state', nil, true)
 
 	while true do
 		local ped = GetPlayerPed(-1)
@@ -724,6 +726,11 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'setUiPositions' then
 		-- save positions of components in the UI
 		SetResourceKvp('ui_pos_dic', json.encode(data.data))
+	end
+
+	if data.type == 'stateUpdated' then
+		-- replicate the new state to other clients
+		LocalPlayer.state:set('sonoranradio_state', data.state, true)
 	end
 
 	if data.type == 'chatterNeedsInput' then
