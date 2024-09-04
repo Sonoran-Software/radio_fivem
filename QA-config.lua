@@ -43,6 +43,7 @@ Config.notifications = {
 -- Radio Item Settings --
 Config.frames = {
 	permissionMode = "none",
+	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['common'] = {
 			label = 'Common',

@@ -26,9 +26,10 @@ client_scripts {
 files {
     'dist/**/*',
     'skins/**/*',
+    'miniradio/**/*',
 }
 ui_page 'dist/ui.html'
-
+ui_page 'miniradio/miniradio.html'
 -- setup for streamed files
 files {
     'data/vehicles.meta',
