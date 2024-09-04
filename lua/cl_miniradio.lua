@@ -1,7 +1,6 @@
 nuiFocused = false
 isRegistered = false
 usingTablet = false
-myident = nil
 isMiniVisible = false
 
 -- Debugging Information
@@ -111,7 +110,8 @@ end
 RegisterNUICallback('NUIFocusOff', function() SetFocused(false) end)
 
 function openMiniRadio()
-    DisplayModule("hud", true)
+    isMiniVisible = not isMiniVisible
+    DisplayModule("hud", isMiniVisible)
     if not GetResourceKvpString("shownTutorial") then
         ShowHelpMessage()
         SetResourceKvp("shownTutorial", "yes")
@@ -120,7 +120,7 @@ end
 
 function ShowHelpMessage()
     PrintChatMessage(
-        "Use /miniradio to toggle the Mini Radio open and closed, to move the Mini Radio use /miniradiofocus to enable moving the Mini Radio, to resize the Mini Radio use /miniradiosize [width] [height], to refresh the Mini Radio use /miniradiorefresh, to set the number of users shown on the Mini Radio use /miniradiorows [rows].")
+        "• Use /miniradio to toggle the Mini Radio open and closed\n• Use /miniradiofocus to enable moving the Mini Radio\n• Use /miniradiosize [width] [height]\n• Use /miniradiorefresh to refresh the Mini Radio\n• Use /miniradiorows [rows] to set the number of users shown on the Mini Radio.")
 end
 
 -- Mini Module Commands
