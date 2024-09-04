@@ -26,3 +26,9 @@ miniradioFrame.style.height = '100%';
 miniradioFrame.style.border = '0px';
 miniradioFrame.style.zIndex = '-1';
 document.body.appendChild(miniradioFrame);
+
+window.addEventListener('message', (ev) => {
+  if (!ev.data.miniradio) return;
+  ev.stopImmediatePropagation();
+  miniradioFrame.contentWindow.postMessage(ev.data, '*');
+});
