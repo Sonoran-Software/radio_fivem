@@ -192,5 +192,6 @@ RegisterCommand('testminiradio', function()
     }
     for i = 1, 10 do
         table.insert(users, {name = randomNames[math.random(1, #randomNames)]})
+        i = i + 1
     end
 end)
