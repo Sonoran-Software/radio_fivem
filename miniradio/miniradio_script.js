@@ -54,6 +54,10 @@ function createChannelContent(channelTitle, users) {
 }
 
 function refreshCall() {
+	if (activeChannels.length == 0) {
+		document.getElementById("hudContentWrapper").innerHTML = "No active channels found.";
+		return;
+	}
 	activeChannels.forEach((channel) => {
 		createChannelContent(channel.channelName, channel.activeUsers);
 	});

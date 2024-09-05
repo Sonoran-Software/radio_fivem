@@ -134,7 +134,7 @@ end
 
 -- Mini Module Commands
 RegisterCommand("radiousers", function(source, args, rawCommand)
-    if not miniRadio then
+    if not allowedMiniRadio then
         TriggerEvent("chat:addMessage", {
             color = {255, 0, 0},
             multiline = true,

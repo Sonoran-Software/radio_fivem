@@ -6,7 +6,7 @@ local unitStatus = nil
 local thisCall = {}
 
 local isTalking = false
-miniRadio = false
+allowedMiniRadio = false
 local inVehicle = false
 
 local authorized = false
@@ -335,6 +335,7 @@ end
 RegisterNetEvent('SonoranRadio::AuthorizeRadio')
 AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 	DebugPrint('Authorized for Radio Usage')
+	allowedMiniRadio = miniRadio
 	authorized = true
 	allowedFrames = frames
 end)
