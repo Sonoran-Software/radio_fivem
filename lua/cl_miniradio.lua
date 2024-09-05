@@ -118,7 +118,7 @@ RegisterNUICallback('NUIFocusOff', function()
                          (nuiFocused and "enabled" or "disabled"))
 end)
 
-function openMiniRadio()
+function openradiousers()
     isMiniVisible = not isMiniVisible
     DisplayModule("hud", isMiniVisible)
     if not GetResourceKvpString("shownTutorial") then
@@ -129,28 +129,40 @@ end
 
 function ShowHelpMessage()
     PrintChatMessage(
-        "• Use /miniradio to toggle the Mini Radio open and closed\n• Use /miniradiofocus to enable moving the Mini Radio\n• Use /miniradiosize [width] [height]\n• Use /miniradiorefresh to refresh the Mini Radio\n• Use /miniradiorows [rows] to set the number of users shown on the Mini Radio.")
+        "• Use /radiousers to toggle the Mini Radio open and closed\n• Open your radio to enable moving the Mini Radio\n• Use /radiouserssize [width] [height]\n• Use /radiousersrefresh to refresh the Mini Radio\n• Use /radiousersrows [rows] to set the number of users shown on the Mini Radio.")
 end
 
 -- Mini Module Commands
-RegisterCommand("miniradio",
-                function(source, args, rawCommand) openMiniRadio() end, false)
-RegisterKeyMapping('miniradio', 'Mini CAD', 'keyboard', '')
+RegisterCommand("radiousers", function(source, args, rawCommand)
+    if not miniRadio then
+        TriggerEvent("chat:addMessage", {
+            color = {255, 0, 0},
+            multiline = true,
+            args = {
+                "Radio Users",
+                "You are not allowed to use the Radio Users panel."
+            }
+        })
+        return
+    end
+    openradiousers()
+end)
+RegisterKeyMapping('radiousers', 'Toggle Radio Users', 'keyboard', '')
 
-RegisterCommand("miniradiohelp", function() ShowHelpMessage() end)
+RegisterCommand("radiousershelp", function() ShowHelpMessage() end)
 
-TriggerEvent('chat:addSuggestion', '/miniradiosize',
+TriggerEvent('chat:addSuggestion', '/radiouserssize',
              "Resize the Mini-Radio to specific width and height in pixels.", {
     {name = "Width", help = "Width in pixels"},
     {name = "Height", help = "Height in pixels"}
 })
-RegisterCommand("miniradiosize", function(source, args, rawCommand)
+RegisterCommand("radiouserssize", function(source, args, rawCommand)
     if not args[1] and not args[2] then return end
     SetModuleSize("hud", args[1], args[2])
 end)
-RegisterCommand("miniradiorefresh", function() RefreshModule("hud") end)
+RegisterCommand("radiousersrefresh", function() RefreshModule("hud") end)
 
-RegisterCommand("miniradiorows", function(source, args, rawCommand)
+RegisterCommand("radiousersrows", function(source, args, rawCommand)
     if #args ~= 1 then
         PrintChatMessage("Please specify a number of rows to display.")
         return
@@ -159,18 +171,9 @@ RegisterCommand("miniradiorows", function(source, args, rawCommand)
         PrintChatMessage("Maximum Mini-Radio users set to " .. args[1])
     end
 end)
-TriggerEvent('chat:addSuggestion', '/miniradiorows',
+TriggerEvent('chat:addSuggestion', '/radiousersrows',
              "Specify max number of users shown on Mini-Radio.",
              {{name = "rows", help = "any number (default 10)"}})
-
-RegisterCommand("miniradiofocus", function()
-    SetFocused(not nuiFocused)
-    PrintChatMessage("Mini-Radio focus " ..
-                         (nuiFocused and "enabled" or "disabled"))
-end)
-TriggerEvent('chat:addSuggestion', '/miniradiofocus',
-             "Enable or disable moving the Mini-Radio.", {})
-RegisterNUICallback("ShowHelp", function() ShowHelpMessage() end)
 
 RegisterNUICallback("VisibleEvent", function(data, cb)
     if data.module == "hud" then isMiniVisible = data.state end
@@ -179,11 +182,7 @@ end)
 
 -- Mini-Radio Events
 function setActiveUsers(channels)
-    SendNUIMessage({
-        type = 'channelSync',
-        channels = channels,
-        miniradio = true
-    })
+    SendNUIMessage({type = 'channelSync', channels = channels, miniradio = true})
 end
 
 AddEventHandler('onClientResourceStart',
@@ -192,19 +191,22 @@ AddEventHandler('onClientResourceStart',
     SetFocused(false)
 end)
 
-RegisterCommand('testminiradio', function()
+RegisterCommand('testradiousers', function()
     local channels = {}
     local randomUserNames = {
-        "John Doe", "Jane Doe", "John Smghjkghkjkhgghkjith", "Jane Smifghjhfgjfhjgth", "John Johnson",
-        "Jane Johnson", "John Bghjkhgghkjghjkrown", "Jane Brown", "John Whifghjfgfjghte", "Jane White",
-        "John Black", "Jane Black", "John Green", "Jane Green", "John Blue",
-        "Jane Blue", "John Red", "Jane Red", "John Orfghjfghjange", "Jane Orange",
-        "John Purple", "Jane Purple", "John Pinghfhjgffghjk", "Jane Pink", "John Gray",
-        "Jane Gray", "John Silvegjhkghjkgjhkr", "Jane Silveghjkhgjkhgjr", "John Goghjkghjkghkjld", "Jane Golghjkghghkjgkhjd",
-        "John Copper", "Jane Copper", "John Bronze", "Jane Bronze", "John Brghjkgjhkjkghass",
+        "John Doe", "Jane Doe", "John Smghjkghkjkhgghkjith",
+        "Jane Smifghjhfgjfhjgth", "John Johnson", "Jane Johnson",
+        "John Bghjkhgghkjghjkrown", "Jane Brown", "John Whifghjfgfjghte",
+        "Jane White", "John Black", "Jane Black", "John Green", "Jane Green",
+        "John Blue", "Jane Blue", "John Red", "Jane Red", "John Orfghjfghjange",
+        "Jane Orange", "John Purple", "Jane Purple", "John Pinghfhjgffghjk",
+        "Jane Pink", "John Gray", "Jane Gray", "John Silvegjhkghjkgjhkr",
+        "Jane Silveghjkhgjkhgjr", "John Goghjkghjkghkjld",
+        "Jane Golghjkghghkjgkhjd", "John Copper", "Jane Copper", "John Bronze",
+        "Jane Bronze", "John Brghjkgjhkjkghass"
     }
     local randomFrequencies = {
-        '154.750', '154.800', '154.850', '154.900', '154.950', '155.000',
+        '154.750', '154.800', '154.850', '154.900', '154.950', '155.000'
     }
 
     -- Loop to create 5 channels
@@ -222,7 +224,7 @@ RegisterCommand('testminiradio', function()
 
         -- Insert the channel with its users and a random frequency
         table.insert(channels, {
-            activeUsers = activeUsers,  -- List of users for this channel
+            activeUsers = activeUsers, -- List of users for this channel
             channelName = randomFrequencies[math.random(1, #randomFrequencies)]
         })
     end

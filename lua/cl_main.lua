@@ -6,7 +6,7 @@ local unitStatus = nil
 local thisCall = {}
 
 local isTalking = false
-
+miniRadio = false
 local inVehicle = false
 
 local authorized = false
@@ -333,7 +333,7 @@ function radioToggle(frame)
 end
 
 RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames)
+AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 	DebugPrint('Authorized for Radio Usage')
 	authorized = true
 	allowedFrames = frames

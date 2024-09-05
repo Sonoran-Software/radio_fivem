@@ -15,6 +15,7 @@ Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
+Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.enforceRadioItem = false
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn

@@ -102,16 +102,14 @@ $(function () {
 		}
 	});
 	document.onkeyup = function (data) {
-		switch (data.which) {
-			case 27:
-				$.post("https://sonoranradio/NUIFocusOff", JSON.stringify({}));
-				break;
-			default:
-				break;
-		}
+		sendToParent({ type: "keyup", key: data.which, code: data.code });
 	};
 	dragElement(document.getElementById("hudDiv"));
 });
+
+function sendToParent(data) {
+	if (parent) parent.postMessage(data, "*");
+}
 
 function dragElement(elmnt) {
 	var pos1 = 0,
