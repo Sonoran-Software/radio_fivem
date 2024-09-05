@@ -63,7 +63,7 @@ export default {
     mounted() {
         push(this.$refs.guide, this.serverId, this.url);
 
-        this.ro = new ResizeObserver(() => this.flush());
+        this.ro = new ResizeObserver(() => setTimeout(() => this.flush()));
         this.ro.observe(this.$refs.guide);
     },
     beforeDestroy() {
