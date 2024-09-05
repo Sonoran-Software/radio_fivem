@@ -601,6 +601,9 @@ export default {
         buttonHome() {
             if (this.$refs.standaloneFrame.length === 0) return;
             this.$refs.standaloneFrame[0].flush(true);
+            this.postClient({
+                type: "home"
+            });
         },
         buttonPrev() {
             if (!this.$store.state.connected)

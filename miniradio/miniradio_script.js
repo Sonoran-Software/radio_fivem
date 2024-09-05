@@ -1,5 +1,4 @@
 let activeChannels = [];
-let displayedChannels = 0; // Counter to keep track of displayed channels
 var maxColumns = 3; // Set your max columns here (example: 3)
 let hiddenChannels = 0; // Counter to track channels not displayed
 
@@ -48,9 +47,6 @@ function createChannelContent(channelTitle, users) {
 
 	// Append the channelContent to the hudContentWrapper
 	document.getElementById("hudContentWrapper").appendChild(channelContent);
-
-	// Increment the number of displayed channels
-	displayedChannels++;
 }
 
 function refreshCall() {
@@ -178,3 +174,15 @@ function dragElement(elmnt) {
 		document.onmousemove = null;
 	}
 }
+
+window.addEventListener("message", function (event) {
+	if (event.data.type == "update_connected_users") {
+		console.log("Getting info from radio website", JSON.stringify(event.data));
+		$.post(
+			"https://sonoranradio/UpdateConnectedUsers",
+			JSON.stringify({
+				users: event.data.users,
+			})
+		);
+	}
+});
