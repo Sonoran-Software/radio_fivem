@@ -65,7 +65,7 @@ export default {
         push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
 
         frameEl.addEventListener('load', this.onLoad);
-        this.ro = new ResizeObserver(() => this.flush());
+        this.ro = new ResizeObserver(() => setTimeout(() => this.flush()));
         this.ro.observe(this.$refs.guide);
     },
     beforeDestroy() {

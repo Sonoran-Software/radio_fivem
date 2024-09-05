@@ -88,7 +88,6 @@ export default {
 
             showRadio: false,
             showTopRadio: false,
-            showMobileRadio: false,
             radioPower: false,
             currPreset: 0,
             currScreen: "",
@@ -116,6 +115,9 @@ export default {
         }
     },
     computed: {
+        showMobileRadio() {
+            return this.showRadio && this.inVehicle;
+        },
         stateFreqName() {
             return this.$store.getters.freqName;
         },
@@ -130,8 +132,8 @@ export default {
             };
 
             let frames = [];
-            if (this.showRadio) frames.push(getFrame('portable'));
             if (this.showMobileRadio) frames.push(getFrame('vehicle'));
+            else if (this.showRadio) frames.push(getFrame('portable'));
             if (this.showTopRadio) frames.push(getFrame('hud'));
 
             // dedupe frames by type
@@ -237,13 +239,14 @@ export default {
                     this.updateGamestate();
                     break;
                 case 'setVisible':
-                    if (this.inVehicle && this.radioPower) {
-                        this.showMobileRadio = event.data.visibility;
-                        this.showRadio = false;
-                    } else {
-                        this.showMobileRadio = false;
-                        this.showRadio = event.data.visibility;
-                    }
+                    this.showRadio = event.data.visibility;
+                    // if (this.inVehicle && this.radioPower) {
+                    //     this.showMobileRadio = event.data.visibility;
+                    //     this.showRadio = false;
+                    // } else {
+                    //     this.showMobileRadio = false;
+                    //     this.showRadio = event.data.visibility;
+                    // }
                     this.pttKeyName = event.data.pttKey;
                     break;
                 case 'ptt':
@@ -316,8 +319,6 @@ export default {
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
                     this.$store.commit('setInVehicle', this.inVehicle);
-                    //console.log("inVehicle: " + this.inVehicle);
-                    this.updateRadioType();
                     break;
                 case 'time':
                     this.$store.commit('setInGameTime', event.data.time);
@@ -485,17 +486,6 @@ export default {
                 });
             }
             return skinOptions;
-        },
-        updateRadioType() {
-            if (this.showMobileRadio || this.showRadio) {
-                if (this.inVehicle) {
-                    this.showMobileRadio = true;
-                    this.showRadio = false;
-                } else {
-                    this.showMobileRadio = false;
-                    this.showRadio = true;
-                }
-            }
         },
         hideRadio(forceful) {
             this.postClient({ type: 'hide', force: forceful });
