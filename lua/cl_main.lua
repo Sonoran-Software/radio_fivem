@@ -690,6 +690,7 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'power' then
 		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+		handleRadioPower(data.power)
 		Radio.On = data.power
 	end
 

@@ -193,48 +193,40 @@ AddEventHandler('onClientResourceStart',
     SetFocused(false)
 end)
 
-RegisterCommand('testradiousers', function()
-    local channels = {}
-    local randomUserNames = {
-        "John Doe", "Jane Doe", "John Smghjkghkjkhgghkjith",
-        "Jane Smifghjhfgjfhjgth", "John Johnson", "Jane Johnson",
-        "John Bghjkhgghkjghjkrown", "Jane Brown", "John Whifghjfgfjghte",
-        "Jane White", "John Black", "Jane Black", "John Green", "Jane Green",
-        "John Blue", "Jane Blue", "John Red", "Jane Red", "John Orfghjfghjange",
-        "Jane Orange", "John Purple", "Jane Purple", "John Pinghfhjgffghjk",
-        "Jane Pink", "John Gray", "Jane Gray", "John Silvegjhkghjkgjhkr",
-        "Jane Silveghjkhgjkhgjr", "John Goghjkghjkghkjld",
-        "Jane Golghjkghghkjgkhjd", "John Copper", "Jane Copper", "John Bronze",
-        "Jane Bronze", "John Brghjkgjhkjkghass"
-    }
-    local randomFrequencies = {
-        '154.750', '154.800', '154.850', '154.900', '154.950', '155.000'
-    }
+local function findChannel(channelName)
+    for i, channel in ipairs(activeChannels) do
+        if channel.channelName == channelName then return i end
+    end
+    return nil
+end
 
-    -- Loop to create 5 channels
-    for i = 1, 5 do
-        local activeUsers = {}
-
-        -- Generate between 5 to 10 random users for the channel
-        local numUsers = math.random(20, 40)
-
-        for j = 1, numUsers do
-            table.insert(activeUsers, {
-                name = randomUserNames[math.random(1, #randomUserNames)]
+RegisterNUICallback('UpdateConnectedUsers', function(users)
+    activeChannels = {}
+    for _, user in ipairs(users.users) do
+        local channelIndex = findChannel(user.channelName)
+        -- If channel already exists, add the user to the activeUsers list
+        if channelIndex then
+            table.insert(activeChannels[channelIndex].activeUsers,
+                         {name = user.displayName})
+        else
+            -- If channel doesn't exist, create a new entry for it
+            table.insert(activeChannels, {
+                channelName = user.channelName,
+                activeUsers = {{name = user.displayName}}
             })
         end
-
-        -- Insert the channel with its users and a random frequency
-        table.insert(channels, {
-            activeUsers = activeUsers, -- List of users for this channel
-            channelName = randomFrequencies[math.random(1, #randomFrequencies)]
-        })
     end
-    table.insert(channels, {
-        activeUsers = {},
-        channelName = "154.750"
-    })
+    setActiveUsers(activeChannels)
+end)
 
-    -- Function to handle the channels and their users (assuming this is defined elsewhere)
-    setActiveUsers(channels)
+function handleRadioPower(powerState)
+    if not powerState then
+        activeChannels = {}
+        setActiveUsers(activeChannels)
+    end
+end
+
+RegisterNUICallback('home', function()
+    activeChannels = {}
+    setActiveUsers(activeChannels)
 end)

@@ -565,6 +565,9 @@ export default {
         buttonHome() {
             if (this.$refs.floatingScreen.length === 0) return;
             this.$refs.floatingScreen[0].flush(true);
+            this.postClient({
+                type: "home"
+            });
         },
         buttonPrev() {
             if (!this.$store.state.connected)

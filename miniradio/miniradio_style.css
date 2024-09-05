@@ -54,6 +54,7 @@ a {
     background-color: rgba(70, 70, 70, 0.8);
     max-height: 92%; /* Set max height for content area */
     overflow-y: auto; /* Allow vertical scrolling if content exceeds height */
+    min-height: 92%;
 }
 
 .channelContent {
