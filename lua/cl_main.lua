@@ -292,7 +292,6 @@ function radioToggle(frame)
 				skins = allowedFrames
 			})
 			radActive = not radActive
-			Radio:Toggle(radActive)
 			SendNUIMessage({
 				type = 'setUiPositions',
 				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -300,9 +299,6 @@ function radioToggle(frame)
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
-				debug = Config.debug,
-				standaloneId = comId,
-				standaloneUrl = Config.radioUrl,
 				pttKey = getPttKey()
 			})
 			if radActive then
@@ -310,6 +306,7 @@ function radioToggle(frame)
 			else
 				SetNuiFocus(false, false)
 			end
+			Radio:Toggle(radActive)
 		else
 			if Config.enforceRadioItem then
 				TriggerEvent('chat:addMessage', {
@@ -618,9 +615,22 @@ function Radio:Destroy()
 	DeleteEntity(self.Handle)
 end
 
+local function initNui()
+	SendNUIMessage({
+		type = 'setStandalone',
+		standaloneId = comId,
+		standaloneUrl = Config.radioUrl,
+		chatter = Config.chatter,
+		debug = Config.debug,
+	})
+end
 Citizen.CreateThread(function()
+	if critError or Config.critError then return end
 	SetNuiFocus(false, false)
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
+	initNui()
+	LocalPlayer.state:set('sonoranradio_state', nil, true)
+
 	while true do
 		local ped = GetPlayerPed(-1)
 		if DoesEntityExist(ped) then
@@ -665,19 +675,32 @@ function SendNotification(message)
 	EndTextCommandThefeedPostTicker(false, false)
 end
 
+local function chatterNeedsInput()
+	-- wait for anybody to be near the player (or skip if debug mode)
+	while #GetActivePlayers() == 1 and not Config.debug do
+		Citizen.Wait(100)
+	end
+	SendNUIMessage({ type = 'chatterWait' })
+	if not radActive then
+		SetNuiFocus(true, false)
+	end
+end
+
 RegisterNUICallback('data', function(data, cb)
-	-- print('data:' .. json.encode(data))
+	if data.type == 'ready' then
+		initNui()
+	end
+
 	if data.type == 'hide' then
 		radActive = false
-		Radio:Toggle(radActive)
+		SetNuiFocus(false, false)
 		if not inVehicle or data.force then
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive
 			})
 		end
-		SetNuiFocusKeepInput(false)
-		SetNuiFocus(false, false)
+		Radio:Toggle(radActive)
 	end
 
 	if data.type == 'notify' then
@@ -701,6 +724,34 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'setUiPositions' then
 		-- save positions of components in the UI
 		SetResourceKvp('ui_pos_dic', json.encode(data.data))
+	end
+
+	if data.type == 'stateUpdated' then
+		-- replicate the new state to other clients
+		LocalPlayer.state:set('sonoranradio_state', data.state, true)
+	end
+
+	if data.type == 'chatterNeedsInput' then
+		-- give keyboard input focus
+		Citizen.CreateThread(chatterNeedsInput)
+	elseif data.type == 'chatterInitialized' then
+		if not radActive then
+			SetNuiFocus(false, false)
+		end
+	end
+
+	if data.type == 'stateUpdated' then
+		-- replicate the new state to other clients
+		LocalPlayer.state:set('sonoranradio_state', data.state, true)
+	end
+
+	if data.type == 'chatterNeedsInput' then
+		-- give keyboard input focus
+		Citizen.CreateThread(chatterNeedsInput)
+	elseif data.type == 'chatterInitialized' then
+		if not radActive then
+			SetNuiFocus(false, false)
+		end
 	end
 
 	if data.type == 'home' then
