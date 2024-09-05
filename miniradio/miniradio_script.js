@@ -54,6 +54,8 @@ function refreshCall() {
 	const hudDiv = document.getElementById("hudDiv");
 	hudContentWrapper.innerHTML = "";
 	if (activeChannels.length == 0) {
+		hudContentWrapper.style.minHeight = 'auto';
+		hudDiv.style.height = "auto";
 		const channelContent = document.createElement("div");
 		channelContent.classList.add("channelContent"); // Add class for styling
 		// Create the channel title element
@@ -69,14 +71,13 @@ function refreshCall() {
 		channelContent.appendChild(channelUsersLabel);
 		// Append the channelContent to the hudContentWrapper
 		document.getElementById("hudContentWrapper").appendChild(channelContent);
-		hudDiv.style.height = "auto";
 		return;
 	}
 	activeChannels.forEach((channel) => {
 		createChannelContent(channel.channelName, channel.activeUsers);
 	});
 	hudDiv.style.height = ""; // Resets height to original or css-styled value
-	hudDiv.style.width = ""; // Resets width to original or css-styled value
+	hudContentWrapper.style.minHeight = ""; // Resets height to original or css-styled value
 }
 
 function moduleVisible(module, visible) {
@@ -108,7 +109,6 @@ $(function () {
 					break;
 			}
 		} else if (event.data.type == "channelSync") {
-			console.log("User Sync Event", JSON.stringify(event.data));
 			activeChannels = [];
 			activeChannels = event.data.channels;
 			refreshCall();

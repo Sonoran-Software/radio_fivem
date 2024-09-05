@@ -703,6 +703,9 @@ RegisterNUICallback('data', function(data, cb)
 		SetResourceKvp('ui_pos_dic', json.encode(data.data))
 	end
 
+	if data.type == 'home' then
+		handleHome()
+	end
 	cb('OK')
 end)
 

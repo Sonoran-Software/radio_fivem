@@ -226,7 +226,7 @@ function handleRadioPower(powerState)
     end
 end
 
-RegisterNUICallback('home', function()
+function handleHome()
     activeChannels = {}
     setActiveUsers(activeChannels)
-end)
+end
