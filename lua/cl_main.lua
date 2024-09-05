@@ -6,7 +6,7 @@ local unitStatus = nil
 local thisCall = {}
 
 local isTalking = false
-
+allowedMiniRadio = false
 local inVehicle = false
 
 local authorized = false
@@ -283,8 +283,12 @@ function radioToggle(frame)
 			Radio.Has = true
 		end
 		if Radio.Has then
+			if frame == nil then
+				frame = 'default'
+			end
 			SendNUIMessage({
-				type = 'setSkins',
+				type = 'setCurrentSkin',
+				skin = frame,
 				skins = allowedFrames
 			})
 			radActive = not radActive
@@ -292,18 +296,10 @@ function radioToggle(frame)
 				type = 'setUiPositions',
 				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
 			})
-
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive,
 				pttKey = getPttKey()
-			})
-			if frame == nil then
-				frame = 'default'
-			end
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
 			})
 			if radActive then
 				SetNuiFocus(true, true)
@@ -334,8 +330,9 @@ function radioToggle(frame)
 end
 
 RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames)
+AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 	DebugPrint('Authorized for Radio Usage')
+	allowedMiniRadio = miniRadio
 	authorized = true
 	allowedFrames = frames
 end)
@@ -901,6 +898,12 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 			type = 'setCurrentSkin',
 			skin = frame
 		})
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
 	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
@@ -930,6 +933,30 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 				}
 			})
 		end
+	elseif Config.frames.permissionMode == 'qbcore' and not Config.enforceRadioItem then
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
+		TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
+	else
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
+		TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
 	end
 end)
 

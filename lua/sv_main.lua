@@ -98,12 +98,20 @@ end, true)
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
 	local framePermissions = checkFramePermissions(source)
-	if acePermsForRadio then
-		if IsPlayerAceAllowed(source, 'sonoranradio.use') then
-			TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions)
+	local allowedMiniRadio = false
+	if Config.acePermsForRadioUsers then
+		if IsPlayerAceAllowed(source, 'sonoranradio.miniradio') then
+			allowedMiniRadio = true
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions)
+		allowedMiniRadio = true
+	end
+	if acePermsForRadio then
+		if IsPlayerAceAllowed(source, 'sonoranradio.use') then
+			TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
+		end
+	else
+		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
 	end
 	if acePermsForTowerRepair then
 		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then

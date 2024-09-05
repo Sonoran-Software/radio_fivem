@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+        <link href="miniradio_style.css" rel="stylesheet" type="text/css" />
+    </head>
+    <body>
+        <div id="hudDiv" style="display:none;">
+            <div id="hudFrame">
+                <div id="hudHeader">
+                    <div id="hudHeaderTime">Sonoran Radio</div>
+                    <div id="hudHeaderControls">
+                        <a href="javascript:void;" class="control" onclick="showHelp();">?</a>
+                        <a href="javascript:void;" class="control" onclick="moduleVisible('hud', false);">&times;</a>
+                    </div>
+                </div>
+                <div id="hudContentWrapper">
+                </div>
+            </div>
+        </div>
+
+        <script src="miniradio_script.js" type="text/javascript"></script>
+    </body>
+</html>

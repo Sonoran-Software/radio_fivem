@@ -6,6 +6,7 @@
 /** @type {HTMLIFrameElement | null} */
 export let frameEl = null;
 let refs = 0;
+let cacheBust = Date.now();
 
 /**
  * @param {HTMLElement?} el
@@ -44,11 +45,14 @@ function push(el, src) {
     frameEl.style.zIndex = elStyles.zIndex + 1;
     frameEl.style.opacity = '100%';
     // frameEl.style.visibility = 'visible';
+    console.log("sonoranradio: show floating screen", rect);
 }
 function pop() {
+    console.log("sonoranradio: pop flating screen", refs);
     if (--refs !== 0) return;
     frameEl.style.opacity = '0%';
     // frameEl.style.visibility = 'hidden';
+    console.log("sonoranradio: hide flating screen");
 }
 
 export default {
@@ -79,9 +83,9 @@ export default {
             const url = this.url || 'https://sonoranradio.com';
             const page = this.chatter ? 'chatter-engine' : 'view';
             // EXAMPLES:
-            // https://sonoranradio.com/view/ABC123?fivem=true
-            // https://radio.dev.sonoransoftware.com/chatter-engine/ABC123?fivem=true
-            return `${url}/${page}/${this.serverId}?fivem=true`;
+            // https://sonoranradio.com/view/ABC123?fivem=true&cacheBust=1234567890
+            // https://radio.dev.sonoransoftware.com/chatter-engine/ABC123?fivem=true&cacheBust=1234567890
+            return `${url}/${page}/${this.serverId}?fivem=true&cacheBust=${cacheBust}`;
         }
     },
     watch: {
@@ -98,6 +102,7 @@ export default {
             if (force) {
                 frameEl.remove();
                 frameEl = null;
+                cacheBust = Date.now();
             }
             push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
         }

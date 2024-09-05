@@ -189,27 +189,6 @@ export default {
     created() {
         window.addEventListener('keyup', (event) => {
             this.onKeyPressed(event, 'keyup');
-            switch (event.code) {
-                case "Escape":
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    this.debug && this.debugNudgeSkinProperty(event);
-                    break;
-                default:
-                    break;
-            }
         });
         window.addEventListener('keydown', (event) => {
             this.onKeyPressed(event, 'keydown');
@@ -218,6 +197,8 @@ export default {
     mounted() {
         this.selectSkin('default');
         window.addEventListener('message', (event) => {
+            if (event.data.type === 'keyup' || event.data.type === 'keydown')
+                return void this.onKeyPressed(event.data, event.data.type);
             // if event is from frameEl (standalone screen), treat as socket message
             if (event.source === frameEl?.contentWindow)
                 return void this.socketMessage(event.data);
@@ -393,8 +374,31 @@ export default {
             if (!this.pttKeyName) return;
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
-                e.preventDefault();
+                if (e.preventDefault) e.preventDefault();
                 this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
+            }
+
+            if (type !== 'keyup') return;
+            switch (e.code) {
+                case "Escape":
+                    if (this.dragMode) {
+                        this.dragMode = false;
+                        // save the positions by sending them back to the client
+                        this.postClient({
+                            type: 'setUiPositions', data: this.positions
+                        });
+                    } else {
+                        this.hideRadio(false);
+                    }
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    this.debug && this.debugNudgeSkinProperty(e);
+                    break;
+                default:
+                    break;
             }
         },
         async querySkinNoCache(skinId) {

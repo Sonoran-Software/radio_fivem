@@ -15,6 +15,7 @@ Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
+Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.enforceRadioItem = false
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
@@ -42,31 +43,16 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = 'qbcore', -- ace, qbcore, esx or none
+	permissionMode = "none",
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
-		['sahp'] = {
-			label = 'San Andreas Highway Patrol',
-			permissions = {
-				jobs = { -- Jobs that can use this department
-					['police'] = {
-						grades = { -- Job grades that can use this department
-							1,
-							2,
-							3
-						}
-					}
-				},
-				ace = { -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
-					'sonoranradio.sahp'
-				}
-			},
-			-- Radio frames that can be used by this department
+		['common'] = {
+			label = 'Common',
 			allowedFrames = {
 				'default',
 				'signalpro',
 				'voxguard',
-                'hi-vis'
+				'hi-vis'
 			}
 		}
 	}
