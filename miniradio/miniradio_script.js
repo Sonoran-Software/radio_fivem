@@ -54,13 +54,33 @@ function createChannelContent(channelTitle, users) {
 }
 
 function refreshCall() {
+	const hudContentWrapper = document.getElementById("hudContentWrapper");
+	const hudDiv = document.getElementById("hudDiv");
+	hudContentWrapper.innerHTML = "";
 	if (activeChannels.length == 0) {
-		document.getElementById("hudContentWrapper").innerHTML = "No active channels found.";
+		const channelContent = document.createElement("div");
+		channelContent.classList.add("channelContent"); // Add class for styling
+		// Create the channel title element
+		const channelTitleElem = document.createElement("span");
+		channelTitleElem.textContent = "No Active Channels";
+		channelTitleElem.style.fontSize = "14px";
+
+		// Create the connected users label
+		const channelUsersLabel = document.createElement("span");
+		channelUsersLabel.textContent = `You are not connected to Sonoran Radio`;
+		channelUsersLabel.style.fontSize = "12px";
+		channelContent.appendChild(channelTitleElem);
+		channelContent.appendChild(channelUsersLabel);
+		// Append the channelContent to the hudContentWrapper
+		document.getElementById("hudContentWrapper").appendChild(channelContent);
+		hudDiv.style.height = "auto";
 		return;
 	}
 	activeChannels.forEach((channel) => {
 		createChannelContent(channel.channelName, channel.activeUsers);
 	});
+	hudDiv.style.height = ""; // Resets height to original or css-styled value
+	hudDiv.style.width = ""; // Resets width to original or css-styled value
 }
 
 function moduleVisible(module, visible) {

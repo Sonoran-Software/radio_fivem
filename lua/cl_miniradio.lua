@@ -5,6 +5,7 @@ isMiniVisible = false
 
 -- Debugging Information
 isDebugging = true
+local activeChannels = {}
 
 function DebugMessage(message, module)
     if not isDebugging then return end
@@ -145,6 +146,7 @@ RegisterCommand("radiousers", function(source, args, rawCommand)
         })
         return
     end
+    setActiveUsers(activeChannels)
     openradiousers()
 end)
 RegisterKeyMapping('radiousers', 'Toggle Radio Users', 'keyboard', '')
@@ -228,6 +230,10 @@ RegisterCommand('testradiousers', function()
             channelName = randomFrequencies[math.random(1, #randomFrequencies)]
         })
     end
+    table.insert(channels, {
+        activeUsers = {},
+        channelName = "154.750"
+    })
 
     -- Function to handle the channels and their users (assuming this is defined elsewhere)
     setActiveUsers(channels)
