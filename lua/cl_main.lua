@@ -709,6 +709,7 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'stateUpdated' then
 		-- replicate the new state to other clients
+		print('set my local state', json.encode(data.state))
 		LocalPlayer.state:set('sonoranradio_state', data.state, true)
 	end
 

@@ -22,6 +22,7 @@ Citizen.CreateThread(function()
 
 			local plyObj = ply == PlayerId() and LocalPlayer or Player(ply)
 			local state = plyObj.state['sonoranradio_state']
+			print('chatter state', ply, json.encode(state))
 			if state then
 				-- find the index of the existing chatter source
 				local idx = 0
