@@ -42,6 +42,7 @@ module.exports = {
               require('@babel/preset-env'),
             ],
             plugins: [
+              require('@babel/plugin-transform-nullish-coalescing-operator'),
               require('@babel/plugin-transform-optional-chaining'),
             ]
           },

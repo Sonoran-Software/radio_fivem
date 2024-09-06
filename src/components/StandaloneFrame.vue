@@ -27,6 +27,7 @@ function push(el, src) {
     if (frameEl.src !== src)
         frameEl.src = src;
 
+    frameEl.style.pointerEvents = 'auto';
     // the caller wants the frame to exist, but not be visible
     if (!el) return;
 
@@ -44,15 +45,11 @@ function push(el, src) {
     frameEl.style.height = `${rect.height / scale}px`;
     frameEl.style.zIndex = elStyles.zIndex + 1;
     frameEl.style.opacity = '100%';
-    // frameEl.style.visibility = 'visible';
-    console.log("sonoranradio: show floating screen", rect);
 }
 function pop() {
-    console.log("sonoranradio: pop flating screen", refs);
     if (--refs !== 0) return;
     frameEl.style.opacity = '0%';
-    // frameEl.style.visibility = 'hidden';
-    console.log("sonoranradio: hide flating screen");
+    frameEl.style.pointerEvents = 'none';
 }
 
 export default {
