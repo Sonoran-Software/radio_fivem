@@ -709,8 +709,8 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'stateUpdated' then
 		-- replicate the new state to other clients
-		print('set my local state', json.encode(data.state))
-		LocalPlayer.state:set('sonoranradio_state', data.state, true)
+		if type(data.state) == 'table' then data.state.gamestate = nil end
+		TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 	end
 
 	if data.type == 'chatterNeedsInput' then
@@ -720,11 +720,6 @@ RegisterNUICallback('data', function(data, cb)
 		if not radActive then
 			SetNuiFocus(false, false)
 		end
-	end
-
-	if data.type == 'stateUpdated' then
-		-- replicate the new state to other clients
-		LocalPlayer.state:set('sonoranradio_state', data.state, true)
 	end
 
 	if data.type == 'chatterNeedsInput' then

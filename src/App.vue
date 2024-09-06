@@ -514,7 +514,8 @@ export default {
                     break;
                 case 'state_updated':
                     this.$store.commit('setRadioState', event.state);
-                    this.postClient({ type: 'stateUpdated', state: this.radioPower ? event.state : null });
+                    if (this.radioPower)
+                        this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
                     this.postClient({type: 'talking', talking: event.micOpen});

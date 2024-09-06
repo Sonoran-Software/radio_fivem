@@ -1,5 +1,10 @@
 if not Config.chatter then return end -- if chatter is disabled, skip this script
 
+local playerStates = {}
+RegisterNetEvent('SonoranRadio::ReceiveRadioStates', function(states)
+	playerStates = states
+end)
+
 local chatterSources = {}
 
 -- find the near players, and send the required freqs to listen on
@@ -20,9 +25,7 @@ Citizen.CreateThread(function()
 				goto continue
 			end
 
-			local plyObj = ply == PlayerId() and LocalPlayer or Player(ply)
-			local state = plyObj.state['sonoranradio_state']
-			print('chatter state', ply, json.encode(state))
+			local state = playerStates[GetPlayerServerId(ply)]
 			if state then
 				-- find the index of the existing chatter source
 				local idx = 0
@@ -56,7 +59,6 @@ Citizen.CreateThread(function()
 				table.remove(chatterSources, i)
 			end
 		end
-		print('chatter players', json.encode(chatterSourcePlayers))
 
 		-- find the frequencies we need to listen to for chatter
 		local listenFreqs = {}
@@ -79,7 +81,6 @@ Citizen.CreateThread(function()
 			type = 'chatterFrequenciesUpdate',
 			freqs = listenFreqs,
 		})
-		print('chatter freqs', json.encode(listenFreqs))
 
 		Citizen.Wait(500)
 	end
