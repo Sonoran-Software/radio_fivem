@@ -1,32 +1,43 @@
 <template>
     <div class="top-radio-screen" :class="'backlight-' + $store.getters.connColor">
-        <div>
+        <div v-if="!$store.state.connected">
             {{ $store.getters.statusText }}
         </div>
-        <div>
-            {{ $store.getters.freqName || "Custom" }}
-        </div>
-        <div v-if="$store.state.talkers.length === 0">
-            {{ $store.getters.recvFreqStr }} / {{ $store.getters.xmitFreqStr }}
-        </div>
         <div v-else>
-            <div v-for="t in $store.state.talkers" :key="t.id">
-                {{ t.nickname }}
-            </div>
+            <div class="profile-name"><b>{{ $store.getters.channelProfile?.displayName ?? 'CUSTOM' }}</b></div>
+            <div>R: {{ formatFreq($store.getters.freqRecv) }}</div>
+            <div>X: {{ formatFreq($store.getters.freqXmit) }}</div>
         </div>
     </div>
 </template>
 
 <script>
-export default {};
+export default {
+    methods: {
+        formatFreq(freq) {
+            if (!Array.isArray(freq)) return 'NA';
+            return `${freq[0]}.${freq[1].toString().padStart(3, '0')}`;
+        }
+    },
+};
 </script>
 
 <style scoped>
 .top-radio-screen {
-    display: flex;
-    flex-direction: column;
+    display: flex!important;
+    justify-content: center;
     align-items: center;
-    justify-content: space-evenly;
+    font-family: monospace;
+    font-size: 0.85em;
+    overflow: hidden;
+}
+.top-radio-screen > * {
+    max-width: 100%;
+}
+.profile-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .backlight-gray {
