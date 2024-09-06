@@ -77,6 +77,7 @@ function RunAutoUpdater(manualRun)
             else
                 Config.latestVersion = remote.resource
                 _, _, v1, v2, v3 = string.find( myVersion, "(%d+)%.(%d+)%.(%d+)" )
+                if v1 == nil or v2 == nil or v3 == nil then return end
                 _, _, r1, r2, r3 = string.find( remote.resource, "(%d+)%.(%d+)%.(%d+)" )
                 if (string.find(myVersion, "-beta")) then
                     v3 = v3 - 0.5
