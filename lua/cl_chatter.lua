@@ -2,25 +2,6 @@ if not Config.chatter then return end -- if chatter is disabled, skip this scrip
 
 local chatterSources = {}
 
--- local fakeSources = {}
-
--- Citizen.CreateThread(function()
--- 	local DIST = 5.0
--- 	local ped = GetPlayerPed(-1)
--- 	local front = GetOffsetFromEntityInWorldCoords(ped, 0.0, DIST, 0.0)
--- 	local side = GetOffsetFromEntityInWorldCoords(ped, DIST, 0.0, 0.0)
--- 	fakeSources[#fakeSources + 1] = front
--- 	fakeSources[#fakeSources + 1] = side
-
--- 	while true do
--- 		for i = 1, #fakeSources do
--- 			local pos = fakeSources[i]
--- 			DrawMarker(1, pos.x, pos.y, pos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.75, 0.75, 1.75, 255, 0, 0, 50, false, true, 2, nil, nil, false)
--- 		end
--- 		Citizen.Wait(0)
--- 	end
--- end)
-
 -- find the near players, and send the required freqs to listen on
 Citizen.CreateThread(function()
 	local MIN_DIST = 15.0
@@ -30,9 +11,9 @@ Citizen.CreateThread(function()
 		local myPos = GetFinalRenderedCamCoord()
 		-- create or update close players in chatterSources
 		for _, ply in ipairs(GetActivePlayers()) do
-			-- if ply == PlayerId() then
-			-- 	goto continue
-			-- end
+			if ply == PlayerId() then
+				goto continue
+			end
 
 			local ped = GetPlayerPed(ply)
 			if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > MIN_DIST then
@@ -74,6 +55,7 @@ Citizen.CreateThread(function()
 				table.remove(chatterSources, i)
 			end
 		end
+		print('chatter players', json.encode(chatterSourcePlayers))
 
 		-- find the frequencies we need to listen to for chatter
 		local listenFreqs = {}
@@ -96,6 +78,7 @@ Citizen.CreateThread(function()
 			type = 'chatterFrequenciesUpdate',
 			freqs = listenFreqs,
 		})
+		print('chatter freqs', json.encode(listenFreqs))
 
 		Citizen.Wait(500)
 	end

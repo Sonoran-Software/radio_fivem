@@ -305,7 +305,7 @@ export default {
                     // this is received after we sent chatterNeedsInput
                     // the event means we now have NUI focus, so we can set this.chatterNeedsInputHelp and wait for input
                     console.log('chatterWait from FiveM');
-                    this.chatterNeedsInputHelp = true;
+                    if (this.chatterNeedsInput) this.chatterNeedsInputHelp = true;
                     break;
                 case 'chatterFrequenciesUpdate':
                     if (!this.chatterEnabled) return;
