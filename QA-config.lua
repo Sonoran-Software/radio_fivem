@@ -8,6 +8,7 @@ Config.apiUrl = 'https://radioapi.dev.sonoransoftware.com/'
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = false
+Config.chatter = true
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
