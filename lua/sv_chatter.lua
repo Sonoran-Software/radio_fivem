@@ -12,7 +12,6 @@ end
 RegisterNetEvent('SonoranRadio::SetRadioState', function(state)
 	radioStates[source] = {state = state, lastUpdate = GetGameTimer()}
 	pushRadioStates()
-	print('set player state', source, json.encode(state))
 end)
 
 Citizen.CreateThread(function()
