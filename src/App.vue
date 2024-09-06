@@ -304,6 +304,7 @@ export default {
                 case 'chatterWait':
                     // this is received after we sent chatterNeedsInput
                     // the event means we now have NUI focus, so we can set this.chatterNeedsInputHelp and wait for input
+                    console.log('chatterWait from FiveM');
                     this.chatterNeedsInputHelp = true;
                     break;
                 case 'chatterFrequenciesUpdate':
@@ -525,9 +526,11 @@ export default {
                     this.dragMode = true;
                     break;
                 case 'chatter_needs_input':
+                    console.log('chatter_needs_input from standalone');
                     this.onStandaloneChatterLoad();
                     break;
                 case 'chatter_init':
+                    console.log('chatter_init from standalone');
                     this.postClient({ type: 'chatterInitialized' });
                     this.chatterNeedsInput = false;
                     this.chatterNeedsInputHelp = false;
