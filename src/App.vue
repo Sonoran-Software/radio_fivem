@@ -287,22 +287,8 @@ export default {
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios':
-                    if (!event.data.radios) {
-                        console.log('no radios!');
-                        break;
-                    }
-                    // really event.data.radios is Record<number, object> but
-                    // it could be provided as object[] if lua is dumb
-                    let activeRadios = Object.values(event.data.radios).filter(radio => radio && radio.id && radio.name);
-                    this.$store.commit('setActiveRadios', activeRadios);
-                    break;
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
-                    this.$store.commit('setInVehicle', this.inVehicle);
-                    break;
-                case 'time':
-                    this.$store.commit('setInGameTime', event.data.time);
                     break;
                 case 'setUiPositions':
                     if (typeof event.data.data !== 'object') break;
@@ -319,7 +305,8 @@ export default {
                 case 'chatterWait':
                     // this is received after we sent chatterNeedsInput
                     // the event means we now have NUI focus, so we can set this.chatterNeedsInputHelp and wait for input
-                    this.chatterNeedsInputHelp = true;
+                    console.log('chatterWait from FiveM');
+                    if (this.chatterNeedsInput) this.chatterNeedsInputHelp = true;
                     break;
                 case 'chatterFrequenciesUpdate':
                     if (!this.chatterEnabled) return;
@@ -495,13 +482,6 @@ export default {
         hideRadio(forceful) {
             this.postClient({ type: 'hide', force: forceful });
         },
-        sendRadioMessage(event) {
-            let recipient = event.recipient;
-            let payload = event.payload;
-            console.log(`msgOutbound: ${recipient} ${payload}`);
-            this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload });
-            this.notifyPlayer("Radio: ~g~Message Sent");
-        },
         notifyPlayer(message, ignorestate) {
             if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
         },
@@ -510,33 +490,6 @@ export default {
                 type: "set_gamestate",
                 state: this.$store.state.gamestate
             });
-        },
-        addScanned(event) {
-            this.$store.state.scanned.push(this.$store.state.currFreq.recv);
-            this.sendToSocket({
-                type: "set_frequencies_scanned",
-                freqs: this.$store.state.scanned
-            })
-        },
-        delScanned(event) {
-            let freq = event.toString().split(",");
-            //console.log();
-            let freqs = [];
-            this.$store.state.scanned.forEach(el => {
-                if (el[0] == freq[0] && el[1] == freq[1]) {
-                    console.log("Removed scanned freq: " + freq[0] + "." + freq[1]);
-                } else {
-                    freqs.push(el);
-                }
-            });
-            this.$store.state.scanned = freqs;
-            this.sendToSocket({
-                type: "set_frequencies_scanned",
-                freqs: freqs
-            })
-        },
-        setScreen(name) {
-            this.currScreen = name || '';
         },
         nextPreset() {
             this.sendToSocket({
@@ -551,14 +504,19 @@ export default {
         socketMessage(event) {
             switch (event.type) {
                 case "radio_connected":
-                    this.$store.commit('setConnected', true);
-                    this.$store.commit('setSublvl', event.subscription);
+                    this.$store.commit('setConnected', this.radioPower);
+                    this.$store.commit('setRadioConfig', event.config);
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case 'config_updated':
+                    this.$store.commit('setRadioConfig', event.config);
+                    break;
                 case 'state_updated':
-                    this.postClient({ type: 'stateUpdated', state: this.radioPower ? event.state : null });
+                    this.$store.commit('setRadioState', event.state);
+                    if (this.radioPower)
+                        this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
                     this.postClient({type: 'talking', talking: event.micOpen});
@@ -570,9 +528,11 @@ export default {
                     this.dragMode = true;
                     break;
                 case 'chatter_needs_input':
+                    console.log('chatter_needs_input from standalone');
                     this.onStandaloneChatterLoad();
                     break;
                 case 'chatter_init':
+                    console.log('chatter_init from standalone');
                     this.postClient({ type: 'chatterInitialized' });
                     this.chatterNeedsInput = false;
                     this.chatterNeedsInputHelp = false;
@@ -582,13 +542,6 @@ export default {
         sendToSocket(data) {
             if (frameEl) frameEl.contentWindow.postMessage(data, '*');
             // else console.warn("frameEl does not exist, but tried to send message", data);
-        },
-        toggleScan() {
-            this.$store.commit('setScanState', !this.$store.state.scanning);
-            this.sendToSocket({
-                type: "set_scanning_enabled",
-                enabled: this.$store.state.scanning
-            })
         },
         updateAvailableSkins() {
             this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
@@ -609,7 +562,7 @@ export default {
         buttonPrev() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.state.sublvl == 0)
+            if (this.$store.getters.sublvl == 0)
                 return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Prev Preset");
             this.prevPreset();
@@ -617,13 +570,14 @@ export default {
         buttonNext() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.state.sublvl == 0)
+            if (this.$store.getters.sublvl == 0)
                 return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Next Preset");
             this.nextPreset();
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
+            this.chatterNeedsInput = false;
             this.$store.state.gamestate.radio_powered = this.radioPower;
             this.postClient({
                 type: 'power',
@@ -646,8 +600,9 @@ export default {
 
             // constantly keep the frame in focus until it has been interacted with
             const interval = setInterval(() => {
-                if (this.chatterNeedsInput) return void frameEl.focus();
+                if (this.chatterNeedsInput) return void frameEl.contentWindow.focus();
                 clearInterval(interval);
+                this.$el.focus();
             }, 100)
             this.postClient({ type: 'chatterNeedsInput' });
         }

@@ -656,24 +656,6 @@ Citizen.CreateThread(function()
 	DebugPrint('Sonoran Radio Started!')
 end)
 
-CreateThread(function()
-	while true do
-		local hours = GetClockHours()
-		local minutes = GetClockMinutes()
-		if hours <= 9 then
-			hours = '0' .. tostring(hours)
-		end
-		if minutes <= 9 then
-			minutes = '0' .. tostring(minutes)
-		end
-		SendNUIMessage({
-			type = 'time',
-			time = hours .. ':' .. minutes
-		})
-		Wait(500)
-	end
-end)
-
 function SendNotification(message)
 	BeginTextCommandThefeedPost('STRING')
 	AddTextComponentSubstringPlayerName(message)
@@ -717,7 +699,6 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'power' then
-		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
 		handleRadioPower(data.power)
 		Radio.On = data.power
 	end
@@ -733,7 +714,8 @@ RegisterNUICallback('data', function(data, cb)
 
 	if data.type == 'stateUpdated' then
 		-- replicate the new state to other clients
-		LocalPlayer.state:set('sonoranradio_state', data.state, true)
+		if type(data.state) == 'table' then data.state.gamestate = nil end
+		TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 	end
 
 	if data.type == 'chatterNeedsInput' then
@@ -743,11 +725,6 @@ RegisterNUICallback('data', function(data, cb)
 		if not radActive then
 			SetNuiFocus(false, false)
 		end
-	end
-
-	if data.type == 'stateUpdated' then
-		-- replicate the new state to other clients
-		LocalPlayer.state:set('sonoranradio_state', data.state, true)
 	end
 
 	if data.type == 'chatterNeedsInput' then
@@ -789,14 +766,6 @@ AddEventHandler('onResourceStop', function(resource)
 	TriggerEvent('chat:removeSuggestion', '/radioreset')
 	TriggerEvent('chat:removeSuggestion', '/radiotalk')
 	Radio:Destroy()
-end)
-
-RegisterNetEvent('SonoranRadio::GetRadios:Return')
-AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
-	SendNUIMessage({
-		type = 'getRadios',
-		radios = radios
-	})
 end)
 
 CreateThread(function()

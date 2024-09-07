@@ -136,22 +136,6 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	end
 end)
 
-local radios = {}
-
-RegisterNetEvent('SonoranRadio::RadioPower')
-AddEventHandler('SonoranRadio::RadioPower', function(power, playername)
-	local src = source
-	if power then
-		radios[tonumber(src)] = {
-			id = src,
-			name = playername
-		}
-	else
-		radios[tonumber(src)] = nil
-	end
-	TriggerClientEvent('SonoranRadio::GetRadios:Return', -1, radios)
-end)
-
 RegisterNetEvent('SonoranRadio::Msg:ToServer')
 AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
 	local sender = source

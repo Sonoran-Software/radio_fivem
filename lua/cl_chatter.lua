@@ -1,25 +1,11 @@
 if not Config.chatter then return end -- if chatter is disabled, skip this script
 
+local playerStates = {}
+RegisterNetEvent('SonoranRadio::ReceiveRadioStates', function(states)
+	playerStates = states
+end)
+
 local chatterSources = {}
-
--- local fakeSources = {}
-
--- Citizen.CreateThread(function()
--- 	local DIST = 5.0
--- 	local ped = GetPlayerPed(-1)
--- 	local front = GetOffsetFromEntityInWorldCoords(ped, 0.0, DIST, 0.0)
--- 	local side = GetOffsetFromEntityInWorldCoords(ped, DIST, 0.0, 0.0)
--- 	fakeSources[#fakeSources + 1] = front
--- 	fakeSources[#fakeSources + 1] = side
-
--- 	while true do
--- 		for i = 1, #fakeSources do
--- 			local pos = fakeSources[i]
--- 			DrawMarker(1, pos.x, pos.y, pos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.75, 0.75, 1.75, 255, 0, 0, 50, false, true, 2, nil, nil, false)
--- 		end
--- 		Citizen.Wait(0)
--- 	end
--- end)
 
 -- find the near players, and send the required freqs to listen on
 Citizen.CreateThread(function()
@@ -30,17 +16,16 @@ Citizen.CreateThread(function()
 		local myPos = GetFinalRenderedCamCoord()
 		-- create or update close players in chatterSources
 		for _, ply in ipairs(GetActivePlayers()) do
-			-- if ply == PlayerId() then
-			-- 	goto continue
-			-- end
+			if ply == PlayerId() then
+				goto continue
+			end
 
 			local ped = GetPlayerPed(ply)
 			if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > MIN_DIST then
 				goto continue
 			end
 
-			local plyObj = ply == PlayerId() and LocalPlayer or Player(ply)
-			local state = plyObj.state['sonoranradio_state']
+			local state = playerStates[GetPlayerServerId(ply)]
 			if state then
 				-- find the index of the existing chatter source
 				local idx = 0
