@@ -299,7 +299,7 @@ export default {
                     if (event.data.skins) // update available skins
                     if (event.data.skins !== this.selectSkinIds) {
                         this.selectSkinIds = event.data.skins;
-                        updateAvailableSkins();
+                        this.updateAvailableSkins();
                         console.log("skins were different, updating");
                     } else {
                         this.selectSkinIds = event.data.skins;
