@@ -335,6 +335,11 @@ AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 	allowedMiniRadio = miniRadio
 	authorized = true
 	allowedFrames = frames
+	SendNUIMessage({
+		type = 'setCurrentSkin',
+		skin = frame,
+		skins = allowedFrames
+	})
 end)
 
 RegisterCommand('radio', radioToggle)
@@ -1026,3 +1031,8 @@ RegisterNetEvent('SonoranRadio::CritError', function(toggle)
 		critError = false
 	end
 end)
+
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
+	TriggerServerEvent('SonoranRadio::CheckPermissions')
+end)
+

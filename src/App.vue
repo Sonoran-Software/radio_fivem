@@ -312,6 +312,7 @@ export default {
                 case 'setCurrentSkin':
                     if (event.data.skins) // update available skins
                         this.selectSkinIds = event.data.skins;
+                        console.log("Skins: " + JSON.stringify(this.selectSkinIds));
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
