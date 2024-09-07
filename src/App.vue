@@ -297,8 +297,14 @@ export default {
                 case 'setSkins':
                 case 'setCurrentSkin':
                     if (event.data.skins) // update available skins
+                    if (event.data.skins !== this.selectSkinIds) {
                         this.selectSkinIds = event.data.skins;
-                        console.log("Skins: " + JSON.stringify(this.selectSkinIds));
+                        updateAvailableSkins();
+                        console.log("skins were different, updating");
+                    } else {
+                        this.selectSkinIds = event.data.skins;
+                        console.log("skins were the same, not updating");
+                    }
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
@@ -592,7 +598,6 @@ export default {
         onStandaloneLoad() {
             setTimeout(() => {
                 this.updateAvailableSkins();
-                console.log('updating skins to socket');
                 this.updateGamestate();
             }, 1000);
         },
