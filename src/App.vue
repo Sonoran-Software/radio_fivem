@@ -592,6 +592,7 @@ export default {
         onStandaloneLoad() {
             setTimeout(() => {
                 this.updateAvailableSkins();
+                console.log('updating skins to socket');
                 this.updateGamestate();
             }, 1000);
         },
