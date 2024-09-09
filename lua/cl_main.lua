@@ -873,6 +873,24 @@ CreateThread(function()
 		-- print("QBDeath:" .. tostring(QBDeath))
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+		-- local playerPed = PlayerPedId() -- Get the player's Ped
+        -- local playerPos = GetEntityCoords(playerPed) -- Get the player's current coordinates
+        -- local undergroundZThreshold = 0.0 -- Adjust this depending on your map
+		-- local inTunnel = false;
+        -- -- Check if the player is underground (Z-coordinate below threshold)
+        -- if playerPos.z < undergroundZThreshold then
+        --     inTunnel = true
+        -- else
+        --     -- Check if player is inside a tunnel by using raycasting to detect the ceiling
+        --     local rayEndPos = vector3(playerPos.x, playerPos.y, playerPos.z + 50.0) -- 50 units above the player
+        --     local hit, _, _, _, materialHash = GetShapeTestResult(StartShapeTestRay(playerPos.x, playerPos.y, playerPos.z, rayEndPos.x, rayEndPos.y, rayEndPos.z, -1, playerPed, 0))
+
+        --     if hit and materialHash ~= 0 then
+		-- 		if materialHash == GetHashKey('concrete') or materialHash == GetHashKey('metal') then
+		-- 			inTunnel = true
+		-- 		end
+        --     end
+        -- end
 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
 		SendNUIMessage({
 			type = 'setTowerQuality',
