@@ -307,10 +307,10 @@ export default {
                         this.selectSkin(event.data.skin);
                     break;
                 case 'chatterWait':
-                    // this is received after we sent chatterNeedsInput
-                    // the event means we now have NUI focus, so we can set this.chatterNeedsInputHelp and wait for input
-                    console.log('chatterWait from FiveM');
-                    if (this.chatterNeedsInput) this.chatterNeedsInputHelp = true;
+                    if (this.chatterNeedsInput && !this.radioPower) {
+                        this.chatterNeedsInputHelp = true;
+                        this.postClient({ type: 'chatterNeedsFocus' });
+                    }
                     break;
                 case 'chatterFrequenciesUpdate':
                     if (!this.chatterEnabled) return;
@@ -356,10 +356,10 @@ export default {
 
                 const msg = res.json().then((data) => {
                     if (data !== "OK") console.error(`failed request with message: ${data}`);
-                }).catch((err) => console.log(err));
+                }).catch((err) => console.error(err));
 
             }).catch((err) => {
-                console.log(err);
+                console.error(err);
             });
         },
         onKeyPressed(e, type) {
@@ -532,11 +532,10 @@ export default {
                     this.dragMode = true;
                     break;
                 case 'chatter_needs_input':
-                    console.log('chatter_needs_input from standalone');
+                    if (!this.radioPower) break;
                     this.onStandaloneChatterLoad();
                     break;
                 case 'chatter_init':
-                    console.log('chatter_init from standalone');
                     this.postClient({ type: 'chatterInitialized' });
                     this.chatterNeedsInput = false;
                     this.chatterNeedsInputHelp = false;

@@ -668,9 +668,6 @@ local function chatterNeedsInput()
 		Citizen.Wait(100)
 	end
 	SendNUIMessage({ type = 'chatterWait' })
-	if not radActive then
-		SetNuiFocus(true, false)
-	end
 end
 
 RegisterNUICallback('data', function(data, cb)
@@ -730,11 +727,18 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'chatterNeedsInput' then
 		-- give keyboard input focus
 		Citizen.CreateThread(chatterNeedsInput)
-	elseif data.type == 'chatterInitialized' then
-		if not radActive then
+	end
+
+	if not radActive then
+		if data.type == 'chatterNeedsFocus' then
+			SetNuiFocus(true, false)
+		end
+
+		if data.type == 'chatterInitialized' then
 			SetNuiFocus(false, false)
 		end
 	end
+
 
 	if data.type == 'home' then
 		handleHome()
