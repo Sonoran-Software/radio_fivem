@@ -376,6 +376,21 @@ RegisterCommand('radiohud', function(source, args, rawCommand)
 	})
 end)
 
+RegisterCommand('radiovolume', function(source, args)
+	local volume = tonumber(args[1])
+	if volume == nil then
+		SendNotification('Radio Volume: ~r~Invalid~r~')
+		return
+	end
+
+	volume = math.min(volume, 250)
+	SendNUIMessage({
+		type = 'setVolume',
+		volume = volume,
+	})
+	SendNotification('Radio Volume: ~g~' .. volume .. '%~g~')
+end)
+
 -- Talking Animation
 -- RegisterCommand('sonradtalk', function()
 -- 	Radio:Talking(isTalking)
@@ -754,6 +769,7 @@ AddEventHandler('onResourceStart', function(resource)
 	TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 	TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')
 	TriggerEvent('chat:addSuggestion', '/radiotalk', 'Toggle your radio talk animation')
+	TriggerEvent('chat:addSuggestion', '/radiovolume', 'Change the voice volume of all radios', {{name = 'volume', help = 'The volume percentage (0-250%)'}})
 	DebugPrint('Sonoran Radio Started!')
 	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
 		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
