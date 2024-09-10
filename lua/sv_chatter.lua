@@ -1,4 +1,4 @@
-if not Config.chatter then return end -- if chatter is disabled, skip this script
+if Config.chatter == false then return end -- if chatter is disabled, skip this script
 
 local radioStates = {}
 local function pushRadioStates(s)

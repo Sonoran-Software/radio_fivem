@@ -636,11 +636,13 @@ function Radio:Destroy()
 end
 
 local function initNui()
+	local chatter = Config.chatter
+	if chatter == nil then chatter = true end
 	SendNUIMessage({
 		type = 'setStandalone',
 		standaloneId = comId,
 		standaloneUrl = Config.radioUrl,
-		chatter = Config.chatter,
+		chatter = chatter,
 		debug = Config.debug,
 	})
 end
