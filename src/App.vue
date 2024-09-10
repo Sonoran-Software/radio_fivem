@@ -532,7 +532,7 @@ export default {
                     this.dragMode = true;
                     break;
                 case 'chatter_needs_input':
-                    if (!this.radioPower) break;
+                    if (this.radioPower) break;
                     this.onStandaloneChatterLoad();
                     break;
                 case 'chatter_init':
