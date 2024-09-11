@@ -98,12 +98,20 @@ end, true)
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
 	local framePermissions = checkFramePermissions(source)
-	if acePermsForRadio then
-		if IsPlayerAceAllowed(source, 'sonoranradio.use') then
-			TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions)
+	local allowedMiniRadio = false
+	if Config.acePermsForRadioUsers then
+		if IsPlayerAceAllowed(source, 'sonoranradio.miniradio') then
+			allowedMiniRadio = true
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions)
+		allowedMiniRadio = true
+	end
+	if acePermsForRadio then
+		if IsPlayerAceAllowed(source, 'sonoranradio.use') then
+			TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
+		end
+	else
+		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
 	end
 	if acePermsForTowerRepair then
 		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
@@ -126,22 +134,6 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
 	end
-end)
-
-local radios = {}
-
-RegisterNetEvent('SonoranRadio::RadioPower')
-AddEventHandler('SonoranRadio::RadioPower', function(power, playername)
-	local src = source
-	if power then
-		radios[tonumber(src)] = {
-			id = src,
-			name = playername
-		}
-	else
-		radios[tonumber(src)] = nil
-	end
-	TriggerClientEvent('SonoranRadio::GetRadios:Return', -1, radios)
 end)
 
 RegisterNetEvent('SonoranRadio::Msg:ToServer')
@@ -245,9 +237,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 		critError = true
 		return
 	end
+	local baseUrl = ""
+	if GetConvar('web_baseUrl', '') ~= '' then
+		baseUrl = GetConvar('web_baseUrl', '')
+	end
+	if baseUrl == "" then
+		errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL). Radio will be unable to receive push events. https://sonoran.link/radiocodes')
+	end
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
-		['key'] = Config.apiKey
+		['key'] = Config.apiKey,
+		['pushUrl'] = baseUrl
 	}, 'SET-SERVER-IP', function(data, success)
 		if not success then
 			errorLog('Failed to set server IP for radio service. Please check your configuration.')

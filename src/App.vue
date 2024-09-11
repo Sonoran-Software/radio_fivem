@@ -1,7 +1,10 @@
 <template>
     <div class="appcontainer" :class="{ debug, help }">
-        <div v-if="dragMode" class="drag-instructions">
-            <div>
+        <div class="top-instructions">
+            <div v-if="chatterNeedsInputHelp">
+                Sonoran Radio needs input to continue. Press any key
+            </div>
+            <div v-else-if="dragMode">
                 Click and drag to move the components.
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
@@ -15,6 +18,16 @@
             </div>
         </div>
 
+
+        <!-- acts as standalone radio for hearing radios around the player -->
+        <standalone-frame
+            v-if="chatterEnabled"
+            ref="standaloneFrame"
+            :server-id="standaloneServerId"
+            :url="standaloneUrl"
+            chatter
+        />
+
         <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
             :value="positions[frame.key] || defaultPositions[frame.type]" @input="$set(positions, frame.key, $event)">
             <div class="radio-body">
@@ -23,8 +36,13 @@
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
                     @click="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
-                        <floating-screen v-if="radioPower && standaloneServerId && !dragMode" ref="floatingScreen" :server-id="standaloneServerId"
-                            :url="standaloneUrl" />
+                        <standalone-frame
+                            v-if="radioPower && standaloneServerId && !dragMode"
+                            ref="standaloneFrame"
+                            :server-id="standaloneServerId"
+                            :url="standaloneUrl"
+                            @load="onStandaloneLoad"
+                        />
                     </primary-screen>
                 </skin-body-component>
 
@@ -49,7 +67,7 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
-import FloatingScreen, { frameEl } from './components/util/FloatingScreen.vue'
+import StandaloneFrame, { frameEl } from './components/StandaloneFrame.vue'
 
 export default {
     components: {
@@ -58,7 +76,7 @@ export default {
         DraggableBox,
         MiniScreen,
         PrimaryScreen: Screen,
-        FloatingScreen,
+        StandaloneFrame,
     },
     data: () => {
         return {
@@ -83,6 +101,10 @@ export default {
                 hud: [400, 0, 16]
             },
             positions: {},
+
+            chatterFeatureEnabled: false,
+            chatterNeedsInput: false,
+            chatterNeedsInputHelp: false,
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
@@ -143,38 +165,30 @@ export default {
             for (const key of path) prop = prop[key];
 
             return prop;
+        },
+        skinNames() {
+            const skinNames = {};
+            for (const key in this.skinCache)
+                if ('name' in this.skinCache[key])
+                    skinNames[key] = this.skinCache[key].name;
+            return skinNames;
+        },
+        chatterEnabled() {
+            return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
         }
     },
     watch: {
         stateFreqName(newVal) {
             if (!this.$store.state.connected) return;
             this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
+        },
+        skinNames() {
+            this.updateAvailableSkins();
         }
     },
     created() {
         window.addEventListener('keyup', (event) => {
             this.onKeyPressed(event, 'keyup');
-            switch (event.code) {
-                case "Escape":
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    this.debug && this.debugNudgeSkinProperty(event);
-                    break;
-                default:
-                    break;
-            }
         });
         window.addEventListener('keydown', (event) => {
             this.onKeyPressed(event, 'keydown');
@@ -183,19 +197,19 @@ export default {
     mounted() {
         this.selectSkin('default');
         window.addEventListener('message', (event) => {
+            if (event.data.type === 'keyup' || event.data.type === 'keydown')
+                return void this.onKeyPressed(event.data, event.data.type);
             // if event is from frameEl (standalone screen), treat as socket message
             if (event.source === frameEl?.contentWindow)
                 return void this.socketMessage(event.data);
 
-            // accept a "debug" field with every message type to toggle ui dbg
-            if (typeof event.data.debug === 'boolean')
-                this.debug = event.data.debug;
-            if (typeof event.data.standaloneId !== 'undefined')
-                this.standaloneServerId = event.data.standaloneId;
-            if (typeof event.data.standaloneUrl !== 'undefined')
-                this.standaloneUrl = event.data.standaloneUrl;
-
             switch (event.data.type) {
+                case 'setStandalone':
+                    this.standaloneServerId = event.data.standaloneId;
+                    this.standaloneUrl = event.data.standaloneUrl;
+                    this.chatterFeatureEnabled = event.data.chatter;
+                    this.debug = event.data.debug;
+                    break;
                 case 'power':
                     this.radioPower = event.data.power || !this.radioPower;
                     this.$store.state.gamestate.radio_powered = this.radioPower;
@@ -207,18 +221,13 @@ export default {
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
-                    // if (this.inVehicle && this.radioPower) {
-                    //     this.showMobileRadio = event.data.visibility;
-                    //     this.showRadio = false;
-                    // } else {
-                    //     this.showMobileRadio = false;
-                    //     this.showRadio = event.data.visibility;
-                    // }
                     this.pttKeyName = event.data.pttKey;
-                    // this.showMobileRadio = event.data.visibility;
                     break;
                 case 'ptt':
                     this.sendToSocket({ type: 'ptt', state: event.data.state });
+                    break;
+                case 'setVolume':
+                    this.sendToSocket({ type: 'set_global_volume', volume: Math.min(event.data.volume, 250) });
                     break;
                 case 'setTowerQuality':
                     try {
@@ -274,22 +283,8 @@ export default {
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
                     break;
-                case 'getRadios':
-                    if (!event.data.radios) {
-                        console.log('no radios!');
-                        break;
-                    }
-                    // really event.data.radios is Record<number, object> but
-                    // it could be provided as object[] if lua is dumb
-                    let activeRadios = Object.values(event.data.radios).filter(radio => radio && radio.id && radio.name);
-                    this.$store.commit('setActiveRadios', activeRadios);
-                    break;
                 case 'inVehicle':
                     this.inVehicle = event.data.vehState;
-                    this.$store.commit('setInVehicle', this.inVehicle);
-                    break;
-                case 'time':
-                    this.$store.commit('setInGameTime', event.data.time);
                     break;
                 case 'setUiPositions':
                     if (typeof event.data.data !== 'object') break;
@@ -298,21 +293,43 @@ export default {
                 case 'setSkins':
                 case 'setCurrentSkin':
                     if (event.data.skins) // update available skins
+                    if (event.data.skins !== this.selectSkinIds) {
                         this.selectSkinIds = event.data.skins;
+                        this.updateAvailableSkins();
+                    } else {
+                        this.selectSkinIds = event.data.skins;
+                    }
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
-                case 'incomingMessage':
-                    // this.notifyPlayer("Radio: ~b~New Message");
-                    // let sendingradio = this.$store.state.radios.filter((obj) => {
-                    //     return obj.id === event.data.sender;
-                    // })
-                    // this.$store.state.conversations.push({
-                    //     senderid: sendingradio[0].id,
-                    //     sender: sendingradio[0].name,
-                    //     payload: event.data.payload
-                    // })
-                    // console.log(this.$store.state.conversations)
+                case 'chatterWait':
+                    if (this.chatterNeedsInput && !this.radioPower) {
+                        this.chatterNeedsInputHelp = true;
+                        this.postClient({ type: 'chatterNeedsFocus' });
+                    }
+                    break;
+                case 'chatterFrequenciesUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_scanner_freqs',
+                        freqs: event.data.freqs,
+                    })
+                    break;
+                case 'chatterCameraUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_audio_listener_orientation',
+                        coord: event.data.coord,
+                        forward: event.data.forward,
+                        up: event.data.up
+                    });
+                    break;
+                case 'chatterSourcesUpdate':
+                    if (!this.chatterEnabled) return;
+                    this.sendToSocket({
+                        type: 'set_audio_source_positions',
+                        sources: event.data.sources,
+                    });
                     break;
                 default:
                     break;
@@ -320,6 +337,8 @@ export default {
         });
         // update the gamestate with an interval
         setInterval(this.updateGamestate.bind(this), 2500);
+
+        this.postClient({ type: 'ready' });
     },
     methods: {
         postClient(data, route = "/data") {
@@ -333,18 +352,41 @@ export default {
 
                 const msg = res.json().then((data) => {
                     if (data !== "OK") console.error(`failed request with message: ${data}`);
-                }).catch((err) => console.log(err));
+                }).catch((err) => console.error(err));
 
             }).catch((err) => {
-                console.log(err);
+                console.error(err);
             });
         },
         onKeyPressed(e, type) {
             if (!this.pttKeyName) return;
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
-                e.preventDefault();
+                if (e.preventDefault) e.preventDefault();
                 this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
+            }
+
+            if (type !== 'keyup') return;
+            switch (e.code) {
+                case "Escape":
+                    if (this.dragMode) {
+                        this.dragMode = false;
+                        // save the positions by sending them back to the client
+                        this.postClient({
+                            type: 'setUiPositions', data: this.positions
+                        });
+                    } else {
+                        this.hideRadio(false);
+                    }
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    this.debug && this.debugNudgeSkinProperty(e);
+                    break;
+                default:
+                    break;
             }
         },
         async querySkinNoCache(skinId) {
@@ -440,49 +482,14 @@ export default {
         hideRadio(forceful) {
             this.postClient({ type: 'hide', force: forceful });
         },
-        sendRadioMessage(event) {
-            let recipient = event.recipient;
-            let payload = event.payload;
-            console.log(`msgOutbound: ${recipient} ${payload}`);
-            this.postClient({ type: "msgOutbound", recipient: recipient, payload: payload });
-            this.notifyPlayer("Radio: ~g~Message Sent");
-        },
         notifyPlayer(message, ignorestate) {
             if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
-            let message = {
+            this.sendToSocket({
                 type: "set_gamestate",
                 state: this.$store.state.gamestate
-            }
-            this.sendToSocket(message);
-        },
-        addScanned(event) {
-            this.$store.state.scanned.push(this.$store.state.currFreq.recv);
-            this.sendToSocket({
-                type: "set_frequencies_scanned",
-                freqs: this.$store.state.scanned
-            })
-        },
-        delScanned(event) {
-            let freq = event.toString().split(",");
-            //console.log();
-            let freqs = [];
-            this.$store.state.scanned.forEach(el => {
-                if (el[0] == freq[0] && el[1] == freq[1]) {
-                    console.log("Removed scanned freq: " + freq[0] + "." + freq[1]);
-                } else {
-                    freqs.push(el);
-                }
             });
-            this.$store.state.scanned = freqs;
-            this.sendToSocket({
-                type: "set_frequencies_scanned",
-                freqs: freqs
-            })
-        },
-        setScreen(name) {
-            this.currScreen = name || '';
         },
         nextPreset() {
             this.sendToSocket({
@@ -497,17 +504,37 @@ export default {
         socketMessage(event) {
             switch (event.type) {
                 case "radio_connected":
-                    this.$store.commit('setConnected', true);
-                    this.$store.commit('setSublvl', event.subscription);
+                    this.$store.commit('setConnected', this.radioPower);
+                    this.$store.commit('setRadioConfig', event.config);
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case 'config_updated':
+                    this.$store.commit('setRadioConfig', event.config);
+                    break;
+                case 'state_updated':
+                    this.$store.commit('setRadioState', event.state);
+                    if (this.radioPower)
+                        this.postClient({ type: 'stateUpdated', state: event.state });
+                    break;
                 case 'mic_status':
                     this.postClient({type: 'talking', talking: event.micOpen});
                     break;
+                case 'set_skin':
+                    this.selectSkin(event.skinId || 'default');
+                    break;
                 case 'reposition':
                     this.dragMode = true;
+                    break;
+                case 'chatter_needs_input':
+                    if (this.radioPower) break;
+                    this.onStandaloneChatterLoad();
+                    break;
+                case 'chatter_init':
+                    this.postClient({ type: 'chatterInitialized' });
+                    this.chatterNeedsInput = false;
+                    this.chatterNeedsInputHelp = false;
                     break;
             }
         },
@@ -515,12 +542,8 @@ export default {
             if (frameEl) frameEl.contentWindow.postMessage(data, '*');
             // else console.warn("frameEl does not exist, but tried to send message", data);
         },
-        toggleScan(event) {
-            this.$store.commit('setScanState', !this.$store.state.scanning);
-            this.sendToSocket({
-                type: "set_scanning_enabled",
-                enabled: this.$store.state.scanning
-            })
+        updateAvailableSkins() {
+            this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
@@ -529,13 +552,16 @@ export default {
             });
         },
         buttonHome() {
-            if (this.$refs.floatingScreen.length === 0) return;
-            this.$refs.floatingScreen[0].flush(true);
+            if (this.$refs.standaloneFrame.length === 0) return;
+            this.$refs.standaloneFrame[0].flush(true);
+            this.postClient({
+                type: "home"
+            });
         },
         buttonPrev() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.state.sublvl == 0)
+            if (this.$store.getters.sublvl == 0)
                 return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Prev Preset");
             this.prevPreset();
@@ -543,24 +569,41 @@ export default {
         buttonNext() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.state.sublvl == 0)
+            if (this.$store.getters.sublvl == 0)
                 return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Next Preset");
             this.nextPreset();
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
-            if (this.standaloneServerId)
-                this.$store.commit('setConnected', this.radioPower);
-
+            this.chatterNeedsInput = false;
             this.$store.state.gamestate.radio_powered = this.radioPower;
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
-            this.sendToSocket({ type: 'power', power: this.radioPower });
             this.postClient({
                 type: 'power',
                 power: this.radioPower
             });
-            this.updateGamestate();
+            this.sendToSocket({
+                type: 'power',
+                power: this.radioPower
+            });
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+        },
+        onStandaloneLoad() {
+            setTimeout(() => {
+                this.updateAvailableSkins();
+                this.updateGamestate();
+            }, 1000);
+        },
+        onStandaloneChatterLoad() {
+            this.chatterNeedsInput = true;
+
+            // constantly keep the frame in focus until it has been interacted with
+            const interval = setInterval(() => {
+                if (this.chatterNeedsInput) return void frameEl.contentWindow.focus();
+                clearInterval(interval);
+                this.$el.focus();
+            }, 100)
+            this.postClient({ type: 'chatterNeedsInput' });
         }
     }
 };
@@ -572,7 +615,7 @@ export default {
 }
 
 
-.drag-instructions {
+.top-instructions {
     position: fixed;
     top: 0;
     left: 0;
@@ -582,7 +625,7 @@ export default {
     justify-content: center;
 }
 
-.drag-instructions>div {
+.top-instructions>* {
     font-family: sans-serif;
     padding: 1rem;
     background-color: rgba(0, 0, 0, 0.75);

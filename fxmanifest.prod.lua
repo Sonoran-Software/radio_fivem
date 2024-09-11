@@ -25,6 +25,7 @@ client_scripts {
 -- setup for nui
 files {
     'dist/**/*',
+    'miniradio/**/*',
     'skins/**/*',
 }
 ui_page 'dist/ui.html'

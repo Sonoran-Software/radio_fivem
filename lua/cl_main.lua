@@ -3,10 +3,8 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
-local thisCall = {}
-
 local isTalking = false
-
+allowedMiniRadio = false
 local inVehicle = false
 
 local authorized = false
@@ -283,37 +281,30 @@ function radioToggle(frame)
 			Radio.Has = true
 		end
 		if Radio.Has then
-			SendNUIMessage({
-				type = 'setSkins',
-				skins = allowedFrames
-			})
-			radActive = not radActive
-			Radio:Toggle(radActive)
-			SendNUIMessage({
-				type = 'setUiPositions',
-				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-			})
-
-			SendNUIMessage({
-				type = 'setVisible',
-				visibility = radActive,
-				debug = Config.debug,
-				standaloneId = comId,
-				standaloneUrl = Config.radioUrl,
-				pttKey = getPttKey()
-			})
 			if frame == nil then
 				frame = 'default'
 			end
 			SendNUIMessage({
 				type = 'setCurrentSkin',
-				skin = frame
+				skin = frame,
+				skins = allowedFrames
+			})
+			radActive = not radActive
+			SendNUIMessage({
+				type = 'setUiPositions',
+				data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+			})
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = radActive,
+				pttKey = getPttKey()
 			})
 			if radActive then
 				SetNuiFocus(true, true)
 			else
 				SetNuiFocus(false, false)
 			end
+			Radio:Toggle(radActive)
 		else
 			if Config.enforceRadioItem then
 				TriggerEvent('chat:addMessage', {
@@ -337,10 +328,16 @@ function radioToggle(frame)
 end
 
 RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames)
+AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 	DebugPrint('Authorized for Radio Usage')
+	allowedMiniRadio = miniRadio
 	authorized = true
 	allowedFrames = frames
+	SendNUIMessage({
+		type = 'setCurrentSkin',
+		skin = frame,
+		skins = allowedFrames
+	})
 end)
 
 RegisterCommand('radio', radioToggle)
@@ -375,6 +372,21 @@ RegisterCommand('radiohud', function(source, args, rawCommand)
 		type = 'radioHud',
 		size = Radio.Hud
 	})
+end)
+
+RegisterCommand('radiovolume', function(source, args)
+	local volume = tonumber(args[1])
+	if volume == nil then
+		SendNotification('Radio Volume: ~r~Invalid~r~')
+		return
+	end
+
+	volume = math.min(volume, 250)
+	SendNUIMessage({
+		type = 'setVolume',
+		volume = volume,
+	})
+	SendNotification('Radio Volume: ~g~' .. volume .. '%~g~')
 end)
 
 -- Talking Animation
@@ -520,6 +532,15 @@ function Radio:Talking(toggle)
 	end
 end
 
+Citizen.CreateThread(function()
+	while true do
+		Wait(1)
+		if isTalking and Config.talkSync then
+			SetControlNormal(0, 249, 1.0);
+		end
+	end
+end)
+
 function Radio:Toggle(toggle)
 	if critError or Config.critError then
 		TriggerEvent('chat:addMessage', {
@@ -621,9 +642,24 @@ function Radio:Destroy()
 	DeleteEntity(self.Handle)
 end
 
+local function initNui()
+	local chatter = Config.chatter
+	if chatter == nil then chatter = true end
+	SendNUIMessage({
+		type = 'setStandalone',
+		standaloneId = comId,
+		standaloneUrl = Config.radioUrl,
+		chatter = chatter,
+		debug = Config.debug,
+	})
+end
 Citizen.CreateThread(function()
+	if critError or Config.critError then return end
 	SetNuiFocus(false, false)
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
+	initNui()
+	LocalPlayer.state:set('sonoranradio_state', nil, true)
+
 	while true do
 		local ped = GetPlayerPed(-1)
 		if DoesEntityExist(ped) then
@@ -644,43 +680,35 @@ Citizen.CreateThread(function()
 	DebugPrint('Sonoran Radio Started!')
 end)
 
-CreateThread(function()
-	while true do
-		local hours = GetClockHours()
-		local minutes = GetClockMinutes()
-		if hours <= 9 then
-			hours = '0' .. tostring(hours)
-		end
-		if minutes <= 9 then
-			minutes = '0' .. tostring(minutes)
-		end
-		SendNUIMessage({
-			type = 'time',
-			time = hours .. ':' .. minutes
-		})
-		Wait(500)
-	end
-end)
-
 function SendNotification(message)
 	BeginTextCommandThefeedPost('STRING')
 	AddTextComponentSubstringPlayerName(message)
 	EndTextCommandThefeedPostTicker(false, false)
 end
 
+local function chatterNeedsInput()
+	-- wait for anybody to be near the player (or skip if debug mode)
+	while #GetActivePlayers() == 1 and not Config.debug do
+		Citizen.Wait(100)
+	end
+	SendNUIMessage({ type = 'chatterWait' })
+end
+
 RegisterNUICallback('data', function(data, cb)
-	-- print('data:' .. json.encode(data))
+	if data.type == 'ready' then
+		initNui()
+	end
+
 	if data.type == 'hide' then
 		radActive = false
-		Radio:Toggle(radActive)
+		SetNuiFocus(false, false)
 		if not inVehicle or data.force then
 			SendNUIMessage({
 				type = 'setVisible',
 				visibility = radActive
 			})
 		end
-		SetNuiFocusKeepInput(false)
-		SetNuiFocus(false, false)
+		Radio:Toggle(radActive)
 	end
 
 	if data.type == 'notify' then
@@ -692,7 +720,7 @@ RegisterNUICallback('data', function(data, cb)
 	end
 
 	if data.type == 'power' then
-		TriggerServerEvent('SonoranRadio::RadioPower', data.power, GetPlayerName(PlayerId()))
+		handleRadioPower(data.power)
 		Radio.On = data.power
 	end
 
@@ -705,6 +733,40 @@ RegisterNUICallback('data', function(data, cb)
 		SetResourceKvp('ui_pos_dic', json.encode(data.data))
 	end
 
+	if data.type == 'stateUpdated' then
+		-- replicate the new state to other clients
+		if type(data.state) == 'table' then data.state.gamestate = nil end
+		TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
+	end
+
+	if data.type == 'chatterNeedsInput' then
+		-- give keyboard input focus
+		Citizen.CreateThread(chatterNeedsInput)
+	elseif data.type == 'chatterInitialized' then
+		if not radActive then
+			SetNuiFocus(false, false)
+		end
+	end
+
+	if data.type == 'chatterNeedsInput' then
+		-- give keyboard input focus
+		Citizen.CreateThread(chatterNeedsInput)
+	end
+
+	if not radActive then
+		if data.type == 'chatterNeedsFocus' then
+			SetNuiFocus(true, false)
+		end
+
+		if data.type == 'chatterInitialized' then
+			SetNuiFocus(false, false)
+		end
+	end
+
+
+	if data.type == 'home' then
+		handleHome()
+	end
 	cb('OK')
 end)
 
@@ -716,6 +778,7 @@ AddEventHandler('onResourceStart', function(resource)
 	TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 	TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')
 	TriggerEvent('chat:addSuggestion', '/radiotalk', 'Toggle your radio talk animation')
+	TriggerEvent('chat:addSuggestion', '/radiovolume', 'Change the voice volume of all radios', {{name = 'volume', help = 'The volume percentage (0-250%)'}})
 	DebugPrint('Sonoran Radio Started!')
 	if GetResourceState('BigDaddy-RadioAnimation') == 'started' then
 		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
@@ -732,14 +795,6 @@ AddEventHandler('onResourceStop', function(resource)
 	TriggerEvent('chat:removeSuggestion', '/radioreset')
 	TriggerEvent('chat:removeSuggestion', '/radiotalk')
 	Radio:Destroy()
-end)
-
-RegisterNetEvent('SonoranRadio::GetRadios:Return')
-AddEventHandler('SonoranRadio::GetRadios:Return', function(radios)
-	SendNUIMessage({
-		type = 'getRadios',
-		radios = radios
-	})
 end)
 
 CreateThread(function()
@@ -847,6 +902,25 @@ CreateThread(function()
 		-- print("QBDeath:" .. tostring(QBDeath))
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+		-- Tunnel degredation logic
+		-- local playerPed = PlayerPedId() -- Get the player's Ped
+        -- local playerPos = GetEntityCoords(playerPed) -- Get the player's current coordinates
+        -- local undergroundZThreshold = 0.0 -- Adjust this depending on your map
+		-- local inTunnel = false;
+        -- -- Check if the player is underground (Z-coordinate below threshold)
+        -- if playerPos.z < undergroundZThreshold then
+        --     inTunnel = true
+        -- else
+        --     -- Check if player is inside a tunnel by using raycasting to detect the ceiling
+        --     local rayEndPos = vector3(playerPos.x, playerPos.y, playerPos.z + 50.0) -- 50 units above the player
+        --     local hit, _, _, _, materialHash = GetShapeTestResult(StartShapeTestRay(playerPos.x, playerPos.y, playerPos.z, rayEndPos.x, rayEndPos.y, rayEndPos.z, -1, playerPed, 0))
+
+        --     if hit and materialHash ~= 0 then
+		-- 		if materialHash == GetHashKey('concrete') or materialHash == GetHashKey('metal') then
+		-- 			inTunnel = true
+		-- 		end
+        --     end
+        -- end
 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
 		SendNUIMessage({
 			type = 'setTowerQuality',
@@ -863,6 +937,12 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame
+		})
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
 		})
 	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
@@ -893,6 +973,30 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 				}
 			})
 		end
+	elseif Config.frames.permissionMode == 'qbcore' and not Config.enforceRadioItem then
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
+		TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
+	else
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
+		TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
 	end
 end)
 
@@ -944,3 +1048,8 @@ RegisterNetEvent('SonoranRadio::CritError', function(toggle)
 		critError = false
 	end
 end)
+
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
+	TriggerServerEvent('SonoranRadio::CheckPermissions')
+end)
+

@@ -8,6 +8,7 @@ Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = true
+Config.chatter = true -- Hear chatter from other players if their radio is on
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
@@ -16,6 +17,7 @@ Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace p
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.enforceRadioItem = false
+Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
@@ -23,6 +25,7 @@ Config.disableAnimation = false -- Disable the radio animation if you are using 
 Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
+Config.talkSync = true -- Enable talking on the radio making you talk in game
 
 -- Notification Settings --
 Config.notifications = {
@@ -42,7 +45,7 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = 'ace', -- ace, qbcore, esx or none
+	permissionMode = 'none', -- ace, qbcore, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['sahp'] = {
@@ -65,7 +68,8 @@ Config.frames = {
 			allowedFrames = {
 				'default',
 				'signalpro',
-				'voxguard'
+				'voxguard',
+				'hi-vis'
 			}
 		}
 	}
