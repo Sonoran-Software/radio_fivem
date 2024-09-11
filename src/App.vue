@@ -221,17 +221,13 @@ export default {
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
-                    // if (this.inVehicle && this.radioPower) {
-                    //     this.showMobileRadio = event.data.visibility;
-                    //     this.showRadio = false;
-                    // } else {
-                    //     this.showMobileRadio = false;
-                    //     this.showRadio = event.data.visibility;
-                    // }
                     this.pttKeyName = event.data.pttKey;
                     break;
                 case 'ptt':
                     this.sendToSocket({ type: 'ptt', state: event.data.state });
+                    break;
+                case 'setVolume':
+                    this.sendToSocket({ type: 'set_global_volume', volume: Math.min(event.data.volume, 250) });
                     break;
                 case 'setTowerQuality':
                     try {
@@ -532,7 +528,7 @@ export default {
                     this.dragMode = true;
                     break;
                 case 'chatter_needs_input':
-                    if (!this.radioPower) break;
+                    if (this.radioPower) break;
                     this.onStandaloneChatterLoad();
                     break;
                 case 'chatter_init':
