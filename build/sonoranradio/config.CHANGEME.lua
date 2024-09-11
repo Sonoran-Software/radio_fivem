@@ -24,6 +24,7 @@ Config.disableAnimation = false -- Disable the radio animation if you are using 
 Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
+Config.talkSync = true -- Enable talking on the radio making you talk in game
 
 -- Notification Settings --
 Config.notifications = {
@@ -43,7 +44,7 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = 'ace', -- ace, qbcore, esx or none
+	permissionMode = 'none', -- ace, qbcore, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['sahp'] = {
@@ -66,7 +67,8 @@ Config.frames = {
 			allowedFrames = {
 				'default',
 				'signalpro',
-				'voxguard'
+				'voxguard',
+				'hi-vis'
 			}
 		}
 	}

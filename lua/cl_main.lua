@@ -3,8 +3,6 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
-local thisCall = {}
-
 local isTalking = false
 allowedMiniRadio = false
 local inVehicle = false
@@ -519,6 +517,15 @@ function Radio:Talking(toggle)
 	end
 end
 
+Citizen.CreateThread(function()
+	while true do
+		Wait(1)
+		if isTalking and Config.talkSync then
+			SetControlNormal(0, 249, 1.0);
+		end
+	end
+end)
+
 function Radio:Toggle(toggle)
 	if critError or Config.critError then
 		TriggerEvent('chat:addMessage', {
@@ -877,6 +884,7 @@ CreateThread(function()
 		-- print("QBDeath:" .. tostring(QBDeath))
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+		-- Tunnel degredation logic
 		-- local playerPed = PlayerPedId() -- Get the player's Ped
         -- local playerPos = GetEntityCoords(playerPed) -- Get the player's current coordinates
         -- local undergroundZThreshold = 0.0 -- Adjust this depending on your map

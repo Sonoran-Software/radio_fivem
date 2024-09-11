@@ -25,6 +25,7 @@ Config.disableAnimation = false -- Disable the radio animation if you are using 
 Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
+Config.talkSync = true -- Enable talking on the radio making you talk in game
 
 -- Notification Settings --
 Config.notifications = {
@@ -44,16 +45,28 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = "none",
+	permissionMode = "qbcore",
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
-		['common'] = {
-			label = 'Common',
+		['SAHP'] = {
+			label = 'San Andreas Highway Patrol',
+			permissions = {
+				jobs = { -- Jobs that can use this department
+					['police'] = {
+						grades = { -- Job grades that can use this department
+							1,
+							2,
+							3
+						}
+					}
+				},
+			},
+			-- Radio frames that can be used by this department
 			allowedFrames = {
 				'default',
 				'signalpro',
 				'voxguard',
-				'hi-vis'
+        		'hi-vis'
 			}
 		}
 	}
