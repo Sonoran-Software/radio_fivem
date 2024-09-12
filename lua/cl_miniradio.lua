@@ -212,7 +212,7 @@ RegisterNUICallback('UpdateConnectedUsers', function(users)
             -- If channel doesn't exist, create a new entry for it
             table.insert(activeChannels, {
                 channelName = user.channelName,
-                activeUsers = {{name = user.displayName}}
+                activeUsers = {{name = user.displayName, isTalking = user.isTalking}}
             })
         end
     end

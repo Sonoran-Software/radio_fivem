@@ -37,6 +37,17 @@ function createChannelContent(channelTitle, users) {
 		userItem.style.fontSize = "12px";
 		userItem.style.display = "block"; // Ensures users are stacked vertically
 		userItem.style.textAlign = "left"; // Aligns user names to the left
+		if (user.isTalking) {
+			userItem.style.color = "green";
+		} else {
+			userItem.style.color = "white";
+		}
+		const tooltipText = document.createElement("span");
+		tooltipText.classList.add("tooltiptext");
+		tooltipText.textContent = user.name; // Full name displayed in tooltip
+
+		// Append the tooltip text to the user item
+		userItem.appendChild(tooltipText);
 		userList.appendChild(userItem);
 	});
 
