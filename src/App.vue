@@ -359,7 +359,20 @@ export default {
             });
         },
         onKeyPressed(e, type) {
-            if (!this.pttKeyName) return;
+            if (!this.pttKeyName) {
+                if (e.code === "Escape" && type === 'keyup') {
+                    if (this.dragMode) {
+                        this.dragMode = false;
+                        // save the positions by sending them back to the client
+                        this.postClient({
+                            type: 'setUiPositions', data: this.positions
+                        });
+                    } else {
+                        this.hideRadio(false);
+                    }
+                }
+                return;
+            }
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();

@@ -241,6 +241,7 @@ local function getPttKey()
 		return 'SpecialKey.' .. specialKeyCodes[key], key
 	else
 		print('warning: unknown ptt key code ' .. key)
+		return nil
 	end
 end
 
