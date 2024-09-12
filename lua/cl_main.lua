@@ -12,6 +12,8 @@ local authorized = false
 local allowedFrames = {}
 local critError = false
 
+local polyZonesTable = {}
+
 if Config.comId == nil or Config.comId == '' then
 	TriggerEvent('chat:addMessage', {
 		color = {
@@ -908,25 +910,35 @@ CreateThread(function()
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
 		-- Tunnel degredation logic
-		-- local playerPed = PlayerPedId() -- Get the player's Ped
-        -- local playerPos = GetEntityCoords(playerPed) -- Get the player's current coordinates
-        -- local undergroundZThreshold = 0.0 -- Adjust this depending on your map
-		-- local inTunnel = false;
-        -- -- Check if the player is underground (Z-coordinate below threshold)
-        -- if playerPos.z < undergroundZThreshold then
-        --     inTunnel = true
-        -- else
-        --     -- Check if player is inside a tunnel by using raycasting to detect the ceiling
-        --     local rayEndPos = vector3(playerPos.x, playerPos.y, playerPos.z + 50.0) -- 50 units above the player
-        --     local hit, _, _, _, materialHash = GetShapeTestResult(StartShapeTestRay(playerPos.x, playerPos.y, playerPos.z, rayEndPos.x, rayEndPos.y, rayEndPos.z, -1, playerPed, 0))
-
-        --     if hit and materialHash ~= 0 then
-		-- 		if materialHash == GetHashKey('concrete') or materialHash == GetHashKey('metal') then
-		-- 			inTunnel = true
-		-- 		end
-        --     end
-        -- end
+		for _, zoneData in pairs (Config.polyZones) do
+			local points = zoneData[1] -- coords
+			local options = zoneData[2] -- options
+			polyZonesTable = PolyZone:Create(points, {
+				name = options.name,
+				minZ = options.minZ,
+				maxZ = options.maxZ,
+			})
+			print('Created PolyZone: ' .. options.name)
+		end
+		local plyPed = PlayerPedId()
+        local coord = GetEntityCoords(plyPed)
+        local insideZone = false
+		for zoneName, zone in pairs(polyZonesTable) do
+            if zone:isPointInside(coord) then
+                insideZone = true
+                print('Player is inside: ' .. zoneName)
+                break
+            end
+        end
+        if not insideZone then
+            print('Player is not in any zone')
+        end
 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
+		if insideZone then
+			if bestQuality > 0 then
+				bestQuality = bestQuality * (1 - Config.tunnelDegredationStrength)
+			end
+		end
 		SendNUIMessage({
 			type = 'setTowerQuality',
 			state = {

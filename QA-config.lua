@@ -26,6 +26,7 @@ Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell r
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
+Config.tunnelDegredationStrength = 0.5 -- The strength of the tunnel degredation effect (0.0 - 1.0) 0.0 = no degredation, 1.0 = full degredation
 
 -- Notification Settings --
 Config.notifications = {
@@ -68,6 +69,34 @@ Config.frames = {
 				'voxguard',
         		'hi-vis'
 			}
+		}
+	}
+}
+
+Config.polyZones = {
+	['braddockPass'] = {
+		{
+			vector2(2115.6599121094, 6019.4887695312),
+			vector2(2172.6547851562, 5976.1650390625),
+			vector2(2202.0947265625, 5951.6489257812),
+			vector2(2229.580078125, 5926.8291015625),
+			vector2(2272.1564941406, 5884.1455078125),
+			vector2(2295.2229003906, 5858.900390625),
+			vector2(2317.2829589844, 5832.9838867188),
+			vector2(2346.4240722656, 5794.6176757812),
+			vector2(2365.5241699218, 5766.5756835938),
+			vector2(2375.7680664062, 5775.638671875),
+			vector2(2327.791015625, 5842.1284179688),
+			vector2(2296.2438964844, 5878.6494140625),
+			vector2(2272.2878417968, 5904.2666015625),
+			vector2(2227.0380859375, 5948.2524414062),
+			vector2(2182.1164550782, 5986.541015625),
+			vector2(2123.0554199218, 6030.90625)
+		},
+		{
+			name = "braddockPass",
+			minZ = 50.0,
+			maxZ = 58.5
 		}
 	}
 }
