@@ -134,6 +134,7 @@ function ShowHelpMessage()
 end
 
 -- Mini Module Commands
+-- Register the command to open the Mini-Radio
 RegisterCommand("radiousers", function(source, args, rawCommand)
     if not allowedMiniRadio then
         TriggerEvent("chat:addMessage", {
@@ -150,9 +151,11 @@ RegisterCommand("radiousers", function(source, args, rawCommand)
     openradiousers()
 end)
 RegisterKeyMapping('radiousers', 'Toggle Radio Users', 'keyboard', '')
-
+TriggerEvent('chat:addSuggestion', '/radiousers', "Toggle the Mini-Radio panel.", {})
+-- Register the command to show the help message
 RegisterCommand("radiousershelp", function() ShowHelpMessage() end)
-
+TriggerEvent('chat:addSuggestion', '/radiousershelp', "Show the Mini-Radio help message.", {})
+-- Register the command to resize the Mini-Radio
 TriggerEvent('chat:addSuggestion', '/radiouserssize',
              "Resize the Mini-Radio to specific width and height in pixels.", {
     {name = "Width", help = "Width in pixels"},
@@ -162,8 +165,11 @@ RegisterCommand("radiouserssize", function(source, args, rawCommand)
     if not args[1] and not args[2] then return end
     SetModuleSize("hud", args[1], args[2])
 end)
-RegisterCommand("radiousersrefresh", function() RefreshModule("hud") end)
 
+-- Register the command to refresh the Mini-Radio
+RegisterCommand("radiousersrefresh", function() RefreshModule("hud") end)
+TriggerEvent('chat:addSuggestion', '/radiousersrefresh', "Refresh the Mini-Radio.", {})
+-- Register the command to set the number of rows shown on the Mini-Radio
 RegisterCommand("radiousersrows", function(source, args, rawCommand)
     if #args ~= 1 then
         PrintChatMessage("Please specify a number of rows to display.")
@@ -212,7 +218,7 @@ RegisterNUICallback('UpdateConnectedUsers', function(users)
             -- If channel doesn't exist, create a new entry for it
             table.insert(activeChannels, {
                 channelName = user.channelName,
-                activeUsers = {{name = user.displayName}}
+                activeUsers = {{name = user.displayName, isTalking = user.isTalking}}
             })
         end
     end

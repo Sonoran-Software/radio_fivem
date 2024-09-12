@@ -241,6 +241,7 @@ local function getPttKey()
 		return 'SpecialKey.' .. specialKeyCodes[key], key
 	else
 		print('warning: unknown ptt key code ' .. key)
+		return nil
 	end
 end
 
@@ -342,7 +343,8 @@ end)
 
 RegisterCommand('radio', radioToggle)
 RegisterCommand('sonradradio', radioToggle)
-
+TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
+TriggerEvent('chat:addSuggestion', '/sonradradio', 'Open the Sonoran Radio Interface')
 RegisterCommand('radiotalk', function()
 	Radio.TalkAnim = not Radio.TalkAnim
 	if Radio.TalkAnim then
@@ -351,6 +353,7 @@ RegisterCommand('radiotalk', function()
 		SendNotification('Radio Talk Animation: ~r~Off~r~')
 	end
 end)
+RegisterKeyMapping('radiotalk', 'Toggle Radio Talk Animation', 'keyboard', '')
 
 RegisterCommand('radioreset', function(source, args)
 	SendNUIMessage({
@@ -364,6 +367,7 @@ RegisterCommand('radioreset', function(source, args)
 		})
 	end
 end)
+TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak', {{name = 'ui', help = 'Reset UI Positions'}})
 
 RegisterCommand('radiohud', function(source, args, rawCommand)
 	-- toggle Radio.Hud
@@ -373,6 +377,7 @@ RegisterCommand('radiohud', function(source, args, rawCommand)
 		size = Radio.Hud
 	})
 end)
+TriggerEvent('chat:addSuggestion', '/radiohud', 'Toggle the radio HUD', {})
 
 RegisterCommand('radiovolume', function(source, args)
 	local volume = tonumber(args[1])
@@ -388,7 +393,7 @@ RegisterCommand('radiovolume', function(source, args)
 	})
 	SendNotification('Radio Volume: ~g~' .. volume .. '%~g~')
 end)
-
+TriggerEvent('chat:addSuggestion', '/radiovolume', 'Change the voice volume of all radios', {{name = 'volume', help = 'The volume percentage (0-250%)'}})
 -- Talking Animation
 -- RegisterCommand('sonradtalk', function()
 -- 	Radio:Talking(isTalking)
