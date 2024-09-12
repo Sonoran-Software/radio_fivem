@@ -2,13 +2,6 @@ let activeChannels = [];
 var maxColumns = 3; // Set your max columns here (example: 3)
 let hiddenChannels = 0; // Counter to track channels not displayed
 
-function truncateString(string, maxLength = 15) {
-	if (string.length > maxLength) {
-		return string.slice(0, maxLength) + "...";
-	}
-	return string;
-}
-
 // Function to create a new HUD content block for each channel
 function createChannelContent(channelTitle, users) {
 	// Create the main div for the channel
@@ -33,7 +26,7 @@ function createChannelContent(channelTitle, users) {
 	users.forEach((user) => {
 		const userItem = document.createElement("span");
 		userItem.classList.add("userItem"); // Add class for tooltip and styling
-		userItem.textContent = `• ${truncateString(user.name)}`;
+		userItem.textContent = `• ${user.name}`;
 		userItem.title = user.name;
 		userItem.style.fontSize = "12px";
 		userItem.style.display = "block"; // Ensures users are stacked vertically

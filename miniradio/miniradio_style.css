@@ -155,3 +155,11 @@ a {
 	visibility: visible;
 	opacity: 1;
 }
+
+.userItem {
+	white-space: nowrap;     /* Prevents the text from wrapping onto the next line */
+	overflow: hidden;        /* Hides any overflowing text */
+	text-overflow: ellipsis; /* Adds an ellipsis (...) at the point of overflow */
+	display: block;          /* Ensure block-level layout to apply width control */
+	max-width: 100%;        /* Adjust this to control how much space the username gets */
+}
