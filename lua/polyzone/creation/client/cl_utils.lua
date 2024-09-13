@@ -33,22 +33,22 @@ function handleArrowInput(center, heading)
     delta = 0.01
   end
 
-  if IsDisabledControlPressed(0, 172) then -- arrow up
+  if IsDisabledControlPressed(0, 111) then -- NumPad 8
     local newCenter =  PolyZone.rotate(center.xy, vector2(center.x, center.y + delta), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
-  if IsDisabledControlPressed(0, 173) then -- arrow down
+  if IsDisabledControlPressed(0, 110) then -- NumPad 5
     local newCenter =  PolyZone.rotate(center.xy, vector2(center.x, center.y - delta), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
-  if IsDisabledControlPressed(0, 174) then -- arrow left
+  if IsDisabledControlPressed(0, 107) then -- NumPad 6
     local newCenter =  PolyZone.rotate(center.xy, vector2(center.x - delta, center.y), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
-  if IsDisabledControlPressed(0, 175) then -- arrow right
+  if IsDisabledControlPressed(0, 108) then -- NumPad 4
     local newCenter =  PolyZone.rotate(center.xy, vector2(center.x + delta, center.y), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
@@ -56,8 +56,13 @@ function handleArrowInput(center, heading)
   return center
 end
 
+local degradeZoneScaleform = nil
 function disableControlKeyInput()
   Citizen.CreateThread(function()
+    degradeZoneScaleform = RequestScaleformMovie('INSTRUCTIONAL_BUTTONS')
+    while not HasScaleformMovieLoaded(radioScadegradeZoneScaleformleform) do
+      Wait(0)
+    end
     while drawZone do
       DisableControlAction(0, 36, true)   -- Ctrl
       DisableControlAction(0, 19, true)   -- Alt
@@ -65,11 +70,39 @@ function disableControlKeyInput()
       DisableControlAction(0, 21, true)   -- Shift
       DisableControlAction(0, 81, true)   -- Scroll Wheel Down
       DisableControlAction(0, 99, true)   -- Scroll Wheel Up
-      DisableControlAction(0, 172, true)  -- Arrow Up
-      DisableControlAction(0, 173, true)  -- Arrow Down
-      DisableControlAction(0, 174, true)  -- Arrow Left
-      DisableControlAction(0, 175, true)  -- Arrow Right
+      DisableControlAction(0, 111, true)  -- NumPad 8
+      DisableControlAction(0, 110, true)  -- NumPad 5
+      DisableControlAction(0, 107, true)  -- NumPad 6
+      DisableControlAction(0, 108, true)  -- NumPad 4
       Wait(0)
+
+      BeginScaleformMovieMethod(degradeZoneScaleform, 'CLEAR_ALL')
+      EndScaleformMovieMethod()
+
+      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+      ScaleformMovieMethodAddParamInt(0)
+      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 107))
+      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 108))
+      PushScaleformMovieMethodParameterString('Rotate X')
+      EndScaleformMovieMethod()
+
+      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+      ScaleformMovieMethodAddParamInt(1)
+      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 110))
+      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
+      PushScaleformMovieMethodParameterString('Rotate Y')
+      EndScaleformMovieMethod()
+
+      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+      ScaleformMovieMethodAddParamInt(2)
+      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
+      PushScaleformMovieMethodParameterString('Slow Movement')
+      EndScaleformMovieMethod()
+
+      BeginScaleformMovieMethod(degradeZoneScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
+      ScaleformMovieMethodAddParamInt(0)
+      EndScaleformMovieMethod()
+      DrawScaleformMovieFullscreen(degradeZoneScaleform, 255, 255, 255, 255, 0)
     end
   end)
 end
