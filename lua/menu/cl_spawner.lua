@@ -8,6 +8,7 @@ local state = {
 	calculatedHeading = nil
 }
 local radioScaleform = nil
+local creatingZone = false
 
 CreateThread(function()
 	radioScaleform = RequestScaleformMovie('INSTRUCTIONAL_BUTTONS')
@@ -17,7 +18,7 @@ CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-	WarMenu.CreateMenu('sonoranRadioMenu', 'Radio Repeater Menu')
+	WarMenu.CreateMenu('sonoranRadioMenu', ' SonoranRadio Menu')
 	WarMenu.SetTitleColor('sonoranRadioMenu', 0, 0, 0, 255)
 	WarMenu.SetMenuTitleBackgroundSprite('sonoranRadioMenu', 'radio_menu_header', 'option_1')
 	WarMenu.SetSubTitle('sonoranRadioMenu', 'Sonoran Software')
@@ -27,6 +28,8 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
 	WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degredation Zones')
+	WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
 	while true do
 		if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 			if WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu') then
@@ -34,6 +37,8 @@ Citizen.CreateThread(function()
 			if WarMenu.MenuButton('Move Repeater', 'moveRadioMenu') then
 			end
 			if WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu') then
+			end
+			if WarMenu.MenuButton('Degredation Zones', 'degradeMenu') then
 			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
@@ -44,6 +49,9 @@ Citizen.CreateThread(function()
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('deleteRadioMenu') then
 			deletingRadioRepeater()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('degradeMenu') then
+			degradeMenu()
 			WarMenu.Display()
 		end
 		Wait(0)
@@ -687,3 +695,47 @@ RegisterNetEvent('menu:back', function(menu)
 		state.calculatedHeading = nil
 	end
 end)
+
+function degradeMenu()
+	if WarMenu.Button('Create Degredation Zone') then
+		local pos = GetEntityCoords(PlayerPedId())
+		local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+		local street1 = GetStreetNameFromHashKey(s1)
+		local street2 = GetStreetNameFromHashKey(s2)
+		local streetLabel = street1
+		if street2 ~= nil then
+			streetLabel = streetLabel .. " " .. street2
+		end
+		AddTextEntry('FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default')
+		DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
+		while (UpdateOnscreenKeyboard() == 0) do
+			DisableAllControlActions(0);
+			Wait(0)
+		end
+		local zoneName = ''
+		if UpdateOnscreenKeyboard() == 2 then
+			zoneName = streetLabel
+		end
+		if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+			local input = GetOnscreenKeyboardResult()
+			if input == '' then
+				zoneName = streetLabel
+			else
+				zoneName = input
+			end
+		end
+		TriggerEvent('polyzone:pzcreate', 'poly', zoneName, nil)
+	end
+	if WarMenu.Button('Add Point to Zone') then
+		TriggerEvent('polyzone:pzaddpoint')
+	end
+	if WarMenu.Button('Undo Last Point') then
+		TriggerEvent('polyzone:pzundo')
+	end
+	if WarMenu.Button('Finish Zone Creation') then
+		TriggerEvent('polyzone:pzfinish')
+	end
+	if WarMenu.Button('Cancel Zone Creation') then
+		TriggerEvent('polyzone:pzcancel')
+	end
+end
