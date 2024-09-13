@@ -791,6 +791,19 @@ AddEventHandler('onResourceStart', function(resource)
 		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 		Radio.TalkAnim = false
 	end
+	for zoneName, zoneData in pairs (Config.polyZones) do
+		local points = zoneData.points -- coords
+		local options = zoneData.options -- options
+		print('Creating PolyZone: ' .. options.name)
+		print(json.encode(points))
+		print(json.encode(options))
+		polyZonesTable[zoneName] = PolyZone:Create(points, {
+			name = options.name,
+			minZ = options.minZ,
+			maxZ = options.maxZ,
+		})
+		print('Created PolyZone: ' .. options.name)
+	end
 end)
 
 AddEventHandler('onResourceStop', function(resource)
@@ -910,28 +923,14 @@ CreateThread(function()
 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
 		-- Tunnel degredation logic
-		for _, zoneData in pairs (Config.polyZones) do
-			local points = zoneData[1] -- coords
-			local options = zoneData[2] -- options
-			polyZonesTable = PolyZone:Create(points, {
-				name = options.name,
-				minZ = options.minZ,
-				maxZ = options.maxZ,
-			})
-			print('Created PolyZone: ' .. options.name)
-		end
 		local plyPed = PlayerPedId()
         local coord = GetEntityCoords(plyPed)
         local insideZone = false
-		for zoneName, zone in pairs(polyZonesTable) do
+		for _, zone in pairs(polyZonesTable) do
             if zone:isPointInside(coord) then
                 insideZone = true
-                print('Player is inside: ' .. zoneName)
                 break
             end
-        end
-        if not insideZone then
-            print('Player is not in any zone')
         end
 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
 		if insideZone then

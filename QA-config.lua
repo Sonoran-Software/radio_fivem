@@ -75,7 +75,7 @@ Config.frames = {
 
 Config.polyZones = {
 	['braddockPass'] = {
-		{
+		['points'] = {
 			vector2(2115.6599121094, 6019.4887695312),
 			vector2(2172.6547851562, 5976.1650390625),
 			vector2(2202.0947265625, 5951.6489257812),
@@ -93,9 +93,9 @@ Config.polyZones = {
 			vector2(2182.1164550782, 5986.541015625),
 			vector2(2123.0554199218, 6030.90625)
 		},
-		{
+		['options'] = {
 			name = "braddockPass",
-			minZ = 50.0,
+			minZ = 45.0,
 			maxZ = 58.5
 		}
 	}
