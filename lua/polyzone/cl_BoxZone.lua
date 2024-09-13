@@ -4,7 +4,7 @@ setmetatable(BoxZone, { __index = PolyZone })
 
 -- Utility functions
 local rad, cos, sin = math.rad, math.cos, math.sin
-function PolyZone.rotate(origin, point, theta)
+function PolyZone:rotate(origin, point, theta)
   if theta == 0.0 then return point end
 
   local p = point - origin
@@ -83,7 +83,7 @@ end
 -- Debug drawing functions
 function BoxZone:TransformPoint(point)
   -- Overriding TransformPoint function to take into account rotation and position offset
-  return PolyZone.rotate(self.startPos, point, self.offsetRot) + self.offsetPos
+  return PolyZone:rotate(self.startPos, point, self.offsetRot) + self.offsetPos
 end
 
 
@@ -167,7 +167,7 @@ function BoxZone:isPointInside(point)
     return false
   end
 
-  local rotatedPoint = PolyZone.rotate(startPos, actualPos, -self.offsetRot)
+  local rotatedPoint = PolyZone:rotate(startPos, actualPos, -self.offsetRot)
   local pX, pY, pZ = rotatedPoint.x, rotatedPoint.y, point.z
   local min, max = self.min, self.max
   local minX, minY, maxX, maxY = min.x, min.y, max.x, max.y
