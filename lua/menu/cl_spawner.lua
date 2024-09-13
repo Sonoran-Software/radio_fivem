@@ -8,7 +8,6 @@ local state = {
 	calculatedHeading = nil
 }
 local radioScaleform = nil
-local creatingZone = false
 
 CreateThread(function()
 	radioScaleform = RequestScaleformMovie('INSTRUCTIONAL_BUTTONS')

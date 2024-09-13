@@ -8,7 +8,7 @@ end
 
 function polyStart(name)
   local coords = GetEntityCoords(PlayerPedId())
-  createdZone = PolyZone:Create({vector2(coords.x, coords.y)}, {name = tostring(name), useGrid=false})
+  createdZone = PolyZone:Create({vector2(coords.x, coords.y)}, {name = tostring(name), useGrid=true})
   Citizen.CreateThread(function()
     while createdZone do
       -- Have to convert the point to a vector3 prior to calling handleInput,
