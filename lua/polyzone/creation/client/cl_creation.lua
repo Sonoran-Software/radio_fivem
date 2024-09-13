@@ -208,7 +208,7 @@ function drawThread()
 end
 
 local rad, cos, sin = math.rad, math.cos, math.sin
-function PolyZone:rotate(origin, point, theta)
+function PolyZone.rotate(origin, point, theta)
   if theta == 0.0 then return point end
 
   local p = point - origin

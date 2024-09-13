@@ -50,10 +50,10 @@ end
 local function _getZoneBounds(zone)
   local center = zone.center
   local radius = zone.radius or zone.boundingRadius
-  local minY = (center.y - radius - mapMinY) // yDelta
-  local maxY = (center.y + radius - mapMinY) // yDelta
-  local minX = (center.x - radius - mapMinX) // xDelta
-  local maxX = (center.x + radius - mapMinX) // xDelta
+  local minY = (center.y - radius - mapMinY) / yDelta
+  local maxY = (center.y + radius - mapMinY) / yDelta
+  local minX = (center.x - radius - mapMinX) / xDelta
+  local maxX = (center.x + radius - mapMinX) / xDelta
   return minY, maxY, minX, maxX
 end
 
@@ -84,8 +84,8 @@ local function _addZoneToGrid(grid, zone)
 end
 
 local function _getGridCell(pos)
-  local x = (pos.x - mapMinX) // xDelta
-  local y = (pos.y - mapMinY) // yDelta
+  local x = (pos.x - mapMinX) / xDelta
+  local y = (pos.y - mapMinY) / yDelta
   return x, y
 end
 

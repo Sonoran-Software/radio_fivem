@@ -214,8 +214,8 @@ local function _pointInPoly(point, poly)
     local size = poly.size
     local gridPosX = x - minX
     local gridPosY = y - minY
-    local gridCellX = (gridPosX * gridDivisions) // size.x
-    local gridCellY = (gridPosY * gridDivisions) // size.y
+    local gridCellX = (gridPosX * gridDivisions) / size.x
+    local gridCellY = (gridPosY * gridDivisions) / size.y
     local gridCellValue = grid[gridCellY + 1][gridCellX + 1]
     if gridCellValue == nil and poly.lazyGrid then
       gridCellValue = _isGridCellInsidePoly(gridCellX, gridCellY, poly)

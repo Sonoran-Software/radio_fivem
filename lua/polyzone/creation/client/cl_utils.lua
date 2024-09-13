@@ -34,22 +34,22 @@ function handleArrowInput(center, heading)
   end
 
   if IsDisabledControlPressed(0, 111) then -- NumPad 8
-    local newCenter =  PolyZone:rotate(center.xy, vector2(center.x, center.y + delta), heading)
+    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x, center.y + delta), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
   if IsDisabledControlPressed(0, 110) then -- NumPad 5
-    local newCenter =  PolyZone:rotate(center.xy, vector2(center.x, center.y - delta), heading)
+    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x, center.y - delta), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
   if IsDisabledControlPressed(0, 107) then -- NumPad 6
-    local newCenter =  PolyZone:rotate(center.xy, vector2(center.x - delta, center.y), heading)
+    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x - delta, center.y), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
   if IsDisabledControlPressed(0, 108) then -- NumPad 4
-    local newCenter =  PolyZone:rotate(center.xy, vector2(center.x + delta, center.y), heading)
+    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x + delta, center.y), heading)
     return vector3(newCenter.x, newCenter.y, center.z)
   end
 
