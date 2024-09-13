@@ -27,31 +27,31 @@ RegisterCommand("pzcreate", function(src, args)
     })
     return
   end
-  TriggerEvent("polyzone:pzcreate", zoneType, name, args)
+  TriggerEvent("SonoranRadio:PolyZone:pzcreate", zoneType, name, args)
 end)
 
 RegisterCommand("pzadd", function(src, args)
-  TriggerEvent("polyzone:pzadd")
+  TriggerEvent("SonoranRadio:PolyZone:pzadd")
 end)
 
 RegisterCommand("pzundo", function(src, args)
-  TriggerEvent("polyzone:pzundo")
+  TriggerEvent("SonoranRadio:PolyZone:pzundo")
 end)
 
 RegisterCommand("pzfinish", function(src, args)
-  TriggerEvent("polyzone:pzfinish")
+  TriggerEvent("SonoranRadio:PolyZone:pzfinish")
 end)
 
 RegisterCommand("pzlast", function(src, args)
-  TriggerEvent("polyzone:pzlast")
+  TriggerEvent("SonoranRadio:PolyZone:pzlast")
 end)
 
 RegisterCommand("pzcancel", function(src, args)
-  TriggerEvent("polyzone:pzcancel")
+  TriggerEvent("SonoranRadio:PolyZone:pzcancel")
 end)
 
 RegisterCommand("pzcomboinfo", function (src, args)
-    TriggerEvent("polyzone:pzcomboinfo")
+    TriggerEvent("SonoranRadio:PolyZone:pzcomboinfo")
 end)
 
 Citizen.CreateThread(function()

@@ -4,8 +4,8 @@ createdZoneType = nil
 createdZone = nil
 drawZone = false
 
-RegisterNetEvent("polyzone:pzcreate")
-AddEventHandler("polyzone:pzcreate", function(zoneType, name, args)
+RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
+AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args)
   if createdZone ~= nil then
     TriggerEvent('chat:addMessage', {
       color = { 255, 0, 0},
@@ -63,8 +63,8 @@ AddEventHandler("polyzone:pzcreate", function(zoneType, name, args)
   drawThread()
 end)
 
-RegisterNetEvent("polyzone:pzfinish")
-AddEventHandler("polyzone:pzfinish", function()
+RegisterNetEvent("SonoranRadio:PolyZone:pzfinish")
+AddEventHandler("SonoranRadio:PolyZone:pzfinish", function()
   if createdZone == nil then
     return
   end
@@ -91,8 +91,8 @@ AddEventHandler("polyzone:pzfinish", function()
   createdZoneType = nil
 end)
 
-RegisterNetEvent("polyzone:pzlast")
-AddEventHandler("polyzone:pzlast", function()
+RegisterNetEvent("SonoranRadio:PolyZone:pzlast")
+AddEventHandler("SonoranRadio:PolyZone:pzlast", function()
   if createdZone ~= nil or lastCreatedZone == nil then
     return
   end
@@ -128,8 +128,8 @@ AddEventHandler("polyzone:pzlast", function()
   drawThread()
 end)
 
-RegisterNetEvent("polyzone:pzcancel")
-AddEventHandler("polyzone:pzcancel", function()
+RegisterNetEvent("SonoranRadio:PolyZone:pzcancel")
+AddEventHandler("SonoranRadio:PolyZone:pzcancel", function()
   if createdZone == nil then
     return
   end
@@ -155,4 +155,18 @@ function drawThread()
       Wait(0)
     end
   end)
+end
+
+local rad, cos, sin = math.rad, math.cos, math.sin
+function PolyZone.rotate(origin, point, theta)
+  if theta == 0.0 then return point end
+
+  local p = point - origin
+  local pX, pY = p.x, p.y
+  theta = rad(theta)
+  local cosTheta = cos(theta)
+  local sinTheta = sin(theta)
+  local x = pX * cosTheta - pY * sinTheta
+  local y = pX * sinTheta + pY * cosTheta
+  return vector2(x, y) + origin
 end

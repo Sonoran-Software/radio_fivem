@@ -4,7 +4,7 @@ function triggerZoneEvent(eventName, ...)
   TriggerClientEvent(eventPrefix .. eventName, -1, ...)
 end
 
-RegisterNetEvent("PolyZone:TriggerZoneEvent")
-AddEventHandler("PolyZone:TriggerZoneEvent", triggerZoneEvent)
+RegisterNetEvent("SonoranRadio:PolyZone:TriggerZoneEvent")
+AddEventHandler("SonoranRadio:PolyZone:TriggerZoneEvent", triggerZoneEvent)
 
 exports("TriggerZoneEvent", triggerZoneEvent)

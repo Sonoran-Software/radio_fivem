@@ -147,7 +147,7 @@ end
 function ComboZone:Create(zones, options)
   local zone = ComboZone:new(zones, options)
   _initDebug(zone, options)
-  AddEventHandler("polyzone:pzcomboinfo", function ()
+  AddEventHandler("SonoranRadio:PolyZone:pzcomboinfo", function ()
       zone:printInfo()
   end)
   return zone

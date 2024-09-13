@@ -24,12 +24,12 @@ function polyStart(name)
 end
 
 function polyFinish()
-  TriggerServerEvent("polyzone:printPoly",
+  TriggerServerEvent("SonoranRadio:PolyZone:printPoly",
     {name=createdZone.name, points=createdZone.points, minZ=minZ, maxZ=maxZ})
 end
 
-RegisterNetEvent("polyzone:pzadd")
-AddEventHandler("polyzone:pzadd", function()
+RegisterNetEvent("SonoranRadio:PolyZone:pzadd")
+AddEventHandler("SonoranRadio:PolyZone:pzadd", function()
   if createdZone == nil or createdZoneType ~= 'poly' then
     TriggerEvent('chat:addMessage', {
       color = {255, 0, 0},
@@ -52,14 +52,14 @@ AddEventHandler("polyzone:pzadd", function()
   createdZone.points[#createdZone.points + 1] = vector2(coords.x, coords.y)
 end)
 
-RegisterNetEvent("polyzone:pzundo")
-AddEventHandler("polyzone:pzundo", function()
+RegisterNetEvent("SonoranRadio:PolyZone:pzundo")
+AddEventHandler("SonoranRadio:PolyZone:pzundo", function()
   if createdZone == nil or createdZoneType ~= 'poly' then
     return
   end
 
   createdZone.points[#createdZone.points] = nil
   if #createdZone.points == 0 then
-    TriggerEvent("polyzone:pzcancel")
+    TriggerEvent("SonoranRadio:PolyZone:pzcancel")
   end
 end)

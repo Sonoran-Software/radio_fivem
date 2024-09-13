@@ -108,6 +108,6 @@ function boxStart(name, heading, length, width, minHeight, maxHeight)
 end
 
 function boxFinish()
-  TriggerServerEvent("polyzone:printBox",
+  TriggerServerEvent("SonoranRadio:PolyZone:printBox",
     {name=createdZone.name, center=createdZone.center, length=createdZone.length, width=createdZone.width, heading=createdZone.offsetRot, minZ=createdZone.minZ, maxZ=createdZone.maxZ})
 end

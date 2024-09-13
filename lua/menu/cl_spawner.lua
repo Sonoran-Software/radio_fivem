@@ -724,18 +724,18 @@ function degradeMenu()
 				zoneName = input
 			end
 		end
-		TriggerEvent('polyzone:pzcreate', 'poly', zoneName, nil)
+		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
 	end
 	if WarMenu.Button('Add Point to Zone') then
-		TriggerEvent('polyzone:pzaddpoint')
+		TriggerEvent('SonoranRadio:PolyZone:pzaddpoint')
 	end
 	if WarMenu.Button('Undo Last Point') then
-		TriggerEvent('polyzone:pzundo')
+		TriggerEvent('SonoranRadio:PolyZone:pzundo')
 	end
 	if WarMenu.Button('Finish Zone Creation') then
-		TriggerEvent('polyzone:pzfinish')
+		TriggerEvent('SonoranRadio:PolyZone:pzfinish')
 	end
 	if WarMenu.Button('Cancel Zone Creation') then
-		TriggerEvent('polyzone:pzcancel')
+		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
 	end
 end
