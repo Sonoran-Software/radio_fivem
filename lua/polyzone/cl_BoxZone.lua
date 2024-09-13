@@ -3,19 +3,6 @@ BoxZone = {}
 setmetatable(BoxZone, { __index = PolyZone })
 
 -- Utility functions
-local rad, cos, sin = math.rad, math.cos, math.sin
-function PolyZone.rotate(origin, point, theta)
-  if theta == 0.0 then return point end
-
-  local p = point - origin
-  local pX, pY = p.x, p.y
-  theta = rad(theta)
-  local cosTheta = cos(theta)
-  local sinTheta = sin(theta)
-  local x = pX * cosTheta - pY * sinTheta
-  local y = pX * sinTheta + pY * cosTheta
-  return vector2(x, y) + origin
-end
 
 function BoxZone.calculateMinAndMaxZ(minZ, maxZ, scaleZ, offsetZ)
   local minScaleZ, maxScaleZ, minOffsetZ, maxOffsetZ = scaleZ[1] or 1.0, scaleZ[2] or 1.0, offsetZ[1] or 0.0, offsetZ[2] or 0.0

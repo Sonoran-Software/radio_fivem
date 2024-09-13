@@ -58,15 +58,10 @@ AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args)
     return
   end
   createdZoneType = zoneType
-  print("Created zone type: " .. zoneType)
   drawZone = true
-  print("Drawing zone", drawZone)
   disableControlKeyInput()
-  print("disabling controls")
   drawThread()
-  print("Drawing thread")
   drawInstructions()
-  print("Drawing instructions")
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzfinish")
@@ -163,7 +158,6 @@ end)
 
 function drawInstructions()
   while drawZone do
-    print("Drawing instructions")
     BeginScaleformMovieMethod(degradeZoneScaleform, 'CLEAR_ALL')
     EndScaleformMovieMethod()
 
@@ -175,20 +169,20 @@ function drawInstructions()
     EndScaleformMovieMethod()
 
     BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    ScaleformMovieMethodAddParamInt(2)
+    ScaleformMovieMethodAddParamInt(1)
     PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 110))
     PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
     PushScaleformMovieMethodParameterString('Rotate Y')
     EndScaleformMovieMethod()
 
     BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    ScaleformMovieMethodAddParamInt(4)
+    ScaleformMovieMethodAddParamInt(2)
     PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
     PushScaleformMovieMethodParameterString('Slow Movement')
     EndScaleformMovieMethod()
 
     BeginScaleformMovieMethod(degradeZoneScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
-    ScaleformMovieMethodAddParamInt(0)
+    ScaleformMovieMethodAddParamInt(3)
     EndScaleformMovieMethod()
     DrawScaleformMovieFullscreen(degradeZoneScaleform, 255, 255, 255, 255, 0)
     Wait(0)
@@ -199,7 +193,6 @@ function drawThread()
   Citizen.CreateThread(function()
     while drawZone do
       if createdZone then
-        print("Drawing zone")
         createdZone:draw()
       end
       Wait(0)

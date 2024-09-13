@@ -57,6 +57,7 @@ function handleArrowInput(center, heading)
 end
 
 function disableControlKeyInput()
+  Citizen.CreateThread(function()
     while drawZone do
       DisableControlAction(0, 36, true)   -- Ctrl
       DisableControlAction(0, 19, true)   -- Alt
@@ -70,4 +71,5 @@ function disableControlKeyInput()
       DisableControlAction(0, 108, true)  -- NumPad 4
       Wait(0)
     end
+  end)
 end
