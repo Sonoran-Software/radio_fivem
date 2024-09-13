@@ -213,7 +213,7 @@ RegisterNUICallback('UpdateConnectedUsers', function(users)
         -- If channel already exists, add the user to the activeUsers list
         if channelIndex then
             table.insert(activeChannels[channelIndex].activeUsers,
-                         {name = user.displayName})
+                         {name = user.displayName, isTalking = user.isTalking})
         else
             -- If channel doesn't exist, create a new entry for it
             table.insert(activeChannels, {
