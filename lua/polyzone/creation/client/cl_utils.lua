@@ -56,13 +56,6 @@ function handleArrowInput(center, heading)
   return center
 end
 
-local degradeZoneScaleform = nil
-Citizen.CreateThread(function()
-  degradeZoneScaleform = RequestScaleformMovie('INSTRUCTIONAL_BUTTONS')
-  while not HasScaleformMovieLoaded(degradeZoneScaleform) do
-    Wait(0)
-  end
-end)
 function disableControlKeyInput()
     while drawZone do
       DisableControlAction(0, 36, true)   -- Ctrl
@@ -76,33 +69,5 @@ function disableControlKeyInput()
       DisableControlAction(0, 107, true)  -- NumPad 6
       DisableControlAction(0, 108, true)  -- NumPad 4
       Wait(0)
-
-      BeginScaleformMovieMethod(degradeZoneScaleform, 'CLEAR_ALL')
-      EndScaleformMovieMethod()
-
-      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-      ScaleformMovieMethodAddParamInt(0)
-      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 107))
-      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 108))
-      PushScaleformMovieMethodParameterString('Rotate X')
-      EndScaleformMovieMethod()
-
-      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-      ScaleformMovieMethodAddParamInt(2)
-      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 110))
-      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
-      PushScaleformMovieMethodParameterString('Rotate Y')
-      EndScaleformMovieMethod()
-
-      BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-      ScaleformMovieMethodAddParamInt(4)
-      PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
-      PushScaleformMovieMethodParameterString('Slow Movement')
-      EndScaleformMovieMethod()
-
-      BeginScaleformMovieMethod(degradeZoneScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
-      ScaleformMovieMethodAddParamInt(0)
-      EndScaleformMovieMethod()
-      DrawScaleformMovieFullscreen(degradeZoneScaleform, 255, 255, 255, 255, 0)
     end
 end
