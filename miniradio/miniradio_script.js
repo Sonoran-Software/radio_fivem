@@ -181,7 +181,6 @@ function dragElement(elmnt, dragHandleId) {
 
 window.addEventListener("message", function (event) {
 	if (event.data.type == "update_connected_users") {
-		console.log("Getting info from radio website", JSON.stringify(event.data));
 		$.post(
 			"https://sonoranradio/UpdateConnectedUsers",
 			JSON.stringify({

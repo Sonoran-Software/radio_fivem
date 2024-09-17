@@ -6,7 +6,7 @@ local unitStatus = nil
 local isTalking = false
 allowedMiniRadio = false
 local inVehicle = false
-
+local tunnels = {}
 local authorized = false
 
 local allowedFrames = {}
@@ -791,19 +791,6 @@ AddEventHandler('onResourceStart', function(resource)
 		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 		Radio.TalkAnim = false
 	end
-	for zoneName, zoneData in pairs (Config.polyZones) do
-		local points = zoneData.points -- coords
-		local options = zoneData.options -- options
-		print('Creating PolyZone: ' .. options.name)
-		print(json.encode(points))
-		print(json.encode(options))
-		polyZonesTable[zoneName] = PolyZone:Create(points, {
-			name = options.name,
-			minZ = options.minZ,
-			maxZ = options.maxZ,
-		})
-		print('Created PolyZone: ' .. options.name)
-	end
 end)
 
 AddEventHandler('onResourceStop', function(resource)
@@ -900,7 +887,7 @@ CreateThread(function()
 	if Config.deathDetectionMethod == 'qbcore' then
 		QBCore = exports['qb-core']:GetCoreObject()
 	end
-
+	TriggerServerEvent('SonoranRadio:GetTunnels')
 	while true do
 		if QBCore ~= nil then
 			local PlayerData = QBCore.Functions.GetPlayerData()
@@ -926,8 +913,10 @@ CreateThread(function()
 		local plyPed = PlayerPedId()
         local coord = GetEntityCoords(plyPed)
         local insideZone = false
+		local degradeStrength = 0.0
 		for _, zone in pairs(polyZonesTable) do
             if zone:isPointInside(coord) then
+				degradeStrength = zone.degradeStrength
                 insideZone = true
                 break
             end
@@ -935,7 +924,7 @@ CreateThread(function()
 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
 		if insideZone then
 			if bestQuality > 0 then
-				bestQuality = bestQuality * (1 - Config.tunnelDegredationStrength)
+				bestQuality = bestQuality * (1 - degradeStrength)
 			end
 		end
 		SendNUIMessage({
@@ -945,6 +934,22 @@ CreateThread(function()
 			}
 		})
 		Wait(1000)
+	end
+end)
+
+RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
+	tunnels = TunnelsServer
+	for _, zoneData in pairs (tunnels) do
+		if not polyZonesTable[zoneData.options.name] then
+			local points = zoneData.points -- coords
+			local options = zoneData.options -- options
+			polyZonesTable[zoneData.options.name] = PolyZone:Create(points, {
+				name = options.name,
+				minZ = options.minZ,
+				maxZ = options.maxZ,
+				degradeStrength = options.degradeStrength,
+			})
+		end
 	end
 end)
 

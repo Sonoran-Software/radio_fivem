@@ -23,9 +23,8 @@ function polyStart(name)
   minZ, maxZ = coords.z, coords.z
 end
 
-function polyFinish()
-  TriggerServerEvent("SonoranRadio:PolyZone:printPoly",
-    {name=createdZone.name, points=createdZone.points, minZ=minZ, maxZ=maxZ})
+function polyFinish(degradeStrength, minY, maxY)
+  TriggerServerEvent("SonoranRadio:PolyZone:CreateZone", createdZone.points, createdZone.name, minY, maxY, degradeStrength)
 end
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzadd")

@@ -458,6 +458,7 @@ function PolyZone:new(points, options)
   local poly = {
     name = tostring(options.name) or nil,
     points = points,
+    degradeStrength = options.degradeStrength or 0.0,
     center = options.center,
     size = options.size,
     max = options.max,

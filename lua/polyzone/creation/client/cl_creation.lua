@@ -65,13 +65,13 @@ AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args)
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzfinish")
-AddEventHandler("SonoranRadio:PolyZone:pzfinish", function()
+AddEventHandler("SonoranRadio:PolyZone:pzfinish", function(degradeStrength, minY, maxY)
   if createdZone == nil then
     return
   end
 
   if createdZoneType == 'poly' then
-    polyFinish()
+    polyFinish(degradeStrength, minY, maxY)
   elseif createdZoneType == "circle" then
     circleFinish()
   elseif createdZoneType == "box" then

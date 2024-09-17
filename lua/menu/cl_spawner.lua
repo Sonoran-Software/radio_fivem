@@ -695,6 +695,9 @@ RegisterNetEvent('menu:back', function(menu)
 	end
 end)
 
+local degradeStrength = 0.5
+local minY = 45.0
+local maxY = 50.0
 function degradeMenu()
 	if WarMenu.Button('Create Degredation Zone') then
 		local pos = GetEntityCoords(PlayerPedId())
@@ -725,14 +728,40 @@ function degradeMenu()
 		end
 		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
 	end
+	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(0.5), 5, tostring(0.5))
+	if pressed then
+		if pressed then
+			if input == '' then
+				degradeStrength = 0.5
+			else
+				degradeStrength = tonumber(input)
+			end
+		end
+	end
 	if WarMenu.Button('Add Point to Zone') then
 		TriggerEvent('SonoranRadio:PolyZone:pzadd')
 	end
 	if WarMenu.Button('Undo Last Point') then
 		TriggerEvent('SonoranRadio:PolyZone:pzundo')
 	end
+	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: 45.0)', tostring(45.0), 5, tostring(45.0))
+	if minYPressed then
+		if minYInput == '' then
+			minY = 45.0
+		else
+			minY = tonumber(minYInput)
+		end
+	end
+	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: 50.0)', tostring(50.0), 5, tostring(50.0))
+	if maxYPressed then
+		if maxYInput == '' then
+			maxY = 59.0
+		else
+			maxY = tonumber(maxYInput)
+		end
+	end
 	if WarMenu.Button('Finish Zone Creation') then
-		TriggerEvent('SonoranRadio:PolyZone:pzfinish')
+		TriggerEvent('SonoranRadio:PolyZone:pzfinish', degradeStrength, minY, maxY)
 	end
 	if WarMenu.Button('Cancel Zone Creation') then
 		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
