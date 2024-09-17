@@ -344,17 +344,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 		polyZoneFileName = 'tunnels.json'
 	end
 	local polyZones = LoadResourceFile(GetCurrentResourceName(), polyZoneFileName)
-	local tunnels = json.decode(polyZones)
-	for i = 1, #tunnels do
+	local tnl = json.decode(polyZones)
+	for i = 1, #tnl do
 		local obj = {}
-		obj.points = tunnels[i].points
+		obj.points = tnl[i].points
 		obj.options = {
-			minZ = tunnels[i].options.minZ,
-			maxZ = tunnels[i].options.maxZ,
-			degradeStrength = tunnels[i].options.degradeStrength,
-			name = tunnels[i].options.name
+			minZ = tnl[i].options.minZ,
+			maxZ = tnl[i].options.maxZ,
+			degradeStrength = tnl[i].options.degradeStrength,
+			name = tnl[i].options.name
 		}
-		table.insert(Tunnels, obj)
+		table.insert(tunnels, obj)
 	end
 end)
 
@@ -394,7 +394,7 @@ RegisterCommand('radioMenu', function(source)
 end, true)
 
 RegisterNetEvent('SonoranRadio:GetTunnels', function()
-	TriggerClientEvent('SonoranRadio:SyncTunnels', source, Tunnels)
+	TriggerClientEvent('SonoranRadio:SyncTunnels', source, tunnels)
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
@@ -406,11 +406,11 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		degradeStrength = degradeStrength,
 		name = name
 	}
-	table.insert(Tunnels, obj)
+	table.insert(tunnels, obj)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
-	f:write(json.encode(Tunnels))
+	f:write(json.encode(tunnels))
 	f:close()
-	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, Tunnels)
+	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
