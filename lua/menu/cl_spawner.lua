@@ -728,7 +728,7 @@ function degradeMenu()
 		end
 		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
 	end
-	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(0.5), 5, tostring(0.5))
+	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(degradeStrength), 5, tostring(degradeStrength))
 	if pressed then
 		if pressed then
 			if input == '' then
@@ -744,7 +744,7 @@ function degradeMenu()
 	if WarMenu.Button('Undo Last Point') then
 		TriggerEvent('SonoranRadio:PolyZone:pzundo')
 	end
-	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: 45.0)', tostring(45.0), 5, tostring(45.0))
+	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: 45.0)', tostring(minY), 5, tostring(minY))
 	if minYPressed then
 		if minYInput == '' then
 			minY = 45.0
@@ -752,7 +752,7 @@ function degradeMenu()
 			minY = tonumber(minYInput)
 		end
 	end
-	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: 50.0)', tostring(50.0), 5, tostring(50.0))
+	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: 50.0)', tostring(maxY), 5, tostring(maxY))
 	if maxYPressed then
 		if maxYInput == '' then
 			maxY = 59.0
