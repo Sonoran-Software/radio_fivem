@@ -918,6 +918,7 @@ CreateThread(function()
             if zone:isPointInside(coord) then
 				degradeStrength = zone.degradeStrength
                 insideZone = true
+				DebugPrint('Inside Zone: ' .. zone.name)
                 break
             end
         end
@@ -940,11 +941,14 @@ end)
 RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 	tunnels = TunnelsServer
 	for _, zoneData in pairs (tunnels) do
+		DebugPrint('Attempting to create zone: ' .. zoneData.options.name)
 		if not polyZonesTable[zoneData.options.name] then
+			DebugPrint('Zone was not found, creating...')
 			local points = {}
 			for _, point in pairs (zoneData.points) do
 				table.insert(points, vector2(point.x, point.y))
 			end
+			DebugPrint('Creating zone with ' .. #points .. ' points', json.encode(points))
 			local options = zoneData.options -- options
 			polyZonesTable[zoneData.options.name] = PolyZone:Create(points, {
 				name = options.name,
@@ -952,6 +956,7 @@ RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 				maxZ = options.maxZ,
 				degradeStrength = options.degradeStrength,
 			})
+			DebugPrint('Zone created: ' .. zoneData.options.name)
 		end
 	end
 end)
