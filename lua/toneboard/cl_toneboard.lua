@@ -1,4 +1,5 @@
 speakers = {}
+playingSpeakers = {}
 local speakerStyles = {
 	['speakerSmallWall'] = "hei_prop_bank_alarm_01",
 	['speakerMedium'] = "prop_speaker_05",
@@ -143,4 +144,38 @@ RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
 	print(('playing tone %s on speaker %s'):format(tone, speaker.Id))
 	PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
 	Distance(speaker.Id, speaker.Range)
+	speaker.soundName = tone
+	table.insert(playingSpeakers, speaker)
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(500);
+        local playerPos = GetEntityCoords(PlayerPedId());
+        local playerHeading = GetEntityHeading(PlayerPedId());
+		for _, v in pairs (playingSpeakers) do
+			SendNUIMessage({
+				status = "updateSound",
+				playerX = playerPos.x,
+				playerY = playerPos.y,
+				playerZ = playerPos.z,
+				playerHeading = playerHeading,
+				speakerX = v.x,
+				speakerY = v.y,
+				speakerZ = v.z,
+				maxDistance = v.Range
+			})
+		end
+	end
+end);
+
+RegisterNUICallback('events-xsound', function(data)
+	if data.type == 'finished' then
+		for i = 1, #playingSpeakers do
+			if playingSpeakers[i].soundName == data.id then
+				table.remove(playingSpeakers, i)
+				break
+			end
+		end
+	end
 end)
