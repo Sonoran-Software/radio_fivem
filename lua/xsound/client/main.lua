@@ -37,7 +37,7 @@ function CheckForCloseMusic()
     isPlayerCloseToMusic = false
     for k, v in pairs(soundInfo) do
         if v.position ~= nil and v.isDynamic then
-            if #(v.position - playerPos) < v.distance + config.distanceBeforeUpdatingPos then
+            if #(v.position - playerPos) < v.distance + 10 then
                 isPlayerCloseToMusic = true
                 break
             end
@@ -47,7 +47,7 @@ end
 
 -- updating position on html side so we can count how much volume the sound needs.
 CreateThread(function()
-    local refresh = config.RefreshTime
+    local refresh = 300
     local ped = PlayerPedId()
     local pos = GetEntityCoords(ped)
     local lastPos = pos
@@ -133,7 +133,7 @@ CreateThread(function()
         playerPos = GetEntityCoords(ped)
         for k, v in pairs(soundInfo) do
             if v.position ~= nil and v.isDynamic then
-                if #(v.position - playerPos) < (v.distance + config.distanceBeforeUpdatingPos) then
+                if #(v.position - playerPos) < (v.distance + 10) then
                     if destroyedMusicList[v.id] then
                         destroyedMusicList[v.id] = nil
                         v.wasSilented = true

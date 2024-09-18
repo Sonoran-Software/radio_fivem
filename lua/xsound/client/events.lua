@@ -1,7 +1,7 @@
 RegisterNUICallback("init", function(data, cb)
     SendNUIMessage({
         status = "init",
-        time = config.RefreshTime,
+        time = 300,
     })
 
     if cb then cb('ok') end

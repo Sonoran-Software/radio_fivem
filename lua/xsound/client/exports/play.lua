@@ -54,7 +54,7 @@ function PlayUrlPos(name_, url_, volume_, pos, loop_, options)
 
     CheckForCloseMusic()
 
-    if #(GetEntityCoords(PlayerPedId()) - pos) < 10.0 + config.distanceBeforeUpdatingPos then
+    if #(GetEntityCoords(PlayerPedId()) - pos) < 10.0 + 10 then
         UpdatePlayerPositionInNUI()
         SendNUIMessage({ status = "unmuteAll" })
     end
