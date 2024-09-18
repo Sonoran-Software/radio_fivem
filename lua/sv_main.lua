@@ -10,6 +10,7 @@ local tunnels = {}
 local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
+speakersFileName = 'speakers.DEFAULT.json'
 
 if Config == nil then
 	critError = true
@@ -356,6 +357,36 @@ AddEventHandler('onResourceStart', function(resourceName)
 		}
 		table.insert(tunnels, obj)
 	end
+	local speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.json')
+	if not speakersFile then
+		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
+		print('[SonoranRadio] - Using default tunnel locations - Please update your speakers.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename speakers.DEFAULT.json to speakers.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
+			print('[SonoranRadio] - Failed to rename speakers.DEFAULT.json to speakers.json')
+			speakersFileName = 'speakers.DEFAULT.json'
+		else
+			print('[SonoranRadio] - Successfully renamed speakers.DEFAULT.json to speakers.json')
+			speakersFileName = 'speakers.json'
+		end
+	else
+		speakersFileName = 'speakers.json'
+	end
+	local spk = LoadResourceFile(GetCurrentResourceName(), speakersFileName)
+	local spkrs = json.decode(spk)
+	for i = 1, #spkrs do
+		local obj = {}
+		if spkrs[i].Id == nil then
+			obj.Id = uuid()
+		else
+			obj.Id = spkrs[i].Id
+		end
+		obj.PropPosition = vec3(spkrs[i].PropPosition.x, spkrs[i].PropPosition.y, spkrs[i].PropPosition.z)
+		obj.heading = spkrs[i].heading
+		obj.Range = spkrs[i].Range
+		obj.Id = spkrs[i].Id
+		table.insert(Speakers, obj)
+	end
 end)
 
 exports('performApiRequest', performApiRequest)
@@ -388,6 +419,20 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
 end)
+
+RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
+	local saveData = {};
+	for _, t in ipairs(speakers) do
+		table.insert(saveData, t)
+	end
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	print('ok')
+	Speakers = speakers
+	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
+end)
+
 
 RegisterCommand('radioMenu', function(source)
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
