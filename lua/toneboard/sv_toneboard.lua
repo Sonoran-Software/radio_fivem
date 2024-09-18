@@ -24,4 +24,13 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 		Wait(10)
 	end
 	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, Speakers)
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
 end)
