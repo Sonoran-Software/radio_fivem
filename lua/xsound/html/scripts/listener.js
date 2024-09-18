@@ -1,5 +1,4 @@
 var soundList = [];
-var closeToPlayer = [];
 var isMutedAll = false;
 
 var playerPos = [-90000, -90000, -90000];
@@ -10,7 +9,6 @@ $(function () {
 		var item = event.data;
 		switch (item.status) {
 			case "init":
-				setInterval(updateVolumeSounds, item.time);
 				break;
 			case "position":
 				playerPos = [item.x, item.y, item.z];
@@ -22,7 +20,7 @@ $(function () {
                     var speakerPos = [item.speakerX, item.speakerY, item.speakerZ];
                     var playerHeading = item.playerHeading;
                     var maxDistance = item.maxDistance;
-					sound.updateSound(playerPos, speakerPos, playerHeading, maxDistance);
+					sound.updateSound(playerPos, speakerPos, playerHeading, maxDistance, item.distance);
 				}
 				break;
 			case "volume":
@@ -46,37 +44,10 @@ $(function () {
 					sound.setMaxVolume(item.volume);
 				}
 				break;
-			/*
-            case "textSpeech":
-                var sound = soundList[item.name];
-
-                if(sound != null)
-                {
-                    sound.destroyYoutubeApi();
-                    sound.delete();
-                    sound = null;
-                }
-
-                var sd = new SoundPlayer();
-                sd.IsTextToSpeech(true)
-                sd.setName(item.name);
-                sd.setTextToSpeech(item.text)
-                sd.setTextToSpeechLang(item.lang)
-                sd.setDynamic(item.dynamic);
-                sd.setLocation(item.x,item.y,item.z);
-                sd.create();
-
-                sd.setVolume(item.volume);
-                sd.play();
-                soundList[item.name] = sd;
-                break;
-            */
 			case "url":
 				console.log("setting the url from listner.js");
 				var sound = soundList[item.name];
-
 				if (sound != null) {
-					sound.destroyYoutubeApi();
 					sound.delete();
 					sound = null;
 				}
@@ -135,7 +106,6 @@ $(function () {
 			case "delete":
 				var sound = soundList[item.name];
 				if (sound != null) {
-					sound.destroyYoutubeApi();
 					sound.delete();
 					delete soundList[item.name];
 				}
@@ -158,7 +128,6 @@ $(function () {
 			case "changeurl":
 				var sound = soundList[item.name];
 				if (sound != null) {
-					sound.destroyYoutubeApi();
 					sound.delete();
 					sound.setSoundUrl(item.url);
 					sound.setLoaded(false);
@@ -181,7 +150,6 @@ $(function () {
 						sound.unmuteSilent();
 					}
 				}
-				updateVolumeSounds();
 				break;
 			case "muteAll":
 				isMutedAll = true;
@@ -203,47 +171,4 @@ function Between(loc1, loc2) {
 
 	var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
 	return distance;
-}
-
-function addToCache() {
-	closeToPlayer = [];
-	if (!isMutedAll) {
-		var sound = null;
-		for (var soundName in soundList) {
-			sound = soundList[soundName];
-			if (sound.isDynamic()) {
-				var distance = Between(playerPos, sound.getLocation());
-				var distance_max = sound.getDistance();
-				if (distance < distance_max + 40) {
-					closeToPlayer[soundName] = soundName;
-				} else {
-					if (sound.loaded()) {
-						sound.mute();
-					}
-				}
-			}
-		}
-	}
-}
-
-setInterval(addToCache, 1000);
-
-function updateVolumeSounds() {
-	if (!isMutedAll) {
-		var sound = null;
-		for (var name in closeToPlayer) {
-			sound = soundList[name];
-			if (sound != null) {
-				if (sound.isDynamic()) {
-					var distance = Between(playerPos, sound.getLocation());
-					var distance_max = sound.getDistance();
-					if (distance < distance_max) {
-						sound.updateVolume(distance, distance_max);
-						continue;
-					}
-					sound.mute();
-				}
-			}
-		}
-	}
 }

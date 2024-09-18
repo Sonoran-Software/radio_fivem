@@ -41,10 +41,8 @@ local function CreateSpeaker(speaker)
     if DoesEntityExist(speaker.Handle) then DeleteEntity(speaker.Handle) end
     local speakerModelArray = speakerStyles[speaker.type]
     if not speakerModelArray then
-        print(('speaker type %s not found'):format(speaker.type))
         return
     end
-    print('creating speaker', speakerModelArray)
     local speakerModel = GetHashKey(speakerModelArray)
     LoadModelSync(speakerModel)
     local coords = speaker.PropPosition
@@ -122,7 +120,6 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
-    print(('playing tone %s on speaker %s'):format(tone, speaker.Id))
     PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
     Distance(speaker.Id, speaker.Range)
     table.insert(playingSpeakers, speaker)
@@ -131,9 +128,10 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(500);
-        local playerPos = GetEntityCoords(PlayerPedId());
-        local playerHeading = GetEntityHeading(PlayerPedId());
+        local playerPos = GetEntityCoords(GetPlayerPed(-1));
+        local playerHeading = GetEntityHeading(GetPlayerPed(-1));
         for _, v in pairs(playingSpeakers) do
+            local propPos = GetSpeakerCoords(v);
             SendNUIMessage({
                 name = v.Id,
                 status = "updateSound",
@@ -141,18 +139,18 @@ Citizen.CreateThread(function()
                 playerY = playerPos.y,
                 playerZ = playerPos.z,
                 playerHeading = playerHeading,
-                speakerX = v.x,
-                speakerY = v.y,
-                speakerZ = v.z,
+                speakerX = v.PropPosition.x,
+                speakerY = v.PropPosition.y,
+                speakerZ = v.PropPosition.z,
                 maxDistance = v.Range,
-                xsound = true
+                xsound = true,
+                distance = #(playerPos - propPos)
             })
         end
     end
 end);
 
 RegisterNetEvent('xSound:songStopPlaying', function(id)
-    print(('finished playing %s'):format(id))
     for i = 1, #playingSpeakers do
         if playingSpeakers[i].Id == id then
             table.remove(playingSpeakers, i)

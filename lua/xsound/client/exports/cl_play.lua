@@ -39,7 +39,6 @@ end
 exports('PlayUrl', PlayUrl)
 
 function PlayUrlPos(name_, url_, volume_, pos, loop_, options)
-    print(("Playing %s at %s with volume: %s"):format(name_, pos, volume_))
     if disableMusic then return end
 
     if soundInfo[name_] == nil then soundInfo[name_] = getDefaultInfo() end

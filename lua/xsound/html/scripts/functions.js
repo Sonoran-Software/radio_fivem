@@ -1,18 +1,3 @@
-function getYoutubeUrlId(url)
-{
-    var videoId = "";
-    if( url.indexOf("youtube") !== -1 ){
-        var urlParts = url.split("?v=");
-        videoId = urlParts[1].substring(0,11);
-    }
-
-    if( url.indexOf("youtu.be") !== -1 ){
-        var urlParts = url.replace("//", "").split("/");
-        videoId = urlParts[1].substring(0,11);
-    }
-    return videoId;
-}
-
 function isReady(divId, howler){
     if(howler){
         for (var soundName in soundList)
@@ -39,9 +24,6 @@ function isReady(divId, howler){
                     type: "onPlay",
                     id: sound.getName(),
                 }));
-
-		        addToCache();
-		        updateVolumeSounds();
                 break;
             }
         }
@@ -52,7 +34,6 @@ function isReady(divId, howler){
 		var sound = soundList[soundName];
         if(sound.getDivId() === divId){
             var time = 0;
-            if(sound.getYoutubePlayer() != null){time = sound.getYoutubePlayer().getDuration();}
 			if(sound.isDynamic()) sound.setVolume(0);
             sound.setLoaded(true);
 
@@ -68,11 +49,6 @@ function isReady(divId, howler){
                 type: "onPlay",
                 id: sound.getName(),
             }));
-
-            sound.isYoutubeReady(true);
-
-	        addToCache();
-	        updateVolumeSounds();
 
             if(!sound.isDynamic()) sound.setVolume(sound.getVolume());
             break;
@@ -97,7 +73,6 @@ function isLooped(divId){
 
             var time = 0;
             if(sound.getAudioPlayer() != null){time = sound.getAudioPlayer()._duration;}
-            if(sound.getYoutubePlayer() != null){time = sound.getYoutubePlayer().getDuration();}
             $.post('https://sonoranradio/events-xsound', JSON.stringify(
             {
                 type: "resetTimeStamp",
@@ -126,7 +101,6 @@ function ended(divId){
                 if(sound.isLoop()){
                     var time = 0;
                     if(sound.getAudioPlayer() != null){time = sound.getAudioPlayer()._duration;}
-                    if(sound.getYoutubePlayer() != null){time = sound.getYoutubePlayer().getDuration();}
                     $.post('https://sonoranradio/events-xsound', JSON.stringify(
                     {
                         type: "resetTimeStamp",
