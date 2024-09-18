@@ -58,7 +58,7 @@ function PlayUrlPos(name_, url_, volume_, pos, loop_, options)
 
     if #(GetEntityCoords(PlayerPedId()) - pos) < 10.0 + 10 then
         UpdatePlayerPositionInNUI()
-        SendNUIMessage({ status = "unmuteAll" })
+        SendNUIMessage({ status = "unmuteAll", xsound = true })
     end
 
     SendNUIMessage({
