@@ -4,6 +4,14 @@ createdZoneType = nil
 createdZone = nil
 drawZone = false
 
+RegisterNetEvent('SonoranRadio:PolyZone:UpdateZ', function(minZ, maxZ)
+  if createdZone == nil then
+    return
+  end
+  createdZone.minZ = minZ
+  createdZone.maxZ = maxZ
+end)
+
 RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
 AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args)
   if createdZone ~= nil then
