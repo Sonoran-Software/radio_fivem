@@ -170,14 +170,12 @@ end)
 -- 	end
 -- end);
 
-RegisterNUICallback('events-xsound', function(data)
-	if data.type == 'finished' then
-		print(('finished playing %s'):format(data.id))
-		for i = 1, #playingSpeakers do
-			if playingSpeakers[i].Id == data.id then
-				table.remove(playingSpeakers, i)
-				break
-			end
+RegisterNetEvent('xSound:songStopPlaying', function(id)
+	print(('finished playing %s'):format(id))
+	for i = 1, #playingSpeakers do
+		if playingSpeakers[i].Id == id then
+			table.remove(playingSpeakers, i)
+			break
 		end
 	end
 end)
