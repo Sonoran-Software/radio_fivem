@@ -3,6 +3,7 @@ function Distance(name_, distance_)
         status = "distance",
         name = name_,
         distance = distance_,
+        xsound = true
     })
     soundInfo[name_].distance = distance_
 end
@@ -16,6 +17,7 @@ function Position(name_, pos)
         x = pos.x,
         y = pos.y,
         z = pos.z,
+        xsound = true
     })
     soundInfo[name_].position = pos
     soundInfo[name_].id = name_
@@ -26,7 +28,8 @@ exports('Position', Position)
 function Destroy(name_)
     SendNUIMessage({
         status = "delete",
-        name = name_
+        name = name_,
+        xsound = true
     })
     soundInfo[name_] = nil
 
@@ -40,7 +43,8 @@ end
 function DestroySilent(name)
     SendNUIMessage({
         status = "delete",
-        name = name
+        name = name,
+        xsound = true
     })
 end
 
@@ -50,7 +54,8 @@ exports('Destroy', Destroy)
 function Resume(name_)
     SendNUIMessage({
         status = "resume",
-        name = name_
+        name = name_,
+        xsound = true
     })
     soundInfo[name_].playing = true
     soundInfo[name_].paused = false
@@ -65,7 +70,8 @@ exports('Resume', Resume)
 function Pause(name_)
     SendNUIMessage({
         status = "pause",
-        name = name_
+        name = name_,
+        xsound = true
     })
     soundInfo[name_].playing = false
     soundInfo[name_].paused = true
@@ -82,6 +88,7 @@ function setVolume(name_, vol)
         status = "volume",
         volume = vol,
         name = name_,
+        xsound = true
     })
     soundInfo[name_].volume = vol
 end
@@ -93,6 +100,7 @@ function setVolumeMax(name_, vol)
         status = "max_volume",
         volume = vol,
         name = name_,
+        xsound = true
     })
     soundInfo[name_].volume = vol
 end
@@ -105,6 +113,7 @@ function setTimeStamp(name_, timestamp)
         name = name_,
         status = "timestamp",
         timestamp = timestamp,
+        xsound = true
     })
 end
 
@@ -121,6 +130,7 @@ function setSoundLoop(name, value)
         status = "loop",
         name = name,
         loop = value,
+        xsound = true
     })
     soundInfo[name].loop = value
 end
@@ -132,6 +142,7 @@ function repeatSound(name)
         SendNUIMessage({
             status = "repeat",
             name = name,
+            xsound = true
         })
     end
 end
@@ -145,6 +156,7 @@ function setSoundDynamic(name, bool)
             status = "changedynamic",
             name = name,
             bool = bool,
+            xsound = true
         })
     end
 end
@@ -158,6 +170,7 @@ function setSoundURL(name, url)
             status = "changeurl",
             name = name,
             url = url,
+            xsound = true
         })
     end
 end

@@ -27,7 +27,8 @@ function UpdatePlayerPositionInNUI()
         status = "position",
         x = pos.x,
         y = pos.y,
-        z = pos.z
+        z = pos.z,
+        xsound = true
     })
 end
 
@@ -66,14 +67,14 @@ CreateThread(function()
 
             if changedPosition then
                 UpdatePlayerPositionInNUI()
-                SendNUIMessage({ status = "unmuteAll" })
+                SendNUIMessage({ status = "unmuteAll", xsound = true })
             end
             changedPosition = false
         else
             if not changedPosition then
                 changedPosition = true
-                SendNUIMessage({ status = "position", x = -900000, y = -900000, z = -900000 })
-                SendNUIMessage({ status = "muteAll" })
+                SendNUIMessage({ status = "position", x = -900000, y = -900000, z = -900000, xsound = true })
+                SendNUIMessage({ status = "muteAll", xsound = true })
             end
             Wait(1000)
         end

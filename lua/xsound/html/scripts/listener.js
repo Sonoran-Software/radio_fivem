@@ -68,6 +68,7 @@ $(function(){
                 break;
             */
             case "url":
+                console.log('setting the url from listner.js')
                 var sound = soundList[item.name];
 
                 if(sound != null)
@@ -203,10 +204,10 @@ $(function(){
                 break;
 		}
     })
-});  	
+});
 
 function Between(loc1,loc2)
-{	
+{
 	var deltaX = loc1[0] - loc2[0];
 	var deltaY = loc1[1] - loc2[1];
 	var deltaZ = loc1[2] - loc2[2];

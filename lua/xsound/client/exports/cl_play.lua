@@ -20,7 +20,7 @@ function PlayUrl(name_, url_, volume_, loop_, options)
 
     CheckForCloseMusic()
     UpdatePlayerPositionInNUI()
-    SendNUIMessage({ status = "unmuteAll" })
+    SendNUIMessage({ status = "unmuteAll", xsound = true })
 
     SendNUIMessage({
         status = "url",
@@ -32,6 +32,7 @@ function PlayUrl(name_, url_, volume_, loop_, options)
         dynamic = false,
         volume = volume_,
         loop = loop_ or false,
+        xsound = true
     })
 end
 
@@ -70,6 +71,7 @@ function PlayUrlPos(name_, url_, volume_, pos, loop_, options)
         dynamic = true,
         volume = volume_,
         loop = loop_ or false,
+        xsound = true
     })
 
     if loop_ then
@@ -93,6 +95,7 @@ function PlayUrlPosSilent(name_, url_, volume_, pos, loop_)
         dynamic = true,
         volume = volume_,
         loop = loop_ or false,
+        xsound = true
     })
 end
 

@@ -41,7 +41,11 @@ xsoundFrame.style.zIndex = '-1';
 document.body.appendChild(xsoundFrame);
 
 window.addEventListener('message', (ev) => {
-  if (!ev.data.miniradio) return;
-  ev.stopImmediatePropagation();
-  miniradioFrame.contentWindow.postMessage(ev.data, '*');
-});
+  if (ev.data.miniradio) {
+    ev.stopImmediatePropagation();
+    miniradioFrame.contentWindow.postMessage(ev.data, '*');
+    } else if (ev.data.xsound) {
+    ev.stopImmediatePropagation();
+    xsoundFrame.contentWindow.postMessage(ev.data, '*');
+  }
+}); 

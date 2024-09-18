@@ -2,6 +2,7 @@ RegisterNUICallback("init", function(data, cb)
     SendNUIMessage({
         status = "init",
         time = 300,
+        xsound = true
     })
 
     if cb then cb('ok') end
