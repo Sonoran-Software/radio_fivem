@@ -140,6 +140,7 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
+	print(('playing tone %s on speaker %s'):format(tone, speaker.Id))
 	PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
 	Distance(speaker.Id, speaker.Range)
 end)

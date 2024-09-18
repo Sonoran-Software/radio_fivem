@@ -17,7 +17,7 @@ SetHttpHandler(function(req, res)
                 res.send(json.encode({['error'] = 'bad request'}))
                 return
             end
-            if body.key and body.key:upper() == Config.APIKey:upper() then
+            if body.key and body.key:upper() == Config.apiKey:upper() then
                 if plugin_handlers[body.type] ~= nil then
                     plugin_handlers[body.type](body)
                     res.send('ok')

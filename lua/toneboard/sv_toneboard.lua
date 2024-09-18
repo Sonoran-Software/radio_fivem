@@ -11,8 +11,8 @@ TriggerEvent('sonoranradio::RegisterPushEvent', 'PLAY_TONE', function(data)
 		if speaker then
 			for j = 1, #stationIds do
 				local stationId = stationIds[j]
-				if speaker.station == stationId then
-					print("Playing tone on speaker: " .. speaker.station)
+				if speaker.Id == stationId then
+					print("Playing tone on speaker: " .. speaker.Id)
 					TriggerClientEvent('SonoranRadio:PlayTone', -1, speaker, tone)
 				end
 			end
