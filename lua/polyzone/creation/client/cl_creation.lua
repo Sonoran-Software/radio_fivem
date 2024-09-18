@@ -89,7 +89,7 @@ AddEventHandler("SonoranRadio:PolyZone:pzfinish", function(degradeStrength, minY
   TriggerEvent('chat:addMessage', {
     color = { 0, 255, 0},
     multiline = true,
-    args = {"SonoranRadio Zone Creator", "Check your server root folder for polyzone_created_zones.txt to get the zone!"}
+    args = {"SonoranRadio Zone Creator", "Zone created!"}
   })
 
   lastCreatedZoneType = createdZoneType
