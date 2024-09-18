@@ -385,6 +385,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		obj.heading = spkrs[i].heading
 		obj.Range = spkrs[i].Range
 		obj.Id = spkrs[i].Id
+		obj.type = spkrs[i].type
 		table.insert(Speakers, obj)
 	end
 end)

@@ -26,5 +26,5 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 	while #Speakers == 0 do
 		Wait(10)
 	end
-	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, CellRepeaters)
+	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, Speakers)
 end)

@@ -59,6 +59,8 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Degredation Zones', 'degradeMenu') then
 			end
+			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
+			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
 			spawningRadioRepeater()
@@ -805,7 +807,6 @@ function toneboardSpawnMenu()
 		'Speaker (Medium)',
 		'Speaker (Medium - Wall)',
 		'Speaker (Large)',
-		'Speaker (Large - Wall)',
 		}
 	if WarMenu.ComboBox('Speaker Type:', toneboards, toneboardState.index, toneboardState.index, function(current)
 		toneboardState.index = current
@@ -841,7 +842,7 @@ function toneboardSpawnMenu()
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
 				confirmSpeakerPlacement()
-				WarMenu.OpenMenu('moveRadioMenu')
+				WarMenu.OpenMenu('toneboardMoveMenu')
 			else
 				TriggerEvent('chat:addMessage', {
 					color = {
@@ -886,7 +887,7 @@ function toneboardSpawnMenu()
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
 				confirmSpeakerPlacement()
-				WarMenu.OpenMenu('moveRadioMenu')
+				WarMenu.OpenMenu('toneboardMoveMenu')
 			else
 				TriggerEvent('chat:addMessage', {
 					color = {
@@ -931,7 +932,7 @@ function toneboardSpawnMenu()
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
 				confirmSpeakerPlacement()
-				WarMenu.OpenMenu('moveRadioMenu')
+				WarMenu.OpenMenu('toneboardMoveMenu')
 			else
 				TriggerEvent('chat:addMessage', {
 					color = {
@@ -976,7 +977,7 @@ function toneboardSpawnMenu()
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
 				confirmSpeakerPlacement()
-				WarMenu.OpenMenu('moveRadioMenu')
+				WarMenu.OpenMenu('toneboardMoveMenu')
 			else
 				TriggerEvent('chat:addMessage', {
 					color = {
@@ -1029,7 +1030,7 @@ function toneboardMoveMenu()
 		end
 	end
 	if foundHandle then
-		if toneboardState.speakerId ~= stattoneboardStatee.lastCoordUpdate then
+		if toneboardState.speakerId ~= toneboardState.lastCoordUpdate then
 			toneboardState.ogCoords = foundHandle.PropPosition
 			toneboardState.ogHeading = foundHandle.heading or 0.0
 			toneboardState.lastCoordUpdate = toneboardState.speakerId

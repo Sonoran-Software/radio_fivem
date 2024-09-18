@@ -1,9 +1,9 @@
 speakers = {}
 local speakerStyles = {
-	['speakerSmallWall'] = "prop_amb_speaker",
-	['speakerMedium'] = "prop_speaker_03",
-	['speakerMediumWall'] = "prop_speaker_wall_01a",
-	['speakerLarge'] = "prop_tower_speaker",
+	['speakerSmallWall'] = "stt_prop_speakerstack_01a",
+	['speakerMedium'] = "prop_speaker_05",
+	['speakerMediumWall'] = "prop_out_door_speaker",
+	['speakerLarge'] = "prop_speaker_06",
 }
 
 RegisterNetEvent('RadioSpeaker:SpawnSpeaker', function(speaker)
@@ -44,13 +44,14 @@ local function CreateSpeaker(speaker)
 	end
 	local speakerModelArray = speakerStyles[speaker.type]
 	if not speakerModelArray then
-		DebugPrint(('speaker type %s not found'):format(speaker.type))
+		print(('speaker type %s not found'):format(speaker.type))
 		return
 	end
+	print('creating speaker', speakerModelArray)
 	local speakerModel = GetHashKey(speakerModelArray)
 	LoadModelSync(speakerModel)
 	local coords = speaker.PropPosition
-	speaker.Handle = CreateVehicle(speakerModel, coords, false, false, false)
+	speaker.Handle = CreateObject(speakerModel, coords, false, false, false)
 	while not DoesEntityExist(speaker.Handle) do
 		Wait(0)
 	end
