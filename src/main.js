@@ -35,7 +35,7 @@ xsoundFrame.style.left = '0px';
 xsoundFrame.style.right = '0px';
 xsoundFrame.style.bottom = '0px';
 xsoundFrame.style.width = '1px';
-xsoundFrame.style.height = '1%';
+xsoundFrame.style.height = '1px';
 xsoundFrame.style.border = '0px';
 xsoundFrame.style.zIndex = '-1';
 document.body.appendChild(xsoundFrame);
