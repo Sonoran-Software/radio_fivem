@@ -386,8 +386,25 @@ AddEventHandler('onResourceStart', function(resourceName)
 		obj.Range = spkrs[i].Range
 		obj.Id = spkrs[i].Id
 		obj.type = spkrs[i].type
+		obj.Label = spkrs[i].Label
 		table.insert(Speakers, obj)
 	end
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['gameId'] = speaker.Id
+		})
+	end
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
 end)
 
 exports('performApiRequest', performApiRequest)

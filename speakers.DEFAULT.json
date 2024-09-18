@@ -1,1 +1,15 @@
-[{"Id":"f063dc29-1f02-430d-a0d7-45f34261c114","Spawned":true,"type":"speakerMediumWall","heading":357.423439254781,"PropPosition":{"x":1691.8861083984376,"y":3582.573486328125,"z":39.11188888549805},"Range":40.0}]
+[
+    {
+        "Label": "Sandy Shores FD",
+        "Id": "f063dc29-1f02-430d-a0d7-45f34261c114",
+        "Spawned": true,
+        "type": "speakerMediumWall",
+        "heading": 357.423439254781,
+        "PropPosition": {
+            "x": 1691.8861083984376,
+            "y": 3582.573486328125,
+            "z": 39.11188888549805
+        },
+        "Range": 40.0
+    }
+]

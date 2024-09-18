@@ -1,5 +1,6 @@
 local ApiEndpoints = {
-	['SET-SERVER-IP'] = 'radio'
+	['SET-SERVER-IP'] = 'radio',
+	['SET-SERVER-SPEAKERS'] = 'radio'
 }
 
 function PerformHttpRequestS(url, cb, method, data, headers)

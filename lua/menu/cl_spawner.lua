@@ -831,13 +831,40 @@ function toneboardSpawnMenu()
 					range = tonumber(input)
 				end
 			end
-			if range then
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
 				local speakerData = {
 					Id = uuid(),
 					PropPosition = GetEntityCoords(PlayerPedId()),
 					heading = GetEntityHeading(PlayerPedId()),
 					type = 'speakerSmallWall',
-					Range = range
+					Range = range,
+					Label = speakerLabel
 				}
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -853,7 +880,7 @@ function toneboardSpawnMenu()
 					multiline = true,
 					args = {
 						'Error',
-						'Invalid range. It must be a number'
+						'Invalid range or label. Range must be a number'
 					}
 				})
 			end
@@ -876,13 +903,40 @@ function toneboardSpawnMenu()
 					range = tonumber(input)
 				end
 			end
-			if range then
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
 				local speakerData = {
 					Id = uuid(),
 					PropPosition = GetEntityCoords(PlayerPedId()),
 					heading = GetEntityHeading(PlayerPedId()),
 					type = 'speakerMedium',
-					Range = range
+					Range = range,
+					Label = speakerLabel
 				}
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -898,7 +952,7 @@ function toneboardSpawnMenu()
 					multiline = true,
 					args = {
 						'Error',
-						'Invalid range. It must be a number'
+						'Invalid range or label. Range must be a number'
 					}
 				})
 			end
@@ -921,13 +975,40 @@ function toneboardSpawnMenu()
 					range = tonumber(input)
 				end
 			end
-			if range then
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
 				local speakerData = {
 					Id = uuid(),
 					PropPosition = GetEntityCoords(PlayerPedId()),
 					heading = GetEntityHeading(PlayerPedId()),
 					type = 'speakerMediumWall',
-					Range = range
+					Range = range,
+					Label = speakerLabel
 				}
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -943,7 +1024,7 @@ function toneboardSpawnMenu()
 					multiline = true,
 					args = {
 						'Error',
-						'Invalid range. It must be a number'
+						'Invalid range or label. Range must be a number'
 					}
 				})
 			end
@@ -966,13 +1047,40 @@ function toneboardSpawnMenu()
 					range = tonumber(input)
 				end
 			end
-			if range then
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
 				local speakerData = {
 					Id = uuid(),
 					PropPosition = GetEntityCoords(PlayerPedId()),
 					heading = GetEntityHeading(PlayerPedId()),
 					type = 'speakerLarge',
-					Range = range
+					Range = range,
+					Label = speakerLabel
 				}
 				toneboardState.speakerId = speakerData.Id
 				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -988,7 +1096,7 @@ function toneboardSpawnMenu()
 					multiline = true,
 					args = {
 						'Error',
-						'Invalid range. It must be a number'
+						'Invalid range or label. Range must be a number'
 					}
 				})
 			end
