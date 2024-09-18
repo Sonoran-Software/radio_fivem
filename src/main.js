@@ -28,7 +28,7 @@ miniradioFrame.style.zIndex = '-1';
 document.body.appendChild(miniradioFrame);
 
 const xsoundFrame = document.createElement('iframe');
-xsoundFrame.src = `https://cfx-nui-${GetParentResourceName()}/xsound/html/index.html`;
+xsoundFrame.src = `https://cfx-nui-${GetParentResourceName()}/lua/xsound/html/index.html`;
 xsoundFrame.style.position = 'absolute';
 xsoundFrame.style.top = '0px';
 xsoundFrame.style.left = '0px';

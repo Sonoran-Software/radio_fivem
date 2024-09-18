@@ -27,7 +27,7 @@ files {
     'dist/**/*',
     'miniradio/**/*',
     'skins/**/*',
-    'xsound/html/**/*',
+    'lua/xsound/html/**/*',
 }
 ui_page 'dist/ui.html'
 

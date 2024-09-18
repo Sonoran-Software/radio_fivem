@@ -34,12 +34,12 @@ function isReady(divId, howler){
                     id: sound.getName(),
                 }));
 
-                $.post('https://xsound/events', JSON.stringify(
+                $.post('https://sonoranradio/events-xsound', JSON.stringify(
                 {
                     type: "onPlay",
                     id: sound.getName(),
                 }));
-		    
+
 		        addToCache();
 		        updateVolumeSounds();
                 break;
@@ -63,7 +63,7 @@ function isReady(divId, howler){
                 id: sound.getName(),
             }));
 
-            $.post('https://xsound/events', JSON.stringify(
+            $.post('https://sonoranradio/events-xsound', JSON.stringify(
             {
                 type: "onPlay",
                 id: sound.getName(),
@@ -89,7 +89,7 @@ function isLooped(divId){
             sound.play();
 
             $.post('https://xsound/data_status', JSON.stringify({ type: "finished",id: soundName }));
-            $.post('https://xsound/events', JSON.stringify(
+            $.post('https://sonoranradio/events-xsound', JSON.stringify(
             {
                 type: "onEnd",
                 id: sound.getName(),
@@ -98,7 +98,7 @@ function isLooped(divId){
             var time = 0;
             if(sound.getAudioPlayer() != null){time = sound.getAudioPlayer()._duration;}
             if(sound.getYoutubePlayer() != null){time = sound.getYoutubePlayer().getDuration();}
-            $.post('https://xsound/events', JSON.stringify(
+            $.post('https://sonoranradio/events-xsound', JSON.stringify(
             {
                 type: "resetTimeStamp",
                 id: sound.getName(),
@@ -118,7 +118,7 @@ function ended(divId){
             if(!sound.isPlaying())
             {
                 $.post('https://xsound/data_status', JSON.stringify({ type: "finished",id: soundName }));
-                $.post('https://xsound/events', JSON.stringify(
+                $.post('https://sonoranradio/events-xsound', JSON.stringify(
                 {
                     type: "onEnd",
                     id: sound.getName(),
@@ -127,7 +127,7 @@ function ended(divId){
                     var time = 0;
                     if(sound.getAudioPlayer() != null){time = sound.getAudioPlayer()._duration;}
                     if(sound.getYoutubePlayer() != null){time = sound.getYoutubePlayer().getDuration();}
-                    $.post('https://xsound/events', JSON.stringify(
+                    $.post('https://sonoranradio/events-xsound', JSON.stringify(
                     {
                         type: "resetTimeStamp",
                         id: sound.getName(),
@@ -148,7 +148,7 @@ function ended(divId){
             var sound = soundList[soundName];
             if(sound.getDivId() === divId && !sound.isLoop()){
                 $.post('https://xsound/data_status', JSON.stringify({ type: "finished",id: soundName }));
-                $.post('https://xsound/events', JSON.stringify(
+                $.post('https://sonoranradio/events-xsound', JSON.stringify(
                 {
                     type: "onEnd",
                     id: sound.getName(),
