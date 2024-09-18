@@ -1,11 +1,8 @@
 Speakers = {}
 
-TriggerEvent('sonoranradio::RegisterPushEvent', 'PLAY_TONE', function(data)
-    print("Received tone data: " .. json.encode(data))
+TriggerEvent('sonoranradio::RegisterPushEvent', 'play_tone', function(data)
     local tone = data.payload.src;
-    print("Playing tone: " .. tone)
     local stationIds = data.payload.ids;
-	print("Station IDs: " .. json.encode(stationIds))
 	for i = 1, #Speakers do
 		local speaker = Speakers[i]
 		if speaker then

@@ -247,10 +247,11 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if baseUrl == "" then
 		errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL). Radio will be unable to receive push events. https://sonoran.link/radiocodes')
 	end
+	print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
-		['pushUrl'] = baseUrl
+		['pushUrl'] = 'https://'.. baseUrl .. '/sonoranradio/events'
 	}, 'SET-SERVER-IP', function(data, success)
 		if not success then
 			errorLog('Failed to set server IP for radio service. Please check your configuration.')
@@ -393,7 +394,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['gameId'] = speaker.Id
+			['id'] = speaker.Id
 		})
 	end
 	exports['sonoranradio']:performApiRequest({
