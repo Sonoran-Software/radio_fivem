@@ -4,7 +4,7 @@ var isMutedAll = false;
 
 var playerPos = [-90000, -90000, -90000];
 $(function () {
-	$.post("https://xsound/init");
+	$.post("https://sonoranradio/init");
 
 	window.addEventListener("message", function (event) {
 		var item = event.data;
@@ -18,10 +18,12 @@ $(function () {
 			case "updateSound":
 				var sound = soundList[item.name];
 				if (sound != null) {
+					console.log("updating sound from listner.js");
                     var playerPos = [item.playerX, item.playerY, item.playerZ];
                     var speakerPos = [item.speakerX, item.speakerY, item.speakerZ];
                     var playerHeading = item.playerHeading;
                     var maxDistance = item.maxDistance;
+					console.log('please work right here')
 					sound.updateSound(playerPos, speakerPos, playerHeading, maxDistance);
 				}
 				break;

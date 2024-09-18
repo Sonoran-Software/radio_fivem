@@ -29,7 +29,7 @@ RegisterNUICallback("data_status", function(data, cb)
     if cb then cb('ok') end
 end)
 
-RegisterNUICallback("events", function(data, cb)
+RegisterNUICallback("events-xsound", function(data, cb)
     local id = data.id
     local type = data.type
     if type == "resetTimeStamp" then

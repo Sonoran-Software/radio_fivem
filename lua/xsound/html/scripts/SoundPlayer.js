@@ -198,55 +198,56 @@ class SoundPlayer {
 		$("#" + this.div_id).remove();
 	}
 
-	updateVolume(playerPos, speakerPos, maxDistance) {
-		var d_max = maxDistance;
+	// updateVolume(playerPos, speakerPos, maxDistance) {
+	// 	var d_max = maxDistance;
 
-		// Calculate the 3D distance between the player and the speaker
-		var distance = Math.sqrt(
-			Math.pow(playerPos.x - speakerPos.x, 2) +
-			Math.pow(playerPos.y - speakerPos.y, 2) +
-			Math.pow(playerPos.z - speakerPos.z, 2)
-		);
+	// 	// Calculate the 3D distance between the player and the speaker
+	// 	var distance = Math.sqrt(
+	// 		Math.pow(playerPos.x - speakerPos.x, 2) +
+	// 		Math.pow(playerPos.y - speakerPos.y, 2) +
+	// 		Math.pow(playerPos.z - speakerPos.z, 2)
+	// 	);
 
-		var vol = 0;
+	// 	var vol = 0;
 
-		if (distance < d_max) {
-			// Normalize the distance to a percentage of maxDistance
-			var normalizedDistance = distance / d_max;
-			var proximity = 1 - normalizedDistance; // Closer means higher proximity
+	// 	if (distance < d_max) {
+	// 		// Normalize the distance to a percentage of maxDistance
+	// 		var normalizedDistance = distance / d_max;
+	// 		var proximity = 1 - normalizedDistance; // Closer means higher proximity
 
-			// Adjust volume based on proximity (closer = louder)
-			vol = this.max_volume * proximity;
-			this.setVolume(vol);
-			this.isMuted_ = false;
-		} else {
-			// If the player is out of range, mute the sound
-			this.setVolume(0);
-			this.isMuted_ = true;
-		}
-	}
+	// 		// Adjust volume based on proximity (closer = louder)
+	// 		vol = this.max_volume * proximity;
+	// 		this.setVolume(vol);
+	// 		this.isMuted_ = false;
+	// 	} else {
+	// 		// If the player is out of range, mute the sound
+	// 		this.setVolume(0);
+	// 		this.isMuted_ = true;
+	// 	}
+	// }
 
 
-	updatePan(playerPos, speakerPos, playerHeading) {
-		// Calculate the angle to determine if the sound is left, right, or center
-		var angle = Math.atan2(speakerPos.y - playerPos.y, speakerPos.x - playerPos.x);
+	// updatePan(playerPos, speakerPos, playerHeading) {
+	// 	// Calculate the angle to determine if the sound is left, right, or center
+	// 	var angle = Math.atan2(speakerPos.y - playerPos.y, speakerPos.x - playerPos.x);
 
-		// Normalize the angle based on player heading
-		var relativeAngle = angle - playerHeading;
+	// 	// Normalize the angle based on player heading
+	// 	var relativeAngle = angle - playerHeading;
 
-		// Convert to stereo pan (-1 = left, 1 = right)
-		var pan = Math.sin(relativeAngle);
+	// 	// Convert to stereo pan (-1 = left, 1 = right)
+	// 	var pan = Math.sin(relativeAngle);
 
-		this.audioPlayer.stereo(pan);
-	}
+	// 	this.audioPlayer.stereo(pan);
+	// }
 
-	updateSound(playerPos, speakerPos, playerHeading, maxDistance) {
-		// Update the volume based on distance
-		this.updateVolume(playerPos, speakerPos, maxDistance);
+	// updateSound(playerPos, speakerPos, playerHeading, maxDistance) {
+	// 	console.log('updating sound')
+	// 	// Update the volume based on distance
+	// 	this.updateVolume(playerPos, speakerPos, maxDistance);
 
-		// Update the stereo panning based on heading
-		this.updatePan(playerPos, speakerPos, playerHeading);
-	}
+	// 	// Update the stereo panning based on heading
+	// 	this.updatePan(playerPos, speakerPos, playerHeading);
+	// }
 
 	play() {
 		/*

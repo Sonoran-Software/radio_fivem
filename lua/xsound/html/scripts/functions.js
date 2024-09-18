@@ -27,7 +27,7 @@ function isReady(divId, howler){
 			    if(sound.isDynamic()) sound.setVolume(0);
 			    if(!sound.isDynamic()) sound.setVolume(sound.getVolume());
 
-                $.post('https://sonoranradio/events-xsound', JSON.stringify(
+                $.post('https://sonoranradio/data_status', JSON.stringify(
                 {
                     time: time,
                     type: "maxDuration",
@@ -56,7 +56,7 @@ function isReady(divId, howler){
 			if(sound.isDynamic()) sound.setVolume(0);
             sound.setLoaded(true);
 
-            $.post('https://sonoranradio/events-xsound', JSON.stringify(
+            $.post('https://sonoranradio/data_status', JSON.stringify(
             {
                 time: time,
                 type: "maxDuration",
@@ -88,7 +88,7 @@ function isLooped(divId){
             sound.setTimeStamp(0);
             sound.play();
 
-            $.post('https://sonoranradio/events-xsound', JSON.stringify({ type: "finished",id: soundName }));
+            $.post('https://sonoranradio/data_status', JSON.stringify({ type: "finished",id: soundName }));
             $.post('https://sonoranradio/events-xsound', JSON.stringify(
             {
                 type: "onEnd",
@@ -117,7 +117,7 @@ function ended(divId){
             var sound = soundList[soundName];
             if(!sound.isPlaying())
             {
-                $.post('https://sonoranradio/events-xsound', JSON.stringify({ type: "finished",id: soundName }));
+                $.post('https://sonoranradio/data_status', JSON.stringify({ type: "finished",id: soundName }));
                 $.post('https://sonoranradio/events-xsound', JSON.stringify(
                 {
                     type: "onEnd",
@@ -147,7 +147,7 @@ function ended(divId){
     	{
             var sound = soundList[soundName];
             if(sound.getDivId() === divId && !sound.isLoop()){
-                $.post('https://sonoranradio/events-xsound', JSON.stringify({ type: "finished",id: soundName }));
+                $.post('https://sonoranradio/data_status', JSON.stringify({ type: "finished",id: soundName }));
                 $.post('https://sonoranradio/events-xsound', JSON.stringify(
                 {
                     type: "onEnd",
