@@ -1,6 +1,6 @@
 speakers = {}
 local speakerStyles = {
-	['speakerSmallWall'] = "stt_prop_speakerstack_01a",
+	['speakerSmallWall'] = "hei_prop_bank_alarm_01",
 	['speakerMedium'] = "prop_speaker_05",
 	['speakerMediumWall'] = "prop_out_door_speaker",
 	['speakerLarge'] = "prop_speaker_06",
