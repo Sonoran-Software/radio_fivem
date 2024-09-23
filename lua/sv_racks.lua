@@ -145,6 +145,7 @@ AddEventHandler('RadioRacks:clientRackSync', function()
 	while #Servers == 0 do
 		Wait(10)
 	end
+	local sonoradData = {}
 	TriggerClientEvent('RadioRacks:SyncRacks', source, Servers)
 	for _, t in ipairs(CellRepeaters) do
 		if not t.DontSaveMe then

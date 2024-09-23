@@ -135,6 +135,7 @@ AddEventHandler('RadioTower:clientTowerSync', function()
 	while #Towers == 0 do
 		Wait(10)
 	end
+	local sonoradData = {}
 	TriggerClientEvent('RadioTower:SyncTowers', source, Towers)
 	for _, t in ipairs(CellRepeaters) do
 		if not t.DontSaveMe then
