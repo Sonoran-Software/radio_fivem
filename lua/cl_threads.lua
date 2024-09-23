@@ -51,27 +51,27 @@ end)
 Citizen.CreateThread(function()
 	while true do
 		CheckForCloseMusic()
-        if #playingSpeakers == 0 then goto continueSpeaker end
-        local playerPos = GetEntityCoords(GetPlayerPed(-1));
-        local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-        for _, v in pairs(playingSpeakers) do
-            local propPos = GetSpeakerCoords(v);
-            SendNUIMessage({
-                name = v.Id,
-                status = "updateSound",
-                playerX = playerPos.x,
-                playerY = playerPos.y,
-                playerZ = playerPos.z,
-                playerHeading = playerHeading,
-                speakerX = v.PropPosition.x,
-                speakerY = v.PropPosition.y,
-                speakerZ = v.PropPosition.z,
-                maxDistance = v.Range,
-                xsound = true,
-                distance = #(playerPos - propPos)
-            })
-        end
-        ::continueSpeaker::
+        if #playingSpeakers > 0 then
+			local playerPos = GetEntityCoords(GetPlayerPed(-1));
+			local playerHeading = GetEntityHeading(GetPlayerPed(-1));
+			for _, v in pairs(playingSpeakers) do
+				local propPos = GetSpeakerCoords(v);
+				SendNUIMessage({
+					name = v.Id,
+					status = "updateSound",
+					playerX = playerPos.x,
+					playerY = playerPos.y,
+					playerZ = playerPos.z,
+					playerHeading = playerHeading,
+					speakerX = v.PropPosition.x,
+					speakerY = v.PropPosition.y,
+					speakerZ = v.PropPosition.z,
+					maxDistance = v.Range,
+					xsound = true,
+					distance = #(playerPos - propPos)
+				})
+			end
+		end
 		if Config.enforceRadioItem then
 			if LocalPlayer.state.isLoggedIn then
 				-- print("has radio")

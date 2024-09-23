@@ -33,6 +33,12 @@ Citizen.CreateThread(function()
 					chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
 					if chatterPlayerPed then
 						for _, exclusion in ipairs(Config.chatterExclusions) do
+							print("Checking exclusion for player: " .. GetPlayerName(chatterSources[i].player))
+							print("Component ID: " .. exclusion.componentId)
+							print("Drawable ID: " .. exclusion.drawableId)
+							print("Texture ID: " .. exclusion.texture)
+							print("Current Component ID: " .. GetPedPropIndex(chatterPlayerPed, exclusion.componentId))
+							print("Current Texture ID: " .. GetPedPropTextureIndex(chatterPlayerPed, exclusion.componentId))
 							if GetPedPropIndex(chatterPlayerPed, exclusion.componentId) == exclusion.drawableId and GetPedPropTextureIndex(chatterPlayerPed, exclusion.componentId) == exclusion.texture then
 								print("Excluded player from chatter because they have on an earpiece: " .. GetPlayerName(chatterSources[i].player))
 								goto continue

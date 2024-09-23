@@ -19,14 +19,14 @@ function LoadModelSync(model)
 	end
 end
 
-local function GetCellRepeaterFromId(id)
+function GetCellRepeaterFromId(id)
 	for i = 1, #CellRepeaters do
 		if CellRepeaters[i].Id == id then
 			return CellRepeaters[i]
 		end
 	end
 end
-local function GetCellRepeaterCoords(cellRepeater)
+function GetCellRepeaterCoords(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		return GetOffsetFromEntityInWorldCoords(cellRepeater.Handle, 0.0, 0.0, 1.0)
 	else
@@ -34,7 +34,7 @@ local function GetCellRepeaterCoords(cellRepeater)
 	end
 end
 -- returns a value from 0-1 representing the percentage of active dishes
-local function GetCellRepeaterCapacity(cellRepeater)
+function GetCellRepeaterCapacity(cellRepeater)
 	local n = 0.0
 	if cellRepeater.AntennaStatus == 'alive' then
 		n = 1.0
@@ -42,7 +42,7 @@ local function GetCellRepeaterCapacity(cellRepeater)
 	return n
 end
 
-local function AddCellRepeaterRange(t)
+function AddCellRepeaterRange(t)
 	if not Config.debug then
 		return
 	end
@@ -53,7 +53,7 @@ local function AddCellRepeaterRange(t)
 end
 
 -- fully creates a cellRepeater based on the given cellRepeater object
-local function CreateCellRepeater(cellRepeater)
+function CreateCellRepeater(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		DeleteEntity(cellRepeater.Handle)
 	end
@@ -73,7 +73,7 @@ local function CreateCellRepeater(cellRepeater)
 	cellRepeater.Spawned = true
 end
 -- delete the physical cellRepeater entities
-local function DestroyCellRepeater(cellRepeater)
+function DestroyCellRepeater(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		DeleteEntity(cellRepeater.Handle)
 	end
@@ -122,7 +122,7 @@ AddEventHandler('CellRepeater:SpawnCell', function(cellRepeater)
 	DebugPrint('new cellRepeater spawned', cellRepeater.Id)
 end)
 
-local function SyncAntennaStatus(antenna, playSound)
+function SyncAntennaStatus(antenna, playSound)
 	local antennaHandle = antenna.Handle
 	local dead = IsEntityDead(antennaHandle)
 
@@ -222,7 +222,7 @@ CreateThread(function()
 	-- end
 end)
 
-local function RepairCellRepeater(cellRepeater)
+function RepairCellRepeater(cellRepeater)
 	if rightToRepair then
 		local ped = GetPlayerPed(-1)
 		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_WELDING', 0, true)

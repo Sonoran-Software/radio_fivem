@@ -12,7 +12,7 @@ local authorized = false
 local allowedFrames = {}
 local critError = false
 
-local polyZonesTable = {}
+polyZonesTable = {}
 
 if Config.comId == nil or Config.comId == '' then
 	TriggerEvent('chat:addMessage', {

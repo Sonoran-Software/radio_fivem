@@ -17,7 +17,7 @@ end)
     Gets the specified rack object
     @param id The rack ID (string)
 ]]
-local function GetRackFromId(id)
+function GetRackFromId(id)
 	for i = 1, #racks do
 		if racks[i].Id == id then
 			return racks[i]
@@ -29,7 +29,7 @@ end
     Gets the specified rack's coords
     @param rack The rack to get the coords of (object)
 ]]
-local function GetRackCoords(rack)
+function GetRackCoords(rack)
 	if DoesEntityExist(rack.Handle) then
 		return GetOffsetFromEntityInWorldCoords(rack.Handle, 0.0, 0.0, 1.0)
 	else
@@ -38,7 +38,7 @@ local function GetRackCoords(rack)
 end
 
 -- returns a value from 0-1 representing the percentage of active dishes
-local function GetrackCapacity(tower)
+function GetrackCapacity(tower)
 	if #tower.serverStatus < 1 then
 		return 1.0
 	end
@@ -56,7 +56,7 @@ end
     Destroys the specified rack
     @param rack The rack to destroy (object)
 ]]
-local function DestroyRack(rack)
+function DestroyRack(rack)
 	if DoesEntityExist(rack.Handle) then
 		DeleteEntity(rack.Handle)
 	end
@@ -74,7 +74,7 @@ end
     @param index The index of the server to create (number)
     @param n The power output of the server (number)
 ]]
-local function CreateServerInRack(rack, index, n)
+function CreateServerInRack(rack, index, n)
 	local initial_zOffset = 0.5
 	local zOffset_increment = 0.3
 	local zOffset = initial_zOffset + zOffset_increment * (index - 1)
@@ -112,7 +112,7 @@ end
     @param rack The rack to update (object)
     @param playSound Whether to play a sound when the status is updated (boolean)
 ]]
-local function SyncServerStatus(rack, playSound)
+function SyncServerStatus(rack, playSound)
 	if not rack.Servers then
 		return
 	end
@@ -199,7 +199,7 @@ end
     Create the rack for servers to go into
     @param rack The rack to create (object)
 ]]
-local function CreateRack(rack)
+function CreateRack(rack)
 	if DoesEntityExist(rack.Handle) then
 		DeleteEntity(rack.Handle)
 	end
@@ -231,7 +231,7 @@ end
     Add the debug circle to show the range of the server rack
     @param rack The rack to load (object)
 ]]
-local function AddRackRange(t)
+function AddRackRange(t)
 	if not Config.debug then
 		return
 	end
@@ -369,7 +369,7 @@ CreateThread(function()
 	-- end
 end)
 
-local function RepairRack(rack)
+function RepairRack(rack)
 	if rightToRepair then
 		local ped = GetPlayerPed(-1)
 		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_WELDING', 0, true)
