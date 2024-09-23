@@ -371,3 +371,161 @@ CreateThread(function()
 		Wait(1000)
 	end
 end)
+
+-- 3000 MS Thread
+CreateThread(function()
+	while true do
+		if Radio.On then
+			bestTowerQuality = 0.0
+			local pCoords = GetEntityCoords(GetPlayerPed(-1))
+			for i = 1, #Towers do
+				local tower = Towers[i]
+				if not tower then
+					goto continue
+				end
+				local d = #(GetTowerCoords(tower) - pCoords)
+				-- if the player is within range (750m), then spawn a physical tower
+				local physical = not Config.noPhysicalTowers and not tower.NotPhysical
+				if d < 750.0 and not tower.Spawned and physical then
+					CreateTower(tower)
+					DebugPrint(('spawn physical tower (%f) %s'):format(d, tower.Id))
+				elseif d >= 750.0 and tower.Spawned then
+					DestroyTower(tower)
+					DebugPrint(('destroy physical tower (%f) %s'):format(d, tower.Id))
+				end
+
+				-- recreate the tower completely if anything is missing
+				-- NOTE: not including the ladder, as it will be omitted on certain conditions
+				local recreate = tower.Spawned and not DoesEntityExist(tower.Handle)
+				local n = tower.Dishes and #tower.Dishes or 0
+				for j = 1, n do
+					if not recreate then
+						recreate = not DoesEntityExist(tower.Dishes[j])
+					end
+				end
+				if recreate then
+					DebugPrint(('tower:%s component missing, recreating'):format(tower.Id))
+					-- CreateTower will automatically delete old entities
+					CreateTower(tower)
+					SyncDishStatus(tower, false)
+				end
+
+				-- if tower is out of range, then just ignore it
+				if d > tower.Range then
+					goto continue
+				end
+				local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
+				if bestTowerQuality < tQuality then
+					bestTowerQuality = tQuality
+				end
+				::continue::
+			end
+
+			if bestTowerQuality == 0.0 then
+				DebugPrint('closest tower out of range')
+			else
+				DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
+			end
+			bestRackQuality = 0.0
+			local pCoords = GetEntityCoords(GetPlayerPed(-1))
+			for i = 1, #racks do
+				local rack = racks[i]
+				if not rack then
+					goto continue
+				end
+				local d = #(GetRackCoords(rack) - pCoords)
+				-- if the player is within range (750m), then spawn a physical rack
+				local physical = not Config.noPhysicalRacks and not rack.NotPhysical
+				if d < 750.0 and not rack.Spawned and physical then
+					CreateRack(rack)
+					DebugPrint(('spawn physical rack (%f) %s'):format(d, rack.Id))
+				elseif d >= 750.0 and rack.Spawned then
+					DestroyRack(rack)
+					DebugPrint(('destroy physical rack (%f) %s'):format(d, rack.Id))
+				end
+
+				-- recreate the rack completely if anything is missing
+				-- NOTE: not including the ladder, as it will be omitted on certain conditions
+				local recreate = rack.Spawned and not DoesEntityExist(rack.Handle)
+				local n = rack.Servers and #rack.Servers or 0
+				for j = 1, n do
+					if not recreate then
+						recreate = not DoesEntityExist(rack.Servers[j])
+					end
+				end
+				if recreate then
+					DebugPrint(('rack:%s component missing, recreating'):format(rack.Id))
+					-- CreateRack will automatically delete old entities
+					CreateRack(rack)
+					SyncServerStatus(rack, false)
+				end
+
+				-- if rack is out of range, then just ignore it
+				if d > rack.Range then
+					goto continue
+				end
+				local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
+				if bestRackQuality < tQuality then
+					bestRackQuality = tQuality
+				end
+				::continue::
+			end
+
+			if bestRackQuality == 0.0 then
+				DebugPrint('closest rack out of range')
+			else
+				DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
+			end
+			bestCellRepeaterQuality = 0.0
+			local pCoords = GetEntityCoords(GetPlayerPed(-1))
+			for i = 1, #CellRepeaters do
+				local cellRepeater = CellRepeaters[i]
+				if not cellRepeater then
+					goto continue
+				end
+				local d = #(GetCellRepeaterCoords(cellRepeater) - pCoords)
+				-- if the player is within range (750m), then spawn a physical cellRepeater
+				local physical = not Config.noPhysicalCellRepeaters and not cellRepeater.NotPhysical
+				if d < 750.0 and not cellRepeater.Spawned and physical then
+					CreateCellRepeater(cellRepeater)
+					DebugPrint(('spawn physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
+				elseif d >= 750.0 and cellRepeater.Spawned then
+					DestroyCellRepeater(cellRepeater)
+					DebugPrint(('destroy physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
+				end
+
+				-- recreate the cellRepeater completely if anything is missing
+				-- NOTE: not including the ladder, as it will be omitted on certain conditions
+				local recreate = cellRepeater.Spawned and not DoesEntityExist(cellRepeater.Handle)
+				local n = cellRepeater.Dishes and #cellRepeater.Dishes or 0
+				for j = 1, n do
+					if not recreate then
+						recreate = not DoesEntityExist(cellRepeater.Dishes[j])
+					end
+				end
+				if recreate then
+					DebugPrint(('cellRepeater:%s component missing, recreating'):format(cellRepeater.Id))
+					-- CreateCellRepeater will automatically delete old entities
+					CreateCellRepeater(cellRepeater)
+				end
+
+				-- if cellRepeater is out of range, then just ignore it
+				if d > cellRepeater.Range then
+					goto continue
+				end
+				local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
+				if bestCellRepeaterQuality < tQuality then
+					bestCellRepeaterQuality = tQuality
+				end
+				::continue::
+			end
+
+			if bestCellRepeaterQuality == 0.0 then
+				DebugPrint('closest cell repeater out of range')
+			else
+				DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
+			end
+		end
+		Wait(3000)
+	end
+end)

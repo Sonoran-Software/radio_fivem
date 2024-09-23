@@ -308,65 +308,65 @@ CreateThread(function()
 	end
 
 	DecorRegister('sonrad_server', 3)
-	while true do
-		bestRackQuality = 0.0
-		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		for i = 1, #racks do
-			local rack = racks[i]
-			if not rack then
-				goto continue
-			end
-			local d = #(GetRackCoords(rack) - pCoords)
-			-- if the player is within range (750m), then spawn a physical rack
-			local physical = not Config.noPhysicalRacks and not rack.NotPhysical
-			if d < 750.0 and not rack.Spawned and physical then
-				CreateRack(rack)
-				DebugPrint(('spawn physical rack (%f) %s'):format(d, rack.Id))
-			elseif d >= 750.0 and rack.Spawned then
-				DestroyRack(rack)
-				DebugPrint(('destroy physical rack (%f) %s'):format(d, rack.Id))
-			end
+	-- while true do
+	-- 	bestRackQuality = 0.0
+	-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
+	-- 	for i = 1, #racks do
+	-- 		local rack = racks[i]
+	-- 		if not rack then
+	-- 			goto continue
+	-- 		end
+	-- 		local d = #(GetRackCoords(rack) - pCoords)
+	-- 		-- if the player is within range (750m), then spawn a physical rack
+	-- 		local physical = not Config.noPhysicalRacks and not rack.NotPhysical
+	-- 		if d < 750.0 and not rack.Spawned and physical then
+	-- 			CreateRack(rack)
+	-- 			DebugPrint(('spawn physical rack (%f) %s'):format(d, rack.Id))
+	-- 		elseif d >= 750.0 and rack.Spawned then
+	-- 			DestroyRack(rack)
+	-- 			DebugPrint(('destroy physical rack (%f) %s'):format(d, rack.Id))
+	-- 		end
 
-			-- recreate the rack completely if anything is missing
-			-- NOTE: not including the ladder, as it will be omitted on certain conditions
-			local recreate = rack.Spawned and not DoesEntityExist(rack.Handle)
-			local n = rack.Servers and #rack.Servers or 0
-			for j = 1, n do
-				if not recreate then
-					recreate = not DoesEntityExist(rack.Servers[j])
-				end
-			end
-			if recreate then
-				DebugPrint(('rack:%s component missing, recreating'):format(rack.Id))
-				-- CreateRack will automatically delete old entities
-				CreateRack(rack)
-				SyncServerStatus(rack, false)
-			end
+	-- 		-- recreate the rack completely if anything is missing
+	-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
+	-- 		local recreate = rack.Spawned and not DoesEntityExist(rack.Handle)
+	-- 		local n = rack.Servers and #rack.Servers or 0
+	-- 		for j = 1, n do
+	-- 			if not recreate then
+	-- 				recreate = not DoesEntityExist(rack.Servers[j])
+	-- 			end
+	-- 		end
+	-- 		if recreate then
+	-- 			DebugPrint(('rack:%s component missing, recreating'):format(rack.Id))
+	-- 			-- CreateRack will automatically delete old entities
+	-- 			CreateRack(rack)
+	-- 			SyncServerStatus(rack, false)
+	-- 		end
 
-			-- if rack is out of range, then just ignore it
-			if d > rack.Range then
-				goto continue
-			end
-			local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
-			if bestRackQuality < tQuality then
-				bestRackQuality = tQuality
-			end
-			::continue::
-		end
+	-- 		-- if rack is out of range, then just ignore it
+	-- 		if d > rack.Range then
+	-- 			goto continue
+	-- 		end
+	-- 		local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
+	-- 		if bestRackQuality < tQuality then
+	-- 			bestRackQuality = tQuality
+	-- 		end
+	-- 		::continue::
+	-- 	end
 
-		if bestRackQuality == 0.0 then
-			DebugPrint('closest rack out of range')
-		else
-			DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
-		end
-		-- SendNUIMessage({
-		-- 	type = 'setrackQuality',
-		-- 	state = {
-		-- 		rack_quality = quality
-		-- 	}
-		-- })
-		Wait(3000)
-	end
+	-- 	if bestRackQuality == 0.0 then
+	-- 		DebugPrint('closest rack out of range')
+	-- 	else
+	-- 		DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
+	-- 	end
+	-- 	-- SendNUIMessage({
+	-- 	-- 	type = 'setrackQuality',
+	-- 	-- 	state = {
+	-- 	-- 		rack_quality = quality
+	-- 	-- 	}
+	-- 	-- })
+	-- 	Wait(3000)
+	-- end
 end)
 
 local function RepairRack(rack)
