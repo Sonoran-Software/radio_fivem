@@ -82,30 +82,30 @@ CreateThread(function()
 end)
 
 -- checking if player is close to sound so we can switch bool value to true.
-CreateThread(function()
-    while true do
-        Wait(500)
-        CheckForCloseMusic()
-    end
-end)
+-- CreateThread(function()
+--     while true do
+--         Wait(500)
+--         CheckForCloseMusic()
+--     end
+-- end)
 
 -- updating timeStamp
-CreateThread(function()
-    Wait(1100)
+-- CreateThread(function()
+--     Wait(1100)
 
-    while true do
-        Wait(1000)
-        for k, v in pairs(soundInfo) do
-            if v.playing or v.wasSilented then
-                if getInfo(v.id).timeStamp ~= nil and getInfo(v.id).maxDuration ~= nil then
-                    if getInfo(v.id).timeStamp < getInfo(v.id).maxDuration then
-                        getInfo(v.id).timeStamp = getInfo(v.id).timeStamp + 1
-                    end
-                end
-            end
-        end
-    end
-end)
+--     while true do
+--         Wait(1000)
+--         for k, v in pairs(soundInfo) do
+--             if v.playing or v.wasSilented then
+--                 if getInfo(v.id).timeStamp ~= nil and getInfo(v.id).maxDuration ~= nil then
+--                     if getInfo(v.id).timeStamp < getInfo(v.id).maxDuration then
+--                         getInfo(v.id).timeStamp = getInfo(v.id).timeStamp + 1
+--                     end
+--                 end
+--             end
+--         end
+--     end
+-- end)
 
 function PlayMusicFromCache(data)
     local musicCache = soundInfo[data.id]
@@ -124,30 +124,30 @@ function PlayMusicFromCache(data)
 end
 
 -- If player is far away from music we will just delete it.
-CreateThread(function()
-    local ped = PlayerPedId()
-    local playerPos = GetEntityCoords(ped)
-    local destroyedMusicList = {}
-    while true do
-        Wait(500)
-        ped = PlayerPedId()
-        playerPos = GetEntityCoords(ped)
-        for k, v in pairs(soundInfo) do
-            if v.position ~= nil and v.isDynamic then
-                if #(v.position - playerPos) < (v.distance + 10) then
-                    if destroyedMusicList[v.id] then
-                        destroyedMusicList[v.id] = nil
-                        v.wasSilented = true
-                        PlayMusicFromCache(v)
-                    end
-                else
-                    if not destroyedMusicList[v.id] then
-                        destroyedMusicList[v.id] = true
-                        v.wasSilented = false
-                        DestroySilent(v.id)
-                    end
-                end
-            end
-        end
-    end
-end)
+-- CreateThread(function()
+--     local ped = PlayerPedId()
+--     local playerPos = GetEntityCoords(ped)
+--     local destroyedMusicList = {}
+--     while true do
+--         Wait(500)
+--         ped = PlayerPedId()
+--         playerPos = GetEntityCoords(ped)
+--         for k, v in pairs(soundInfo) do
+--             if v.position ~= nil and v.isDynamic then
+--                 if #(v.position - playerPos) < (v.distance + 10) then
+--                     if destroyedMusicList[v.id] then
+--                         destroyedMusicList[v.id] = nil
+--                         v.wasSilented = true
+--                         PlayMusicFromCache(v)
+--                     end
+--                 else
+--                     if not destroyedMusicList[v.id] then
+--                         destroyedMusicList[v.id] = true
+--                         v.wasSilented = false
+--                         DestroySilent(v.id)
+--                     end
+--                 end
+--             end
+--         end
+--     end
+-- end)

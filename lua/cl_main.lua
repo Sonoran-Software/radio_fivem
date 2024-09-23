@@ -5,7 +5,7 @@ local unitStatus = nil
 
 isTalking = false
 allowedMiniRadio = false
-local inVehicle = false
+inVehicle = false
 local tunnels = {}
 local authorized = false
 
@@ -67,15 +67,15 @@ AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
 	})
 end)
 
-CreateThread(function()
-	while true do
-		Wait(5000)
-		TriggerServerEvent('SonoranCAD::sonrad:GetUnitInfo')
-		TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
-	end
-end)
+-- CreateThread(function()
+-- 	while true do
+-- 		Wait(5000)
+-- 		TriggerServerEvent('SonoranCAD::sonrad:GetUnitInfo')
+-- 		TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
+-- 	end
+-- end)
 
-local Radio = {
+Radio = {
 	Has = false,
 	Open = false,
 	On = false,
@@ -123,22 +123,22 @@ CreateThread(function()
 	end
 end)
 
-CreateThread(function()
-	while Config.enforceRadioItem do
-		Wait(1000)
-		if LocalPlayer.state.isLoggedIn then
-			-- print("has radio")
-			QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
-				if not hasItem then
-					Radio.Has = false
-					Radio:Toggle(false)
-				else
-					Radio.Has = true
-				end
-			end, 'sonoran_radio')
-		end
-	end
-end)
+-- CreateThread(function()
+-- 	while Config.enforceRadioItem do
+-- 		Wait(1000)
+-- 		if LocalPlayer.state.isLoggedIn then
+-- 			-- print("has radio")
+-- 			QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
+-- 				if not hasItem then
+-- 					Radio.Has = false
+-- 					Radio:Toggle(false)
+-- 				else
+-- 					Radio.Has = true
+-- 				end
+-- 			end, 'sonoran_radio')
+-- 		end
+-- 	end
+-- end)
 
 RegisterNetEvent('qb-sonrad:use')
 AddEventHandler('qb-sonrad:use', function(frame)
@@ -146,15 +146,15 @@ AddEventHandler('qb-sonrad:use', function(frame)
 end)
 
 -- Disable Attack when Radio is Open
-CreateThread(function()
-	while true do
-		if Radio.Open then
-			DisableControlAction(0, 142, true) -- Attack
-			DisableControlAction(0, 200, true) -- Escape
-		end
-		Wait(0)
-	end
-end)
+-- CreateThread(function()
+-- 	while true do
+-- 		if Radio.Open then
+-- 			DisableControlAction(0, 142, true) -- Attack
+-- 			DisableControlAction(0, 200, true) -- Escape
+-- 		end
+-- 		Wait(0)
+-- 	end
+-- end)
 
 RegisterNetEvent('SonoranCAD::sonrad:UpdateCurrentCall')
 AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
@@ -667,22 +667,22 @@ Citizen.CreateThread(function()
 	initNui()
 	LocalPlayer.state:set('sonoranradio_state', nil, true)
 
-	while true do
-		local ped = GetPlayerPed(-1)
-		if DoesEntityExist(ped) then
-			local pos = GetEntityCoords(ped)
-			local posArr = {
-				math.floor(pos.x),
-				math.floor(pos.y),
-				math.floor(pos.z)
-			}
-			SendNUIMessage({
-				type = 'setPos',
-				position = posArr
-			})
-		end
-		Citizen.Wait(5000)
-	end
+	-- while true do
+	-- 	local ped = GetPlayerPed(-1)
+	-- 	if DoesEntityExist(ped) then
+	-- 		local pos = GetEntityCoords(ped)
+	-- 		local posArr = {
+	-- 			math.floor(pos.x),
+	-- 			math.floor(pos.y),
+	-- 			math.floor(pos.z)
+	-- 		}
+	-- 		SendNUIMessage({
+	-- 			type = 'setPos',
+	-- 			position = posArr
+	-- 		})
+	-- 	end
+	-- 	Citizen.Wait(5000)
+	-- end
 	-- For Development Only
 	DebugPrint('Sonoran Radio Started!')
 end)
@@ -804,35 +804,35 @@ AddEventHandler('onResourceStop', function(resource)
 	Radio:Destroy()
 end)
 
-CreateThread(function()
-	while true do
-		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
-		local prevState = inVehicle
-		-- DebugPrint("Getting Players Vehicle")
+-- CreateThread(function()
+-- 	while true do
+-- 		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
+-- 		local prevState = inVehicle
+-- 		-- DebugPrint("Getting Players Vehicle")
 
-		if not IsPedInAnyVehicle(PlayerPedId(), false) then
-			-- player is in vehicle
-			inVehicle = false
-		else
-			inVehicle = true
-		end
+-- 		if not IsPedInAnyVehicle(PlayerPedId(), false) then
+-- 			-- player is in vehicle
+-- 			inVehicle = false
+-- 		else
+-- 			inVehicle = true
+-- 		end
 
-		-- DebugPrint("Updating Radio State")
-		SendNUIMessage({
-			type = 'inVehicle',
-			vehState = inVehicle
-		})
+-- 		-- DebugPrint("Updating Radio State")
+-- 		SendNUIMessage({
+-- 			type = 'inVehicle',
+-- 			vehState = inVehicle
+-- 		})
 
-		if prevState ~= inVehicle then
-			SendNUIMessage({
-				type = 'setVisible',
-				visibility = false
-			})
-		end
+-- 		if prevState ~= inVehicle then
+-- 			SendNUIMessage({
+-- 				type = 'setVisible',
+-- 				visibility = false
+-- 			})
+-- 		end
 
-		Wait(100)
-	end
-end)
+-- 		Wait(100)
+-- 	end
+-- end)
 
 local PlayerDead = false
 local RadioLastState = nil
@@ -882,61 +882,61 @@ end)
 
 local QBDeath = false;
 
-CreateThread(function()
-	local QBCore = nil
-	if Config.deathDetectionMethod == 'qbcore' then
-		QBCore = exports['qb-core']:GetCoreObject()
-	end
-	TriggerServerEvent('SonoranRadio:GetTunnels')
-	while true do
-		if QBCore ~= nil then
-			local PlayerData = QBCore.Functions.GetPlayerData()
-			if PlayerData ~= nil then
-				-- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
-				-- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
-				QBDeath = PlayerData.metadata['isdead'] or PlayerData.metadata['inlaststand']
-			end
-		end
+-- CreateThread(function()
+-- 	local QBCore = nil
+-- 	if Config.deathDetectionMethod == 'qbcore' then
+-- 		QBCore = exports['qb-core']:GetCoreObject()
+-- 	end
+-- 	TriggerServerEvent('SonoranRadio:GetTunnels')
+-- 	while true do
+-- 		if QBCore ~= nil then
+-- 			local PlayerData = QBCore.Functions.GetPlayerData()
+-- 			if PlayerData ~= nil then
+-- 				-- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
+-- 				-- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
+-- 				QBDeath = PlayerData.metadata['isdead'] or PlayerData.metadata['inlaststand']
+-- 			end
+-- 		end
 
-		if Config.deathDetectionMethod == 'auto' or Config.deathDetectionMethod == 'qbcore' then
-			local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
-			if IsPlayerDead then
-				TriggerEvent('SonoranRadio::PlayerDeath')
-			else
-				TriggerEvent('SonoranRadio::PlayerRevive')
-			end
-		end
-		-- print("QBDeath:" .. tostring(QBDeath))
-		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
-		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
-		-- Tunnel degredation logic
-		local plyPed = PlayerPedId()
-        local coord = GetEntityCoords(plyPed)
-        local insideZone = false
-		local degradeStrength = 0.0
-		for _, zone in pairs(polyZonesTable) do
-            if zone:isPointInside(coord) then
-				degradeStrength = zone.degradeStrength
-                insideZone = true
-				DebugPrint('Inside Zone: ' .. zone.name)
-                break
-            end
-        end
-		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
-		if insideZone then
-			if bestQuality > 0 then
-				bestQuality = bestQuality * (1 - degradeStrength)
-			end
-		end
-		SendNUIMessage({
-			type = 'setTowerQuality',
-			state = {
-				tower_quality = bestQuality
-			}
-		})
-		Wait(1000)
-	end
-end)
+-- 		if Config.deathDetectionMethod == 'auto' or Config.deathDetectionMethod == 'qbcore' then
+-- 			local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
+-- 			if IsPlayerDead then
+-- 				TriggerEvent('SonoranRadio::PlayerDeath')
+-- 			else
+-- 				TriggerEvent('SonoranRadio::PlayerRevive')
+-- 			end
+-- 		end
+-- 		-- print("QBDeath:" .. tostring(QBDeath))
+-- 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
+-- 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
+-- 		-- Tunnel degredation logic
+-- 		local plyPed = PlayerPedId()
+--         local coord = GetEntityCoords(plyPed)
+--         local insideZone = false
+-- 		local degradeStrength = 0.0
+-- 		for _, zone in pairs(polyZonesTable) do
+--             if zone:isPointInside(coord) then
+-- 				degradeStrength = zone.degradeStrength
+--                 insideZone = true
+-- 				DebugPrint('Inside Zone: ' .. zone.name)
+--                 break
+--             end
+--         end
+-- 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
+-- 		if insideZone then
+-- 			if bestQuality > 0 then
+-- 				bestQuality = bestQuality * (1 - degradeStrength)
+-- 			end
+-- 		end
+-- 		SendNUIMessage({
+-- 			type = 'setTowerQuality',
+-- 			state = {
+-- 				tower_quality = bestQuality
+-- 			}
+-- 		})
+-- 		Wait(1000)
+-- 	end
+-- end)
 
 RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 	tunnels = TunnelsServer

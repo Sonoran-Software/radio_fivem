@@ -402,6 +402,7 @@ local function RepairRack(rack)
 	end
 end
 
+-- Variable Thread, cannot be consolidated
 CreateThread(function()
 	while true do
 		-- get the closest (spawned) rack
@@ -436,73 +437,73 @@ CreateThread(function()
 	end
 end)
 
-CreateThread(function()
-	while true do
-		Wait(0)
-		local coords = GetEntityCoords(GetPlayerPed(-1))
-		local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z, 2.0, GetHashKey('serverrack'), 70)
-		if closestRack ~= 0 then
-			if GetVehicleBodyHealth(closestRack) < 950 or IsVehicleDoorDamaged(closestRack, 1) or GetVehicleEngineHealth(closestRack) < 950 then
-				goto continue
-			end
-			local doorOpen = false;
-			if IsVehicleDoorFullyOpen(closestRack, 1) then
-				doorOpen = true
-			end
-			BeginTextCommandDisplayHelp('STRING')
-			if doorOpen then
-				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to close this rack.')
-			else
-				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to open this rack.')
-			end
-			EndTextCommandDisplayHelp(0, false, true, -1)
-			DisableControlAction(0, 54, true)
-			if IsDisabledControlJustReleased(0, 54) then
-				local Vehicle = closestRack
-				if doorOpen then
-					SetVehicleDoorShut(Vehicle, 1, false)
-				else
-					SetVehicleDoorOpen(Vehicle, 1, false, false)
-				end
-			end
-		end
-		::continue::
-	end
-end)
+-- CreateThread(function()
+-- 	while true do
+-- 		Wait(0)
+-- 		local coords = GetEntityCoords(GetPlayerPed(-1))
+-- 		local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z, 2.0, GetHashKey('serverrack'), 70)
+-- 		if closestRack ~= 0 then
+-- 			if GetVehicleBodyHealth(closestRack) < 950 or IsVehicleDoorDamaged(closestRack, 1) or GetVehicleEngineHealth(closestRack) < 950 then
+-- 				goto continue
+-- 			end
+-- 			local doorOpen = false;
+-- 			if IsVehicleDoorFullyOpen(closestRack, 1) then
+-- 				doorOpen = true
+-- 			end
+-- 			BeginTextCommandDisplayHelp('STRING')
+-- 			if doorOpen then
+-- 				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to close this rack.')
+-- 			else
+-- 				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to open this rack.')
+-- 			end
+-- 			EndTextCommandDisplayHelp(0, false, true, -1)
+-- 			DisableControlAction(0, 54, true)
+-- 			if IsDisabledControlJustReleased(0, 54) then
+-- 				local Vehicle = closestRack
+-- 				if doorOpen then
+-- 					SetVehicleDoorShut(Vehicle, 1, false)
+-- 				else
+-- 					SetVehicleDoorOpen(Vehicle, 1, false, false)
+-- 				end
+-- 			end
+-- 		end
+-- 		::continue::
+-- 	end
+-- end)
 
-CreateThread(function()
-	while true do
-		for i = 1, #racks do
-			local rack = racks[i]
-			if rack then
-				local n = rack.Servers and #rack.Servers or 0
-				for j = 1, n do
-					local e = rack.Servers[j]
-					if IsVehicleEngineOnFire(e) or IsEntityOnFire(e) then
-						StopFireInRange(GetEntityCoords(e), 3.0)
-						StopEntityFire(e)
-					end
-					if DecorGetInt(e, 'sonrad_server') ~= 1 then
-						goto continue
-					end
-					if not IsEntityDead(e) then
-						SetVehiclePetrolTankHealth(e, 1000.0)
-					end
-					local health = GetEntityHealth(e)
-					if health > 980.0 then
-						goto continue
-					end
-					-- here we kill the dish
-					DecorSetInt(e, 'sonrad_server', 0)
-					DebugPrint('sending dish destroyed server event')
-					TriggerServerEvent('RadioRacks:KillServer', rack.Id, j)
-					::continue::
-				end
-			end
-		end
-		Wait(250)
-	end
-end)
+-- CreateThread(function()
+-- 	while true do
+-- 		for i = 1, #racks do
+-- 			local rack = racks[i]
+-- 			if rack then
+-- 				local n = rack.Servers and #rack.Servers or 0
+-- 				for j = 1, n do
+-- 					local e = rack.Servers[j]
+-- 					if IsVehicleEngineOnFire(e) or IsEntityOnFire(e) then
+-- 						StopFireInRange(GetEntityCoords(e), 3.0)
+-- 						StopEntityFire(e)
+-- 					end
+-- 					if DecorGetInt(e, 'sonrad_server') ~= 1 then
+-- 						goto continue
+-- 					end
+-- 					if not IsEntityDead(e) then
+-- 						SetVehiclePetrolTankHealth(e, 1000.0)
+-- 					end
+-- 					local health = GetEntityHealth(e)
+-- 					if health > 980.0 then
+-- 						goto continue
+-- 					end
+-- 					-- here we kill the dish
+-- 					DecorSetInt(e, 'sonrad_server', 0)
+-- 					DebugPrint('sending dish destroyed server event')
+-- 					TriggerServerEvent('RadioRacks:KillServer', rack.Id, j)
+-- 					::continue::
+-- 				end
+-- 			end
+-- 		end
+-- 		Wait(250)
+-- 	end
+-- end)
 
 -- cleanup racks on stop
 AddEventHandler('onResourceStop', function(resource)

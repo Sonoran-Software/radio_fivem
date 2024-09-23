@@ -255,6 +255,7 @@ local function RepairCellRepeater(cellRepeater)
 	end
 end
 
+-- Variable Thread, cannot be consolidated
 CreateThread(function()
 	while true do
 		-- get the closest (spawned) cellRepeater
@@ -290,35 +291,35 @@ CreateThread(function()
 	end
 end)
 
-CreateThread(function()
-	while true do
-		for i = 1, #CellRepeaters do
-			local cellRepeater = CellRepeaters[i]
-			if cellRepeater then
-				local e = cellRepeater.Handle
-				if DecorGetInt(e, 'sonrad_cellRepeater') ~= 1 then
-					goto continue
-				end
-				if not IsEntityDead(e) then
-					-- make sure it doesn't explode from gunshots
-					SetVehiclePetrolTankHealth(e, 1000.0)
-				end
+-- CreateThread(function()
+-- 	while true do
+-- 		for i = 1, #CellRepeaters do
+-- 			local cellRepeater = CellRepeaters[i]
+-- 			if cellRepeater then
+-- 				local e = cellRepeater.Handle
+-- 				if DecorGetInt(e, 'sonrad_cellRepeater') ~= 1 then
+-- 					goto continue
+-- 				end
+-- 				if not IsEntityDead(e) then
+-- 					-- make sure it doesn't explode from gunshots
+-- 					SetVehiclePetrolTankHealth(e, 1000.0)
+-- 				end
 
-				local health = GetVehicleBodyHealth(e)
-				if health > 500.0 then
-					goto continue
-				end
+-- 				local health = GetVehicleBodyHealth(e)
+-- 				if health > 500.0 then
+-- 					goto continue
+-- 				end
 
-				-- here we kill the dish
-				DecorSetInt(e, 'sonrad_cellRepeater', 0)
-				DebugPrint('sending dish destroyed server event')
-				TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
-				::continue::
-			end
-		end
-		Wait(250)
-	end
-end)
+-- 				-- here we kill the dish
+-- 				DecorSetInt(e, 'sonrad_cellRepeater', 0)
+-- 				DebugPrint('sending dish destroyed server event')
+-- 				TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
+-- 				::continue::
+-- 			end
+-- 		end
+-- 		Wait(250)
+-- 	end
+-- end)
 
 -- cleanup CellRepeaters on stop
 AddEventHandler('onResourceStop', function(resource)
