@@ -77,23 +77,23 @@ Config.frames = {
 Config.chatterExclusions = {
 	{
 		componentId = 2, -- Ears
-		drawableId = 1, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
+		drawableId = 0, -- Number in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
 	},
 	{
 		componentId = 2, -- Ears
-		drawableId = 2, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
+		drawableId = 1, -- Number in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
 	},
 	{
 		componentId = 3, -- Ears
 		drawableId = 2, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
 	},
 	{
 		componentId = 2, -- Ears
-		drawableId = 42, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
+		drawableId = 41, -- Number in vMenu MP Ped Component list
+		textures = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12} -- Texture ID in vMenu MP Ped Component list
 	},
 }
 
