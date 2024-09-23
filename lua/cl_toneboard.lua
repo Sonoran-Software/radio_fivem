@@ -125,30 +125,32 @@ RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
     table.insert(playingSpeakers, speaker)
 end)
 
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(500);
-        local playerPos = GetEntityCoords(GetPlayerPed(-1));
-        local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-        for _, v in pairs(playingSpeakers) do
-            local propPos = GetSpeakerCoords(v);
-            SendNUIMessage({
-                name = v.Id,
-                status = "updateSound",
-                playerX = playerPos.x,
-                playerY = playerPos.y,
-                playerZ = playerPos.z,
-                playerHeading = playerHeading,
-                speakerX = v.PropPosition.x,
-                speakerY = v.PropPosition.y,
-                speakerZ = v.PropPosition.z,
-                maxDistance = v.Range,
-                xsound = true,
-                distance = #(playerPos - propPos)
-            })
-        end
-    end
-end);
+-- Citizen.CreateThread(function()
+--     while true do
+--         Citizen.Wait(500);
+--         if #playingSpeakers == 0 then goto continue end
+--         local playerPos = GetEntityCoords(GetPlayerPed(-1));
+--         local playerHeading = GetEntityHeading(GetPlayerPed(-1));
+--         for _, v in pairs(playingSpeakers) do
+--             local propPos = GetSpeakerCoords(v);
+--             SendNUIMessage({
+--                 name = v.Id,
+--                 status = "updateSound",
+--                 playerX = playerPos.x,
+--                 playerY = playerPos.y,
+--                 playerZ = playerPos.z,
+--                 playerHeading = playerHeading,
+--                 speakerX = v.PropPosition.x,
+--                 speakerY = v.PropPosition.y,
+--                 speakerZ = v.PropPosition.z,
+--                 maxDistance = v.Range,
+--                 xsound = true,
+--                 distance = #(playerPos - propPos)
+--             })
+--         end
+--         ::continue::
+--     end
+-- end);
 
 RegisterNetEvent('xSound:songStopPlaying', function(id)
     for i = 1, #playingSpeakers do

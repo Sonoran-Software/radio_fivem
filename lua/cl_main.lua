@@ -3,7 +3,7 @@ local radActive = false
 local thisUnit = {}
 local unitStatus = nil
 
-local isTalking = false
+isTalking = false
 allowedMiniRadio = false
 local inVehicle = false
 local tunnels = {}
@@ -539,14 +539,14 @@ function Radio:Talking(toggle)
 	end
 end
 
-Citizen.CreateThread(function()
-	while true do
-		Wait(1)
-		if isTalking and Config.talkSync then
-			SetControlNormal(0, 249, 1.0);
-		end
-	end
-end)
+-- Citizen.CreateThread(function()
+-- 	while true do
+-- 		Wait(1)
+-- 		if isTalking and Config.talkSync then
+-- 			SetControlNormal(0, 249, 1.0);
+-- 		end
+-- 	end
+-- end)
 
 function Radio:Toggle(toggle)
 	if critError or Config.critError then

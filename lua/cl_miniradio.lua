@@ -20,15 +20,15 @@ Citizen.CreateThread(function()
     InitModuleSize("hud")
     InitModuleConfig("hud")
     -- Disable Controls Loop
-    while true do
-        if nuiFocused then -- Disable controls while NUI is focused.
-            DisableControlAction(0, 1, nuiFocused) -- LookLeftRight
-            DisableControlAction(0, 2, nuiFocused) -- LookUpDown
-            DisableControlAction(0, 142, nuiFocused) -- MeleeAttackAlternate
-            DisableControlAction(0, 106, nuiFocused) -- VehicleMouseControlOverride
-        end
-        Citizen.Wait(0) -- Yield until next frame.
-    end
+    -- while true do
+    --     if nuiFocused then -- Disable controls while NUI is focused.
+    --         DisableControlAction(0, 1, nuiFocused) -- LookLeftRight
+    --         DisableControlAction(0, 2, nuiFocused) -- LookUpDown
+    --         DisableControlAction(0, 142, nuiFocused) -- MeleeAttackAlternate
+    --         DisableControlAction(0, 106, nuiFocused) -- VehicleMouseControlOverride
+    --     end
+    --     Citizen.Wait(0) -- Yield until next frame.
+    -- end
 end)
 
 function InitModuleSize(module)
