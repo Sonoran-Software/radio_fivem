@@ -49,78 +49,8 @@ end)
 
 -- 500 MS Thread
 Citizen.CreateThread(function()
-	local MIN_DIST = 15.0
 	while true do
 		CheckForCloseMusic()
-		local chatterSourcePlayers = {}
-		local myPos = GetFinalRenderedCamCoord()
-		-- create or update close players in chatterSources
-		for _, ply in ipairs(GetActivePlayers()) do
-			if ply == PlayerId() then
-				goto continue
-			end
-
-			local ped = GetPlayerPed(ply)
-			if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > MIN_DIST then
-				goto continue
-			end
-
-			local state = playerStates[GetPlayerServerId(ply)]
-			if state then
-				-- find the index of the existing chatter source
-				local idx = 0
-				for i = 1, #chatterSources do
-					if chatterSources[i].player == ply then
-						idx = i
-						break
-					end
-				end
-				if idx > 0 then
-					chatterSources[idx].state = state
-				else
-					table.insert(chatterSources, {player = ply, state = state})
-				end
-
-				table.insert(chatterSourcePlayers, ply)
-			end
-			::continue::
-		end
-
-		-- remove players that are not chatter sources anymore
-		for i = #chatterSources, 1, -1 do
-			local keep = false
-			for _, ply in ipairs(chatterSourcePlayers) do
-				if chatterSources[i].player == ply then
-					keep = true
-					break
-				end
-			end
-			if not keep then
-				table.remove(chatterSources, i)
-			end
-		end
-
-		-- find the frequencies we need to listen to for chatter
-		local listenFreqs = {}
-		local function addChatterFreq(freq)
-			-- verify if the freq is already in the list
-			for i = 1, #listenFreqs do
-				if listenFreqs[i][1] == freq[1] and listenFreqs[i][2] == freq[2] then
-					return
-				end
-			end
-			table.insert(listenFreqs, freq)
-		end
-		for _, info in ipairs(chatterSources) do
-			addChatterFreq(info.state.freqRecv)
-			for i = 1, #info.state.freqScan do
-				addChatterFreq(info.state.freqScan[i])
-			end
-		end
-		SendNUIMessage({
-			type = 'chatterFrequenciesUpdate',
-			freqs = listenFreqs,
-		})
         if #playingSpeakers == 0 then goto continueSpeaker end
         local playerPos = GetEntityCoords(GetPlayerPed(-1));
         local playerHeading = GetEntityHeading(GetPlayerPed(-1));

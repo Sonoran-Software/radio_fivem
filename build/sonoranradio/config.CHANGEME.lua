@@ -75,6 +75,30 @@ Config.frames = {
 	}
 }
 
+-- Radio Chatter Exclusion Settings --
+Config.chatterExclusions = {
+	{
+		componentId = 2, -- Ears
+		drawableId = 1, -- Number in vMenu MP Ped Component list
+		texture = 0 -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 2, -- Ears
+		drawableId = 2, -- Number in vMenu MP Ped Component list
+		texture = 0 -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 3, -- Ears
+		drawableId = 2, -- Number in vMenu MP Ped Component list
+		texture = 0 -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 2, -- Ears
+		drawableId = 42, -- Number in vMenu MP Ped Component list
+		texture = 0 -- Texture ID in vMenu MP Ped Component list
+	},
+}
+
 -- Only Run This on Client
 if not IsDuplicityVersion() then
 	RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
