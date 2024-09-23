@@ -88,7 +88,7 @@ Config.chatterExclusions = {
 		texture = 0 -- Texture ID in vMenu MP Ped Component list
 	},
 	{
-		componentId = 3, -- Ears
+		componentId = 2, -- Ears
 		drawableId = 2, -- Number in vMenu MP Ped Component list
 		texture = 0 -- Texture ID in vMenu MP Ped Component list
 	},
