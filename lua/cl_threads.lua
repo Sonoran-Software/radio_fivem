@@ -305,7 +305,6 @@ end)
 -- 3000 MS Thread
 CreateThread(function()
 	while true do
-		if Radio.On then
 			bestTowerQuality = 0.0
 			local pCoords = GetEntityCoords(GetPlayerPed(-1))
 			for i = 1, #Towers do
@@ -455,7 +454,6 @@ CreateThread(function()
 			else
 				DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
 			end
-		end
 		Wait(3000)
 	end
 end)
