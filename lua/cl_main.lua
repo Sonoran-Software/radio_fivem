@@ -955,6 +955,7 @@ RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 				minZ = options.minZ,
 				maxZ = options.maxZ,
 				degradeStrength = options.degradeStrength,
+				debugGrid = Config.debug
 			})
 			DebugPrint('Zone created: ' .. zoneData.options.name)
 		end

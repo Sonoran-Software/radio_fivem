@@ -106,7 +106,6 @@ $(function () {
 			switch (event.data.key) {
 				case "maxrows":
 					maxrows = event.data.value;
-					console.log("Rows set to " + event.data.value);
 					refreshCall();
 					break;
 				default:
@@ -189,7 +188,10 @@ window.addEventListener("message", function (event) {
 			})
 		);
 	} else if (event.data.type == "setMiniRadioUIPosition") {
+		console.log("Setting MiniRadio UI Position", JSON.stringify(event.data));
 		document.getElementById("hudDiv").style.left = event.data.x;
 		document.getElementById("hudDiv").style.top = event.data.y;
+		document.getElementById("hudFrame").style.left = event.data.x;
+		document.getElementById("hudFrame").style.top = event.data.y;
 	}
 });

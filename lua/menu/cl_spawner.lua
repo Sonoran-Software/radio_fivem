@@ -736,8 +736,8 @@ local minY = 45.0
 local maxY = 50.0
 function degradeMenu()
 	if WarMenu.Button('Create Degredation Zone') then
-		creatingZone = true
 		local playerZ = GetEntityCoords(PlayerPedId()).z
+		creatingZone = true
 		local pos = GetEntityCoords(PlayerPedId())
 		local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
 		local street1 = GetStreetNameFromHashKey(s1)
@@ -764,7 +764,7 @@ function degradeMenu()
 				zoneName = input
 			end
 		end
-		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
+		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil, playerZ -1, playerZ + 10)
 	end
 	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(degradeStrength), 5, tostring(degradeStrength))
 	if pressed then
@@ -782,6 +782,7 @@ function degradeMenu()
 	if WarMenu.Button('Undo Last Point') then
 		TriggerEvent('SonoranRadio:PolyZone:pzundo')
 	end
+	local playerZ = GetEntityCoords(PlayerPedId()).z
 	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: ' .. playerZ - 1 .. ')', tostring(playerZ - 1), 5, tostring(playerZ - 1))
 	if minYPressed then
 		if minYInput == '' then
