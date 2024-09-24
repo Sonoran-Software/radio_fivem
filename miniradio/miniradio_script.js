@@ -176,6 +176,7 @@ function dragElement(elmnt, dragHandleId) {
         // stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
+		$.post("https://sonoranradio/SaveMiniRadioPos", JSON.stringify({ x: elmnt.style.left, y: elmnt.style.top }));
     }
 }
 
@@ -187,5 +188,8 @@ window.addEventListener("message", function (event) {
 				users: event.data.users,
 			})
 		);
+	} else if (event.data.type == "setMiniRadioUIPosition") {
+		document.getElementById("hudDiv").style.left = event.data.x;
+		document.getElementById("hudDiv").style.top = event.data.y;
 	}
 });
