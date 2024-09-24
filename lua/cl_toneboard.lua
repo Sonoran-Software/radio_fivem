@@ -13,12 +13,12 @@ RegisterNetEvent('RadioSpeaker:SpawnSpeaker', function(speaker)
     DebugPrint('new speaker spawned', speaker.Id)
 end)
 
-local function LoadModelSync(model)
+function LoadModelSync(model)
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(1) end
 end
 
-local function GetSpeakerCoords(speaker)
+function GetSpeakerCoords(speaker)
     if DoesEntityExist(speaker.Handle) then
         return GetOffsetFromEntityInWorldCoords(speaker.Handle, 0.0, 0.0, 1.0)
     else
@@ -27,7 +27,7 @@ local function GetSpeakerCoords(speaker)
     end
 end
 
-local function AddSpeakerRange(t)
+function AddSpeakerRange(t)
     if not Config.debug then return end
     -- create a radius blip that indicates the range of the speaker (where edge of circle = 50% capacity)
     local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y,
@@ -37,7 +37,7 @@ local function AddSpeakerRange(t)
 end
 
 -- fully creates a speaker based on the given speaker object
-local function CreateSpeaker(speaker)
+function CreateSpeaker(speaker)
     if DoesEntityExist(speaker.Handle) then DeleteEntity(speaker.Handle) end
     local speakerModelArray = speakerStyles[speaker.type]
     if not speakerModelArray then
@@ -56,7 +56,7 @@ local function CreateSpeaker(speaker)
     speaker.Spawned = true
 end
 -- delete the physical speaker entities
-local function DestroySpeaker(speaker)
+function DestroySpeaker(speaker)
     if DoesEntityExist(speaker.Handle) then DeleteEntity(speaker.Handle) end
     speaker.Spawned = false
 end
