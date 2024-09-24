@@ -147,14 +147,14 @@ RegisterCommand("radiousers", function(source, args, rawCommand)
         })
         return
     end
+    setActiveUsers(activeChannels)
+    openradiousers()
     print('setting radio pos to ', GetResourceKvpString('miniradioui_pos_dic'))
     SendNUIMessage({
         type = 'setMiniRadioUIPosition',
         data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}'),
         miniradio = true
     })
-    setActiveUsers(activeChannels)
-    openradiousers()
 end)
 RegisterKeyMapping('radiousers', 'Toggle Radio Users', 'keyboard', '')
 TriggerEvent('chat:addSuggestion', '/radiousers', "Toggle the Mini-Radio panel.", {})
