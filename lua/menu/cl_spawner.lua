@@ -18,7 +18,7 @@ local toneboardState = {
 	calculatedHeading = nil
 }
 
-
+local creatingZone = false
 local radioScaleform = nil
 
 CreateThread(function()
@@ -725,6 +725,9 @@ RegisterNetEvent('menu:back', function(menu)
 		state.ogCoords = nil
 		state.lastCoordUpdate = nil
 		state.calculatedHeading = nil
+	elseif menu.id == 'degradeMenu' and creatingZone then
+		creatingZone = false
+		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
 	end
 end)
 
@@ -733,6 +736,7 @@ local minY = 45.0
 local maxY = 50.0
 function degradeMenu()
 	if WarMenu.Button('Create Degredation Zone') then
+		creatingZone = true
 		local pos = GetEntityCoords(PlayerPedId())
 		local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
 		local street1 = GetStreetNameFromHashKey(s1)
@@ -796,9 +800,11 @@ function degradeMenu()
 		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', minY, maxY)
 	end
 	if WarMenu.Button('Finish Zone Creation') then
+		creatingZone = false
 		TriggerEvent('SonoranRadio:PolyZone:pzfinish', degradeStrength, minY, maxY)
 	end
 	if WarMenu.Button('Cancel Zone Creation') then
+		creatingZone = false
 		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
 	end
 end
