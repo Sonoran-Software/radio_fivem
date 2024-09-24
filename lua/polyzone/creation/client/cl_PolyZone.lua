@@ -6,6 +6,22 @@ local function handleInput(center)
   return center
 end
 
+local function handleZInput(minZ, maxZ)
+  delta = 0.05
+
+  if IsDisabledControlPressed(0, 36) then -- ctrl held down
+    delta = 0.01
+  end
+  if IsDisabledControlPressed(0, 314) then -- NumPad +
+    return minZ + delta, maxZ
+  end
+
+  if IsDisabledControlPressed(0, 315) then -- NumPad -
+    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x + delta, center.y), heading)
+    return minZ, maxZ - delta
+  end
+end
+
 function polyStart(name)
   local coords = GetEntityCoords(PlayerPedId())
   createdZone = PolyZone:Create({vector2(coords.x, coords.y)}, {name = tostring(name), useGrid=true})
@@ -16,6 +32,7 @@ function polyStart(name)
       lastPoint = createdZone.points[#createdZone.points]
       lastPoint = vector3(lastPoint.x, lastPoint.y, 0.0)
       lastPoint = handleInput(lastPoint)
+      createdZone.minZ, createdZone.maxZ = handleZInput(createdZone.minZ, createdZone.maxZ)
       createdZone.points[#createdZone.points] = lastPoint.xy
       Wait(0)
     end
