@@ -8,7 +8,6 @@ SetHttpHandler(function(req, res)
     local method = req.method
     if method == 'POST' and path == '/events' then
         req.setDataHandler(function(data)
-            print('Received data: ' .. data)
             if not data then
                 res.send(json.encode({['error'] = 'bad request'}))
                 return

@@ -49,6 +49,9 @@ end)
 
 -- 500 MS Thread
 Citizen.CreateThread(function()
+	local ped = PlayerPedId()
+    local playerPos = GetEntityCoords(ped)
+    local destroyedMusicList = {}
 	while true do
 		CheckForCloseMusic()
         if #playingSpeakers > 0 then
