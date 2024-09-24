@@ -149,7 +149,7 @@ RegisterCommand("radiousers", function(source, args, rawCommand)
     end
     SendNUIMessage({
         type = 'setMiniRadioUIPosition',
-        data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+        data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}')
     })
     setActiveUsers(activeChannels)
     openradiousers()
@@ -242,5 +242,6 @@ function handleHome()
 end
 
 RegisterNUICallback('SaveMiniRadioPos', function(data)
+    print('setting pos to ', json.encode(data))
     SetResourceKvp('miniradioui_pos_dic', json.encode(data.data))
 end)

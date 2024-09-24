@@ -45,7 +45,6 @@ $(function () {
 				}
 				break;
 			case "url":
-				console.log("setting the url from listner.js");
 				var sound = soundList[item.name];
 				if (sound != null) {
 					sound.delete();

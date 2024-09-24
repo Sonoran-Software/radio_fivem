@@ -816,7 +816,7 @@ function toneboardSpawnMenu()
 		local propName = toneboards[toneboardState.index];
 		if propName == 'Speaker (Small - Wall)' then
 			AddTextEntry('FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default')
-			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 20)
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 40)
 			while (UpdateOnscreenKeyboard() == 0) do
 				DisableAllControlActions(0);
 				Wait(0)
@@ -842,7 +842,7 @@ function toneboardSpawnMenu()
 				streetLabel = streetLabel .. " " .. street2
 			end
 			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
-			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
 			while (UpdateOnscreenKeyboard() == 0) do
 				DisableAllControlActions(0);
 				Wait(0)
@@ -914,7 +914,7 @@ function toneboardSpawnMenu()
 				streetLabel = streetLabel .. " " .. street2
 			end
 			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
-			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
 			while (UpdateOnscreenKeyboard() == 0) do
 				DisableAllControlActions(0);
 				Wait(0)
@@ -986,7 +986,7 @@ function toneboardSpawnMenu()
 				streetLabel = streetLabel .. " " .. street2
 			end
 			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
-			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
 			while (UpdateOnscreenKeyboard() == 0) do
 				DisableAllControlActions(0);
 				Wait(0)
@@ -1058,7 +1058,7 @@ function toneboardSpawnMenu()
 				streetLabel = streetLabel .. " " .. street2
 			end
 			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
-			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 20)
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
 			while (UpdateOnscreenKeyboard() == 0) do
 				DisableAllControlActions(0);
 				Wait(0)
