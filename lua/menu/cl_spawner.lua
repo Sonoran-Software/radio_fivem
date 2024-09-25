@@ -788,8 +788,22 @@ function degradeMenu()
 		if pressed then
 			if input == '' then
 				degradeStrength = 0.5
-			else
+			elseif tonumber(input) >= 1.0 then
 				degradeStrength = tonumber(input)
+			else
+				degradeStrength = 1.0
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Degradation strength must be between 0.0 and 1.0, defaulting to 1.0'
+					}
+				})
 			end
 		end
 	end
