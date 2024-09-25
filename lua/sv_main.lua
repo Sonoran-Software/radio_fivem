@@ -262,6 +262,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 					end
 				end
 			else
+				retryCount = 6
 				print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
 				exports['sonoranradio']:performApiRequest({
 					['id'] = Config.comId,
