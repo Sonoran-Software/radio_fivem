@@ -26,7 +26,7 @@ Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell r
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
-Config.tunnelDegredationStrength = 0.5 -- The strength of the tunnel degredation effect (0.0 - 1.0) 0.0 = no degredation, 1.0 = full degredation
+Config.tunnelDegradationStrength = 0.5 -- The strength of the tunnel degradation effect (0.0 - 1.0) 0.0 = no degradation, 1.0 = full degradation
 
 -- Notification Settings --
 Config.notifications = {

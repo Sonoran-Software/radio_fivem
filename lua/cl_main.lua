@@ -909,7 +909,7 @@ local QBDeath = false;
 -- 		-- print("QBDeath:" .. tostring(QBDeath))
 -- 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
 -- 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
--- 		-- Tunnel degredation logic
+-- 		-- Tunnel degradation logic
 -- 		local plyPed = PlayerPedId()
 --         local coord = GetEntityCoords(plyPed)
 --         local insideZone = false

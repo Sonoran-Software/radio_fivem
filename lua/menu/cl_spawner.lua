@@ -39,7 +39,7 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
 	WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degredation Zones')
+	WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
 	WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('toneboardMenu', 'sonoranRadioMenu', 'Toneboard Speaker Menu')
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardMenu', 'radio_menu_header', 'option_1')
@@ -57,7 +57,7 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu') then
 			end
-			if WarMenu.MenuButton('Degredation Zones', 'degradeMenu') then
+			if WarMenu.MenuButton('Degradation Zones', 'degradeMenu') then
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
@@ -739,7 +739,7 @@ function setMinMax()
 	maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
 end
 function degradeMenu()
-	if WarMenu.Button('Create Degredation Zone') then
+	if WarMenu.Button('Create Degradation Zone') then
 		setMinMax()
 		creatingZone = true
 		local pos = GetEntityCoords(PlayerPedId())
@@ -751,8 +751,8 @@ function degradeMenu()
 			streetLabel = streetLabel .. " " .. street2
 			streetLabel = string.sub(streetLabel, 1, 15) .. "..."
 		end
-		AddTextEntry('FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default')
-		DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
+		AddTextEntry('FMMC_MPM_NAA', 'Degradation Zone Name: (Default: Cross Streets) - Leave blank for default')
+		DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Degradation Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
 		while (UpdateOnscreenKeyboard() == 0) do
 			DisableAllControlActions(0);
 			Wait(0)
