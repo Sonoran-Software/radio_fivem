@@ -59,7 +59,7 @@ end)
 
 RegisterNetEvent('SonoranCAD::sonrad:UpdateCurrentCall')
 AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
-	local dispatch = call.dispatch
+	local dispatch = call and call.dispatch or nil
 	DebugPrint(json.encode(dispatch))
 	SendNUIMessage({
 		type = 'callUpdate',
@@ -67,13 +67,12 @@ AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
 	})
 end)
 
--- CreateThread(function()
--- 	while true do
--- 		Wait(5000)
--- 		TriggerServerEvent('SonoranCAD::sonrad:GetUnitInfo')
--- 		TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
--- 	end
--- end)
+CreateThread(function()
+	while true do
+		Wait(5000)
+		TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
+	end
+end)
 
 Radio = {
 	Has = false,
@@ -123,47 +122,9 @@ CreateThread(function()
 	end
 end)
 
--- CreateThread(function()
--- 	while Config.enforceRadioItem do
--- 		Wait(1000)
--- 		if LocalPlayer.state.isLoggedIn then
--- 			-- print("has radio")
--- 			QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
--- 				if not hasItem then
--- 					Radio.Has = false
--- 					Radio:Toggle(false)
--- 				else
--- 					Radio.Has = true
--- 				end
--- 			end, 'sonoran_radio')
--- 		end
--- 	end
--- end)
-
 RegisterNetEvent('qb-sonrad:use')
 AddEventHandler('qb-sonrad:use', function(frame)
 	radioToggle(frame)
-end)
-
--- Disable Attack when Radio is Open
--- CreateThread(function()
--- 	while true do
--- 		if Radio.Open then
--- 			DisableControlAction(0, 142, true) -- Attack
--- 			DisableControlAction(0, 200, true) -- Escape
--- 		end
--- 		Wait(0)
--- 	end
--- end)
-
-RegisterNetEvent('SonoranCAD::sonrad:UpdateCurrentCall')
-AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
-	local dispatch = call.dispatch
-	DebugPrint(json.encode(dispatch))
-	SendNUIMessage({
-		type = 'callUpdate',
-		call = dispatch
-	})
 end)
 
 local specialKeyCodes = {
@@ -233,14 +194,16 @@ local specialKeyCodes = {
 	['b_1014'] = 'ControlRight',
 	['b_1015'] = 'AltLeft',
 	['b_1016'] = 'AltRight',
-	['b_2000'] = 'Space'
+	['b_2000'] = 'Space',
+	['t_/'] = 'Slash',
+	['t_\\'] = 'Backslash',
 }
 local function getPttKey()
 	local key = GetControlInstructionalButton(0, 0xE364B8EC, true)
-	if key:sub(1, 2) == 't_' then
-		return key:sub(3)
-	elseif specialKeyCodes[key] then
+	if specialKeyCodes[key] then
 		return 'SpecialKey.' .. specialKeyCodes[key], key
+	elseif key:sub(1, 2) == 't_' then
+		return key:sub(3)
 	else
 		print('warning: unknown ptt key code ' .. key)
 		return nil
