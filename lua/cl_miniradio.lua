@@ -19,6 +19,7 @@ Citizen.CreateThread(function()
     -- Set Default Module Sizes
     InitModuleSize("hud")
     InitModuleConfig("hud")
+    InitModulePos("hud")
     -- Disable Controls Loop
     -- while true do
     --     if nuiFocused then -- Disable controls while NUI is focused.
@@ -88,6 +89,29 @@ end
 function RefreshModule(module)
     DebugMessage("sending refresh message to nui", module)
     SendNUIMessage({type = "refresh", module = module, miniradio = true})
+end
+
+function InitModulePos(module)
+    local moduleX = GetResourceKvpString(module .. "x")
+    local moduleY = GetResourceKvpString(module .. "y")
+    if moduleX ~= nil and moduleY ~= nil then
+        DebugMessage("retrieving saved presets", module)
+        SetModulePos(module, moduleX, moduleY)
+    end
+end
+
+function SetModulePos(module, x, y)
+    DebugMessage(("MODULE %s POS %s - %s"):format(module, x, y))
+    SendNUIMessage({
+        type = "setMiniRadioUIPosition",
+        module = module,
+        x = x,
+        y = y,
+        miniradio = true
+    })
+    DebugMessage("saving module pos to kvp")
+    SetResourceKvp(module .. "x", x)
+    SetResourceKvp(module .. "y", y)
 end
 
 -- Display a Module
@@ -244,6 +268,5 @@ function handleHome()
 end
 
 RegisterNUICallback('SaveMiniRadioPos', function(data)
-    print('saving miniradio post to', json.encode(data))
-    SetResourceKvp('miniradioui_pos_dic', json.encode(data))
+    SetModulePos("hud", data.x, data.y)
 end)

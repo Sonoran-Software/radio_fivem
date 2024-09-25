@@ -123,7 +123,15 @@ $(function () {
 				document.getElementById("hudDiv").style.width = event.data.newWidth;
 				document.getElementById("hudDiv").style.height = event.data.newHeight;
 			}
+		} else if (event.data.type == "setMiniRadioUIPosition") {
+			let x = event.data.x;
+			let y = event.data.y;
+			document.getElementById("hudDiv").style.left = x;
+			document.getElementById("hudDiv").style.top = y;
+			document.getElementById("hudFrame").style.left = x;
+			document.getElementById("hudFrame").style.top = y;
 		}
+
 	});
 	document.onkeyup = function (data) {
 		sendToParent({ type: "keyup", key: data.which, code: data.code });
@@ -187,11 +195,5 @@ window.addEventListener("message", function (event) {
 				users: event.data.users,
 			})
 		);
-	} else if (event.data.type == "setMiniRadioUIPosition") {
-		console.log("Setting MiniRadio UI Position", JSON.stringify(event.data));
-		let x = event.data.x;
-		let y = event.data.y;
-		document.getElementById("hudDiv").style.left = x;
-		document.getElementById("hudDiv").style.top = y;
-		}
+	}
 });
