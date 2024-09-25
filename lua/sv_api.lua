@@ -1,5 +1,6 @@
 local ApiEndpoints = {
-	['SET-SERVER-IP'] = 'radio'
+	['SET-SERVER-IP'] = 'radio',
+	['SET-SERVER-SPEAKERS'] = 'radio'
 }
 
 function PerformHttpRequestS(url, cb, method, data, headers)
@@ -19,10 +20,6 @@ function performApiRequest(postData, type, cb)
 		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
 		return
 	end
-	local payload = {}
-	payload['id'] = Config.comId
-	payload['key'] = Config.apiKey
-	payload['data'] = postData
 	local endpoint = nil
 	if ApiEndpoints[type] ~= nil then
 		endpoint = ApiEndpoints[type]
@@ -83,7 +80,7 @@ function performApiRequest(postData, type, cb)
 			else
 				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
 			end
-		end, 'POST', json.encode(payload), {
+		end, 'POST', json.encode(postData), {
 			['Content-Type'] = 'application/json'
 		})
 	else

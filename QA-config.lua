@@ -26,6 +26,7 @@ Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell r
 Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
+Config.tunnelDegradationStrength = 0.5 -- The strength of the tunnel degradation effect (0.0 - 1.0) 0.0 = no degradation, 1.0 = full degradation
 
 -- Notification Settings --
 Config.notifications = {
@@ -71,6 +72,31 @@ Config.frames = {
 		}
 	}
 }
+
+-- Radio Chatter Exclusion Settings --
+Config.chatterExclusions = {
+	{
+		componentId = 2, -- Ears
+		drawableId = 0, -- Number in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 2, -- Ears
+		drawableId = 1, -- Number in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 2, -- Ears
+		drawableId = 2, -- Number in vMenu MP Ped Component list
+		textures = {1} -- Texture ID in vMenu MP Ped Component list
+	},
+	{
+		componentId = 2, -- Ears
+		drawableId = 41, -- Number in vMenu MP Ped Component list
+		textures = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12} -- Texture ID in vMenu MP Ped Component list
+	},
+}
+
 
 -- Only Run This on Client
 if not IsDuplicityVersion() then

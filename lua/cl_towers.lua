@@ -19,14 +19,14 @@ function LoadModelSync(model)
 	end
 end
 
-local function GetTowerFromId(id)
+function GetTowerFromId(id)
 	for i = 1, #Towers do
 		if Towers[i].Id == id then
 			return Towers[i]
 		end
 	end
 end
-local function GetTowerCoords(tower)
+function GetTowerCoords(tower)
 	if DoesEntityExist(tower.Handle) then
 		return GetOffsetFromEntityInWorldCoords(tower.Handle, 0.0, 0.0, 1.0)
 	else
@@ -34,7 +34,7 @@ local function GetTowerCoords(tower)
 	end
 end
 -- returns a value from 0-1 representing the percentage of active dishes
-local function GetTowerCapacity(tower)
+function GetTowerCapacity(tower)
 	if #tower.DishStatus < 1 then
 		return 1.0
 	end
@@ -48,7 +48,7 @@ local function GetTowerCapacity(tower)
 	return n / #tower.DishStatus
 end
 
-local function AddTowerRange(t)
+function AddTowerRange(t)
 	if not Config.debug then
 		return
 	end
@@ -59,7 +59,7 @@ local function AddTowerRange(t)
 end
 
 -- creates one dish on a tower
-local function CreateTowerDish(tower, index, n)
+function CreateTowerDish(tower, index, n)
 	local dishModel = GetHashKey('sonoran')
 	LoadModelSync(dishModel)
 
@@ -99,7 +99,7 @@ local function CreateTowerDish(tower, index, n)
 	DebugPrint('Listing current dishes for tower #' .. tower.Id .. ' | ' .. json.encode(tower.Dishes))
 end
 -- syncs the dead/alive state of dishes to their physical vehicles
-local function SyncDishStatus(tower, playSound)
+function SyncDishStatus(tower, playSound)
 	for i = 1, #tower.Dishes do
 		local dish = tower.Dishes[i]
 		local dead = IsEntityDead(dish)
@@ -122,7 +122,7 @@ local function SyncDishStatus(tower, playSound)
 	end
 end
 
-local function CreateTowerLadder(tower)
+function CreateTowerLadder(tower)
 	-- if the tower isn't aligned almost straight up, then omit the ladder
 	-- this is because GTA will be weird if going up a ladder rotated in x or y directions
 	if #GetEntityRotation(tower.Handle, 0).xy > 2.0 then
@@ -145,7 +145,7 @@ local function CreateTowerLadder(tower)
 	DebugPrint('Created ladder for tower ' .. tower.Id .. ' | Data: off: ' .. off .. ' | ladderHndl: ' .. ladder)
 end
 -- fully creates a tower based on the given tower object
-local function CreateTower(tower)
+function CreateTower(tower)
 	if DoesEntityExist(tower.Handle) then
 		DeleteEntity(tower.Handle)
 	end
@@ -172,7 +172,7 @@ local function CreateTower(tower)
 	tower.Spawned = true
 end
 -- delete the physical tower entities
-local function DestroyTower(tower)
+function DestroyTower(tower)
 	if DoesEntityExist(tower.Handle) then
 		DebugPrint('Tower with ID ' .. tower.Id .. ' was physical, deleting handle: ' .. tower.Handle)
 		DeleteEntity(tower.Handle)
@@ -244,68 +244,68 @@ CreateThread(function()
 	end
 
 	DecorRegister('sonrad_dish', 3)
-	while true do
-		bestTowerQuality = 0.0
-		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		for i = 1, #Towers do
-			local tower = Towers[i]
-			if not tower then
-				goto continue
-			end
-			local d = #(GetTowerCoords(tower) - pCoords)
-			-- if the player is within range (750m), then spawn a physical tower
-			local physical = not Config.noPhysicalTowers and not tower.NotPhysical
-			if d < 750.0 and not tower.Spawned and physical then
-				CreateTower(tower)
-				DebugPrint(('spawn physical tower (%f) %s'):format(d, tower.Id))
-			elseif d >= 750.0 and tower.Spawned then
-				DestroyTower(tower)
-				DebugPrint(('destroy physical tower (%f) %s'):format(d, tower.Id))
-			end
+	-- while true do
+	-- 	bestTowerQuality = 0.0
+	-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
+	-- 	for i = 1, #Towers do
+	-- 		local tower = Towers[i]
+	-- 		if not tower then
+	-- 			goto continue
+	-- 		end
+	-- 		local d = #(GetTowerCoords(tower) - pCoords)
+	-- 		-- if the player is within range (750m), then spawn a physical tower
+	-- 		local physical = not Config.noPhysicalTowers and not tower.NotPhysical
+	-- 		if d < 750.0 and not tower.Spawned and physical then
+	-- 			CreateTower(tower)
+	-- 			DebugPrint(('spawn physical tower (%f) %s'):format(d, tower.Id))
+	-- 		elseif d >= 750.0 and tower.Spawned then
+	-- 			DestroyTower(tower)
+	-- 			DebugPrint(('destroy physical tower (%f) %s'):format(d, tower.Id))
+	-- 		end
 
-			-- recreate the tower completely if anything is missing
-			-- NOTE: not including the ladder, as it will be omitted on certain conditions
-			local recreate = tower.Spawned and not DoesEntityExist(tower.Handle)
-			local n = tower.Dishes and #tower.Dishes or 0
-			for j = 1, n do
-				if not recreate then
-					recreate = not DoesEntityExist(tower.Dishes[j])
-				end
-			end
-			if recreate then
-				DebugPrint(('tower:%s component missing, recreating'):format(tower.Id))
-				-- CreateTower will automatically delete old entities
-				CreateTower(tower)
-				SyncDishStatus(tower, false)
-			end
+	-- 		-- recreate the tower completely if anything is missing
+	-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
+	-- 		local recreate = tower.Spawned and not DoesEntityExist(tower.Handle)
+	-- 		local n = tower.Dishes and #tower.Dishes or 0
+	-- 		for j = 1, n do
+	-- 			if not recreate then
+	-- 				recreate = not DoesEntityExist(tower.Dishes[j])
+	-- 			end
+	-- 		end
+	-- 		if recreate then
+	-- 			DebugPrint(('tower:%s component missing, recreating'):format(tower.Id))
+	-- 			-- CreateTower will automatically delete old entities
+	-- 			CreateTower(tower)
+	-- 			SyncDishStatus(tower, false)
+	-- 		end
 
-			-- if tower is out of range, then just ignore it
-			if d > tower.Range then
-				goto continue
-			end
-			local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
-			if bestTowerQuality < tQuality then
-				bestTowerQuality = tQuality
-			end
-			::continue::
-		end
+	-- 		-- if tower is out of range, then just ignore it
+	-- 		if d > tower.Range then
+	-- 			goto continue
+	-- 		end
+	-- 		local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
+	-- 		if bestTowerQuality < tQuality then
+	-- 			bestTowerQuality = tQuality
+	-- 		end
+	-- 		::continue::
+	-- 	end
 
-		if bestTowerQuality == 0.0 then
-			DebugPrint('closest tower out of range')
-		else
-			DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
-		end
-		-- SendNUIMessage({
-		-- 	type = 'setTowerQuality',
-		-- 	state = {
-		-- 		tower_quality = quality
-		-- 	}
-		-- })
-		Wait(3000)
-	end
+	-- 	if bestTowerQuality == 0.0 then
+	-- 		DebugPrint('closest tower out of range')
+	-- 	else
+	-- 		DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
+	-- 	end
+	-- 	-- SendNUIMessage({
+	-- 	-- 	type = 'setTowerQuality',
+	-- 	-- 	state = {
+	-- 	-- 		tower_quality = quality
+	-- 	-- 	}
+	-- 	-- })
+	-- 	Wait(3000)
+	-- end
 end)
 
-local function RepairTower(tower)
+function RepairTower(tower)
 	if rightToRepair then
 		local ped = GetPlayerPed(-1)
 		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_WELDING', 0, true)
@@ -338,6 +338,7 @@ local function RepairTower(tower)
 	end
 end
 
+-- Variable Thread, cannot be consolidated
 CreateThread(function()
 	while true do
 		-- get the closest (spawned) tower
@@ -373,38 +374,38 @@ CreateThread(function()
 	end
 end)
 
-CreateThread(function()
-	while true do
-		for i = 1, #Towers do
-			local tower = Towers[i]
-			if tower then
-				local n = tower.Dishes and #tower.Dishes or 0
-				for j = 1, n do
-					local e = tower.Dishes[j]
-					if DecorGetInt(e, 'sonrad_dish') ~= 1 then
-						goto continue
-					end
-					if not IsEntityDead(e) then
-						-- make sure it doesn't explode from gunshots
-						SetVehiclePetrolTankHealth(e, 1000.0)
-					end
+-- CreateThread(function()
+-- 	while true do
+-- 		for i = 1, #Towers do
+-- 			local tower = Towers[i]
+-- 			if tower then
+-- 				local n = tower.Dishes and #tower.Dishes or 0
+-- 				for j = 1, n do
+-- 					local e = tower.Dishes[j]
+-- 					if DecorGetInt(e, 'sonrad_dish') ~= 1 then
+-- 						goto continue
+-- 					end
+-- 					if not IsEntityDead(e) then
+-- 						-- make sure it doesn't explode from gunshots
+-- 						SetVehiclePetrolTankHealth(e, 1000.0)
+-- 					end
 
-					local health = GetVehicleBodyHealth(e)
-					if health > 500.0 then
-						goto continue
-					end
+-- 					local health = GetVehicleBodyHealth(e)
+-- 					if health > 500.0 then
+-- 						goto continue
+-- 					end
 
-					-- here we kill the dish
-					DecorSetInt(e, 'sonrad_dish', 0)
-					DebugPrint('sending dish destroyed server event')
-					TriggerServerEvent('RadioTower:KillDish', tower.Id, j)
-					::continue::
-				end
-			end
-		end
-		Wait(250)
-	end
-end)
+-- 					-- here we kill the dish
+-- 					DecorSetInt(e, 'sonrad_dish', 0)
+-- 					DebugPrint('sending dish destroyed server event')
+-- 					TriggerServerEvent('RadioTower:KillDish', tower.Id, j)
+-- 					::continue::
+-- 				end
+-- 			end
+-- 		end
+-- 		Wait(250)
+-- 	end
+-- end)
 
 -- cleanup towers on stop
 AddEventHandler('onResourceStop', function(resource)

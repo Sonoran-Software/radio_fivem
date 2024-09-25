@@ -30,6 +30,18 @@ Citizen.CreateThread(function()
 				-- find the index of the existing chatter source
 				local idx = 0
 				for i = 1, #chatterSources do
+					chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
+					if chatterPlayerPed then
+						for _, exclusion in ipairs(Config.chatterExclusions) do
+							if GetPedPropIndex(chatterPlayerPed, exclusion.componentId) == exclusion.drawableId  then
+								for _, texture in ipairs(exclusion.textures) do
+									if GetPedPropTextureIndex(chatterPlayerPed, exclusion.componentId) == texture - 1 then
+										goto continue
+									end
+								end
+							end
+						end
+					end
 					if chatterSources[i].player == ply then
 						idx = i
 						break

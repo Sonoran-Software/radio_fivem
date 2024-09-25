@@ -1,0 +1,72 @@
+[
+    {
+        "PropPosition": {
+            "x": 1691.8861083984376,
+            "y": 3582.573486328125,
+            "z": 39.11188888549805
+        },
+        "heading": 357.423439254781,
+        "Range": 40.0,
+        "Spawned": false,
+        "Id": "f063dc29-1f02-430d-a0d7-45f34261c114",
+        "Label": "Sandy Shores FD",
+        "Handle": 4537371,
+        "type": "speakerMediumWall"
+    },
+    {
+        "PropPosition": {
+            "x": 193.39004516601563,
+            "y": -1655.1846923828126,
+            "z": 32.66213226318359
+        },
+        "heading": 110.75390502929304,
+        "Range": 40.0,
+        "Spawned": false,
+        "Id": "5d61a184-b3ba-480b-9473-075495c833ad",
+        "Label": "Macdonald St ",
+        "Handle": 8489504,
+        "type": "speakerMediumWall"
+    },
+    {
+        "PropPosition": {
+            "x": 1193.7716064453126,
+            "y": -1463.73291015625,
+            "z": 37.68266296386719
+        },
+        "heading": 46.11469750976562,
+        "Range": 40.0,
+        "Spawned": false,
+        "Id": "abbd5c34-7afe-4146-86c8-70b8431be947",
+        "Label": "Capital Blvd ",
+        "Handle": 9378848,
+        "type": "speakerMediumWall"
+    },
+    {
+        "PropPosition": {
+            "x": -634.0253295898438,
+            "y": -116.65898132324219,
+            "z": 44.03133773803711
+        },
+        "heading": 230.60369091796049,
+        "Range": 50.0,
+        "Spawned": false,
+        "Id": "5fdb5586-80c8-4426-9beb-753ea674d31c",
+        "Label": "Rockford Dr ",
+        "Handle": 4008737,
+        "type": "speakerMediumWall"
+    },
+    {
+        "PropPosition": {
+            "x": -371.9297180175781,
+            "y": 6119.13134765625,
+            "z": 34.83037567138672
+        },
+        "heading": 543.9226927489888,
+        "Range": 40.0,
+        "Spawned": true,
+        "Id": "79901c52-67d7-4365-9781-625497565d17",
+        "Label": "Paleto Blvd ",
+        "Handle": 1625121,
+        "type": "speakerMediumWall"
+    }
+]

@@ -106,7 +106,6 @@ $(function () {
 			switch (event.data.key) {
 				case "maxrows":
 					maxrows = event.data.value;
-					console.log("Rows set to " + event.data.value);
 					refreshCall();
 					break;
 				default:
@@ -124,7 +123,15 @@ $(function () {
 				document.getElementById("hudDiv").style.width = event.data.newWidth;
 				document.getElementById("hudDiv").style.height = event.data.newHeight;
 			}
+		} else if (event.data.type == "setMiniRadioUIPosition") {
+			let x = event.data.x;
+			let y = event.data.y;
+			document.getElementById("hudDiv").style.left = x;
+			document.getElementById("hudDiv").style.top = y;
+			document.getElementById("hudFrame").style.left = x;
+			document.getElementById("hudFrame").style.top = y;
 		}
+
 	});
 	document.onkeyup = function (data) {
 		sendToParent({ type: "keyup", key: data.which, code: data.code });
@@ -176,12 +183,12 @@ function dragElement(elmnt, dragHandleId) {
         // stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
+		$.post("https://sonoranradio/SaveMiniRadioPos", JSON.stringify({ x: elmnt.style.left, y: elmnt.style.top }));
     }
 }
 
 window.addEventListener("message", function (event) {
 	if (event.data.type == "update_connected_users") {
-		console.log("Getting info from radio website", JSON.stringify(event.data));
 		$.post(
 			"https://sonoranradio/UpdateConnectedUsers",
 			JSON.stringify({

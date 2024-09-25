@@ -6,8 +6,11 @@ local QBCore = nil
 local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
+local tunnels = {}
 local critError = false
 jsonFileName = 'towers.DEFAULT.json'
+polyZoneFileName = 'tunnels.DEFAULT.json'
+speakersFileName = 'speakers.DEFAULT.json'
 
 if Config == nil then
 	critError = true
@@ -238,19 +241,39 @@ AddEventHandler('onResourceStart', function(resourceName)
 		return
 	end
 	local baseUrl = ""
-	if GetConvar('web_baseUrl', '') ~= '' then
-		baseUrl = GetConvar('web_baseUrl', '')
-	end
-	if baseUrl == "" then
-		errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL). Radio will be unable to receive push events. https://sonoran.link/radiocodes')
-	end
-	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
-		['pushUrl'] = baseUrl
-	}, 'SET-SERVER-IP', function(data, success)
-		if not success then
-			errorLog('Failed to set server IP for radio service. Please check your configuration.')
+	local waitTime = 15000
+	local retryCount = 0
+	Citizen.CreateThread(function()
+		while retryCount <= 5 do
+			Wait(waitTime)
+			if GetConvar('web_baseUrl', '') ~= '' then
+				baseUrl = GetConvar('web_baseUrl', '')
+			end
+			if baseUrl == "" then
+				retryCount = retryCount + 1
+				if retryCount >= 2 then
+					errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL) on attempt '.. tostring(retryCount) .. '. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
+					if retryCount >= 5 then
+						errorLog('ERR 101: Maximum retries reached. Please ensure your CFX Nucleus Proxy URL is set correctly. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
+						return
+					else
+						waitTime = waitTime * 2
+						print('[SonoranRadio] - Retrying in ' .. tostring(waitTime/1000) .. ' seconds...')
+					end
+				end
+			else
+				retryCount = 6
+				print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
+				exports['sonoranradio']:performApiRequest({
+					['id'] = Config.comId,
+					['key'] = Config.apiKey,
+					['pushUrl'] = 'https://'.. baseUrl .. '/sonoranradio/events'
+				}, 'SET-SERVER-IP', function(data, success)
+					if not success then
+						errorLog('Failed to set server IP for radio service. Please check your configuration.')
+					end
+				end)
+			end
 		end
 	end)
 	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
@@ -326,141 +349,85 @@ AddEventHandler('onResourceStart', function(resourceName)
 		print('!!! CRITICAL ERROR !!!')
 		return
 	end
+	local polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.json')
+	if not polyZoneFile then -- Request default if there was an issue getting the regular
+		polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.DEFAULT.json')
+		print('[SonoranRadio] - Using default tunnel locations - Please update your tunnels.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename tunnels.DEFAULT.json to tunnels.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/tunnels.json') then
+			print('[SonoranRadio] - Failed to rename tunnels.DEFAULT.json to tunnels.json')
+			polyZoneFileName = 'tunnels.DEFAULT.json'
+		else
+			print('[SonoranRadio] - Successfully renamed tunnels.DEFAULT.json to tunnels.json')
+			polyZoneFileName = 'tunnels.json'
+		end
+	else
+		polyZoneFileName = 'tunnels.json'
+	end
+	local polyZones = LoadResourceFile(GetCurrentResourceName(), polyZoneFileName)
+	local tnl = json.decode(polyZones)
+	for i = 1, #tnl do
+		local obj = {}
+		obj.points = tnl[i].points
+		obj.options = {
+			minZ = tnl[i].options.minZ,
+			maxZ = tnl[i].options.maxZ,
+			degradeStrength = tnl[i].options.degradeStrength,
+			name = tnl[i].options.name
+		}
+		table.insert(tunnels, obj)
+	end
+	local speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.json')
+	if not speakersFile then
+		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
+		print('[SonoranRadio] - Using default tunnel locations - Please update your speakers.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename speakers.DEFAULT.json to speakers.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
+			print('[SonoranRadio] - Failed to rename speakers.DEFAULT.json to speakers.json')
+			speakersFileName = 'speakers.DEFAULT.json'
+		else
+			print('[SonoranRadio] - Successfully renamed speakers.DEFAULT.json to speakers.json')
+			speakersFileName = 'speakers.json'
+		end
+	else
+		speakersFileName = 'speakers.json'
+	end
+	local spk = LoadResourceFile(GetCurrentResourceName(), speakersFileName)
+	local spkrs = json.decode(spk)
+	for i = 1, #spkrs do
+		local obj = {}
+		if spkrs[i].Id == nil then
+			obj.Id = uuid()
+		else
+			obj.Id = spkrs[i].Id
+		end
+		obj.PropPosition = vec3(spkrs[i].PropPosition.x, spkrs[i].PropPosition.y, spkrs[i].PropPosition.z)
+		obj.heading = spkrs[i].heading
+		obj.Range = spkrs[i].Range
+		obj.Id = spkrs[i].Id
+		obj.type = spkrs[i].type
+		obj.Label = spkrs[i].Label
+		table.insert(Speakers, obj)
+	end
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['id'] = speaker.Id
+		})
+	end
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
 end)
 
 exports('performApiRequest', performApiRequest)
---[[
-	Jordan - Radio Consolidation Update
-]]
-
--- RegisterCommand('removeRadioRepeater', function(source)
--- 	local playerCoords = GetEntityCoords(GetPlayerPed(source))
--- 	local closestTower = nil
--- 	local closestServerRack = nil
--- 	local closestCellRepeater = nil
--- 	for i = 1, #Towers do
--- 		local distBetweenSpawn = #(playerCoords - vec3(Towers[i].PropPosition))
--- 		if distBetweenSpawn <= 10.0 then
--- 			closestTower = Towers[i]
--- 			break
--- 		end
--- 	end
--- 	for i = 1, #Servers do
--- 		local distBetweenSpawn = #(playerCoords - vec3(Servers[i].PropPosition))
--- 		if distBetweenSpawn <= 10.0 then
--- 			closestServerRack = Servers[i]
--- 			break
--- 		end
--- 	end
--- 	for i = 1, #CellRepeaters do
--- 		local distBetweenSpawn = #(playerCoords - vec3(CellRepeaters[i].PropPosition))
--- 		if distBetweenSpawn <= 10.0 then
--- 			closestCellRepeater = CellRepeaters[i]
--- 			break
--- 		end
--- 	end
--- 	local closestDist = 10.0
--- 	local closestObj = nil
--- 	local closestType = nil
--- 	if closestTower ~= nil then
--- 		local towerCoords = vec3(closestTower.PropPosition)
--- 		local dist = #(playerCoords - towerCoords)
--- 		if dist < closestDist then
--- 			closestDist = dist
--- 			closestObj = closestTower
--- 			closestType = 'radioTower'
--- 		end
--- 	end
--- 	if closestServerRack ~= nil then
--- 		local serverRackCoords = vec3(closestServerRack.PropPosition)
--- 		local dist = #(playerCoords - serverRackCoords)
--- 		if dist < closestDist then
--- 			closestDist = dist
--- 			closestObj = closestServerRack
--- 			closestType = 'serverRack'
--- 		end
--- 	end
--- 	if closestCellRepeater ~= nil then
--- 		local cellRepeaterCoords = vec3(closestCellRepeater.PropPosition)
--- 		local dist = #(playerCoords - cellRepeaterCoords)
--- 		if dist < closestDist then
--- 			closestDist = dist
--- 			closestObj = closestCellRepeater
--- 			closestType = 'cellRepeater'
--- 		end
--- 	end
--- 	if closestObj ~= nil then
--- 		if closestType == 'radioTower' then
--- 			for i = 1, #Towers do
--- 				local towerIndex = Towers[i]
--- 				if towerIndex.Id == closestObj.Id then
--- 					table.remove(Towers, i)
--- 					TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
--- 					TriggerClientEvent('chat:addMessage', source, {
--- 						args = {
--- 							'[SonoranRadio] ^1Radio tower removed'
--- 						}
--- 					})
--- 					break
--- 				end
--- 			end
--- 		elseif closestType == 'serverRack' then
--- 			for i = 1, #Servers do
--- 				local towerIndex = Servers[i]
--- 				if towerIndex.Id == closestObj.Id then
--- 					table.remove(Servers, i)
--- 					TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
--- 					TriggerClientEvent('chat:addMessage', source, {
--- 						args = {
--- 							'[SonoranRadio] ^1Server rack removed'
--- 						}
--- 					})
--- 					break
--- 				end
--- 			end
--- 		elseif closestType == 'cellRepeater' then
--- 			for i = 1, #CellRepeaters do
--- 				local towerIndex = CellRepeaters[i]
--- 				if towerIndex.Id == closestObj.Id then
--- 					table.remove(CellRepeaters, i)
--- 					TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
--- 					TriggerClientEvent('chat:addMessage', source, {
--- 						args = {
--- 							'[SonoranRadio] ^1Cell repeater removed'
--- 						}
--- 					})
--- 					break
--- 				end
--- 			end
--- 		end
--- 		local saveData = {};
--- 		for _, t in ipairs(Towers) do
--- 			if not t.DontSaveMe then
--- 				table.insert(saveData, t)
--- 			end
--- 		end
--- 		for _, t in ipairs(Servers) do
--- 			if not t.DontSaveMe then
--- 				table.insert(saveData, t)
--- 			end
--- 		end
--- 		for _, t in ipairs(CellRepeaters) do
--- 			if not t.DontSaveMe then
--- 				table.insert(saveData, t)
--- 			end
--- 		end
--- 		local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
--- 		f:write(json.encode(saveData))
--- 		f:close()
--- 		print('ok')
--- 	else
--- 		TriggerClientEvent('chat:addMessage', source, {
--- 			args = {
--- 				'[SonoranRadio] ^1No radio tower, server rack, or cell repeater found.'
--- 			}
--- 		})
--- 	end
--- end)
 
 RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	local saveData = {};
@@ -482,7 +449,6 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
-	print('ok')
 	Towers = towers
 	Servers = racks
 	CellRepeaters = cell
@@ -491,9 +457,48 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
 end)
 
+RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
+	local saveData = {};
+	for _, t in ipairs(speakers) do
+		table.insert(saveData, t)
+	end
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
+	f:write(json.encode(saveData))
+	f:close()
+	Speakers = speakers
+	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
+end)
+
+
 RegisterCommand('radioMenu', function(source)
 		TriggerClientEvent('SonoranRadio::OpenRadioMenu', source)
 end, true)
+
+RegisterNetEvent('SonoranRadio:GetTunnels', function()
+	TriggerClientEvent('SonoranRadio:SyncTunnels', source, tunnels)
+end)
+
+RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
+	local obj = {}
+	obj.points = points
+	if type(minY) == 'string' then
+		minY = tonumber(minY)
+	end
+	if type(maxY) == 'string' then
+		maxY = tonumber(maxY)
+	end
+	obj.options = {
+		minZ = minY,
+		maxZ = maxY,
+		degradeStrength = degradeStrength,
+		name = name
+	}
+	table.insert(tunnels, obj)
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
+	f:write(json.encode(tunnels))
+	f:close()
+	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+end)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
 	if level == 'debug' then

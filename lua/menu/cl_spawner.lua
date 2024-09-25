@@ -7,6 +7,18 @@ local state = {
 	lastCoordUpdate = nil,
 	calculatedHeading = nil
 }
+
+local toneboardState = {
+	index = 1,
+	speakerId = nil,
+	moveSpeed = 0.05,
+	ogCoords = nil,
+	ogHeading = nil,
+	lastCoordUpdate = nil,
+	calculatedHeading = nil
+}
+
+local creatingZone = false
 local radioScaleform = nil
 
 CreateThread(function()
@@ -17,7 +29,7 @@ CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-	WarMenu.CreateMenu('sonoranRadioMenu', 'Radio Repeater Menu')
+	WarMenu.CreateMenu('sonoranRadioMenu', ' SonoranRadio Menu')
 	WarMenu.SetTitleColor('sonoranRadioMenu', 0, 0, 0, 255)
 	WarMenu.SetMenuTitleBackgroundSprite('sonoranRadioMenu', 'radio_menu_header', 'option_1')
 	WarMenu.SetSubTitle('sonoranRadioMenu', 'Sonoran Software')
@@ -27,6 +39,16 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
 	WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
+	WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('toneboardMenu', 'sonoranRadioMenu', 'Toneboard Speaker Menu')
+	WarMenu.SetMenuTitleBackgroundSprite('toneboardMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('toneboardSpawnMenu', 'toneboardMenu', 'Spawn Speaker')
+	WarMenu.SetMenuTitleBackgroundSprite('toneboardSpawnMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('toneboardMoveMenu', 'toneboardMenu', 'Move Speaker')
+	WarMenu.SetMenuTitleBackgroundSprite('toneboardMoveMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
+	WarMenu.SetMenuTitleBackgroundSprite('toneboardDeleteMenu', 'radio_menu_header', 'option_1')
 	while true do
 		if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 			if WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu') then
@@ -34,6 +56,10 @@ Citizen.CreateThread(function()
 			if WarMenu.MenuButton('Move Repeater', 'moveRadioMenu') then
 			end
 			if WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu') then
+			end
+			if WarMenu.MenuButton('Degradation Zones', 'degradeMenu') then
+			end
+			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
@@ -44,6 +70,21 @@ Citizen.CreateThread(function()
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('deleteRadioMenu') then
 			deletingRadioRepeater()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('degradeMenu') then
+			degradeMenu()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('toneboardMenu') then
+			toneboardMenu()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('toneboardSpawnMenu') then
+			toneboardSpawnMenu()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('toneboardMoveMenu') then
+			toneboardMoveMenu()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('toneboardDeleteMenu') then
+			toneboardDeleteMenu()
 			WarMenu.Display()
 		end
 		Wait(0)
@@ -676,7 +717,6 @@ RegisterNetEvent('menu:back', function(menu)
 			state.ogCoords = nil
 			state.lastCoordUpdate = nil
 			state.calculatedHeading = nil
-
 		end
 	elseif menu.id == 'sonoranRadioMenu' and state.repeaterId then
 		state.repeaterId = nil
@@ -685,5 +725,674 @@ RegisterNetEvent('menu:back', function(menu)
 		state.ogCoords = nil
 		state.lastCoordUpdate = nil
 		state.calculatedHeading = nil
+	elseif menu.id == 'degradeMenu' and creatingZone then
+		creatingZone = false
+		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
 	end
 end)
+
+local degradeStrength = 0.5
+local minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+local maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
+function setMinMax()
+	minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+	maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
+end
+
+function zInputFromPolyzone(min, max)
+	if min == nil or max == nil then
+		minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+		maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
+		return
+	end
+	minY = string.sub(tostring(min), 1, 5)
+	maxY = string.sub(tostring(max), 1, 5)
+end
+
+function degradeMenu()
+	if WarMenu.Button('Create Degradation Zone') then
+		setMinMax()
+		creatingZone = true
+		local pos = GetEntityCoords(PlayerPedId())
+		local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+		local street1 = GetStreetNameFromHashKey(s1)
+		local street2 = GetStreetNameFromHashKey(s2)
+		local streetLabel = street1
+		if street2 ~= nil then
+			streetLabel = streetLabel .. " " .. street2
+			streetLabel = string.sub(streetLabel, 1, 15) .. "..."
+		end
+		AddTextEntry('FMMC_MPM_NAA', 'Degradation Zone Name: (Default: Cross Streets) - Leave blank for default')
+		DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Degradation Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
+		while (UpdateOnscreenKeyboard() == 0) do
+			DisableAllControlActions(0);
+			Wait(0)
+		end
+		local zoneName = ''
+		if UpdateOnscreenKeyboard() == 2 then
+			zoneName = streetLabel
+		end
+		if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+			local input = GetOnscreenKeyboardResult()
+			if input == '' then
+				zoneName = streetLabel
+			else
+				zoneName = input
+			end
+		end
+		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+	end
+	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(degradeStrength), 5, tostring(degradeStrength))
+	if pressed then
+		if pressed then
+			if input == '' then
+				degradeStrength = 0.5
+			elseif tonumber(input) >= 1.0 then
+				degradeStrength = tonumber(input)
+			else
+				degradeStrength = 1.0
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Degradation strength must be between 0.0 and 1.0, defaulting to 1.0'
+					}
+				})
+			end
+		end
+	end
+	if WarMenu.Button('Add Point to Zone') then
+		TriggerEvent('SonoranRadio:PolyZone:pzadd')
+	end
+	if WarMenu.Button('Undo Last Point') then
+		TriggerEvent('SonoranRadio:PolyZone:pzundo')
+	end
+	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: ' .. minY .. ')', minY, 5, minY)
+	if minYPressed then
+		if minYInput == '' then
+			minY = 45.0
+		else
+			minY = tonumber(minYInput)
+		end
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+	end
+	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: ' .. maxY .. ')', maxY, 5, maxY)
+	if maxYPressed then
+		if maxYInput == '' then
+			maxY = 59.0
+		else
+			maxY = tonumber(maxYInput)
+		end
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+	end
+	if WarMenu.Button('Finish Zone Creation') then
+		creatingZone = false
+		TriggerEvent('SonoranRadio:PolyZone:pzfinish', degradeStrength, minY, maxY)
+	end
+	if WarMenu.Button('Cancel Zone Creation') then
+		creatingZone = false
+		TriggerEvent('SonoranRadio:PolyZone:pzcancel')
+	end
+end
+
+function toneboardSpawnMenu()
+	local toneboards = {
+		'Speaker (Small - Wall)',
+		'Speaker (Medium)',
+		'Speaker (Medium - Wall)',
+		'Speaker (Large)',
+		}
+	if WarMenu.ComboBox('Speaker Type:', toneboards, toneboardState.index, toneboardState.index, function(current)
+		toneboardState.index = current
+	end) then
+		local propName = toneboards[toneboardState.index];
+		if propName == 'Speaker (Small - Wall)' then
+			AddTextEntry('FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 40)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local range = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				range = 1500.0
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					range = 1500.0
+				else
+					range = tonumber(input)
+				end
+			end
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
+				local speakerData = {
+					Id = uuid(),
+					PropPosition = GetEntityCoords(PlayerPedId()),
+					heading = GetEntityHeading(PlayerPedId()),
+					type = 'speakerSmallWall',
+					Range = range,
+					Label = speakerLabel
+				}
+				toneboardState.speakerId = speakerData.Id
+				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
+				confirmSpeakerPlacement()
+				WarMenu.OpenMenu('toneboardMoveMenu')
+			else
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Invalid range or label. Range must be a number'
+					}
+				})
+			end
+		elseif propName == 'Speaker (Medium)' then
+			AddTextEntry('FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local range = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				range = 1500.0
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					range = 1500.0
+				else
+					range = tonumber(input)
+				end
+			end
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
+				local speakerData = {
+					Id = uuid(),
+					PropPosition = GetEntityCoords(PlayerPedId()),
+					heading = GetEntityHeading(PlayerPedId()),
+					type = 'speakerMedium',
+					Range = range,
+					Label = speakerLabel
+				}
+				toneboardState.speakerId = speakerData.Id
+				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
+				confirmSpeakerPlacement()
+				WarMenu.OpenMenu('toneboardMoveMenu')
+			else
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Invalid range or label. Range must be a number'
+					}
+				})
+			end
+		elseif propName == 'Speaker (Medium - Wall)' then
+			AddTextEntry('FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local range = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				range = 1500.0
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					range = 1500.0
+				else
+					range = tonumber(input)
+				end
+			end
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
+				local speakerData = {
+					Id = uuid(),
+					PropPosition = GetEntityCoords(PlayerPedId()),
+					heading = GetEntityHeading(PlayerPedId()),
+					type = 'speakerMediumWall',
+					Range = range,
+					Label = speakerLabel
+				}
+				toneboardState.speakerId = speakerData.Id
+				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
+				confirmSpeakerPlacement()
+				WarMenu.OpenMenu('toneboardMoveMenu')
+			else
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Invalid range or label. Range must be a number'
+					}
+				})
+			end
+		elseif propName == 'Speaker (Large)' then
+			AddTextEntry('FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Range: (Default: 40.0) - Leave blank for default', '40.0', '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local range = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				range = 1500.0
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					range = 1500.0
+				else
+					range = tonumber(input)
+				end
+			end
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Speaker Label: (Default: Cross Roads) - Leave blank for default', streetLabel, '', '', '', 40)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local speakerLabel = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				speakerLabel = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					speakerLabel = streetLabel
+				else
+					speakerLabel = input
+				end
+			end
+			if range and speakerLabel then
+				local speakerData = {
+					Id = uuid(),
+					PropPosition = GetEntityCoords(PlayerPedId()),
+					heading = GetEntityHeading(PlayerPedId()),
+					type = 'speakerLarge',
+					Range = range,
+					Label = speakerLabel
+				}
+				toneboardState.speakerId = speakerData.Id
+				TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
+				confirmSpeakerPlacement()
+				WarMenu.OpenMenu('toneboardMoveMenu')
+			else
+				TriggerEvent('chat:addMessage', {
+					color = {
+						255,
+						0,
+						0
+					},
+					multiline = true,
+					args = {
+						'Error',
+						'Invalid range or label. Range must be a number'
+					}
+				})
+			end
+		end
+	end
+end
+
+function confirmSpeakerPlacement()
+	toneboardState.speakerId = nil
+	toneboardState.index = 1
+	toneboardState.ogHeading = nil
+	toneboardState.ogCoords = nil
+	toneboardState.lastCoordUpdate = nil
+	toneboardState.calculatedHeading = false
+	TriggerServerEvent('SonoranRadio::MoveSpeaker', speakers)
+end
+
+function toneboardMoveMenu()
+	local speakersNew = {};
+	local speakersLabel = {};
+	for _, speaker in ipairs(speakers) do
+		table.insert(speakersLabel, string.sub(speaker.Id, 1, 10) .. '...')
+		table.insert(speakersNew, speaker.Id)
+	end
+	if WarMenu.ComboBox('Select Speaker:', speakersLabel, toneboardState.index, toneboardState.index, function(current)
+		toneboardState.index = current
+		toneboardState.speakerId = speakersNew[current]
+	end) then
+	end
+	if WarMenu.Button('Confirm Placement') then
+		confirmSpeakerPlacement()
+		WarMenu.OpenMenu('toneboardMenu')
+	end
+	local foundHandle = nil;
+	for _, speaker in ipairs(speakers) do
+		if speaker.Id == toneboardState.speakerId then
+			foundHandle = speaker
+			break
+		end
+	end
+	if foundHandle then
+		if toneboardState.speakerId ~= toneboardState.lastCoordUpdate then
+			toneboardState.ogCoords = foundHandle.PropPosition
+			toneboardState.ogHeading = foundHandle.heading or 0.0
+			toneboardState.lastCoordUpdate = toneboardState.speakerId
+		end
+		local pressed, input = WarMenu.InputButton('Speaker Range', 'Speaker Range (Default 40.0)', tostring(foundHandle.Range), 20, tostring(foundHandle.Range))
+		if pressed then
+			if input == '' then
+				foundHandle.Range = 40.0
+			else
+				foundHandle.Range = tonumber(input)
+			end
+			confirmRadioPlacement()
+		end
+		DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
+				false)
+		if IsControlPressed(0, 108) and GetLastInputMethod(0) then -- Movement Keys
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.x = array.x + toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+		elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.x = array.x - toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+
+		elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.y = array.y + toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+
+		elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.y = array.y - toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+
+		elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.z = array.z + toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+
+		elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
+			local array = {
+				x = foundHandle.PropPosition.x,
+				y = foundHandle.PropPosition.y,
+				z = foundHandle.PropPosition.z
+			}
+			array.z = array.z - toneboardState.moveSpeed
+			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+
+		elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
+			foundHandle.heading = foundHandle.heading + toneboardState.moveSpeed
+			if not toneboardState.calculatedHeading then
+				local calculatedHeading = foundHandle.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+				if calculatedHeading > 360.0 then
+					calculatedHeading = calculatedHeading - 360.0
+				end
+				foundHandle.heading = calculatedHeading
+				toneboardState.calculatedHeading = true
+			end
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+		elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
+			foundHandle.heading = foundHandle.heading - toneboardState.moveSpeed
+			if not toneboardState.calculatedHeading then
+				local calculatedHeading = foundHandle.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
+				if calculatedHeading > 360.0 then
+					calculatedHeading = calculatedHeading - 360.0
+				end
+				foundHandle.heading = calculatedHeading
+				toneboardState.calculatedHeading = true
+			end
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+			SetEntityHeading(foundHandle.Handle, foundHandle.heading)
+		elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
+			if toneboardState.moveSpeed < 2.0 then
+				toneboardState.moveSpeed = toneboardState.moveSpeed + 0.001
+			else
+				showNotification('Cannot Move Faster')
+			end
+		elseif IsControlJustReleased(0, 132) and GetLastInputMethod(0) then
+			if toneboardState.moveSpeed > 0.001 then
+				toneboardState.moveSpeed = toneboardState.moveSpeed - 0.001
+			else
+				showNotification('Cannot move slower')
+			end
+		end
+		BeginScaleformMovieMethod(radioScaleform, 'CLEAR_ALL')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(0)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 108))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 107))
+		PushScaleformMovieMethodParameterString('Move X')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(1)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 112))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
+		PushScaleformMovieMethodParameterString('Move Y')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(2)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
+		PushScaleformMovieMethodParameterString('Move Z')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(3)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 118))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 117))
+		PushScaleformMovieMethodParameterString('Rotate')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(6)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 21))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
+		PushScaleformMovieMethodParameterString('Change Speed')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
+		ScaleformMovieMethodAddParamInt(0)
+		EndScaleformMovieMethod()
+		DrawScaleformMovieFullscreen(radioScaleform, 255, 255, 255, 255, 0)
+	end
+end
+
+function toneboardDeleteMenu()
+	local speakersNew = {};
+	local speakersLabel = {};
+	for _, speaker in ipairs(speakers) do
+		table.insert(speakersLabel, string.sub(speaker.Id, 1, 10) .. '...')
+		table.insert(speakersNew, speaker.Id)
+	end
+	if WarMenu.ComboBox('Select Speaker:', speakersLabel, toneboardState.index, toneboardState.index, function(current)
+		toneboardState.index = current
+		toneboardState.speakerId = speakersNew[current]
+	end) then
+	end
+	local foundHandle = nil;
+	for _, speaker in ipairs(speakers) do
+		if speaker.Id == toneboardState.speakerId then
+			foundHandle = speaker
+			break
+		end
+	end
+	if foundHandle then
+		DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
+		           false)
+		if WarMenu.Button('Delete Speaker') then
+			DeleteEntity(foundHandle.Handle)
+			for k, speaker in ipairs(speakers) do
+				if speaker.Id == toneboardState.speakerId then
+					table.remove(speakers, k)
+				end
+			end
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Success',
+					'Speaker ' .. toneboardState.speakerId .. ' has been deleted.'
+				}
+			})
+			toneboardState.speakerId = nil
+			toneboardState.index = 1
+			toneboardState.lastCoordUpdate = nil
+			confirmSpeakerPlacement()
+			WarMenu.OpenMenu('toneboardMenu')
+		end
+	end
+end
+
+function toneboardMenu()
+	if WarMenu.Button('Spawn New Speaker') then
+		WarMenu.OpenMenu('toneboardSpawnMenu')
+	end
+	if WarMenu.Button('Move Speaker') then
+		WarMenu.OpenMenu('toneboardMoveMenu')
+	end
+	if WarMenu.Button('Delete Speaker') then
+		WarMenu.OpenMenu('toneboardDeleteMenu')
+	end
+end

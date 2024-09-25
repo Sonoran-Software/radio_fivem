@@ -19,16 +19,17 @@ Citizen.CreateThread(function()
     -- Set Default Module Sizes
     InitModuleSize("hud")
     InitModuleConfig("hud")
+    InitModulePos("hud")
     -- Disable Controls Loop
-    while true do
-        if nuiFocused then -- Disable controls while NUI is focused.
-            DisableControlAction(0, 1, nuiFocused) -- LookLeftRight
-            DisableControlAction(0, 2, nuiFocused) -- LookUpDown
-            DisableControlAction(0, 142, nuiFocused) -- MeleeAttackAlternate
-            DisableControlAction(0, 106, nuiFocused) -- VehicleMouseControlOverride
-        end
-        Citizen.Wait(0) -- Yield until next frame.
-    end
+    -- while true do
+    --     if nuiFocused then -- Disable controls while NUI is focused.
+    --         DisableControlAction(0, 1, nuiFocused) -- LookLeftRight
+    --         DisableControlAction(0, 2, nuiFocused) -- LookUpDown
+    --         DisableControlAction(0, 142, nuiFocused) -- MeleeAttackAlternate
+    --         DisableControlAction(0, 106, nuiFocused) -- VehicleMouseControlOverride
+    --     end
+    --     Citizen.Wait(0) -- Yield until next frame.
+    -- end
 end)
 
 function InitModuleSize(module)
@@ -90,6 +91,29 @@ function RefreshModule(module)
     SendNUIMessage({type = "refresh", module = module, miniradio = true})
 end
 
+function InitModulePos(module)
+    local moduleX = GetResourceKvpString(module .. "x")
+    local moduleY = GetResourceKvpString(module .. "y")
+    if moduleX ~= nil and moduleY ~= nil then
+        DebugMessage("retrieving saved presets", module)
+        SetModulePos(module, moduleX, moduleY)
+    end
+end
+
+function SetModulePos(module, x, y)
+    DebugMessage(("MODULE %s POS %s - %s"):format(module, x, y))
+    SendNUIMessage({
+        type = "setMiniRadioUIPosition",
+        module = module,
+        x = x,
+        y = y,
+        miniradio = true
+    })
+    DebugMessage("saving module pos to kvp")
+    SetResourceKvp(module .. "x", x)
+    SetResourceKvp(module .. "y", y)
+end
+
 -- Display a Module
 function DisplayModule(module, show)
     DebugMessage("sending display message to nui " .. tostring(show), module)
@@ -128,6 +152,8 @@ function openradiousers()
     end
 end
 
+RegisterNUICallback('ShowHelp', function(data, cb) ShowHelpMessage() end)
+
 function ShowHelpMessage()
     PrintChatMessage(
         "• Use /radiousers to toggle the Mini Radio open and closed\n• Open your radio to enable moving the Mini Radio\n• Use /radiouserssize [width] [height]\n• Use /radiousersrefresh to refresh the Mini Radio\n• Use /radiousersrows [rows] to set the number of users shown on the Mini Radio.")
@@ -149,6 +175,12 @@ RegisterCommand("radiousers", function(source, args, rawCommand)
     end
     setActiveUsers(activeChannels)
     openradiousers()
+    print('setting radio pos to ', GetResourceKvpString('miniradioui_pos_dic'))
+    SendNUIMessage({
+        type = 'setMiniRadioUIPosition',
+        data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}'),
+        miniradio = true
+    })
 end)
 RegisterKeyMapping('radiousers', 'Toggle Radio Users', 'keyboard', '')
 TriggerEvent('chat:addSuggestion', '/radiousers', "Toggle the Mini-Radio panel.", {})
@@ -236,3 +268,7 @@ function handleHome()
     activeChannels = {}
     setActiveUsers(activeChannels)
 end
+
+RegisterNUICallback('SaveMiniRadioPos', function(data)
+    SetModulePos("hud", data.x, data.y)
+end)

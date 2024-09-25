@@ -145,8 +145,24 @@ AddEventHandler('RadioRacks:clientRackSync', function()
 	while #Servers == 0 do
 		Wait(10)
 	end
+	local sonoradData = {}
 	TriggerClientEvent('RadioRacks:SyncRacks', source, Servers)
-	TriggerEvent('SonoranCAD::sonrad:SyncRacks', Servers)
+	for _, t in ipairs(CellRepeaters) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+	for _, t in ipairs(Servers) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+	for _, t in ipairs(Towers) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+	TriggerEvent('SonoranCAD::sonrad:SyncTowers', sonoradData)
 end)
 
 local DestroyRequests = {}

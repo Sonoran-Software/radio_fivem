@@ -19,14 +19,14 @@ function LoadModelSync(model)
 	end
 end
 
-local function GetCellRepeaterFromId(id)
+function GetCellRepeaterFromId(id)
 	for i = 1, #CellRepeaters do
 		if CellRepeaters[i].Id == id then
 			return CellRepeaters[i]
 		end
 	end
 end
-local function GetCellRepeaterCoords(cellRepeater)
+function GetCellRepeaterCoords(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		return GetOffsetFromEntityInWorldCoords(cellRepeater.Handle, 0.0, 0.0, 1.0)
 	else
@@ -34,7 +34,7 @@ local function GetCellRepeaterCoords(cellRepeater)
 	end
 end
 -- returns a value from 0-1 representing the percentage of active dishes
-local function GetCellRepeaterCapacity(cellRepeater)
+function GetCellRepeaterCapacity(cellRepeater)
 	local n = 0.0
 	if cellRepeater.AntennaStatus == 'alive' then
 		n = 1.0
@@ -42,7 +42,7 @@ local function GetCellRepeaterCapacity(cellRepeater)
 	return n
 end
 
-local function AddCellRepeaterRange(t)
+function AddCellRepeaterRange(t)
 	if not Config.debug then
 		return
 	end
@@ -53,7 +53,7 @@ local function AddCellRepeaterRange(t)
 end
 
 -- fully creates a cellRepeater based on the given cellRepeater object
-local function CreateCellRepeater(cellRepeater)
+function CreateCellRepeater(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		DeleteEntity(cellRepeater.Handle)
 	end
@@ -73,7 +73,7 @@ local function CreateCellRepeater(cellRepeater)
 	cellRepeater.Spawned = true
 end
 -- delete the physical cellRepeater entities
-local function DestroyCellRepeater(cellRepeater)
+function DestroyCellRepeater(cellRepeater)
 	if DoesEntityExist(cellRepeater.Handle) then
 		DeleteEntity(cellRepeater.Handle)
 	end
@@ -122,7 +122,7 @@ AddEventHandler('CellRepeater:SpawnCell', function(cellRepeater)
 	DebugPrint('new cellRepeater spawned', cellRepeater.Id)
 end)
 
-local function SyncAntennaStatus(antenna, playSound)
+function SyncAntennaStatus(antenna, playSound)
 	local antennaHandle = antenna.Handle
 	local dead = IsEntityDead(antennaHandle)
 
@@ -162,67 +162,67 @@ CreateThread(function()
 		Wait(50)
 	end
 	DecorRegister('sonrad_cellRepeater', 3)
-	while true do
-		bestCellRepeaterQuality = 0.0
-		local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		for i = 1, #CellRepeaters do
-			local cellRepeater = CellRepeaters[i]
-			if not cellRepeater then
-				goto continue
-			end
-			local d = #(GetCellRepeaterCoords(cellRepeater) - pCoords)
-			-- if the player is within range (750m), then spawn a physical cellRepeater
-			local physical = not Config.noPhysicalCellRepeaters and not cellRepeater.NotPhysical
-			if d < 750.0 and not cellRepeater.Spawned and physical then
-				CreateCellRepeater(cellRepeater)
-				DebugPrint(('spawn physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
-			elseif d >= 750.0 and cellRepeater.Spawned then
-				DestroyCellRepeater(cellRepeater)
-				DebugPrint(('destroy physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
-			end
+	-- while true do
+	-- 	bestCellRepeaterQuality = 0.0
+	-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
+	-- 	for i = 1, #CellRepeaters do
+	-- 		local cellRepeater = CellRepeaters[i]
+	-- 		if not cellRepeater then
+	-- 			goto continue
+	-- 		end
+	-- 		local d = #(GetCellRepeaterCoords(cellRepeater) - pCoords)
+	-- 		-- if the player is within range (750m), then spawn a physical cellRepeater
+	-- 		local physical = not Config.noPhysicalCellRepeaters and not cellRepeater.NotPhysical
+	-- 		if d < 750.0 and not cellRepeater.Spawned and physical then
+	-- 			CreateCellRepeater(cellRepeater)
+	-- 			DebugPrint(('spawn physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
+	-- 		elseif d >= 750.0 and cellRepeater.Spawned then
+	-- 			DestroyCellRepeater(cellRepeater)
+	-- 			DebugPrint(('destroy physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
+	-- 		end
 
-			-- recreate the cellRepeater completely if anything is missing
-			-- NOTE: not including the ladder, as it will be omitted on certain conditions
-			local recreate = cellRepeater.Spawned and not DoesEntityExist(cellRepeater.Handle)
-			local n = cellRepeater.Dishes and #cellRepeater.Dishes or 0
-			for j = 1, n do
-				if not recreate then
-					recreate = not DoesEntityExist(cellRepeater.Dishes[j])
-				end
-			end
-			if recreate then
-				DebugPrint(('cellRepeater:%s component missing, recreating'):format(cellRepeater.Id))
-				-- CreateCellRepeater will automatically delete old entities
-				CreateCellRepeater(cellRepeater)
-			end
+	-- 		-- recreate the cellRepeater completely if anything is missing
+	-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
+	-- 		local recreate = cellRepeater.Spawned and not DoesEntityExist(cellRepeater.Handle)
+	-- 		local n = cellRepeater.Dishes and #cellRepeater.Dishes or 0
+	-- 		for j = 1, n do
+	-- 			if not recreate then
+	-- 				recreate = not DoesEntityExist(cellRepeater.Dishes[j])
+	-- 			end
+	-- 		end
+	-- 		if recreate then
+	-- 			DebugPrint(('cellRepeater:%s component missing, recreating'):format(cellRepeater.Id))
+	-- 			-- CreateCellRepeater will automatically delete old entities
+	-- 			CreateCellRepeater(cellRepeater)
+	-- 		end
 
-			-- if cellRepeater is out of range, then just ignore it
-			if d > cellRepeater.Range then
-				goto continue
-			end
-			local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
-			if bestCellRepeaterQuality < tQuality then
-				bestCellRepeaterQuality = tQuality
-			end
-			::continue::
-		end
+	-- 		-- if cellRepeater is out of range, then just ignore it
+	-- 		if d > cellRepeater.Range then
+	-- 			goto continue
+	-- 		end
+	-- 		local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
+	-- 		if bestCellRepeaterQuality < tQuality then
+	-- 			bestCellRepeaterQuality = tQuality
+	-- 		end
+	-- 		::continue::
+	-- 	end
 
-		if bestCellRepeaterQuality == 0.0 then
-			DebugPrint('closest cell repeater out of range')
-		else
-			DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
-		end
-		-- SendNUIMessage({
-		-- 	type = 'setTowerQuality',
-		-- 	state = {
-		-- 		tower_quality = quality
-		-- 	}
-		-- })
-		Wait(3000)
-	end
+	-- 	if bestCellRepeaterQuality == 0.0 then
+	-- 		DebugPrint('closest cell repeater out of range')
+	-- 	else
+	-- 		DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
+	-- 	end
+	-- 	-- SendNUIMessage({
+	-- 	-- 	type = 'setTowerQuality',
+	-- 	-- 	state = {
+	-- 	-- 		tower_quality = quality
+	-- 	-- 	}
+	-- 	-- })
+	-- 	Wait(3000)
+	-- end
 end)
 
-local function RepairCellRepeater(cellRepeater)
+function RepairCellRepeater(cellRepeater)
 	if rightToRepair then
 		local ped = GetPlayerPed(-1)
 		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_WELDING', 0, true)
@@ -255,6 +255,7 @@ local function RepairCellRepeater(cellRepeater)
 	end
 end
 
+-- Variable Thread, cannot be consolidated
 CreateThread(function()
 	while true do
 		-- get the closest (spawned) cellRepeater
@@ -290,35 +291,35 @@ CreateThread(function()
 	end
 end)
 
-CreateThread(function()
-	while true do
-		for i = 1, #CellRepeaters do
-			local cellRepeater = CellRepeaters[i]
-			if cellRepeater then
-				local e = cellRepeater.Handle
-				if DecorGetInt(e, 'sonrad_cellRepeater') ~= 1 then
-					goto continue
-				end
-				if not IsEntityDead(e) then
-					-- make sure it doesn't explode from gunshots
-					SetVehiclePetrolTankHealth(e, 1000.0)
-				end
+-- CreateThread(function()
+-- 	while true do
+-- 		for i = 1, #CellRepeaters do
+-- 			local cellRepeater = CellRepeaters[i]
+-- 			if cellRepeater then
+-- 				local e = cellRepeater.Handle
+-- 				if DecorGetInt(e, 'sonrad_cellRepeater') ~= 1 then
+-- 					goto continue
+-- 				end
+-- 				if not IsEntityDead(e) then
+-- 					-- make sure it doesn't explode from gunshots
+-- 					SetVehiclePetrolTankHealth(e, 1000.0)
+-- 				end
 
-				local health = GetVehicleBodyHealth(e)
-				if health > 500.0 then
-					goto continue
-				end
+-- 				local health = GetVehicleBodyHealth(e)
+-- 				if health > 500.0 then
+-- 					goto continue
+-- 				end
 
-				-- here we kill the dish
-				DecorSetInt(e, 'sonrad_cellRepeater', 0)
-				DebugPrint('sending dish destroyed server event')
-				TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
-				::continue::
-			end
-		end
-		Wait(250)
-	end
-end)
+-- 				-- here we kill the dish
+-- 				DecorSetInt(e, 'sonrad_cellRepeater', 0)
+-- 				DebugPrint('sending dish destroyed server event')
+-- 				TriggerServerEvent('CellRepeater:KillAntenna', cellRepeater.Id)
+-- 				::continue::
+-- 			end
+-- 		end
+-- 		Wait(250)
+-- 	end
+-- end)
 
 -- cleanup CellRepeaters on stop
 AddEventHandler('onResourceStop', function(resource)
