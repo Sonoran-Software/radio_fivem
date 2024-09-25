@@ -152,6 +152,8 @@ function openradiousers()
     end
 end
 
+RegisterNUICallback('ShowHelp', function(data, cb) ShowHelpMessage() end)
+
 function ShowHelpMessage()
     PrintChatMessage(
         "• Use /radiousers to toggle the Mini Radio open and closed\n• Open your radio to enable moving the Mini Radio\n• Use /radiouserssize [width] [height]\n• Use /radiousersrefresh to refresh the Mini Radio\n• Use /radiousersrows [rows] to set the number of users shown on the Mini Radio.")
