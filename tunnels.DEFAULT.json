@@ -2,7 +2,7 @@
     {
         "options": {
             "maxZ": 55.0,
-            "degradeStrength": 0.5,
+            "degradeStrength": 0.2,
             "name": "Braddock Pass",
             "minZ": 45.0
         },
