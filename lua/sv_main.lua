@@ -481,10 +481,10 @@ end)
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
 	local obj = {}
 	obj.points = points
-	if typeof (minY) == 'string' then
+	if type(minY) == 'string' then
 		minY = tonumber(minY)
 	end
-	if typeof (maxY) == 'string' then
+	if type(maxY) == 'string' then
 		maxY = tonumber(maxY)
 	end
 	obj.options = {
