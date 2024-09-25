@@ -770,7 +770,7 @@ function degradeMenu()
 			end
 		end
 		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
-		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', minY, maxY)
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
 	end
 	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(degradeStrength), 5, tostring(degradeStrength))
 	if pressed then
@@ -795,7 +795,7 @@ function degradeMenu()
 		else
 			minY = tonumber(minYInput)
 		end
-		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', minY, maxY)
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
 	end
 	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: ' .. maxY .. ')', maxY, 5, maxY)
 	if maxYPressed then
@@ -804,7 +804,7 @@ function degradeMenu()
 		else
 			maxY = tonumber(maxYInput)
 		end
-		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', minY, maxY)
+		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
 	end
 	if WarMenu.Button('Finish Zone Creation') then
 		creatingZone = false
