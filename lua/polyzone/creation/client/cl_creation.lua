@@ -8,7 +8,8 @@ RegisterNetEvent('SonoranRadio:PolyZone:UpdateZ', function(minZ, maxZ)
   if createdZone == nil then
     return
   end
-  handleZInput(minZ, maxZ)
+  createdZone.minZ = minZ
+  createdZone.maxZ = maxZ
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
@@ -192,20 +193,20 @@ function drawInstructions()
     PushScaleformMovieMethodParameterString('Rotate Y +')
     EndScaleformMovieMethod()
 
+    -- BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    -- ScaleformMovieMethodAddParamInt(4)
+    -- PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
+    -- PushScaleformMovieMethodParameterString('Z -')
+    -- EndScaleformMovieMethod()
+
+    -- BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    -- ScaleformMovieMethodAddParamInt(5)
+    -- PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
+    -- PushScaleformMovieMethodParameterString('Z +')
+    -- EndScaleformMovieMethod()
+
     BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
     ScaleformMovieMethodAddParamInt(4)
-    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
-    PushScaleformMovieMethodParameterString('Z -')
-    EndScaleformMovieMethod()
-
-    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    ScaleformMovieMethodAddParamInt(5)
-    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
-    PushScaleformMovieMethodParameterString('Z +')
-    EndScaleformMovieMethod()
-
-    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    ScaleformMovieMethodAddParamInt(6)
     PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
     PushScaleformMovieMethodParameterString('Slow Movement')
     EndScaleformMovieMethod()

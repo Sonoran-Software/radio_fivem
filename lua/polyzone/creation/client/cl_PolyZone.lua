@@ -6,24 +6,24 @@ local function handleInput(center)
   return center
 end
 
-local function handleZInput(minZ, maxZ)
-  maxZ = maxZ
-  minZ = minZ
-  delta = 0.05
+-- function handleZInput(minZ, maxZ)
+--   maxZ = maxZ
+--   minZ = minZ
+--   delta = 0.05
 
-  if IsDisabledControlPressed(0, 36) then -- ctrl held down
-    delta = 0.01
-  end
-  if IsDisabledControlPressed(0, 314) then -- NumPad +
-    minZ = minZ + delta
-    return minZ + delta, maxZ
-  end
-  if IsDisabledControlPressed(0, 315) then -- NumPad -
-    maxZ = maxZ - delta
-    return minZ, maxZ - delta
-  end
-  return minZ, maxZ
-end
+--   if IsDisabledControlPressed(0, 36) then -- ctrl held down
+--     delta = 0.01
+--   end
+--   if IsDisabledControlPressed(0, 314) then -- NumPad +
+--     minZ = minZ + delta
+--     return minZ + delta, maxZ
+--   end
+--   if IsDisabledControlPressed(0, 315) then -- NumPad -
+--     maxZ = maxZ - delta
+--     return minZ, maxZ - delta
+--   end
+--   return minZ, maxZ
+-- end
 
 function polyStart(name)
   local coords = GetEntityCoords(PlayerPedId())
@@ -35,7 +35,7 @@ function polyStart(name)
       lastPoint = createdZone.points[#createdZone.points]
       lastPoint = vector3(lastPoint.x, lastPoint.y, 0.0)
       lastPoint = handleInput(lastPoint)
-      createdZone.minZ, createdZone.maxZ = handleZInput(createdZone.minZ, createdZone.maxZ)
+      -- createdZone.minZ, createdZone.maxZ = handleZInput(createdZone.minZ, createdZone.maxZ)
       createdZone.points[#createdZone.points] = lastPoint.xy
       Wait(0)
     end
