@@ -241,20 +241,38 @@ AddEventHandler('onResourceStart', function(resourceName)
 		return
 	end
 	local baseUrl = ""
-	if GetConvar('web_baseUrl', '') ~= '' then
-		baseUrl = GetConvar('web_baseUrl', '')
-	end
-	if baseUrl == "" then
-		errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL). Radio will be unable to receive push events. https://sonoran.link/radiocodes')
-	end
-	print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
-	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
-		['pushUrl'] = 'https://'.. baseUrl .. '/sonoranradio/events'
-	}, 'SET-SERVER-IP', function(data, success)
-		if not success then
-			errorLog('Failed to set server IP for radio service. Please check your configuration.')
+	local waitTime = 15000
+	local retryCount = 0
+	Citizen.CreateThread(function()
+		while retryCount <= 5 do
+			Wait(waitTime)
+			if GetConvar('web_baseUrl', '') ~= '' then
+				baseUrl = GetConvar('web_baseUrl', '')
+			end
+			if baseUrl == "" then
+				retryCount = retryCount + 1
+				if retryCount >= 2 then
+					errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL) on attempt '.. tostring(retryCount) .. '. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
+					if retryCount >= 5 then
+						errorLog('ERR 101: Maximum retries reached. Please ensure your CFX Nucleus Proxy URL is set correctly. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
+						return
+					else
+						waitTime = waitTime * 2
+						print('[SonoranRadio] - Retrying in ' .. tostring(waitTime/1000) .. ' seconds...')
+					end
+				end
+			else
+				print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
+				exports['sonoranradio']:performApiRequest({
+					['id'] = Config.comId,
+					['key'] = Config.apiKey,
+					['pushUrl'] = 'https://'.. baseUrl .. '/sonoranradio/events'
+				}, 'SET-SERVER-IP', function(data, success)
+					if not success then
+						errorLog('Failed to set server IP for radio service. Please check your configuration.')
+					end
+				end)
+			end
 		end
 	end)
 	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
