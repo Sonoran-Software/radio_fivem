@@ -15,9 +15,7 @@ local function handleZInput(minZ, maxZ)
   if IsDisabledControlPressed(0, 314) then -- NumPad +
     return minZ + delta, maxZ
   end
-
   if IsDisabledControlPressed(0, 315) then -- NumPad -
-    local newCenter =  PolyZone.rotate(center.xy, vector2(center.x + delta, center.y), heading)
     return minZ, maxZ - delta
   end
 end

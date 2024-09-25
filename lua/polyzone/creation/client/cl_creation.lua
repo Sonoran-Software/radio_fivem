@@ -8,8 +8,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:UpdateZ', function(minZ, maxZ)
   if createdZone == nil then
     return
   end
-  createdZone.minZ = minZ
-  createdZone.maxZ = maxZ
+  handleZInput(minZ, maxZ)
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
