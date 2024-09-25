@@ -1,4 +1,5 @@
-local minZ, maxZ = nil, nil
+local minZ = GetEntityCoords(PlayerPedId()).z - 1.0
+local maxZ = GetEntityCoords(PlayerPedId()).z + 10.0
 
 local function handleInput(center)
   local rot = GetGameplayCamRot(2)
@@ -31,6 +32,8 @@ end
 
 function polyStart(name)
   local coords = GetEntityCoords(PlayerPedId())
+  minZ = coords.z - 1.0
+  maxZ = coords.z + 10.0
   createdZone = PolyZone:Create({vector2(coords.x, coords.y)}, {name = tostring(name), useGrid=true})
   Citizen.CreateThread(function()
     while createdZone do
@@ -39,7 +42,7 @@ function polyStart(name)
       lastPoint = createdZone.points[#createdZone.points]
       lastPoint = vector3(lastPoint.x, lastPoint.y, 0.0)
       lastPoint = handleInput(lastPoint)
-      createdZone.minZ, createdZone.maxZ = handleZInput(createdZone.minZ, createdZone.maxZ)
+      createdZone.minZ, createdZone.maxZ = handleZInput(minZ, maxZ)
       createdZone.points[#createdZone.points] = lastPoint.xy
       Wait(0)
     end

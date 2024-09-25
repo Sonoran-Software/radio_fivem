@@ -740,8 +740,13 @@ function setMinMax()
 end
 
 function zInputFromPolyzone(min, max)
-	minY = min
-	maxY = max
+	if min == nil or max == nil then
+		minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+		maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
+		return
+	end
+	minY = string.sub(tostring(min), 1, 5)
+	maxY = string.sub(tostring(max), 1, 5)
 end
 
 function degradeMenu()
