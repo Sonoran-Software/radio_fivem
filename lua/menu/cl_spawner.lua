@@ -749,6 +749,7 @@ function degradeMenu()
 		local streetLabel = street1
 		if street2 ~= nil then
 			streetLabel = streetLabel .. " " .. street2
+			streetLabel = string.sub(streetLabel, 1, 15) .. "..."
 		end
 		AddTextEntry('FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default')
 		DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Degredation Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
