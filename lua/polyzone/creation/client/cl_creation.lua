@@ -13,7 +13,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:UpdateZ', function(minZ, maxZ)
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
-AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args, minZ, maxZ)
+AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args)
   if createdZone ~= nil then
     TriggerEvent('chat:addMessage', {
       color = { 255, 0, 0},
@@ -25,8 +25,6 @@ AddEventHandler("SonoranRadio:PolyZone:pzcreate", function(zoneType, name, args,
 
   if zoneType == 'poly' then
     polyStart(name)
-    createdZone.minZ = minZ
-    createdZone.maxZ = maxZ
   elseif zoneType == "circle" then
     local radius = nil
     if #args >= 3 then radius = tonumber(args[3])
