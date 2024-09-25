@@ -732,11 +732,11 @@ RegisterNetEvent('menu:back', function(menu)
 end)
 
 local degradeStrength = 0.5
-local minY = GetEntityCoords(PlayerPedId()).z - 1
-local maxY = GetEntityCoords(PlayerPedId()).z + 10
+local minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+local maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
 function setMinMax()
-	minY = GetEntityCoords(PlayerPedId()).z - 1
-	maxY = GetEntityCoords(PlayerPedId()).z + 10
+	minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
+	maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
 end
 function degradeMenu()
 	if WarMenu.Button('Create Degredation Zone') then
@@ -788,7 +788,7 @@ function degradeMenu()
 	if WarMenu.Button('Undo Last Point') then
 		TriggerEvent('SonoranRadio:PolyZone:pzundo')
 	end
-	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: ' .. minY .. ')', tostring(minY), 5, tostring(minY))
+	local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: ' .. minY .. ')', minY, 5, minY)
 	if minYPressed then
 		if minYInput == '' then
 			minY = 45.0
@@ -797,7 +797,7 @@ function degradeMenu()
 		end
 		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', minY, maxY)
 	end
-	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: ' .. maxY .. ')', tostring(maxY), 5, tostring(maxY))
+	local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: ' .. maxY .. ')', maxY, 5, maxY)
 	if maxYPressed then
 		if maxYInput == '' then
 			maxY = 59.0
