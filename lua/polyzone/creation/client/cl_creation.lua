@@ -8,8 +8,9 @@ RegisterNetEvent('SonoranRadio:PolyZone:UpdateZ', function(minZ, maxZ)
   if createdZone == nil then
     return
   end
-  createdZone.minZ = minZ
-  createdZone.maxZ = maxZ
+  -- createdZone.minZ = minZ
+  -- createdZone.maxZ = maxZ
+  handleZInput(minZ, maxZ)
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzcreate")
@@ -193,20 +194,31 @@ function drawInstructions()
     PushScaleformMovieMethodParameterString('Rotate Y +')
     EndScaleformMovieMethod()
 
-    -- BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    -- ScaleformMovieMethodAddParamInt(4)
-    -- PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
-    -- PushScaleformMovieMethodParameterString('Z -')
-    -- EndScaleformMovieMethod()
-
-    -- BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
-    -- ScaleformMovieMethodAddParamInt(5)
-    -- PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
-    -- PushScaleformMovieMethodParameterString('Z +')
-    -- EndScaleformMovieMethod()
-
     BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
     ScaleformMovieMethodAddParamInt(4)
+    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 10))
+    PushScaleformMovieMethodParameterString('Max Z +')
+    EndScaleformMovieMethod()
+
+    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    ScaleformMovieMethodAddParamInt(5)
+    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 11))
+    PushScaleformMovieMethodParameterString('Max Z -')
+    EndScaleformMovieMethod()
+
+    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    ScaleformMovieMethodAddParamInt(6)
+    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 121))
+    PushScaleformMovieMethodParameterString('Min Z +')
+    EndScaleformMovieMethod()
+
+    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    ScaleformMovieMethodAddParamInt(7)
+    PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 178))
+    PushScaleformMovieMethodParameterString('Min Z -')
+
+    BeginScaleformMovieMethod(degradeZoneScaleform, 'SET_DATA_SLOT')
+    ScaleformMovieMethodAddParamInt(8)
     PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
     PushScaleformMovieMethodParameterString('Slow Movement')
     EndScaleformMovieMethod()

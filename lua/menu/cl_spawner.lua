@@ -738,6 +738,12 @@ function setMinMax()
 	minY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z - 1), 1, 5)
 	maxY = string.sub(tostring(GetEntityCoords(PlayerPedId()).z + 10), 1, 5)
 end
+
+function zInputFromPolyzone(min, max)
+	minY = min
+	maxY = max
+end
+
 function degradeMenu()
 	if WarMenu.Button('Create Degradation Zone') then
 		setMinMax()

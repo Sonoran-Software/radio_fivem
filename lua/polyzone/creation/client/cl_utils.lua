@@ -68,8 +68,10 @@ function disableControlKeyInput()
       DisableControlAction(0, 110, true)  -- NumPad 5
       DisableControlAction(0, 107, true)  -- NumPad 6
       DisableControlAction(0, 108, true)  -- NumPad 4
-      -- DisableControlAction(0, 314, true)  -- NumPad +
-      -- DisableControlAction(0, 315, true)  -- NumPad -
+      DisableControlAction(0, 10, true)  -- Page Ip
+      DisableControlAction(0, 11, true)  -- Page Down
+      DisableControlAction(0, 121, true)  -- Insert
+      DisableControlAction(0, 178, true)  -- Delete
       Wait(0)
     end
   end)
