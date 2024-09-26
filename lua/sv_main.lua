@@ -382,7 +382,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
 		print('[SonoranRadio] - Using default tunnel locations - Please update your speakers.json file name to prevent this message from appearing.')
 		print('[SonoranRadio] - Attempting to rename speakers.DEFAULT.json to speakers.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
+		if not CopyFile(GetResourcePath(resourceName) .. '/speakers.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
 			print('[SonoranRadio] - Failed to rename speakers.DEFAULT.json to speakers.json')
 			speakersFileName = 'speakers.DEFAULT.json'
 		else
