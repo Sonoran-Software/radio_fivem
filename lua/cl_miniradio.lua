@@ -206,7 +206,7 @@ local function findChannel(channelName)
     return nil
 end
 
-RegisterNUICallback('UpdateConnectedUsers', function(users)
+RegisterNUICallback('UpdateConnectedUsers', function(users, cb)
     activeChannels = {}
     for _, user in ipairs(users.users) do
         local channelIndex = findChannel(user.channelName)
@@ -223,6 +223,7 @@ RegisterNUICallback('UpdateConnectedUsers', function(users)
         end
     end
     setActiveUsers(activeChannels)
+    cb('OK')
 end)
 
 function handleRadioPower(powerState)

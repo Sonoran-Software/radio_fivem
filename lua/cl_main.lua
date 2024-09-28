@@ -60,7 +60,6 @@ end)
 RegisterNetEvent('SonoranCAD::sonrad:UpdateCurrentCall')
 AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
 	local dispatch = call and call.dispatch or nil
-	DebugPrint(json.encode(dispatch))
 	SendNUIMessage({
 		type = 'callUpdate',
 		call = dispatch

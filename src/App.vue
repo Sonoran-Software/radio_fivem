@@ -373,7 +373,6 @@ export default {
             }
 
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
-            console.log(type, e.code, this.pttKeyName, matchesPtt);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
@@ -509,7 +508,11 @@ export default {
                         this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
+                    this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({type: 'talking', talking: event.micOpen});
+                    break;
+                case 'peer_talk_status':
+                    this.$store.commit('setPeerTalkStatus', event.peer);
                     break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');
