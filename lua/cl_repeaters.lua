@@ -53,7 +53,7 @@ Citizen.CreateThread(function()
                                        GetVehiclePedIsIn(GetPlayerPed(-1), false)))
                 -- Show a notification to the player
                 notifyClient(
-                    '~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+                    '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
                 -- Remove the vehicle from the repeater table
                 RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
                     nil
@@ -75,13 +75,12 @@ Citizen.CreateThread(function()
                 TriggerServerEvent('sonoranscripts::togglerepeater',
                                    NetworkGetNetworkIdFromEntity(k))
                 notifyClient(
-                    '~b~[SonoranRadio]:~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+                    '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
                 RepeaterVehicles[k] = nil
             end
         end
         -- Check if the player is entering a vehicle
         local entering = GetVehiclePedIsEntering(GetPlayerPed(-1))
-        -- Check if the player is entering a vehicle and if the vehicle is registered and if the player is in the driver or passenger seat
         if entering ~= 0 and
             isRegisteredVehicle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) and
             not IsVehicleAttachedToTrailer(
@@ -104,12 +103,12 @@ Citizen.CreateThread(function()
                                 'RepeaterActive') and lastNotificaiton ~=
                 entering then
                 notifyClient(
-                    '~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
+                    '~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
                 lastNotificaiton = entering
             elseif lastNotificaiton ~= entering then
                 -- Check if the vehicle's repeater is disabled and notify the player
                 notifyClient(
-                    '~b~[SonoranRadio]:~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
+                    '~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
                 lastNotificaiton = entering
             end
             -- Check if the player is entering a vehicle and if the vehicle is registered and if the player is in the driver or passenger seat and if the vehicle is attached to a trailer
@@ -137,101 +136,97 @@ Citizen.CreateThread(function()
                 if not DecorGetBool(trailer, 'RepeaterActive') and
                     lastNotificaiton ~= trailer then
                     notifyClient(
-                        '~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
+                        '~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
                     lastNotificaiton = trailer
                 elseif lastNotificaiton ~= trailer then
                     -- Check if the trailer's repeater is disabled and notify the player
                     notifyClient(
-                        '~b~[SonoranRadio]:~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
+                        '~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
                     lastNotificaiton = trailer
-                end
-            end
-            -- Logic required to pass if statement: 1. Player pressed G, 2. Player is either in the driver or passenger seat
-            if IsControlJustReleased(0, 58) and
-                (GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                                     -1) == GetPlayerPed(-1) or
-                    GetPedInVehicleSeat(
-                        GetVehiclePedIsIn(GetPlayerPed(-1), false), 0) ==
-                    GetPlayerPed(-1)) then
-                -- Check if the player is hauling a trailer
-                local isTrailer, trailer =
-                    GetVehicleTrailerVehicle(GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                               false))
-                -- Check if the player is in a registered vehicle or if the trailer is registered
-                if isRegisteredVehicle(
-                    GetVehiclePedIsIn(GetPlayerPed(-1), false)) or
-                    isRegisteredVehicle(trailer) then
-                    -- If the player is in a trailer, toggle the repeater on the trailer
-                    if isTrailer then
-                        -- Set the decor bool to the opposite of what it currently is
-                        DecorSetBool(trailer, 'RepeaterActive',
-                                     not DecorGetBool(trailer, 'RepeaterActive'))
-                        -- Trigger the server event to toggle the repeater. Parameters: trailer network ID, repeater status, trailer position, repeater range
-                        TriggerServerEvent('sonoranscripts::togglerepeater',
-                                           NetworkGetNetworkIdFromEntity(trailer),
-                                           DecorGetBool(trailer,
-                                                        'RepeaterActive'),
-                                           GetEntityCoords(trailer),
-                                           getVehicleConfig(trailer).range)
-                        -- Show a notification to the player
-                        notifyClient(
-                            '~b~[SonoranRadio]:~w~ Trailer radio repeater ' ..
-                                (DecorGetBool(trailer, 'RepeaterActive') and
-                                    '~g~enabled' or '~o~disabled'))
-                        -- If the repeater is enabled, add the trailer to the repeater table
-                        if DecorGetBool(trailer, 'RepeaterActive') then
-                            RepeaterVehicles[trailer] = true
-                            -- If the repeater is disabled, remove the trailer from the repeater table
-                        else
-                            RepeaterVehicles[trailer] = nil
-                        end
-                    else
-                        -- If the player is in a vehicle, toggle the repeater on the vehicle
-                        -- Set the decor bool to the opposite of what it currently is
-                        DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                                     'RepeaterActive', not DecorGetBool(
-                                         GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                           false),
-                                         'RepeaterActive'))
-                        -- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
-                        TriggerServerEvent('sonoranscripts::togglerepeater',
-                                           NetworkGetNetworkIdFromEntity(
-                                               GetVehiclePedIsIn(
-                                                   GetPlayerPed(-1), false)),
-                                           DecorGetBool(
-                                               GetVehiclePedIsIn(
-                                                   GetPlayerPed(-1), false),
-                                               'RepeaterActive'),
-                                           GetEntityCoords(
-                                               GetVehiclePedIsIn(
-                                                   GetPlayerPed(-1), false)),
-                                           getVehicleConfig(
-                                               GetVehiclePedIsIn(
-                                                   GetPlayerPed(-1), false)).range)
-                        -- Show a notification to the player
-                        notifyClient('~b~[SonoranRadio]:~w~ Radio repeater ' ..
-                                         (DecorGetBool(
-                                             GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                               false),
-                                             'RepeaterActive') and '~g~enabled' or
-                                             '~o~disabled'))
-                        -- If the repeater is enabled, add the vehicle to the repeater table
-                        if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                          false),
-                                        'RepeaterActive') then
-                            RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                               false)] = true
-                            -- If the repeater is disabled, remove the vehicle from the repeater table
-                        else
-                            RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                               false)] = nil
-                        end
-                    end
                 end
             end
         end
     end
 end)
+
+RegisterCommand('+togglerepeater', function()
+    if (GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) ==
+        GetPlayerPed(-1) or
+        GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0) ==
+        GetPlayerPed(-1)) then
+        -- Check if the player is hauling a trailer
+        local isTrailer, trailer = GetVehicleTrailerVehicle(GetVehiclePedIsIn(
+                                                                GetPlayerPed(-1),
+                                                                false))
+        -- Check if the player is in a registered vehicle or if the trailer is registered
+        if isRegisteredVehicle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) or
+            isRegisteredVehicle(trailer) then
+            -- If the player is in a trailer, toggle the repeater on the trailer
+            if isTrailer then
+                -- Set the decor bool to the opposite of what it currently is
+                DecorSetBool(trailer, 'RepeaterActive',
+                             not DecorGetBool(trailer, 'RepeaterActive'))
+                -- Trigger the server event to toggle the repeater. Parameters: trailer network ID, repeater status, trailer position, repeater range
+                TriggerServerEvent('sonoranscripts::togglerepeater',
+                                   NetworkGetNetworkIdFromEntity(trailer),
+                                   DecorGetBool(trailer, 'RepeaterActive'),
+                                   GetEntityCoords(trailer),
+                                   getVehicleConfig(trailer).range)
+                -- Show a notification to the player
+                notifyClient('~w~ Trailer radio repeater ' ..
+                                 (DecorGetBool(trailer, 'RepeaterActive') and
+                                     '~g~enabled' or '~o~disabled'))
+                -- If the repeater is enabled, add the trailer to the repeater table
+                if DecorGetBool(trailer, 'RepeaterActive') then
+                    RepeaterVehicles[trailer] = true
+                    -- If the repeater is disabled, remove the trailer from the repeater table
+                else
+                    RepeaterVehicles[trailer] = nil
+                end
+            else
+                -- If the player is in a vehicle, toggle the repeater on the vehicle
+                -- Set the decor bool to the opposite of what it currently is
+                DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                             'RepeaterActive', not DecorGetBool(
+                                 GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                                 'RepeaterActive'))
+                -- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
+                TriggerServerEvent('sonoranscripts::togglerepeater',
+                                   NetworkGetNetworkIdFromEntity(
+                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)),
+                                   DecorGetBool(
+                                       GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                                       'RepeaterActive'), GetEntityCoords(
+                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)),
+                                   getVehicleConfig(
+                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
+                -- Show a notification to the player
+                notifyClient('~w~ Radio repeater ' ..
+                                 (DecorGetBool(
+                                     GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                                     'RepeaterActive') and '~g~enabled' or
+                                     '~o~disabled'))
+                -- If the repeater is enabled, add the vehicle to the repeater table
+                if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                                'RepeaterActive') then
+                    RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
+                        true
+                    -- If the repeater is disabled, remove the vehicle from the repeater table
+                else
+                    RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
+                        nil
+                end
+            end
+        else
+            notifyClient('~r~This vehicle is not equipped with radio repeaters')
+        end
+    else
+        notifyClient(
+            '~r~You must be in the driver or passenger seat to toggle the radio repeater')
+    end
+end)
+
+RegisterKeyMapping('+togglerepeater', 'Toggle Radio Repeater', 'keyboard', 'g')
 
 -- Citizen.CreateThread(function()
 --     while true do
@@ -262,7 +257,7 @@ end)
 --                                        getVehicleConfig(trailer).range)
 --                     -- Show a notification to the player
 --                     notifyClient(
---                         '~b~[SonoranRadio]:~w~ Trailer radio repeater ' ..
+--                         '~w~ Trailer radio repeater ' ..
 --                             (DecorGetBool(trailer, 'RepeaterActive') and
 --                                 '~g~enabled' or '~o~disabled'))
 --                     -- If the repeater is enabled, add the trailer to the repeater table
@@ -294,7 +289,7 @@ end)
 --                                            GetVehiclePedIsIn(GetPlayerPed(-1),
 --                                                              false)).range)
 --                     -- Show a notification to the player
---                     notifyClient('~b~[SonoranRadio]:~w~ Radio repeater ' ..
+--                     notifyClient('~w~ Radio repeater ' ..
 --                                      (DecorGetBool(
 --                                          GetVehiclePedIsIn(GetPlayerPed(-1),
 --                                                            false),
