@@ -160,7 +160,7 @@ function CreateTower(tower)
 	FreezeEntityPosition(tower.Handle, true)
 	SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
 	PlaceObjectOnGroundProperly(tower.Handle)
-
+	SetEntityHeading(tower.Handle, tower.heading)
 	SetModelAsNoLongerNeeded(towerModel)
 
 	-- spawn the dishes and ladder for the tower
