@@ -187,6 +187,7 @@ function spawningRadioRepeater()
 					},
 					Powered = true,
 					DontSaveMe = false,
+					heading = GetEntityHeading(PlayerPedId()),
 					type = 'radioTower'
 				}
 				state.repeaterId = towerData.Id
@@ -415,11 +416,11 @@ function movingRadioRepeater()
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
-				foundHandle.heading = foundHandle.heading + state.moveSpeed
+				foundHandle.heading = (foundHandle.heading or 0) + state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
-				foundHandle.heading = foundHandle.heading - state.moveSpeed
+				foundHandle.heading = (foundHandle.heading or 0) - state.moveSpeed
 				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
@@ -788,7 +789,7 @@ function degradeMenu()
 		if pressed then
 			if input == '' then
 				degradeStrength = 0.5
-			elseif tonumber(input) >= 1.0 then
+			elseif tonumber(input) <= 1.0 and tonumber(input) >= 0.0 then
 				degradeStrength = tonumber(input)
 			else
 				degradeStrength = 1.0
