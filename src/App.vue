@@ -1,7 +1,7 @@
 <template>
     <div class="appcontainer" :class="{ debug, help }">
         <div class="top-instructions">
-            <div v-if="chatterNeedsInputHelp">
+            <div v-if="chatterEnabled && chatterNeedsInputHelp">
                 Sonoran Radio needs input to continue. Press any key
             </div>
             <div v-else-if="dragMode">
