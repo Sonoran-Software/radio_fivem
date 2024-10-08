@@ -8,10 +8,9 @@ allowedMiniRadio = false
 inVehicle = false
 local tunnels = {}
 local authorized = false
-
 local allowedFrames = {}
 local critError = false
-
+local frame = 'default'
 polyZonesTable = {}
 
 if Config.comId == nil or Config.comId == '' then
@@ -736,6 +735,12 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'home' then
 		handleHome()
 	end
+
+	if data.type == 'currentSkinUpdated' then
+		frame = data.skin
+		SetResourceKvp('sonoranradio_skin', frame)
+	end
+
 	cb('OK')
 end)
 
@@ -753,6 +758,7 @@ AddEventHandler('onResourceStart', function(resource)
 		print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 		Radio.TalkAnim = false
 	end
+	frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 end)
 
 AddEventHandler('onResourceStop', function(resource)
@@ -925,6 +931,7 @@ RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
+	frame = frame or 'default'
 	if Config.frames.permissionMode == 'ace' then
 		SendNUIMessage({
 			type = 'setCurrentSkin',
