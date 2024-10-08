@@ -11,6 +11,7 @@ const freqToString = (freq) => {
 export default new Vuex.Store({
     state: {
         connected: false,
+
         radioConfig: null,
         radioState: null,
         gamestate: {
@@ -18,13 +19,8 @@ export default new Vuex.Store({
             radio_powered: false,
             tower_quality: 1
         },
-        unitStatus: -1,
-        call: {
-            code: "",
-            title: "",
-            location: "",
-            description: ""
-        },
+        talking: false,
+        peersTalking: [],
     },
     // TODO: getter for frequency label & sub level
     getters: {
@@ -32,23 +28,14 @@ export default new Vuex.Store({
             return state.radioConfig.subscription ?? 0;
         },
         statusText(state) {
-            const unitStatusNames = [
-                "Unavailable",
-                "Busy",
-                "Available",
-                "En Route",
-                "On Scene",
-                "Clocked Out"
-            ];
-            if (state.unitStatus < 0)
-                return state.connected ? 'Connected' : 'Disconnected';
-            else
-                return unitStatusNames[state.unitStatus];
+            return state.connected ? 'Connected' : 'Disconnected';
         },
         connColor(state) {
             if (!state.connected)
                 return "gray";
-            else if (state.unitStatus >= 0)
+            else if (state.talking)
+                return "orange";
+            else if (state.peersTalking.length > 0)
                 return "green";
             else
                 return "lightblue";
@@ -72,11 +59,11 @@ export default new Vuex.Store({
             }
             return find;
         },
-        recvFreqStr(state) {
-            return freqToString(state.currFreq.recv);
+        recvFreqStr(_state, getters) {
+            return freqToString(getters.freqRecv);
         },
-        xmitFreqStr(state) {
-            return freqToString(state.currFreq.xmit);
+        xmitFreqStr(_state, getters) {
+            return freqToString(getters.freqXmit);
         },
     },
     mutations: {
@@ -94,16 +81,16 @@ export default new Vuex.Store({
         setRadioState(state, radioState) {
             state.radioState = radioState;
         },
-        setCall(state, { code, title, postal, address, description }) {
-            try {
-                state.call.code = code;
-                state.call.title = title;
-                state.call.location = (postal != "" ? postal + " " + address : address);
-                state.call.description = description;
-            } catch (e) {
-                console.error("Failed to update call information");
-                console.error(e);
-            }
+        setRadioTalking(state, talking) {
+            state.talking = talking;
+        },
+        setPeerTalkStatus(state, peer) {
+            const idx = state.peersTalking.findIndex(p => p.identity === peer.identity);
+            if (peer.micOpen && peer.canHear) {
+                if (idx >= 0) state.peersTalking[idx] = peer; // update peer
+                else state.peersTalking.push(peer);
+            } else if (idx >= 0)
+                state.peersTalking.splice(idx, 1);
         },
         setUnitStatus(state, status) {
             state.unitStatus = status;

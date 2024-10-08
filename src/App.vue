@@ -233,8 +233,7 @@ export default {
                     try {
                         this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
                     } catch (e) {
-                        console.error("Failed to update tower quality");
-                        console.error(e);
+                        console.error("Failed to update tower quality", e);
                     }
                     break;
                 case 'radioHud':
@@ -257,20 +256,14 @@ export default {
                         case 'prev':
                             this.buttonPrev();
                             break;
-
                         case 'next':
                             this.buttonNext();
                             break;
-
                         case 'power':
                             this.buttonPower();
                             break;
-
                         case 'panic':
                             this.buttonPanic();
-                            break;
-
-                        default:
                             break;
                     }
                     break;
@@ -278,7 +271,7 @@ export default {
                     this.goToPreset(event.data.preset);
                     break;
                 case 'callUpdate':
-                    this.$store.commit('setCall', event.data.call);
+                    this.sendToSocket({ type: 'set_call', call: event.data.call });
                     break;
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
@@ -331,8 +324,6 @@ export default {
                         sources: event.data.sources,
                     });
                     break;
-                default:
-                    break;
             }
         });
         // update the gamestate with an interval
@@ -359,47 +350,32 @@ export default {
             });
         },
         onKeyPressed(e, type) {
-            if (!this.pttKeyName) {
-                if (e.code === "Escape" && type === 'keyup') {
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
+            if (type === 'keyup') {
+                switch (e.code) {
+                    case "Escape":
+                        if (this.dragMode) {
+                            this.dragMode = false;
+                            // save the positions by sending them back to the client
+                            this.postClient({
+                                type: 'setUiPositions', data: this.positions
+                            });
+                        } else {
+                            this.hideRadio(false);
+                        }
+                        break;
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        this.debug && this.debugNudgeSkinProperty(e);
+                        break;
                 }
-                return;
             }
+
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
-            }
-
-            if (type !== 'keyup') return;
-            switch (e.code) {
-                case "Escape":
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    this.debug && this.debugNudgeSkinProperty(e);
-                    break;
-                default:
-                    break;
             }
         },
         async querySkinNoCache(skinId) {
@@ -532,7 +508,11 @@ export default {
                         this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
+                    this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({type: 'talking', talking: event.micOpen});
+                    break;
+                case 'peer_talk_status':
+                    this.$store.commit('setPeerTalkStatus', event.peer);
                     break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');

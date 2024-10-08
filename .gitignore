@@ -3,6 +3,8 @@
 /dist*
 /config.lua
 /towers.json
+/speakers.json
+/tunnels.json
 
 yarn-error.log
 .yarn.installed
