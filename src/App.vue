@@ -195,7 +195,7 @@ export default {
         });
     },
     mounted() {
-        this.selectSkin('default');
+        this.selectSkin('default', true);
         window.addEventListener('message', (event) => {
             if (event.data.type === 'keyup' || event.data.type === 'keydown')
                 return void this.onKeyPressed(event.data, event.data.type);
@@ -411,8 +411,9 @@ export default {
             this.querySkin(skinId);
             return undefined;
         },
-        selectSkin(skinId) {
+        selectSkin(skinId, temporary) {
             this.querySkin(skinId).then(skin => this.curSkin = skin);
+            if (!temporary) this.postClient({ type: 'currentSkinUpdated', skin: skinId });
         },
         debugNudgeSkinProperty({ code: direction, shiftKey }) {
             if (!this.nudgeProp) return;
