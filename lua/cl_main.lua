@@ -739,6 +739,10 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'currentSkinUpdated' then
 		frame = data.skin
 		SetResourceKvp('sonoranradio_skin', frame)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
 	end
 
 	cb('OK')
