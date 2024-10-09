@@ -76,6 +76,7 @@ Citizen.CreateThread(function()
 			end
 		end
 		if Config.enforceRadioItem then
+			local QBCore = exports['qb-core']:GetCoreObject()
 			if LocalPlayer.state.isLoggedIn then
 				-- print("has radio")
 				QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem', function(hasItem)
