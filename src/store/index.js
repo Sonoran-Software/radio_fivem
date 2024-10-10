@@ -14,11 +14,6 @@ export default new Vuex.Store({
 
         radioConfig: null,
         radioState: null,
-        gamestate: {
-            position: [],
-            radio_powered: false,
-            tower_quality: 1
-        },
         talking: false,
         peersTalking: [],
     },

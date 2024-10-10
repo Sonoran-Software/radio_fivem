@@ -628,23 +628,6 @@ Citizen.CreateThread(function()
 	initNui()
 	LocalPlayer.state:set('sonoranradio_state', nil, true)
 
-	-- while true do
-	-- 	local ped = GetPlayerPed(-1)
-	-- 	if DoesEntityExist(ped) then
-	-- 		local pos = GetEntityCoords(ped)
-	-- 		local posArr = {
-	-- 			math.floor(pos.x),
-	-- 			math.floor(pos.y),
-	-- 			math.floor(pos.z)
-	-- 		}
-	-- 		SendNUIMessage({
-	-- 			type = 'setPos',
-	-- 			position = posArr
-	-- 		})
-	-- 	end
-	-- 	Citizen.Wait(5000)
-	-- end
-	-- For Development Only
 	DebugPrint('Sonoran Radio Started!')
 end)
 
@@ -739,10 +722,6 @@ RegisterNUICallback('data', function(data, cb)
 	if data.type == 'currentSkinUpdated' then
 		frame = data.skin
 		SetResourceKvp('sonoranradio_skin', frame)
-		SendNUIMessage({
-			type = 'setCurrentSkin',
-			skin = frame
-		})
 	end
 
 	cb('OK')
@@ -852,63 +831,7 @@ RegisterNetEvent('SonoranRadio::PlayerRevive', function()
 	end
 end)
 
-local QBDeath = false;
-
--- CreateThread(function()
--- 	local QBCore = nil
--- 	if Config.deathDetectionMethod == 'qbcore' then
--- 		QBCore = exports['qb-core']:GetCoreObject()
--- 	end
--- 	TriggerServerEvent('SonoranRadio:GetTunnels')
--- 	while true do
--- 		if QBCore ~= nil then
--- 			local PlayerData = QBCore.Functions.GetPlayerData()
--- 			if PlayerData ~= nil then
--- 				-- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
--- 				-- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
--- 				QBDeath = PlayerData.metadata['isdead'] or PlayerData.metadata['inlaststand']
--- 			end
--- 		end
-
--- 		if Config.deathDetectionMethod == 'auto' or Config.deathDetectionMethod == 'qbcore' then
--- 			local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
--- 			if IsPlayerDead then
--- 				TriggerEvent('SonoranRadio::PlayerDeath')
--- 			else
--- 				TriggerEvent('SonoranRadio::PlayerRevive')
--- 			end
--- 		end
--- 		-- print("QBDeath:" .. tostring(QBDeath))
--- 		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
--- 		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
--- 		-- Tunnel degradation logic
--- 		local plyPed = PlayerPedId()
---         local coord = GetEntityCoords(plyPed)
---         local insideZone = false
--- 		local degradeStrength = 0.0
--- 		for _, zone in pairs(polyZonesTable) do
---             if zone:isPointInside(coord) then
--- 				degradeStrength = zone.degradeStrength
---                 insideZone = true
--- 				DebugPrint('Inside Zone: ' .. zone.name)
---                 break
---             end
---         end
--- 		local bestQuality = math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
--- 		if insideZone then
--- 			if bestQuality > 0 then
--- 				bestQuality = bestQuality * (1 - degradeStrength)
--- 			end
--- 		end
--- 		SendNUIMessage({
--- 			type = 'setTowerQuality',
--- 			state = {
--- 				tower_quality = bestQuality
--- 			}
--- 		})
--- 		Wait(1000)
--- 	end
--- end)
+local QBDeath = false
 
 RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 	tunnels = TunnelsServer

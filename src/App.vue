@@ -41,7 +41,6 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
-                            @load="onStandaloneLoad"
                         />
                     </primary-screen>
                 </skin-body-component>
@@ -93,6 +92,7 @@ export default {
             currScreen: "",
             topRadioSize: "lg",
             inVehicle: false,
+            towerQuality: 1.0,
 
             dragMode: false,
             defaultPositions: {
@@ -212,12 +212,10 @@ export default {
                     break;
                 case 'power':
                     this.radioPower = event.data.power || !this.radioPower;
-                    this.$store.state.gamestate.radio_powered = this.radioPower;
                     this.postClient({
                         type: 'power',
                         power: this.radioPower
                     });
-                    this.updateGamestate();
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
@@ -230,26 +228,11 @@ export default {
                     this.sendToSocket({ type: 'set_global_volume', volume: Math.min(event.data.volume, 250) });
                     break;
                 case 'setTowerQuality':
-                    try {
-                        this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
-                    } catch (e) {
-                        console.error("Failed to update tower quality", e);
-                    }
+                    this.towerQuality = event.data.quality;
+                    this.updateGamestate();
                     break;
                 case 'radioHud':
                     this.showTopRadio = event.data.size !== 'off';
-                    break;
-                case 'setPos':
-                    try {
-                        this.$store.state.gamestate.position = [
-                            event.data.position[0],
-                            event.data.position[1],
-                            event.data.position[2]
-                        ];
-                    } catch (e) {
-                        console.error("Failed to update posistion");
-                        console.error(e);
-                    }
                     break;
                 case 'pushButton':
                     switch (event.data.button) {
@@ -326,8 +309,6 @@ export default {
                     break;
             }
         });
-        // update the gamestate with an interval
-        setInterval(this.updateGamestate.bind(this), 2500);
 
         this.postClient({ type: 'ready' });
     },
@@ -478,7 +459,7 @@ export default {
         updateGamestate() {
             this.sendToSocket({
                 type: "set_gamestate",
-                state: this.$store.state.gamestate
+                state: { tower_quality: this.towerQuality },
             });
         },
         nextPreset() {
@@ -496,6 +477,7 @@ export default {
                 case "radio_connected":
                     this.$store.commit('setConnected', this.radioPower);
                     this.$store.commit('setRadioConfig', event.config);
+                    this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
@@ -571,7 +553,6 @@ export default {
         buttonPower() {
             this.radioPower = !this.radioPower;
             this.chatterNeedsInput = false;
-            this.$store.state.gamestate.radio_powered = this.radioPower;
             this.postClient({
                 type: 'power',
                 power: this.radioPower
@@ -582,11 +563,8 @@ export default {
             });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
         },
-        onStandaloneLoad() {
-            setTimeout(() => {
-                this.updateAvailableSkins();
-                this.updateGamestate();
-            }, 1000);
+        onStandaloneConnected() {
+            this.updateGamestate();
         },
         onStandaloneChatterLoad() {
             this.chatterNeedsInput = true;
