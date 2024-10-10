@@ -306,6 +306,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 			obj.Swankiness = towers[i].Swankiness
 			obj.Range = towers[i].Range
 			obj.Destruction = towers[i].Destruction
+			obj.heading = towers[i].heading or 0.0
 
 			DebugPrint('setting up tower', json.encode(obj))
 			table.insert(Towers, obj)
@@ -322,7 +323,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 			obj.Range = towers[i].Range
 			obj.Destruction = towers[i].Destruction
 			obj.serverStatus = towers[i].serverStatus
-			obj.heading = towers[i].heading
+			obj.heading = towers[i].heading or 0.0
 			DebugPrint('setting up rack', json.encode(obj))
 			table.insert(Servers, obj)
 		elseif towers[i].type == 'cellRepeater' then
@@ -339,6 +340,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 			obj.Range = towers[i].Range
 			obj.Destruction = towers[i].Destruction
 			obj.AntennaStatus = towers[i].AntennaStatus
+			obj.heading = towers[i].heading or 0.0
 			DebugPrint('setting up cell repeater', json.encode(obj))
 			table.insert(CellRepeaters, obj)
 		end

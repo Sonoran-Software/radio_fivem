@@ -61,6 +61,7 @@ export default {
     emits: ['load'],
     data: () => ({
         ro: null,
+        cacheBust,
     }),
     mounted() {
         push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
@@ -79,10 +80,12 @@ export default {
         frameSrc() {
             const url = this.url || 'https://sonoranradio.com';
             const page = this.chatter ? 'chatter-engine' : 'view';
-            // EXAMPLES:
-            // https://sonoranradio.com/view/ABC123?fivem=true&cacheBust=1234567890
-            // https://radio.dev.sonoransoftware.com/chatter-engine/ABC123?fivem=true&cacheBust=1234567890
-            return `${url}/${page}/${this.serverId}?fivem=true&cacheBust=${cacheBust}`;
+
+            const query = new URLSearchParams();
+            if (!this.chatter) query.append('autoconnect', 'true');
+            query.append('fivem', 'true');
+            query.append('cacheBust', this.cacheBust);
+            return `${url}/${page}/${this.serverId}?${query.toString()}`;
         }
     },
     watch: {
@@ -99,7 +102,10 @@ export default {
             if (force) {
                 frameEl.remove();
                 frameEl = null;
-                cacheBust = Date.now();
+
+                const setTo = Date.now();
+                console.log('set cache bust to', setTo);
+                this.cacheBust = cacheBust = setTo;
             }
             push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
         }

@@ -41,7 +41,6 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
-                            @load="onStandaloneLoad"
                         />
                     </primary-screen>
                 </skin-body-component>
@@ -93,6 +92,7 @@ export default {
             currScreen: "",
             topRadioSize: "lg",
             inVehicle: false,
+            towerQuality: 1.0,
 
             dragMode: false,
             defaultPositions: {
@@ -195,7 +195,7 @@ export default {
         });
     },
     mounted() {
-        this.selectSkin('default');
+        this.selectSkin('default', true);
         window.addEventListener('message', (event) => {
             if (event.data.type === 'keyup' || event.data.type === 'keydown')
                 return void this.onKeyPressed(event.data, event.data.type);
@@ -212,12 +212,10 @@ export default {
                     break;
                 case 'power':
                     this.radioPower = event.data.power || !this.radioPower;
-                    this.$store.state.gamestate.radio_powered = this.radioPower;
                     this.postClient({
                         type: 'power',
                         power: this.radioPower
                     });
-                    this.updateGamestate();
                     break;
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
@@ -230,47 +228,25 @@ export default {
                     this.sendToSocket({ type: 'set_global_volume', volume: Math.min(event.data.volume, 250) });
                     break;
                 case 'setTowerQuality':
-                    try {
-                        this.$store.state.gamestate.tower_quality = event.data.state.tower_quality
-                    } catch (e) {
-                        console.error("Failed to update tower quality");
-                        console.error(e);
-                    }
+                    this.towerQuality = event.data.quality;
+                    this.updateGamestate();
                     break;
                 case 'radioHud':
                     this.showTopRadio = event.data.size !== 'off';
-                    break;
-                case 'setPos':
-                    try {
-                        this.$store.state.gamestate.position = [
-                            event.data.position[0],
-                            event.data.position[1],
-                            event.data.position[2]
-                        ];
-                    } catch (e) {
-                        console.error("Failed to update posistion");
-                        console.error(e);
-                    }
                     break;
                 case 'pushButton':
                     switch (event.data.button) {
                         case 'prev':
                             this.buttonPrev();
                             break;
-
                         case 'next':
                             this.buttonNext();
                             break;
-
                         case 'power':
                             this.buttonPower();
                             break;
-
                         case 'panic':
                             this.buttonPanic();
-                            break;
-
-                        default:
                             break;
                     }
                     break;
@@ -278,7 +254,7 @@ export default {
                     this.goToPreset(event.data.preset);
                     break;
                 case 'callUpdate':
-                    this.$store.commit('setCall', event.data.call);
+                    this.sendToSocket({ type: 'set_call', call: event.data.call });
                     break;
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.data.status);
@@ -331,12 +307,8 @@ export default {
                         sources: event.data.sources,
                     });
                     break;
-                default:
-                    break;
             }
         });
-        // update the gamestate with an interval
-        setInterval(this.updateGamestate.bind(this), 2500);
 
         this.postClient({ type: 'ready' });
     },
@@ -359,47 +331,32 @@ export default {
             });
         },
         onKeyPressed(e, type) {
-            if (!this.pttKeyName) {
-                if (e.code === "Escape" && type === 'keyup') {
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
+            if (type === 'keyup') {
+                switch (e.code) {
+                    case "Escape":
+                        if (this.dragMode) {
+                            this.dragMode = false;
+                            // save the positions by sending them back to the client
+                            this.postClient({
+                                type: 'setUiPositions', data: this.positions
+                            });
+                        } else {
+                            this.hideRadio(false);
+                        }
+                        break;
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        this.debug && this.debugNudgeSkinProperty(e);
+                        break;
                 }
-                return;
             }
+
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
-            }
-
-            if (type !== 'keyup') return;
-            switch (e.code) {
-                case "Escape":
-                    if (this.dragMode) {
-                        this.dragMode = false;
-                        // save the positions by sending them back to the client
-                        this.postClient({
-                            type: 'setUiPositions', data: this.positions
-                        });
-                    } else {
-                        this.hideRadio(false);
-                    }
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    this.debug && this.debugNudgeSkinProperty(e);
-                    break;
-                default:
-                    break;
             }
         },
         async querySkinNoCache(skinId) {
@@ -435,8 +392,9 @@ export default {
             this.querySkin(skinId);
             return undefined;
         },
-        selectSkin(skinId) {
+        selectSkin(skinId, temporary) {
             this.querySkin(skinId).then(skin => this.curSkin = skin);
+            if (!temporary) this.postClient({ type: 'currentSkinUpdated', skin: skinId });
         },
         debugNudgeSkinProperty({ code: direction, shiftKey }) {
             if (!this.nudgeProp) return;
@@ -501,7 +459,7 @@ export default {
         updateGamestate() {
             this.sendToSocket({
                 type: "set_gamestate",
-                state: this.$store.state.gamestate
+                state: { tower_quality: this.towerQuality },
             });
         },
         nextPreset() {
@@ -519,6 +477,7 @@ export default {
                 case "radio_connected":
                     this.$store.commit('setConnected', this.radioPower);
                     this.$store.commit('setRadioConfig', event.config);
+                    this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
@@ -532,7 +491,11 @@ export default {
                         this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
+                    this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({type: 'talking', talking: event.micOpen});
+                    break;
+                case 'peer_talk_status':
+                    this.$store.commit('setPeerTalkStatus', event.peer);
                     break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');
@@ -590,7 +553,6 @@ export default {
         buttonPower() {
             this.radioPower = !this.radioPower;
             this.chatterNeedsInput = false;
-            this.$store.state.gamestate.radio_powered = this.radioPower;
             this.postClient({
                 type: 'power',
                 power: this.radioPower
@@ -601,11 +563,8 @@ export default {
             });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
         },
-        onStandaloneLoad() {
-            setTimeout(() => {
-                this.updateAvailableSkins();
-                this.updateGamestate();
-            }, 1000);
+        onStandaloneConnected() {
+            this.updateGamestate();
         },
         onStandaloneChatterLoad() {
             this.chatterNeedsInput = true;

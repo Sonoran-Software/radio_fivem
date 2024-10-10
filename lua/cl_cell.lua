@@ -162,64 +162,6 @@ CreateThread(function()
 		Wait(50)
 	end
 	DecorRegister('sonrad_cellRepeater', 3)
-	-- while true do
-	-- 	bestCellRepeaterQuality = 0.0
-	-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
-	-- 	for i = 1, #CellRepeaters do
-	-- 		local cellRepeater = CellRepeaters[i]
-	-- 		if not cellRepeater then
-	-- 			goto continue
-	-- 		end
-	-- 		local d = #(GetCellRepeaterCoords(cellRepeater) - pCoords)
-	-- 		-- if the player is within range (750m), then spawn a physical cellRepeater
-	-- 		local physical = not Config.noPhysicalCellRepeaters and not cellRepeater.NotPhysical
-	-- 		if d < 750.0 and not cellRepeater.Spawned and physical then
-	-- 			CreateCellRepeater(cellRepeater)
-	-- 			DebugPrint(('spawn physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
-	-- 		elseif d >= 750.0 and cellRepeater.Spawned then
-	-- 			DestroyCellRepeater(cellRepeater)
-	-- 			DebugPrint(('destroy physical cell repeater (%f) %s'):format(d, cellRepeater.Id))
-	-- 		end
-
-	-- 		-- recreate the cellRepeater completely if anything is missing
-	-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
-	-- 		local recreate = cellRepeater.Spawned and not DoesEntityExist(cellRepeater.Handle)
-	-- 		local n = cellRepeater.Dishes and #cellRepeater.Dishes or 0
-	-- 		for j = 1, n do
-	-- 			if not recreate then
-	-- 				recreate = not DoesEntityExist(cellRepeater.Dishes[j])
-	-- 			end
-	-- 		end
-	-- 		if recreate then
-	-- 			DebugPrint(('cellRepeater:%s component missing, recreating'):format(cellRepeater.Id))
-	-- 			-- CreateCellRepeater will automatically delete old entities
-	-- 			CreateCellRepeater(cellRepeater)
-	-- 		end
-
-	-- 		-- if cellRepeater is out of range, then just ignore it
-	-- 		if d > cellRepeater.Range then
-	-- 			goto continue
-	-- 		end
-	-- 		local tQuality = (1.0 - (d / cellRepeater.Range)) * GetCellRepeaterCapacity(cellRepeater)
-	-- 		if bestCellRepeaterQuality < tQuality then
-	-- 			bestCellRepeaterQuality = tQuality
-	-- 		end
-	-- 		::continue::
-	-- 	end
-
-	-- 	if bestCellRepeaterQuality == 0.0 then
-	-- 		DebugPrint('closest cell repeater out of range')
-	-- 	else
-	-- 		DebugPrint(('best cell repeater quality:%.4f'):format(bestCellRepeaterQuality))
-	-- 	end
-	-- 	-- SendNUIMessage({
-	-- 	-- 	type = 'setTowerQuality',
-	-- 	-- 	state = {
-	-- 	-- 		tower_quality = quality
-	-- 	-- 	}
-	-- 	-- })
-	-- 	Wait(3000)
-	-- end
 end)
 
 function RepairCellRepeater(cellRepeater)

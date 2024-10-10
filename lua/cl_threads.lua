@@ -118,19 +118,6 @@ CreateThread(function()
 		Wait(5000)
 		TriggerServerEvent('SonoranCAD::sonrad:GetUnitInfo')
 		TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
-		local ped = GetPlayerPed(-1)
-		if DoesEntityExist(ped) then
-			local pos = GetEntityCoords(ped)
-			local posArr = {
-				math.floor(pos.x),
-				math.floor(pos.y),
-				math.floor(pos.z)
-			}
-			SendNUIMessage({
-				type = 'setPos',
-				position = posArr
-			})
-		end
 	end
 end)
 
@@ -247,6 +234,8 @@ CreateThread(function()
 		QBCore = exports['qb-core']:GetCoreObject()
 	end
 	TriggerServerEvent('SonoranRadio:GetTunnels')
+
+	local lastTowerQuality = 0.0
 	while true do
 		if QBCore ~= nil then
 			local PlayerData = QBCore.Functions.GetPlayerData()
@@ -265,9 +254,6 @@ CreateThread(function()
 				TriggerEvent('SonoranRadio::PlayerRevive')
 			end
 		end
-		-- print("QBDeath:" .. tostring(QBDeath))
-		-- print("EntityDead:" .. tostring(IsEntityDead(PlayerPedId())))
-		-- print("Radio Enabled: " .. tostring(Radio.Enabled))
 		-- Tunnel degradation logic
 		local plyPed = PlayerPedId()
         local coord = GetEntityCoords(plyPed)
@@ -287,12 +273,17 @@ CreateThread(function()
 				bestQuality = bestQuality * (1 - degradeStrength)
 			end
 		end
-		SendNUIMessage({
-			type = 'setTowerQuality',
-			state = {
-				tower_quality = bestQuality
-			}
-		})
+
+		-- update the tower quality if it has changed significantly
+		local delta = bestQuality < 0.1 and 0.01 or 0.05 -- if tower quality <10%, update every 1% change, otherwise update every 5%
+		if math.abs(bestQuality - lastTowerQuality) >= delta or (bestQuality <= 0.0 and lastTowerQuality > 0.0) then
+			lastTowerQuality = bestQuality
+			SendNUIMessage({
+				type = 'setTowerQuality',
+				quality = bestQuality,
+			})
+		end
+
 		for k, v in pairs(soundInfo) do
             if v.playing or v.wasSilented then
                 if getInfo(v.id).timeStamp ~= nil and getInfo(v.id).maxDuration ~= nil then

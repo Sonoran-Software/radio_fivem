@@ -15,6 +15,7 @@ RadioTower = {
 	},
 	Powered = true,
 	DontSaveMe = false,
+	heading = 0.0,
 	type = 'radioTower'
 }
 

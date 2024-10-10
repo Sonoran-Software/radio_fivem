@@ -160,7 +160,7 @@ function CreateTower(tower)
 	FreezeEntityPosition(tower.Handle, true)
 	SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
 	PlaceObjectOnGroundProperly(tower.Handle)
-
+	SetEntityHeading(tower.Handle, tower.heading)
 	SetModelAsNoLongerNeeded(towerModel)
 
 	-- spawn the dishes and ladder for the tower
@@ -244,65 +244,6 @@ CreateThread(function()
 	end
 
 	DecorRegister('sonrad_dish', 3)
-	-- while true do
-	-- 	bestTowerQuality = 0.0
-	-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
-	-- 	for i = 1, #Towers do
-	-- 		local tower = Towers[i]
-	-- 		if not tower then
-	-- 			goto continue
-	-- 		end
-	-- 		local d = #(GetTowerCoords(tower) - pCoords)
-	-- 		-- if the player is within range (750m), then spawn a physical tower
-	-- 		local physical = not Config.noPhysicalTowers and not tower.NotPhysical
-	-- 		if d < 750.0 and not tower.Spawned and physical then
-	-- 			CreateTower(tower)
-	-- 			DebugPrint(('spawn physical tower (%f) %s'):format(d, tower.Id))
-	-- 		elseif d >= 750.0 and tower.Spawned then
-	-- 			DestroyTower(tower)
-	-- 			DebugPrint(('destroy physical tower (%f) %s'):format(d, tower.Id))
-	-- 		end
-
-	-- 		-- recreate the tower completely if anything is missing
-	-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
-	-- 		local recreate = tower.Spawned and not DoesEntityExist(tower.Handle)
-	-- 		local n = tower.Dishes and #tower.Dishes or 0
-	-- 		for j = 1, n do
-	-- 			if not recreate then
-	-- 				recreate = not DoesEntityExist(tower.Dishes[j])
-	-- 			end
-	-- 		end
-	-- 		if recreate then
-	-- 			DebugPrint(('tower:%s component missing, recreating'):format(tower.Id))
-	-- 			-- CreateTower will automatically delete old entities
-	-- 			CreateTower(tower)
-	-- 			SyncDishStatus(tower, false)
-	-- 		end
-
-	-- 		-- if tower is out of range, then just ignore it
-	-- 		if d > tower.Range then
-	-- 			goto continue
-	-- 		end
-	-- 		local tQuality = (1.0 - (d / tower.Range)) * GetTowerCapacity(tower)
-	-- 		if bestTowerQuality < tQuality then
-	-- 			bestTowerQuality = tQuality
-	-- 		end
-	-- 		::continue::
-	-- 	end
-
-	-- 	if bestTowerQuality == 0.0 then
-	-- 		DebugPrint('closest tower out of range')
-	-- 	else
-	-- 		DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
-	-- 	end
-	-- 	-- SendNUIMessage({
-	-- 	-- 	type = 'setTowerQuality',
-	-- 	-- 	state = {
-	-- 	-- 		tower_quality = quality
-	-- 	-- 	}
-	-- 	-- })
-	-- 	Wait(3000)
-	-- end
 end)
 
 function RepairTower(tower)
