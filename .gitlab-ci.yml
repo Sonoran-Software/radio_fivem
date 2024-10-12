@@ -28,7 +28,7 @@ resource-build:
     - branches
     - tags
   tags:
-    - linux, build, shell, development
+    - linux, build, docker
 
 resource-deploy-QAServer:
   stage: deploy
