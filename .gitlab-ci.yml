@@ -1,6 +1,8 @@
 resource-build:
   stage: build
+  image: node:alpine
   script:
+    - apk add envsubst
     # copy a clean node_modules for the build
     - yarn --prod
     - cp -r node_modules build/sonoranradio
