@@ -227,6 +227,22 @@ RegisterCommand('+togglerepeater', function()
 end)
 
 if Config.enableVehicleRepeaters then
+    if not Config.mobileRepeaterKeybind then
+        Config.mobileRepeaterKeybind = {
+            mapperType = 'keyboard',
+            map = 'g',
+            label = 'Toggle Radio Repeater'
+        }
+    end
+    if not Config.mobileRepeaterKeybind.label then
+        Config.mobileRepeaterKeybind.label = 'Toggle Radio Repeater'
+    end
+    if not Config.mobileRepeaterKeybind.mapperType then
+        Config.mobileRepeaterKeybind.mapperType = 'keyboard'
+    end
+    if not Config.mobileRepeaterKeybind.map then
+        Config.mobileRepeaterKeybind.map = 'g'
+    end
     RegisterKeyMapping('+togglerepeater', Config.mobileRepeaterKeybind.label, Config.mobileRepeaterKeybind.mapperType, Config.mobileRepeaterKeybind.map)
 end
 
