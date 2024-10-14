@@ -111,6 +111,12 @@ end
 
 -- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
+-- Mobile repeater keybinds
+Config.mobileRepeaterKeybind = {
+	mapperType = 'keyboard', -- See: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/
+	map = 'g', -- See: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/
+	label = 'Toggle Radio Repeater'
+}
 -- Mobile repeater spawncodes
 Config.repeaterVehicleSpawncodes = {
 	{

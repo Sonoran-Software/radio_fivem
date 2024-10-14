@@ -226,7 +226,9 @@ RegisterCommand('+togglerepeater', function()
     end
 end)
 
-RegisterKeyMapping('+togglerepeater', 'Toggle Radio Repeater', 'keyboard', 'g')
+if Config.enableVehicleRepeaters then
+    RegisterKeyMapping('+togglerepeater', Config.mobileRepeaterKeybind.label, Config.mobileRepeaterKeybind.mapperType, Config.mobileRepeaterKeybind.map)
+end
 
 -- Citizen.CreateThread(function()
 --     while true do
