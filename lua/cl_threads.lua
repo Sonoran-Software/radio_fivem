@@ -1,9 +1,20 @@
+local spawnedTalkingLoop = false
 function initThreads()
+	function spawnTalkingLoop()
+		Citizen.CreateThread(function()
+			while isTalking and Config.talkSync do
+				SetControlNormal(0, 249, 1.0);
+				Wait(0)
+			end
+			spawnedTalkingLoop = false
+		end)
+	end
 	-- 0 MS Thread
 	Citizen.CreateThread(function()
 		while true do
-			if isTalking and Config.talkSync then
-				SetControlNormal(0, 249, 1.0);
+			if isTalking and Config.talkSync and not spawnedTalkingLoop then
+				spawnedTalkingLoop = true
+				spawnTalkingLoop()
 			end
 			if nuiFocused then -- Disable controls while NUI is focused.
 				DisableControlAction(0, 1, nuiFocused) -- LookLeftRight
