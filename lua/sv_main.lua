@@ -31,27 +31,36 @@ else
 	end
 
 	if Config.enforceRadioItem then
+		if Config.RadioItem == nil then
+			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+			Config.RadioItem = {
+				name = 'sonoran_radio',
+				label = 'Sonoran Radio',
+				weight = 1,
+				description = 'Communicate with others through the Sonoran Radio',
+			}
+		end
 		QBCore = exports['qb-core']:GetCoreObject()
-		exports['qb-core']:AddItem('sonoran_radio', {
-			name = 'sonoran_radio',
-			label = 'Sonoran Radio',
-			weight = 10,
+		exports['qb-core']:AddItem(Config.RadioItem.name, {
+			name = Config.RadioItem.name,
+			label = Config.RadioItem.label,
+			weight = Config.RadioItem.weight,
 			type = 'item',
 			image = 'radio.png',
 			unique = true,
 			useable = true,
 			shouldClose = true,
 			combinable = false,
-			description = 'Communicate with others through the Sonoran Radio'
+			description = Config.RadioItem.description,
 		})
-		QBCore.Functions.CreateUseableItem('sonoran_radio', function(source, item)
+		QBCore.Functions.CreateUseableItem(Config.RadioItem.name, function(source, item)
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			local radio = nil
 			if type(Player.Functions.GetItemByName) == 'function' then
-				radio = Player.Functions.GetItemByName('sonoran_radio')
+				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
 			elseif type(Player.Functions.HasItem) == 'function' then
-				radio = Player.Functions.HasItem('sonoran_radio')
+				radio = Player.Functions.HasItem(Config.RadioItem.name)
 			end
 			if not radio then
 				return
@@ -64,14 +73,23 @@ else
 		end)
 
 		QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
+			if Config.RadioItem == nil then
+				errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+				Config.RadioItem = {
+					name = 'sonoran_radio',
+					label = 'Sonoran Radio',
+					weight = 1,
+					description = 'Communicate with others through the Sonoran Radio',
+				}
+			end
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			if Player ~= nil then
 				local RadioItem = nil
 				if type(Player.Functions.GetItemByName) == 'function' then
-					RadioItem = Player.Functions.GetItemByName('sonoran_radio')
+					RadioItem = Player.Functions.GetItemByName(Config.RadioItem.name)
 				elseif type(Player.Functions.HasItem) == 'function' then
-					RadioItem = Player.Functions.HasItem('sonoran_radio')
+					RadioItem = Player.Functions.HasItem(Config.RadioItem.name)
 				end
 				if RadioItem ~= nil and not Player.PlayerData.metadata['isdead'] and not Player.PlayerData.metadata['inlaststand'] then
 					cb(true)
@@ -196,18 +214,27 @@ end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
+		if Config.RadioItem == nil then
+			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+			Config.RadioItem = {
+				name = 'sonoran_radio',
+				label = 'Sonoran Radio',
+				weight = 1,
+				description = 'Communicate with others through the Sonoran Radio',
+			}
+		end
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local Player = QBCore.Functions.GetPlayer(source)
 		local radio = nil
 		if type(Player.Functions.GetItemByName) == 'function' then
-			radio = Player.Functions.GetItemByName('sonoran_radio')
+			radio = Player.Functions.GetItemByName(Config.RadioItem.name)
 		elseif type(Player.Functions.HasItem) == 'function' then
-			radio = Player.Functions.HasItem('sonoran_radio')
+			radio = Player.Functions.HasItem(Config.RadioItem.name)
 		end
 		if radio ~= nil then
 			local radioSlot = radio.slot
-			Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
-			Player.Functions.AddItem('sonoran_radio', 1, radioSlot, {
+			Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
+			Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
 				frame = newFrame
 			})
 		end

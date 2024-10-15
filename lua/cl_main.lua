@@ -870,8 +870,17 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 			}
 		})
 	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
+		if Config.RadioItem == nil then
+			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+			Config.RadioItem = {
+				name = 'sonoran_radio',
+				label = 'Sonoran Radio',
+				weight = 1,
+				description = 'Communicate with others through the Sonoran Radio',
+			}
+		end
 		local QBCore = exports['qb-core']:GetCoreObject()
-		local hasRadio = QBCore.Functions.HasItem('sonoran_radio')
+		local hasRadio = QBCore.Functions.HasItem(Config.RadioItem.name)
 		if hasRadio then
 			TriggerEvent('chat:addMessage', {
 				args = {

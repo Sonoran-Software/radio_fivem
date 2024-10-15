@@ -76,6 +76,15 @@ Citizen.CreateThread(function()
 			end
 		end
 		if Config.enforceRadioItem then
+			if Config.RadioItem == nil then
+				errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+				Config.RadioItem = {
+					name = 'sonoran_radio',
+					label = 'Sonoran Radio',
+					weight = 1,
+					description = 'Communicate with others through the Sonoran Radio',
+				}
+			end
 			local QBCore = exports['qb-core']:GetCoreObject()
 			if LocalPlayer.state.isLoggedIn then
 				-- print("has radio")
@@ -86,7 +95,7 @@ Citizen.CreateThread(function()
 					else
 						Radio.Has = true
 					end
-				end, 'sonoran_radio')
+				end, Config.RadioItem.name)
 			end
 		end
 		ped = PlayerPedId()
