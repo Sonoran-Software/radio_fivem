@@ -17,11 +17,11 @@ Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace p
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.enforceRadioItem = false
-Config.RadioItem = {
-	name = 'sonoran_radio',
-	label = 'Sonoran Radio',
-	weight = 1,
-	description = 'Communicate with others through the Sonoran Radio',
+Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
+	name = 'sonoran_radio',  -- Item name in your inventory
+	label = 'Sonoran Radio', -- Label for the item in your inventory
+	weight = 1, 			 -- Weight of the item in your inventory
+	description = 'Communicate with others through the Sonoran Radio', -- Description of the item in your inventory
 }
 Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.disableRadioOnDeath = true
