@@ -15,7 +15,6 @@ Citizen.CreateThread(function()
 			DisableControlAction(0, 200, true) -- Escape
 		end
 		Wait(0)
-		Wait(0)
 		local coords = GetEntityCoords(GetPlayerPed(-1))
 		local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z, 2.0, GetHashKey('serverrack'), 70)
 		if closestRack ~= 0 then
@@ -77,7 +76,6 @@ Citizen.CreateThread(function()
 		end
 		if Config.enforceRadioItem then
 			if Config.RadioItem == nil then
-				errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
 				Config.RadioItem = {
 					name = 'sonoran_radio',
 					label = 'Sonoran Radio',

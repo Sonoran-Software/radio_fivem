@@ -32,7 +32,7 @@ else
 
 	if Config.enforceRadioItem then
 		if Config.RadioItem == nil then
-			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
+			errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 			Config.RadioItem = {
 				name = 'sonoran_radio',
 				label = 'Sonoran Radio',
@@ -73,15 +73,6 @@ else
 		end)
 
 		QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
-			if Config.RadioItem == nil then
-				errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
-				Config.RadioItem = {
-					name = 'sonoran_radio',
-					label = 'Sonoran Radio',
-					weight = 1,
-					description = 'Communicate with others through the Sonoran Radio',
-				}
-			end
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			if Player ~= nil then
@@ -214,15 +205,6 @@ end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
-		if Config.RadioItem == nil then
-			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
-			Config.RadioItem = {
-				name = 'sonoran_radio',
-				label = 'Sonoran Radio',
-				weight = 1,
-				description = 'Communicate with others through the Sonoran Radio',
-			}
-		end
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local Player = QBCore.Functions.GetPlayer(source)
 		local radio = nil

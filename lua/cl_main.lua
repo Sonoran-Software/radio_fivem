@@ -871,7 +871,6 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		})
 	elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
 		if Config.RadioItem == nil then
-			errorLog('Radio item is enforced but no item is defined. Please check your configuration. Using default item variables.')
 			Config.RadioItem = {
 				name = 'sonoran_radio',
 				label = 'Sonoran Radio',
