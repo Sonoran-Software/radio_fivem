@@ -111,26 +111,31 @@ else
 	end
 end
 
-RegisterCommand('sradio', function(source, args, rawCommands)
+RegisterCommand('sonoranradio', function(source, args, rawCommands)
 	if source ~= 0 then
-		print('This command can only be used from console.')
+        print("This command can only be used from the server console")
 		return
 	end
 	if not args[1] then
-		print('Missing command. Try "sradio help" fro help.')
+		print('Missing command. Try "sonoranradio help" for help.')
 		return
 	end
 	if args[1] == 'help' then
 		print([[
 SonoranRadio Help
     help - shows this message
+	debugmode - Toggles debugging mode
     update - attempt to update the radio script
 ]])
 	elseif args[1] == 'update' then
 		print('Attempting to auto update...')
 		RunAutoUpdater(true)
+	elseif args[1] == "debugmode" then
+        Config.debug = not Config.debug
+		TriggerClientEvent('SonoranRadio::core::DebugMode', -1 , Config.debug)
+        infoLog(("Debug mode toggled to %s"):format(tostring(Config.debug)))
 	else
-		print('Missing command. Try \"sradio help\" for help.')
+		print('Missing command. Try \"sonoranradio help\" for help.')
 	end
 end, true)
 
@@ -619,27 +624,3 @@ end
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
-
-
-RegisterCommand("sonoranradio", function(source, args, rawCommand)
-    if source ~= 0 then
-        print("Console only command")
-        return
-    end
-    if not args[1] then
-        print("Missing command. Try \"sonoranradio help\" for help.")
-        return
-    end
-    if args[1] == "help" then
-        print([[
-SonoranRadio Help
-    debugmode - Toggles debugging mode
-]])
-    elseif args[1] == "debugmode" then
-        Config.debug = not Config.debug
-		TriggerClientEvent('SonoranRadio::core::DebugMode', -1 , Config.debug)
-        infoLog(("Debug mode toggled to %s"):format(tostring(Config.debug)))
-	else
-		print("Missing command. Try \"sonoranradio help\" for help.")
-	end
-end)

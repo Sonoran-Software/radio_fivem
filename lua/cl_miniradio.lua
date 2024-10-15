@@ -176,7 +176,6 @@ function initMiniRadio()
         end
         setActiveUsers(activeChannels)
         openradiousers()
-        print('setting radio pos to ', GetResourceKvpString('miniradioui_pos_dic'))
         SendNUIMessage({
             type = 'setMiniRadioUIPosition',
             data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}'),

@@ -27,7 +27,6 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
-	print('Received Config', json.encode(Config))
 	initCell()
 	initChatter()
 	initMiniRadio()
