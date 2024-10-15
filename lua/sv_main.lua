@@ -578,3 +578,24 @@ end
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
+
+
+RegisterCommand("sonoranradio", function(source, args, rawCommand)
+    if source ~= 0 then
+        print("Console only command")
+        return
+    end
+    if not args[1] then
+        print("Missing command. Try \"sonoranradio help\" for help.")
+        return
+    end
+    if args[1] == "help" then
+        print([[
+SonoranRadio Help
+    debugmode - Toggles debugging mode
+]])
+    elseif args[1] == "debugmode" then
+        Config.debug = not Config.debug
+        infoLog(("Debug mode toggled to %s"):format(tostring(Config.debug)))
+	end
+end)
