@@ -21,6 +21,10 @@ AddEventHandler('onClientResourceStart', function(resourceName)
 	TriggerServerEvent('SonoranRadio::core::RequestEnvironment')
 end)
 
+RegisterNetEvent('SonoranRadio::core::DebugMode', function(data)
+	Config.debug = data
+end)
+
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
 	print('Received Config', json.encode(Config))

@@ -637,6 +637,7 @@ SonoranRadio Help
 ]])
     elseif args[1] == "debugmode" then
         Config.debug = not Config.debug
+		TriggerClientEvent('SonoranRadio::core::DebugMode', -1 , Config.debug)
         infoLog(("Debug mode toggled to %s"):format(tostring(Config.debug)))
 	else
 		print("Missing command. Try \"sonoranradio help\" for help.")
