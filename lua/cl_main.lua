@@ -23,6 +23,14 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	initCell()
+	initChatter()
+	initMiniRadio()
+	initRacks()
+	initRepeaters()
+	initThreads()
+	initToneboard()
+	initTowers()
 end)
 
 

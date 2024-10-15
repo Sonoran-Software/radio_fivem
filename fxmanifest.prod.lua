@@ -11,11 +11,11 @@ shared_scripts {
 }
 
 server_scripts {
+    'config.lua',
     'lua/**/sv_*.lua',
     'lua/update/unzip.js',
     'lua/update/updater.lua',
     'lua/**/sv_*.js',
-    'config.lua'
 }
 
 client_scripts {
