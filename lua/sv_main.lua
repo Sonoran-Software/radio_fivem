@@ -24,8 +24,8 @@ else
 			clientConfig[k] = v
 		end
 	end
-	RegisterNetEvent('SonoranCMS::core::RequestEnvironment', function()
-		TriggerClientEvent('SonoranCMS::core::ReceiveEnvironment', source, clientConfig)
+	RegisterNetEvent('SonoranRadio::core::RequestEnvironment', function()
+		TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', source, clientConfig)
 	end)
 	if not IsDuplicityVersion() then
 		RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
