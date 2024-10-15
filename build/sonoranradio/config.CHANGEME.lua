@@ -105,16 +105,6 @@ Config.chatterExclusions = {
 	},
 }
 
--- Only Run This on Client
-if not IsDuplicityVersion() then
-	RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
-		TriggerEvent('SonoranRadio::PlayerDeath') -- This event will kill the player
-	end)
-	RegisterNetEvent('SonoranRadio::API:PlayerRevive', function(playerid)
-		TriggerEvent('SonoranRadio::PlayerRevive') -- This event will revive the player
-	end)
-end
-
 -- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
 -- Mobile repeater keybinds

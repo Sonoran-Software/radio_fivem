@@ -11,6 +11,7 @@ local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
+local clientConfig = {}
 
 if Config == nil then
 	critError = true
@@ -18,6 +19,22 @@ if Config == nil then
 	print('Config file not found, did you forget to rename it?')
 	print('!!! CRITICAL ERROR !!!')
 else
+	for k, v in pairs(Config) do
+		if k ~= "apiKey" then
+			clientConfig[k] = v
+		end
+	end
+	RegisterNetEvent('SonoranCMS::core::RequestEnvironment', function()
+		TriggerClientEvent('SonoranCMS::core::ReceiveEnvironment', source, clientConfig)
+	end)
+	if not IsDuplicityVersion() then
+		RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
+			TriggerEvent('SonoranRadio::PlayerDeath') -- This event will kill the player
+		end)
+		RegisterNetEvent('SonoranRadio::API:PlayerRevive', function(playerid)
+			TriggerEvent('SonoranRadio::PlayerRevive') -- This event will revive the player
+		end)
+	end
 	if Config.acePermsForRadio ~= nil then
 		acePermsForRadio = Config.acePermsForRadio
 	end

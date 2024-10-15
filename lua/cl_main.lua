@@ -12,6 +12,19 @@ local allowedFrames = {}
 local critError = false
 local frame = 'default'
 polyZonesTable = {}
+Config = {}
+
+AddEventHandler('onClientResourceStart', function(resourceName)
+	if (GetCurrentResourceName() ~= resourceName) then
+		return
+	end
+	TriggerServerEvent('SonoranRadio::core::RequestEnvironment')
+end)
+
+RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
+	Config = data
+end)
+
 
 if Config.comId == nil or Config.comId == '' then
 	TriggerEvent('chat:addMessage', {
