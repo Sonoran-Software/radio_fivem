@@ -307,7 +307,6 @@ end)
 RegisterCommand('radio', radioToggle)
 RegisterCommand('sonradradio', radioToggle)
 TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
-TriggerEvent('chat:addSuggestion', '/sonradradio', 'Open the Sonoran Radio Interface')
 RegisterCommand('radiotalk', function()
 	Radio.TalkAnim = not Radio.TalkAnim
 	if Radio.TalkAnim then
