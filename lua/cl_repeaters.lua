@@ -149,7 +149,7 @@ Citizen.CreateThread(function()
     end
 end)
 
-RegisterCommand('+togglerepeater', function()
+RegisterCommand('togglerepeater', function()
     if (GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) ==
         GetPlayerPed(-1) or
         GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0) ==
@@ -243,7 +243,7 @@ if Config.enableVehicleRepeaters then
     if not Config.mobileRepeaterKeybind.map then
         Config.mobileRepeaterKeybind.map = 'g'
     end
-    RegisterKeyMapping('+togglerepeater', Config.mobileRepeaterKeybind.label, Config.mobileRepeaterKeybind.mapperType, Config.mobileRepeaterKeybind.map)
+    RegisterKeyMapping('togglerepeater', Config.mobileRepeaterKeybind.label, Config.mobileRepeaterKeybind.mapperType, Config.mobileRepeaterKeybind.map)
 end
 
 -- Citizen.CreateThread(function()
