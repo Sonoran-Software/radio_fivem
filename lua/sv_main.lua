@@ -47,7 +47,12 @@ else
 		QBCore.Functions.CreateUseableItem('sonoran_radio', function(source, item)
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
-			local radio = Player.Functions.GetItemByName('sonoran_radio')
+			local radio = nil
+			if type(Player.Functions.GetItemByName) == 'function' then
+				radio = Player.Functions.GetItemByName('sonoran_radio')
+			elseif type(Player.Functions.HasItem) == 'function' then
+				radio = Player.Functions.HasItem('sonoran_radio')
+			end
 			if not radio then
 				return
 			end
@@ -62,7 +67,12 @@ else
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			if Player ~= nil then
-				local RadioItem = Player.Functions.GetItemByName(item)
+				local RadioItem = nil
+				if type(Player.Functions.GetItemByName) == 'function' then
+					RadioItem = Player.Functions.GetItemByName('sonoran_radio')
+				elseif type(Player.Functions.HasItem) == 'function' then
+					RadioItem = Player.Functions.HasItem('sonoran_radio')
+				end
 				if RadioItem ~= nil and not Player.PlayerData.metadata['isdead'] and not Player.PlayerData.metadata['inlaststand'] then
 					cb(true)
 				else
@@ -188,7 +198,12 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local Player = QBCore.Functions.GetPlayer(source)
-		local radio = Player.Functions.GetItemByName('sonoran_radio')
+		local radio = nil
+		if type(Player.Functions.GetItemByName) == 'function' then
+			radio = Player.Functions.GetItemByName('sonoran_radio')
+		elseif type(Player.Functions.HasItem) == 'function' then
+			radio = Player.Functions.HasItem('sonoran_radio')
+		end
 		if radio ~= nil then
 			local radioSlot = radio.slot
 			Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
