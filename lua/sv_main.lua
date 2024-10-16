@@ -11,6 +11,7 @@ local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
+local clientConfig = {}
 
 if Config == nil then
 	critError = true
@@ -18,6 +19,22 @@ if Config == nil then
 	print('Config file not found, did you forget to rename it?')
 	print('!!! CRITICAL ERROR !!!')
 else
+	for k, v in pairs(Config) do
+		if k ~= "apiKey" then
+			clientConfig[k] = v
+		end
+	end
+	RegisterNetEvent('SonoranRadio::core::RequestEnvironment', function()
+		TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', source, clientConfig)
+	end)
+	if not IsDuplicityVersion() then
+		RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
+			TriggerEvent('SonoranRadio::PlayerDeath') -- This event will kill the player
+		end)
+		RegisterNetEvent('SonoranRadio::API:PlayerRevive', function(playerid)
+			TriggerEvent('SonoranRadio::PlayerRevive') -- This event will revive the player
+		end)
+	end
 	if Config.acePermsForRadio ~= nil then
 		acePermsForRadio = Config.acePermsForRadio
 	end
@@ -31,23 +48,37 @@ else
 	end
 
 	if Config.enforceRadioItem then
+		if Config.RadioItem == nil then
+			errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+			Config.RadioItem = {
+				name = 'sonoran_radio',
+				label = 'Sonoran Radio',
+				weight = 1,
+				description = 'Communicate with others through the Sonoran Radio',
+			}
+		end
 		QBCore = exports['qb-core']:GetCoreObject()
-		exports['qb-core']:AddItem('sonoran_radio', {
-			name = 'sonoran_radio',
-			label = 'Sonoran Radio',
-			weight = 10,
+		exports['qb-core']:AddItem(Config.RadioItem.name, {
+			name = Config.RadioItem.name,
+			label = Config.RadioItem.label,
+			weight = Config.RadioItem.weight,
 			type = 'item',
 			image = 'radio.png',
 			unique = true,
 			useable = true,
 			shouldClose = true,
 			combinable = false,
-			description = 'Communicate with others through the Sonoran Radio'
+			description = Config.RadioItem.description,
 		})
-		QBCore.Functions.CreateUseableItem('sonoran_radio', function(source, item)
+		QBCore.Functions.CreateUseableItem(Config.RadioItem.name, function(source, item)
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
-			local radio = Player.Functions.GetItemByName('sonoran_radio')
+			local radio = nil
+			if type(Player.Functions.GetItemByName) == 'function' then
+				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
+			elseif type(Player.Functions.HasItem) == 'function' then
+				radio = Player.Functions.HasItem(Config.RadioItem.name)
+			end
 			if not radio then
 				return
 			end
@@ -62,7 +93,12 @@ else
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			if Player ~= nil then
-				local RadioItem = Player.Functions.GetItemByName(item)
+				local RadioItem = nil
+				if type(Player.Functions.GetItemByName) == 'function' then
+					RadioItem = Player.Functions.GetItemByName(Config.RadioItem.name)
+				elseif type(Player.Functions.HasItem) == 'function' then
+					RadioItem = Player.Functions.HasItem(Config.RadioItem.name)
+				end
 				if RadioItem ~= nil and not Player.PlayerData.metadata['isdead'] and not Player.PlayerData.metadata['inlaststand'] then
 					cb(true)
 				else
@@ -75,26 +111,31 @@ else
 	end
 end
 
-RegisterCommand('sradio', function(source, args, rawCommands)
+RegisterCommand('sonoranradio', function(source, args, rawCommands)
 	if source ~= 0 then
-		print('This command can only be used from console.')
+        print("This command can only be used from the server console")
 		return
 	end
 	if not args[1] then
-		print('Missing command. Try "sradio help" fro help.')
+		print('Missing command. Try "sonoranradio help" for help.')
 		return
 	end
 	if args[1] == 'help' then
 		print([[
 SonoranRadio Help
     help - shows this message
+	debugmode - Toggles debugging mode
     update - attempt to update the radio script
 ]])
 	elseif args[1] == 'update' then
 		print('Attempting to auto update...')
 		RunAutoUpdater(true)
+	elseif args[1] == "debugmode" then
+        Config.debug = not Config.debug
+		TriggerClientEvent('SonoranRadio::core::DebugMode', -1 , Config.debug)
+        infoLog(("Debug mode toggled to %s"):format(tostring(Config.debug)))
 	else
-		print('Missing command. Try \"sradio help\" for help.')
+		print('Missing command. Try \"sonoranradio help\" for help.')
 	end
 end, true)
 
@@ -188,11 +229,16 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local Player = QBCore.Functions.GetPlayer(source)
-		local radio = Player.Functions.GetItemByName('sonoran_radio')
+		local radio = nil
+		if type(Player.Functions.GetItemByName) == 'function' then
+			radio = Player.Functions.GetItemByName(Config.RadioItem.name)
+		elseif type(Player.Functions.HasItem) == 'function' then
+			radio = Player.Functions.HasItem(Config.RadioItem.name)
+		end
 		if radio ~= nil then
 			local radioSlot = radio.slot
-			Player.Functions.RemoveItem('sonoran_radio', 1, radioSlot)
-			Player.Functions.AddItem('sonoran_radio', 1, radioSlot, {
+			Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
+			Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
 				frame = newFrame
 			})
 		end

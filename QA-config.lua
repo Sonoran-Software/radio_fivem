@@ -18,6 +18,12 @@ Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater an
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.enforceRadioItem = false
+Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
+	name = 'sonoran_radio',  -- Item name in your inventory | STRING
+	label = 'Sonoran Radio', -- Label for the item in your inventory | STRING
+	weight = 1, 			 -- Weight of the item in your inventory | INT
+	description = 'Communicate with others through the Sonoran Radio', -- Description of the item in your inventory | STRING
+}
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
@@ -96,17 +102,6 @@ Config.chatterExclusions = {
 		textures = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12} -- Texture ID in vMenu MP Ped Component list
 	},
 }
-
-
--- Only Run This on Client
-if not IsDuplicityVersion() then
-	RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
-		TriggerEvent('SonoranRadio::PlayerDeath') -- This event will kill the player
-	end)
-	RegisterNetEvent('SonoranRadio::API:PlayerRevive', function(playerid)
-		TriggerEvent('SonoranRadio::PlayerRevive') -- This event will revive the player
-	end)
-end
 
 -- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
