@@ -4,7 +4,6 @@ local lastLogs = {}
 RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, range)
 	if repeater then
 		if repeaters[id] ~= nil then
-			RegPrint('Updating tower ' .. id)
 			exports['sonoranradio']:updateTower(repeaters[id], nil)
 			repeaters[id] = exports['sonoranradio']:createTower({
 				Destruction = false,
@@ -47,7 +46,6 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(id, repeater, pos, r
 end)
 
 RegisterNetEvent('sonoranscripts::updatepos', function(id, pos, range)
-	RegPrint('Updating tower ' .. id)
 	if repeaters[id] then
 		exports['sonoranradio']:updateTower(repeaters[id], {
 			Destruction = false,
