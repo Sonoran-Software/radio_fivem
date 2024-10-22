@@ -132,16 +132,6 @@ CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('SonoranCAD::sonrad:UpdateCurrentCall')
-AddEventHandler('SonoranCAD::sonrad:UpdateCurrentCall', function(call)
-	local dispatch = call.dispatch
-	DebugPrint(json.encode(dispatch))
-	SendNUIMessage({
-		type = 'callUpdate',
-		call = dispatch
-	})
-end)
-
 function radioToggle(frame)
 	if authorized then
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
