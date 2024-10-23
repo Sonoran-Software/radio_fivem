@@ -1,6 +1,6 @@
 function initRepeaters()
-    local RepeaterVehicles = {}
-    local lastNotificaiton = nil
+    RepeaterVehicles = {}
+    lastNotificaiton = nil
 
     RegisterNetEvent('sonoranscripts::mcc_decor', function()
         DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false), 'RepeaterActive',
@@ -13,7 +13,7 @@ function initRepeaters()
                             GetVehiclePedIsIn(GetPlayerPed(-1), false)), 300)
     end)
 
-    local function isRegisteredVehicle(veh)
+    function isRegisteredVehicle(veh)
         for i = 1, #Config.repeaterVehicleSpawncodes do
             if GetEntityModel(veh) ==
                 GetHashKey(Config.repeaterVehicleSpawncodes[i].model) then
@@ -23,7 +23,7 @@ function initRepeaters()
         return false
     end
 
-    local function getVehicleConfig(veh)
+    function getVehicleConfig(veh)
         for i = 1, #Config.repeaterVehicleSpawncodes do
             if GetEntityModel(veh) ==
                 GetHashKey(Config.repeaterVehicleSpawncodes[i].model) then
@@ -37,49 +37,6 @@ function initRepeaters()
         DecorRegister('RepeaterActive', 2)
         while true do
             Wait(1)
-            -- Check if the players vehicle's radio repeater is active and if the player has control of the vehicle (not in a cutscene, etc.)
-            if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                            'RepeaterActive') and
-                NetworkHasControlOfEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false)) then
-                -- Check if the vehicle is not damaged beyond repair. | 0 and below: Engine catches fire and health rapidly declines | 300: Engine is smoking and losing functionality | 1000: Engine is perfectly fine
-                if GetVehicleEngineHealth(GetVehiclePedIsIn(GetPlayerPed(-1, false))) <
-                    -1000 then
-                    -- If the vehicle is damaged beyond repair, disable the repeater and notify the player
-                    -- Set the decor bool to false
-                    DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                                'RepeaterActive', false)
-                    -- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
-                    TriggerServerEvent('sonoranscripts::togglerepeater',
-                                    NetworkGetNetworkIdFromEntity(
-                                        GetVehiclePedIsIn(GetPlayerPed(-1), false)))
-                    -- Show a notification to the player
-                    notifyClient(
-                        '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
-                    -- Remove the vehicle from the repeater table
-                    RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
-                        nil
-                end
-                -- Update the repeater position every 100ms
-                TriggerServerEvent('sonoranscripts::updatepos',
-                                NetworkGetNetworkIdFromEntity(
-                                    GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-                                GetEntityCoords(
-                                    GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-                                getVehicleConfig(
-                                    GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
-            end
-            -- Loop through the repeater table and check if the vehicle still exists and if it is damaged beyond repair
-            for k, _ in pairs(RepeaterVehicles) do
-                if not DoesEntityExist(k) then RepeaterVehicles[k] = nil end
-                if GetVehicleEngineHealth(k) < -1000 then
-                    DecorSetBool(k, 'RepeaterActive', false)
-                    TriggerServerEvent('sonoranscripts::togglerepeater',
-                                    NetworkGetNetworkIdFromEntity(k))
-                    notifyClient(
-                        '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
-                    RepeaterVehicles[k] = nil
-                end
-            end
             -- Check if the player is entering a vehicle
             local entering = GetVehiclePedIsEntering(GetPlayerPed(-1))
             if entering ~= 0 and
