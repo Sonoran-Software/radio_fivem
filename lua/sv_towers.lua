@@ -262,6 +262,10 @@ exports('createTower', function(config)
 	return obj.Id
 end)
 exports('updateTower', function(towerId, config)
+	if towerId == nil then
+		RegPrint('Failed to update tower, ID is nil')
+		return
+	end
 	for i = 1, #Towers do
 		if Towers[i].Id == towerId then
 			DebugPrint('tower updated by an api', towerId, GetInvokingResource())
@@ -274,7 +278,6 @@ exports('updateTower', function(towerId, config)
 					Towers[i][k] = v
 				end
 				TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
-				print('triggering events')
 				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, Towers[i])
 			end
 			return config and Towers[i].Id or ''
