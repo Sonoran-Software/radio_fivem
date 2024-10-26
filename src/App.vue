@@ -1,13 +1,13 @@
 <template>
     <div class="appcontainer" :class="{ debug, help }">
         <div class="top-instructions">
-            <div v-if="chatterEnabled && chatterNeedsInputHelp">
-                Sonoran Radio needs input to continue. Press any key
-            </div>
-            <div v-else-if="dragMode">
+            <div v-if="dragMode">
                 Click and drag to move the components.
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
+            </div>
+            <div v-else-if="emergencyCall">
+                You are in a 911 call. Use <code>/radio 911</code> to end it
             </div>
         </div>
 
@@ -21,11 +21,12 @@
 
         <!-- acts as standalone radio for hearing radios around the player -->
         <standalone-frame
-            v-if="chatterEnabled"
+            v-if="emergencyCallEnabled || chatterEnabled"
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            chatter
+            :feature="emergencyCall ? '911' :'chatter'"
+            :display-name="emergencyCallName"
         />
 
         <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
@@ -103,8 +104,8 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
-            chatterNeedsInput: false,
-            chatterNeedsInputHelp: false,
+            emergencyCall: false,
+            emergencyCallName: 'Guest',
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
@@ -175,6 +176,9 @@ export default {
         },
         chatterEnabled() {
             return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
+        },
+        emergencyCallEnabled() {
+            return this.emergencyCall && !!this.standaloneServerId && !this.radioPower;
         }
     },
     watch: {
@@ -221,7 +225,12 @@ export default {
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
                     break;
+                case 'toggleEmergencyCall':
+                    this.emergencyCallName = event.data.displayName;
+                    this.emergencyCall = !this.emergencyCall;
+                    break;
                 case 'ptt':
+                    if (!this.radioPower) return;
                     this.sendToSocket({ type: 'ptt', state: event.data.state });
                     break;
                 case 'setVolume':
@@ -278,17 +287,11 @@ export default {
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
-                case 'chatterWait':
-                    if (this.chatterNeedsInput && !this.radioPower) {
-                        this.chatterNeedsInputHelp = true;
-                        this.postClient({ type: 'chatterNeedsFocus' });
-                    }
-                    break;
                 case 'chatterFrequenciesUpdate':
                     if (!this.chatterEnabled) return;
                     this.sendToSocket({
-                        type: 'set_scanner_freqs',
-                        freqs: event.data.freqs,
+                        type: 'set_scanner_channels',
+                        channelIds: event.data.channelIds,
                     })
                     break;
                 case 'chatterCameraUpdate':
@@ -491,6 +494,7 @@ export default {
                         this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
+                    if (!this.radioPower) return;
                     this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({type: 'talking', talking: event.micOpen});
                     break;
@@ -502,15 +506,6 @@ export default {
                     break;
                 case 'reposition':
                     this.dragMode = true;
-                    break;
-                case 'chatter_needs_input':
-                    if (this.radioPower) break;
-                    this.onStandaloneChatterLoad();
-                    break;
-                case 'chatter_init':
-                    this.postClient({ type: 'chatterInitialized' });
-                    this.chatterNeedsInput = false;
-                    this.chatterNeedsInputHelp = false;
                     break;
             }
         },
@@ -552,7 +547,6 @@ export default {
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
-            this.chatterNeedsInput = false;
             this.postClient({
                 type: 'power',
                 power: this.radioPower
@@ -565,17 +559,6 @@ export default {
         },
         onStandaloneConnected() {
             this.updateGamestate();
-        },
-        onStandaloneChatterLoad() {
-            this.chatterNeedsInput = true;
-
-            // constantly keep the frame in focus until it has been interacted with
-            const interval = setInterval(() => {
-                if (this.chatterNeedsInput) return void frameEl.contentWindow.focus();
-                clearInterval(interval);
-                this.$el.focus();
-            }, 100)
-            this.postClient({ type: 'chatterNeedsInput' });
         }
     }
 };

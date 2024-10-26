@@ -330,7 +330,13 @@ function initClient()
 		})
 	end)
 
-	RegisterCommand('radio', radioToggle)
+	RegisterCommand('radio', function(_, args)
+		if args[1] == '911' then
+			SendNUIMessage({ type = 'toggleEmergencyCall', displayName = GetPlayerName(PlayerId()) })
+		else
+			radioToggle()
+		end
+	end)
 	RegisterCommand('sonradradio', radioToggle)
 	TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 	RegisterCommand('radiotalk', function()
@@ -662,14 +668,6 @@ function initClient()
 		EndTextCommandThefeedPostTicker(false, false)
 	end
 
-	local function chatterNeedsInput()
-		-- wait for anybody to be near the player (or skip if debug mode)
-		while #GetActivePlayers() == 1 and not Config.debug do
-			Citizen.Wait(100)
-		end
-		SendNUIMessage({ type = 'chatterWait' })
-	end
-
 	RegisterNUICallback('data', function(data, cb)
 		if data.type == 'ready' then
 			initNui()
@@ -714,31 +712,6 @@ function initClient()
 			if type(data.state) == 'table' then data.state.gamestate = nil end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 		end
-
-		if data.type == 'chatterNeedsInput' then
-			-- give keyboard input focus
-			Citizen.CreateThread(chatterNeedsInput)
-		elseif data.type == 'chatterInitialized' then
-			if not radActive then
-				SetNuiFocus(false, false)
-			end
-		end
-
-		if data.type == 'chatterNeedsInput' then
-			-- give keyboard input focus
-			Citizen.CreateThread(chatterNeedsInput)
-		end
-
-		if not radActive then
-			if data.type == 'chatterNeedsFocus' then
-				SetNuiFocus(true, false)
-			end
-
-			if data.type == 'chatterInitialized' then
-				SetNuiFocus(false, false)
-			end
-		end
-
 
 		if data.type == 'home' then
 			handleHome()

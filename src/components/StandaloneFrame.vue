@@ -55,8 +55,9 @@ function pop() {
 export default {
     props: {
         serverId: { type: [Number, String], required: true },
-        url: { type: String },
-        chatter: { type: Boolean },
+        url: { type: String, default: 'https://sonoranradio.com' },
+        feature: { type: String, default: 'radio' },
+        displayName: { type: String },
     },
     emits: ['load'],
     data: () => ({
@@ -78,14 +79,19 @@ export default {
     },
     computed: {
         frameSrc() {
-            const url = this.url || 'https://sonoranradio.com';
-            const page = this.chatter ? 'chatter-engine' : 'view';
+            const pages = {
+                radio: 'view',
+                chatter: 'chatter-engine',
+                ['911']: 'emergency-call',
+            };
+            const page = pages[this.feature];
 
             const query = new URLSearchParams();
-            if (!this.chatter) query.append('autoconnect', 'true');
+            if (this.displayName) query.append('displayName', this.displayName);
+            query.append('autoconnect', 'true');
             query.append('fivem', 'true');
             query.append('cacheBust', this.cacheBust);
-            return `${url}/${page}/${this.serverId}?${query.toString()}`;
+            return `${this.url}/${page}/${this.serverId}?${query.toString()}`;
         }
     },
     watch: {
