@@ -6,8 +6,14 @@
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
             </div>
-            <div v-else-if="emergencyCall">
-                You are in a 911 call. Use <code>/radio 911</code> to end it
+            <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
+                <div>
+                    You are in a 911 call. Use <code>/radio 911</code> to end it
+                </div>
+                <div v-if="emergencyCall.peers.length > 0">
+                    You are now with a dispatcher!
+                </div>
+                <div v-else style="color:orange" >Waiting for dispatcher...</div>
             </div>
         </div>
 
@@ -25,8 +31,8 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :feature="emergencyCall ? '911' :'chatter'"
-            :display-name="emergencyCallName"
+            :feature="emergencyCallEnabled ? '911' :'chatter'"
+            :display-name="emergencyCall.name"
         />
 
         <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
@@ -104,8 +110,11 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
-            emergencyCall: false,
-            emergencyCallName: 'Guest',
+            emergencyCall: {
+                open: false,
+                name: 'Guest',
+                peers: [],
+            },
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
@@ -178,8 +187,12 @@ export default {
             return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
-            return this.emergencyCall && !!this.standaloneServerId && !this.radioPower;
-        }
+            return this.emergencyCall.open && !!this.standaloneServerId && !this.radioPower;
+        },
+        peersTalking() {
+            const peersTalking = [...this.$store.state.peersTalking];
+            return peersTalking.sort((a, b) => a.displayName - b.displayName)
+        },
     },
     watch: {
         stateFreqName(newVal) {
@@ -225,9 +238,8 @@ export default {
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
                     break;
-                case 'toggleEmergencyCall':
-                    this.emergencyCallName = event.data.displayName;
-                    this.emergencyCall = !this.emergencyCall;
+                case 'setEmergencyCall':
+                    this.setEmergencyCall(event.data.enabled, event.data.displayName);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
@@ -501,6 +513,9 @@ export default {
                 case 'peer_talk_status':
                     this.$store.commit('setPeerTalkStatus', event.peer);
                     break;
+                case 'call_peers':
+                    this.emergencyCall.peers = event.peers;
+                    break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');
                     break;
@@ -556,6 +571,13 @@ export default {
                 power: this.radioPower
             });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+        },
+        setEmergencyCall(enabled, displayName) {
+            const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
+            this.emergencyCall.open = enable;
+            if (displayName) this.emergencyCall.name = displayName;
+            if (!enable) // reset peers when call ends
+                this.emergencyCall.peers = [];
         },
         onStandaloneConnected() {
             this.updateGamestate();
