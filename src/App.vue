@@ -490,12 +490,15 @@ export default {
         socketMessage(event) {
             switch (event.type) {
                 case "radio_connected":
+                    console.log('radio connected');
                     this.$store.commit('setConnected', this.radioPower);
                     this.$store.commit('setRadioConfig', event.config);
                     this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
+                    // we were kicked on the radio, so end the call
+                    if (this.emergencyCall.open) this.setEmergencyCall(false);
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
