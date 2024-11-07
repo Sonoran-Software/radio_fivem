@@ -1,13 +1,19 @@
 <template>
     <div class="appcontainer" :class="{ debug, help }">
         <div class="top-instructions">
-            <div v-if="chatterEnabled && chatterNeedsInputHelp">
-                Sonoran Radio needs input to continue. Press any key
-            </div>
-            <div v-else-if="dragMode">
+            <div v-if="dragMode">
                 Click and drag to move the components.
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
+            </div>
+            <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
+                <div>
+                    You are in a 911 call. Use <code>/radio 911</code> to end it
+                </div>
+                <div v-if="emergencyCall.peers.length > 0">
+                    You are now with a dispatcher!
+                </div>
+                <div v-else style="color:orange" >Waiting for dispatcher...</div>
             </div>
         </div>
 
@@ -21,11 +27,12 @@
 
         <!-- acts as standalone radio for hearing radios around the player -->
         <standalone-frame
-            v-if="chatterEnabled"
+            v-if="emergencyCallEnabled || chatterEnabled"
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            chatter
+            :feature="emergencyCallEnabled ? '911' :'chatter'"
+            :display-name="emergencyCall.name"
         />
 
         <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
@@ -103,8 +110,11 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
-            chatterNeedsInput: false,
-            chatterNeedsInputHelp: false,
+            emergencyCall: {
+                open: false,
+                name: 'Guest',
+                peers: [],
+            },
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
@@ -175,7 +185,14 @@ export default {
         },
         chatterEnabled() {
             return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
-        }
+        },
+        emergencyCallEnabled() {
+            return this.emergencyCall.open && !!this.standaloneServerId && !this.radioPower;
+        },
+        peersTalking() {
+            const peersTalking = [...this.$store.state.peersTalking];
+            return peersTalking.sort((a, b) => a.displayName - b.displayName)
+        },
     },
     watch: {
         stateFreqName(newVal) {
@@ -221,7 +238,11 @@ export default {
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
                     break;
+                case 'setEmergencyCall':
+                    this.setEmergencyCall(event.data.enabled, event.data.displayName);
+                    break;
                 case 'ptt':
+                    if (!this.radioPower) return;
                     this.sendToSocket({ type: 'ptt', state: event.data.state });
                     break;
                 case 'setVolume':
@@ -278,17 +299,11 @@ export default {
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
-                case 'chatterWait':
-                    if (this.chatterNeedsInput && !this.radioPower) {
-                        this.chatterNeedsInputHelp = true;
-                        this.postClient({ type: 'chatterNeedsFocus' });
-                    }
-                    break;
                 case 'chatterFrequenciesUpdate':
                     if (!this.chatterEnabled) return;
                     this.sendToSocket({
-                        type: 'set_scanner_freqs',
-                        freqs: event.data.freqs,
+                        type: 'set_scanner_channels',
+                        channelIds: event.data.channelIds,
                     })
                     break;
                 case 'chatterCameraUpdate':
@@ -475,12 +490,15 @@ export default {
         socketMessage(event) {
             switch (event.type) {
                 case "radio_connected":
+                    console.log('radio connected');
                     this.$store.commit('setConnected', this.radioPower);
                     this.$store.commit('setRadioConfig', event.config);
                     this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
+                    // we were kicked on the radio, so end the call
+                    if (this.emergencyCall.open) this.setEmergencyCall(false);
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
@@ -491,26 +509,21 @@ export default {
                         this.postClient({ type: 'stateUpdated', state: event.state });
                     break;
                 case 'mic_status':
+                    if (!this.radioPower) return;
                     this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({type: 'talking', talking: event.micOpen});
                     break;
                 case 'peer_talk_status':
                     this.$store.commit('setPeerTalkStatus', event.peer);
                     break;
+                case 'call_peers':
+                    this.emergencyCall.peers = event.peers;
+                    break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');
                     break;
                 case 'reposition':
                     this.dragMode = true;
-                    break;
-                case 'chatter_needs_input':
-                    if (this.radioPower) break;
-                    this.onStandaloneChatterLoad();
-                    break;
-                case 'chatter_init':
-                    this.postClient({ type: 'chatterInitialized' });
-                    this.chatterNeedsInput = false;
-                    this.chatterNeedsInputHelp = false;
                     break;
             }
         },
@@ -552,7 +565,6 @@ export default {
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
-            this.chatterNeedsInput = false;
             this.postClient({
                 type: 'power',
                 power: this.radioPower
@@ -563,19 +575,15 @@ export default {
             });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
         },
+        setEmergencyCall(enabled, displayName) {
+            const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
+            this.emergencyCall.open = enable;
+            if (displayName) this.emergencyCall.name = displayName;
+            if (!enable) // reset peers when call ends
+                this.emergencyCall.peers = [];
+        },
         onStandaloneConnected() {
             this.updateGamestate();
-        },
-        onStandaloneChatterLoad() {
-            this.chatterNeedsInput = true;
-
-            // constantly keep the frame in focus until it has been interacted with
-            const interval = setInterval(() => {
-                if (this.chatterNeedsInput) return void frameEl.contentWindow.focus();
-                clearInterval(interval);
-                this.$el.focus();
-            }, 100)
-            this.postClient({ type: 'chatterNeedsInput' });
         }
     }
 };

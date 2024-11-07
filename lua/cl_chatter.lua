@@ -8,7 +8,7 @@ function initChatter()
 
 	local chatterSources = {}
 
-	-- find the near players, and send the required freqs to listen on
+	-- find the near players, and send the required channels to listen on
 	Citizen.CreateThread(function()
 		local MIN_DIST = 15.0
 
@@ -27,12 +27,13 @@ function initChatter()
 				end
 
 				local state = playerStates[GetPlayerServerId(ply)]
+				print('state', json.encode(state))
 				if state then
 					-- find the index of the existing chatter source
 					local idx = 0
 					for i = 1, #chatterSources do
 						chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
-						if chatterPlayerPed then
+						if Config.chatterExclusions and chatterPlayerPed then
 							for _, exclusion in ipairs(Config.chatterExclusions) do
 								if GetPedPropIndex(chatterPlayerPed, exclusion.componentId) == exclusion.drawableId  then
 									for _, texture in ipairs(exclusion.textures) do
@@ -74,25 +75,20 @@ function initChatter()
 			end
 
 			-- find the frequencies we need to listen to for chatter
-			local listenFreqs = {}
-			local function addChatterFreq(freq)
-				-- verify if the freq is already in the list
-				for i = 1, #listenFreqs do
-					if listenFreqs[i][1] == freq[1] and listenFreqs[i][2] == freq[2] then
-						return
-					end
-				end
-				table.insert(listenFreqs, freq)
-			end
+			-- duplicates don't matter because it's handled in the frontend
+			local listenChannelIds = {}
 			for _, info in ipairs(chatterSources) do
-				addChatterFreq(info.state.freqRecv)
-				for i = 1, #info.state.freqScan do
-					addChatterFreq(info.state.freqScan[i])
+				if info.state.spec ~= 2 then goto continue end
+
+				table.insert(listenChannelIds, info.state.primaryChId)
+				for i = 1, #info.state.scannedChIds do
+					table.insert(listenChannelIds, info.state.scannedChIds[i])
 				end
+				::continue::
 			end
 			SendNUIMessage({
-				type = 'chatterFrequenciesUpdate',
-				freqs = listenFreqs,
+				type = 'chatterChannelsUpdate',
+				channelIds = listenChannelIds,
 			})
 
 			Citizen.Wait(500)

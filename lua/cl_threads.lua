@@ -248,6 +248,11 @@ function initThreads()
         end
     end)
 
+    function getSignalQuality()
+        return math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
+    end
+    exports('getSignalQuality', getSignalQuality)
+
     -- 1000 MS Thread
     CreateThread(function()
         local QBCore = nil
@@ -290,8 +295,7 @@ function initThreads()
                     break
                 end
             end
-            local bestQuality = math.max(bestCellRepeaterQuality,
-                                         bestRackQuality, bestTowerQuality)
+            local bestQuality = getSignalQuality()
             if insideZone then
                 if bestQuality > 0 then
                     bestQuality = bestQuality * (1 - degradeStrength)
