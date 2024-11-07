@@ -431,10 +431,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:PanicButton')
 	AddEventHandler('SonoranRadio::API:PanicButton', function()
-		SendNUIMessage({
-			type = 'pushButton',
-			button = 'panic'
-		})
+		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:SetPreset')
@@ -702,7 +699,7 @@ function initClient()
 		end
 
 		if data.type == 'panic' then
-			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+			TriggerEvent('SonoranRadio::API:PanicButton')
 		end
 
 		if data.type == 'power' then
