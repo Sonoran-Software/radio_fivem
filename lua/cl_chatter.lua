@@ -27,7 +27,6 @@ function initChatter()
 				end
 
 				local state = playerStates[GetPlayerServerId(ply)]
-				print('state', json.encode(state))
 				if state then
 					-- find the index of the existing chatter source
 					local idx = 0
