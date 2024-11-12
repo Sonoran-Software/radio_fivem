@@ -35,30 +35,23 @@ export default new Vuex.Store({
             else
                 return "lightblue";
         },
-        freqRecv(state) {
-            return state.radioState?.freqRecv;
+        channelProfile(state) {
+            const primaryChId = state.radioState?.primaryChId;
+            return state.radioConfig?.profiles.find(x => x.id === primaryChId);
         },
-        freqXmit(state) {
-            return state.radioState?.freqXmit;
+        freqRecv(_state, getters) {
+            if (!getters.channelProfile) return null;
+            return [getters.channelProfile.recvFreqMajor, getters.channelProfile.recvFreqMinor];
         },
-        channelProfile(state, getters) {
-            if (!state.radioConfig) return null;
-
-            let find = null;
-            for (const prof of state.radioConfig.profiles) {
-                // check if the receive frequencies of the profile match the current receive frequency
-                if (!Array.isArray(getters.freqRecv) || getters.freqRecv[0] !== prof.recvFreqMajor || getters.freqRecv[1] !== prof.recvFreqMinor) continue;
-
-                if (!prof.xmitFreqMajor) find = prof; // this profile doesn't have a transmit frequency, so it's the best match
-                else if (Array.isArray(getters.freqXmit) && getters.freqXmit[0] === prof.xmitFreqMajor && getters.freqXmit[1] === prof.xmitFreqMinor) return prof;
-            }
-            return find;
+        freqXmit(_state, getters) {
+            if (!getters.channelProfile) return null;
+            return [getters.channelProfile.xmitFreqMajor, getters.channelProfile.xmitFreqMinor];
         },
         recvFreqStr(_state, getters) {
-            return freqToString(getters.freqRecv);
+            return getters.freqRecv && freqToString(getters.freqRecv);
         },
         xmitFreqStr(_state, getters) {
-            return freqToString(getters.freqXmit);
+            return getters.freqXmit && freqToString(getters.freqXmit);
         },
     },
     mutations: {

@@ -6,8 +6,11 @@
         <div v-else-if="peersTalking.length > 0">
             <div v-for="peer in peersTalking" :key="peer.identity" class="peer-name">{{ peer.displayName ?? 'Undefined' }}</div>
         </div>
+        <div v-else-if="!$store.getters.channelProfile">
+            <div class="profile-name">Temporary Channel</div>
+        </div>
         <div v-else>
-            <div class="profile-name"><b>{{ $store.getters.channelProfile?.displayName ?? 'CUSTOM' }}</b></div>
+            <div class="profile-name"><b>{{ $store.getters.channelProfile.displayName }}</b></div>
             <div>R: {{ $store.getters.recvFreqStr }}</div>
             <div>X: {{ $store.getters.xmitFreqStr }}</div>
         </div>

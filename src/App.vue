@@ -8,7 +8,7 @@
             </div>
             <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
                 <div>
-                    You are in a 911 call. Use <code>/radio 911</code> to end it
+                    You are in a 911 call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
                 <div v-if="emergencyCall.peers.length > 0">
                     You are now with a dispatcher!
@@ -114,6 +114,7 @@ export default {
                 open: false,
                 name: 'Guest',
                 peers: [],
+                cmd: '911',
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -189,6 +190,10 @@ export default {
         emergencyCallEnabled() {
             return this.emergencyCall.open && !!this.standaloneServerId && !this.radioPower;
         },
+        emergencyCallCommand() {
+            const formatted = /\s/.test(this.emergencyCall.cmd) ? `"${this.emergencyCall.cmd}"` : this.emergencyCall.cmd;
+            return `/radio ${formatted}`;
+        },
         peersTalking() {
             const peersTalking = [...this.$store.state.peersTalking];
             return peersTalking.sort((a, b) => a.displayName - b.displayName)
@@ -239,7 +244,7 @@ export default {
                     this.pttKeyName = event.data.pttKey;
                     break;
                 case 'setEmergencyCall':
-                    this.setEmergencyCall(event.data.enabled, event.data.displayName);
+                    this.setEmergencyCall(event.data.enabled, event.data.displayName, event.data.callCommand);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
@@ -575,10 +580,11 @@ export default {
             });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
         },
-        setEmergencyCall(enabled, displayName) {
+        setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
             this.emergencyCall.open = enable;
             if (displayName) this.emergencyCall.name = displayName;
+            if (cmd) this.emergencyCall.cmd = cmd;
             if (!enable) // reset peers when call ends
                 this.emergencyCall.peers = [];
         },
