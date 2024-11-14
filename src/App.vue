@@ -8,7 +8,7 @@
             </div>
             <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
                 <div>
-                    You are in a 911 call. Use <code>{{ emergencyCallCommand }}</code> to end it
+                    You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
                 <div v-if="emergencyCall.peers.length > 0">
                     You are now with a dispatcher!
