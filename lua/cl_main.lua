@@ -317,11 +317,15 @@ function initClient()
 		end
 	end
 
+	function emergencyCallCommand()
+		return Config.emergencyCallCommand or '911'
+	end
 	function setEmergencyCall(enabled)
 		SendNUIMessage({
 			type = 'setEmergencyCall',
 			enabled = enabled,
-			displayName = GetPlayerName(PlayerId())
+			displayName = GetPlayerName(PlayerId()),
+			callCommand = emergencyCallCommand(),
 		})
 		TriggerEvent('SonoranRadio::API:EmergencyCall', enabled)
 	end
@@ -343,7 +347,7 @@ function initClient()
 	end)
 
 	RegisterCommand('radio', function(_, args)
-		if args[1] == '911' then
+		if args[1] == emergencyCallCommand() then
 			setEmergencyCall('toggle')
 		else
 			radioToggle()

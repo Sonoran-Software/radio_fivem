@@ -33,6 +33,7 @@ Config.noPhysicalRacks = false -- Set to true to disable physical server racks
 Config.noPhysicalTowers = false -- Set to true to disable physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
 Config.tunnelDegradationStrength = 0.5 -- The strength of the tunnel degradation effect (0.0 - 1.0) 0.0 = no degradation, 1.0 = full degradation
+Config.emergencyCallCommand = '999' -- Command suffix to start or stop an emergency call (i.e. '911' == /radio 911)
 
 -- Notification Settings --
 Config.notifications = {
