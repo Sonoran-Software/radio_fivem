@@ -590,6 +590,7 @@ export default {
         },
         onStandaloneConnected() {
             this.updateGamestate();
+            this.updateAvailableSkins();
         }
     }
 };

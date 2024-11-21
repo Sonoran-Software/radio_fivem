@@ -1,7 +1,11 @@
 function checkFramePermissions(player)
 	local allowedFrames = {}
+	if not Config.frames.departments then
+		return allowedFrames
+	end
+
 	-- Check if the permission mode is 'ace' and departments are defined
-	if Config.frames.permissionMode == 'ace' and Config.frames.departments then
+	if Config.frames.permissionMode == 'ace' then
 		for _, department in pairs(Config.frames.departments) do
 			-- Check if department has 'ace' permissions defined
 			if department.permissions and department.permissions.ace then
@@ -15,7 +19,7 @@ function checkFramePermissions(player)
 				end
 			end
 		end
-	elseif Config.frames.permissionMode == 'qbcore' and Config.frames.departments then
+	elseif Config.frames.permissionMode == 'qbcore' then
 		local QBCore = exports['qb-core']:GetCoreObject()
 		local QBPlayer = QBCore.Functions.GetPlayer(player)
 		for _, department in pairs(Config.frames.departments) do
@@ -35,7 +39,7 @@ function checkFramePermissions(player)
 				end
 			end
 		end
-	elseif Config.frames.permissionMode == 'esx' and Config.frames.departments then
+	elseif Config.frames.permissionMode == 'esx' then
 		local ESX = exports['es_extended']:getSharedObject()
 		local ESXPlayer = ESX.GetPlayerFromId(player)
 		for _, department in pairs(Config.frames.departments) do
@@ -55,7 +59,7 @@ function checkFramePermissions(player)
 				end
 			end
 		end
-	elseif Config.frames.permissionMode == 'none' and Config.frames.departments then
+	elseif Config.frames.permissionMode == 'none' then
 		-- Add all frames to the list
 		for _, department in pairs(Config.frames.departments) do
 			for _, frame in ipairs(department.allowedFrames or {}) do
