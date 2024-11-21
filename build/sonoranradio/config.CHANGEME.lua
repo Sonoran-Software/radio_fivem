@@ -50,6 +50,18 @@ Config.notifications = {
 	end
 }
 
+-- Default radio keybinds (these can be changed in GTA settings) --
+Config.keybinds = {
+	['toggle'] = '',
+	['ptt'] = '\\',
+
+	['power'] = '',
+	['panic'] = '',
+	['nextChannel'] = '',
+	['prevChannel'] = '',
+	['talkAnim'] = ''
+}
+
 -- Radio Item Settings --
 Config.frames = {
 	permissionMode = 'none', -- ace, qbcore, esx or none

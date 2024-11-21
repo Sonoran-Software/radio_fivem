@@ -53,6 +53,7 @@ function initClient()
 			}
 		})
 		critError = true
+		return
 	end
 
 	local comId = Config.comId or Config.communityId or Config.standaloneId
@@ -233,6 +234,12 @@ function initClient()
 			return nil
 		end
 	end
+	local function getConfigKeybind(name)
+		if Config.keybinds and Config.keybinds[name] then
+			return Config.keybinds[name]
+		end
+		return ''
+	end
 
 	function hasRadioItem()
 		local itemName = Config.RadioItem and Config.RadioItem.name
@@ -245,36 +252,6 @@ function initClient()
 	end
 
 	function radioToggle(frame)
-		if critError or Config.critError then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
-				}
-			})
-			return
-		end
-		if Config.comId == nil or Config.comId == '' then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is no community ID set for SonoranRadio. Please contact the server owner.'
-				}
-			})
-			return
-		end
 		if not authorized then
 			SendNotification('Radio: ~r~No Permission~r~')
 			return
@@ -474,11 +451,11 @@ function initClient()
 	RegisterCommand('sonradpanic', function()
 		TriggerEvent('SonoranRadio::API:PanicButton')
 	end)
-	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', '')
-	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
-	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
-	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
-	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
+	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
+	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', getConfigKeybind('nextChannel'))
+	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', getConfigKeybind('prevChannel'))
+	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', getConfigKeybind('power'))
+	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', getConfigKeybind('panic'))
 
 	-- add PTT for the standalone radio
 	RegisterCommand('+sonradptt', function()
@@ -493,7 +470,7 @@ function initClient()
 			state = false
 		})
 	end)
-	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
+	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
 	function Radio:Talking(toggle)
 		local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
@@ -563,36 +540,6 @@ function initClient()
 	-- end)
 
 	function Radio:Toggle(toggle)
-		if critError or Config.critError then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
-				}
-			})
-			return
-		end
-		if Config.comId == nil or Config.comId == '' then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is no community ID set for SonoranRadio. Please contact the server owner.'
-				}
-			})
-			return
-		end
 		local playerPed = PlayerPedId()
 		local count = 0
 
