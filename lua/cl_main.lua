@@ -234,6 +234,16 @@ function initClient()
 		end
 	end
 
+	function hasRadioItem()
+		local itemName = Config.RadioItem and Config.RadioItem.name
+		if not itemName then
+			itemName = 'sonoran_radio'
+		end
+
+		local QBCore = exports['qb-core']:GetCoreObject()
+		return not not QBCore and QBCore.Functions.HasItem(itemName)
+	end
+
 	function radioToggle(frame)
 		if critError or Config.critError then
 			TriggerEvent('chat:addMessage', {
@@ -265,56 +275,55 @@ function initClient()
 			})
 			return
 		end
-		if authorized then
-			TriggerServerEvent('SonoranRadio::CheckPermissions')
-			if not Config.enforceRadioItem then
-				Radio.Has = true
-			end
-			if Radio.Has then
-				if frame == nil then
-					frame = 'default'
-				end
-				SendNUIMessage({
-					type = 'setCurrentSkin',
-					skin = frame,
-					skins = allowedFrames
-				})
-				radActive = not radActive
-				SendNUIMessage({
-					type = 'setUiPositions',
-					data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-				})
-				SendNUIMessage({
-					type = 'setVisible',
-					visibility = radActive,
-					pttKey = getPttKey()
-				})
-				if radActive then
-					SetNuiFocus(true, true)
-				else
-					SetNuiFocus(false, false)
-				end
-				Radio:Toggle(radActive)
-			else
-				if Config.enforceRadioItem then
-					TriggerEvent('chat:addMessage', {
-						color = {
-							255,
-							0,
-							0
-						},
-						multiline = true,
-						args = {
-							'Sonoran Radio',
-							'You must have a radio to use this command.'
-						}
-					})
-				end
-				DebugPrint('Radio Requested, but player doesn\'t have a radio.')
-			end
-		else
+		if not authorized then
 			SendNotification('Radio: ~r~No Permission~r~')
+			return
 		end
+
+		TriggerServerEvent('SonoranRadio::CheckPermissions')
+
+		local hasItem = not Config.enforceRadioItem or hasRadioItem()
+		if not hasItem then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Sonoran Radio',
+					'You must have a radio to use this command.'
+				}
+			})
+			DebugPrint('Radio Requested, but player doesn\'t have a radio.')
+			return
+		end
+
+		if frame == nil then
+			frame = 'default'
+		end
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame,
+			skins = allowedFrames
+		})
+		radActive = not radActive
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		})
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive,
+			pttKey = getPttKey()
+		})
+		if radActive then
+			SetNuiFocus(true, true)
+		else
+			SetNuiFocus(false, false)
+		end
+		Radio:Toggle(radActive)
 	end
 
 	function emergencyCallCommand()
@@ -882,17 +891,7 @@ function initClient()
 				}
 			})
 		elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
-			if Config.RadioItem == nil then
-				Config.RadioItem = {
-					name = 'sonoran_radio',
-					label = 'Sonoran Radio',
-					weight = 1,
-					description = 'Communicate with others through the Sonoran Radio',
-				}
-			end
-			local QBCore = exports['qb-core']:GetCoreObject()
-			local hasRadio = QBCore.Functions.HasItem(Config.RadioItem.name)
-			if hasRadio then
+			if hasRadioItem() then
 				TriggerEvent('chat:addMessage', {
 					args = {
 						'^1SonoranRadio',
