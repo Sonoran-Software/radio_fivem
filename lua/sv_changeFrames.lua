@@ -1,7 +1,17 @@
 function checkFramePermissions(player)
 	local allowedFrames = {}
 	if not Config.frames.departments then
-		return allowedFrames
+		Config.frames.departments = {
+			['common'] = {
+				label = 'Common',
+				allowedFrames = {
+					'default',
+					'signalpro',
+					'voxguard',
+					'hi-vis'
+				}
+			}
+		}
 	end
 
 	-- Check if the permission mode is 'ace' and departments are defined
