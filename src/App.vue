@@ -155,8 +155,8 @@ export default {
                 'next_preset': this.buttonNext,
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
-                'home': this.buttonHome,
-                'hide': () => this.hideRadio(true),
+                'refresh': this.refreshScreen,
+                'hide': () => this.escapeRadio(true),
             };
             return frames.map((frame) => ({
                 ...frame,
@@ -243,6 +243,9 @@ export default {
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
+                    break;
+                case 'refresh':
+                    this.refreshScreen();
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.data.enabled, event.data.displayName, event.data.callCommand);
@@ -362,7 +365,7 @@ export default {
                                 type: 'setUiPositions', data: this.positions
                             });
                         } else {
-                            this.hideRadio(false);
+                            this.escapeRadio(false);
                         }
                         break;
                     case 'ArrowUp':
@@ -471,8 +474,9 @@ export default {
             }
             return skinOptions;
         },
-        hideRadio(forceful) {
-            this.postClient({ type: 'hide', force: forceful });
+        escapeRadio(hide) {
+            this.postClient({ type: 'escape' });
+            if (hide) this.showRadio = false;
         },
         notifyPlayer(message, ignorestate) {
             if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
@@ -540,17 +544,17 @@ export default {
         updateAvailableSkins() {
             this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
+        refreshScreen() {
+            if (this.$refs.standaloneFrame.length === 0) return;
+            this.$refs.standaloneFrame[0].flush(true);
+            this.postClient({
+                type: "refreshScreen"
+            });
+        },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
             this.postClient({
                 type: "panic"
-            });
-        },
-        buttonHome() {
-            if (this.$refs.standaloneFrame.length === 0) return;
-            this.$refs.standaloneFrame[0].flush(true);
-            this.postClient({
-                type: "home"
             });
         },
         buttonPrev() {

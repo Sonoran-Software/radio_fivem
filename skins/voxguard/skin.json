@@ -34,7 +34,7 @@
           "height": 1
         },
         {
-          "action": "home",
+          "action": "hide",
           "bottom": 12.625,
           "left": 4.875,
           "width": 1,
@@ -75,7 +75,7 @@
           "height": 1.75
         },
         {
-          "action": "home",
+          "action": "hide",
           "top": 14.625,
           "right": 14.625,
           "width": 2.75,

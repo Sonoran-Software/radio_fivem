@@ -161,9 +161,6 @@ function initThreads()
             end
             -- DebugPrint("Updating Radio State")
             SendNUIMessage({type = 'inVehicle', vehState = inVehicle})
-            if prevState ~= inVehicle then
-                SendNUIMessage({type = 'setVisible', visibility = false})
-            end
             for i = 1, #Towers do
                 local tower = Towers[i]
                 if tower then

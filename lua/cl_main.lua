@@ -5,7 +5,6 @@ local unitStatus = nil
 
 isTalking = false
 allowedMiniRadio = false
-inVehicle = false
 local tunnels = {}
 local authorized = false
 local allowedFrames = {}
@@ -333,8 +332,18 @@ function initClient()
 	end)
 
 	RegisterCommand('radio', function(_, args)
-		if args[1] == emergencyCallCommand() then
+		local action = args[1]
+		if action == emergencyCallCommand() then
 			setEmergencyCall('toggle')
+		elseif action == 'hide' then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+		elseif action == 'refresh' then
+			SendNUIMessage({
+				type = 'refresh'
+			})
 		else
 			radioToggle()
 		end
@@ -642,15 +651,9 @@ function initClient()
 			initNui()
 		end
 
-		if data.type == 'hide' then
+		if data.type == 'escape' then
 			radActive = false
 			SetNuiFocus(false, false)
-			if not inVehicle or data.force then
-				SendNUIMessage({
-					type = 'setVisible',
-					visibility = radActive
-				})
-			end
 			Radio:Toggle(radActive)
 		end
 
@@ -682,8 +685,8 @@ function initClient()
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 		end
 
-		if data.type == 'home' then
-			handleHome()
+		if data.type == 'refreshScreen' then
+			handleRefreshScreen()
 		end
 
 		if data.type == 'currentSkinUpdated' then
@@ -721,36 +724,6 @@ function initClient()
 		TriggerEvent('chat:removeSuggestion', '/radiotalk')
 		Radio:Destroy()
 	end)
-
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
-	-- 		local prevState = inVehicle
-	-- 		-- DebugPrint("Getting Players Vehicle")
-
-	-- 		if not IsPedInAnyVehicle(PlayerPedId(), false) then
-	-- 			-- player is in vehicle
-	-- 			inVehicle = false
-	-- 		else
-	-- 			inVehicle = true
-	-- 		end
-
-	-- 		-- DebugPrint("Updating Radio State")
-	-- 		SendNUIMessage({
-	-- 			type = 'inVehicle',
-	-- 			vehState = inVehicle
-	-- 		})
-
-	-- 		if prevState ~= inVehicle then
-	-- 			SendNUIMessage({
-	-- 				type = 'setVisible',
-	-- 				visibility = false
-	-- 			})
-	-- 		end
-
-	-- 		Wait(100)
-	-- 	end
-	-- end)
 
 	local PlayerDead = false
 	local RadioLastState = nil
