@@ -217,6 +217,7 @@ export default {
         });
     },
     mounted() {
+        setInterval(() => this.loop20(), 20000);
         this.selectSkin('default', true);
         window.addEventListener('message', (event) => {
             if (event.data.type === 'keyup' || event.data.type === 'keydown')
@@ -304,7 +305,7 @@ export default {
                     if (event.data.skin) // update current ski
                         this.selectSkin(event.data.skin);
                     break;
-                case 'chatterFrequenciesUpdate':
+                case 'chatterChannelsUpdate':
                     if (!this.chatterEnabled) return;
                     this.sendToSocket({
                         type: 'set_scanner_channels',
@@ -587,6 +588,13 @@ export default {
             if (cmd) this.emergencyCall.cmd = cmd;
             if (!enable) // reset peers when call ends
                 this.emergencyCall.peers = [];
+        },
+        loop20() {
+            if (!this.radioPower) return;
+            // keep pushing stateUpdated every 20s while the radio is on
+            // NOTE: chatter won't work without this (the server clears stale data after 30s of no update)
+            const state = this.$store.state.radioState;
+            if (state) this.postClient({ type: 'stateUpdated', state });
         },
         onStandaloneConnected() {
             this.updateGamestate();

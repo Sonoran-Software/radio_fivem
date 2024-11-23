@@ -27,36 +27,38 @@ function initChatter()
 				end
 
 				local state = playerStates[GetPlayerServerId(ply)]
-				print('state', json.encode(state))
-				if state then
-					-- find the index of the existing chatter source
-					local idx = 0
-					for i = 1, #chatterSources do
-						chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
-						if Config.chatterExclusions and chatterPlayerPed then
-							for _, exclusion in ipairs(Config.chatterExclusions) do
-								if GetPedPropIndex(chatterPlayerPed, exclusion.componentId) == exclusion.drawableId  then
-									for _, texture in ipairs(exclusion.textures) do
-										if GetPedPropTextureIndex(chatterPlayerPed, exclusion.componentId) == texture - 1 then
-											goto continue
-										end
-									end
+				if not state then
+					goto continue
+				end
+
+				if type(Config.chatterExclusions) == 'table' then
+					for _, exclusion in ipairs(Config.chatterExclusions) do
+						if GetPedPropIndex(ped, exclusion.componentId) == exclusion.drawableId then
+							for _, texture in ipairs(exclusion.textures) do
+								if GetPedPropTextureIndex(ped, exclusion.componentId) == texture - 1 then
+									goto continue
 								end
 							end
 						end
-						if chatterSources[i].player == ply then
-							idx = i
-							break
-						end
 					end
-					if idx > 0 then
-						chatterSources[idx].state = state
-					else
-						table.insert(chatterSources, {player = ply, state = state})
-					end
-
-					table.insert(chatterSourcePlayers, ply)
 				end
+
+				-- find the index of the existing chatter source
+				local idx = 0
+				for i = 1, #chatterSources do
+					-- chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
+					if chatterSources[i].player == ply then
+						idx = i
+						break
+					end
+				end
+				if idx > 0 then
+					chatterSources[idx].state = state
+				else
+					table.insert(chatterSources, {player = ply, state = state})
+				end
+
+				table.insert(chatterSourcePlayers, ply)
 				::continue::
 			end
 
