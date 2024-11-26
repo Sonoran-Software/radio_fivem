@@ -96,6 +96,7 @@ Config.frames = {
 
 -- Radio Chatter Exclusion Settings --
 Config.chatterExclusions = {
+	-- See for prop component ids: https://docs.fivem.net/natives/?_0x829F2E2
 	{
 		componentId = 2, -- Ears
 		drawableId = 1, -- Number in vMenu MP Ped Component list
@@ -106,13 +107,15 @@ Config.chatterExclusions = {
 		drawableId = 2, -- Number in vMenu MP Ped Component list
 		texture = 0 -- Texture ID in vMenu MP Ped Component list
 	},
+	-- all componentIds >= 14 are drawables
+	-- See for drawable component ids (and add 14): https://docs.fivem.net/natives/?_0x262B14F48D29DE80
 	{
-		componentId = 2, -- Ears
+		componentId = 24, -- Decl (Outer Shirts)
 		drawableId = 2, -- Number in vMenu MP Ped Component list
 		texture = 0 -- Texture ID in vMenu MP Ped Component list
 	},
 	{
-		componentId = 2, -- Ears
+		componentId = 18, -- Lowr (Pants)
 		drawableId = 42, -- Number in vMenu MP Ped Component list
 		texture = 0 -- Texture ID in vMenu MP Ped Component list
 	},
