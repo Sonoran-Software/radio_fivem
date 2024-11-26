@@ -74,9 +74,9 @@ else
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
 			local radio = nil
-			if type(Player.Functions.GetItemByName) == 'function' then
+			if type(Player.Functions.GetItemByName) == 'table' then
 				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
-			elseif type(Player.Functions.HasItem) == 'function' then
+			elseif type(Player.Functions.HasItem) == 'table' then
 				radio = Player.Functions.HasItem(Config.RadioItem.name)
 			end
 			if not radio then
