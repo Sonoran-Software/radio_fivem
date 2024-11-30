@@ -61,23 +61,25 @@ export default {
     },
     emits: ['load'],
     data: () => ({
-        ro: null,
+        interval: null,
+        lastGuide: null,
         cacheBust,
     }),
     mounted() {
-        push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
-
+        push(this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
         frameEl.addEventListener('load', this.onLoad);
-        this.ro = new ResizeObserver(() => setTimeout(() => this.flush()));
-        this.ro.observe(this.$refs.guide);
+        this.interval = setInterval(() => this.intervalRefresh(), 50);
+        this.lastGuide = this.$refs['guide'].getBoundingClientRect();
     },
     beforeDestroy() {
-        this.ro.disconnect();
-        this.ro = null;
+        clearInterval(this.interval);
         frameEl.removeEventListener('load', this.onLoad);
         pop();
     },
     computed: {
+        shouldBeVisible() {
+            return this.feature === 'radio';
+        },
         frameSrc() {
             const pages = {
                 radio: 'view',
@@ -110,11 +112,24 @@ export default {
                 frameEl = null;
 
                 const setTo = Date.now();
-                console.log('set cache bust to', setTo);
                 this.cacheBust = cacheBust = setTo;
             }
-            push(!this.chatter ? this.$refs.guide : null, this.frameSrc);
-        }
+            push(this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
+        },
+        intervalRefresh() {
+            if (!this.shouldBeVisible) return;
+            const threshold = 0.5; // 0.5px
+            const guide = this.$refs['guide'].getBoundingClientRect();
+
+            // constantly check if the guide has moved
+            const needsFlush = Math.abs(guide.top - this.lastGuide.top) > threshold
+                || Math.abs(guide.left - this.lastGuide.left) > threshold
+                || Math.abs(guide.width - this.lastGuide.width) > threshold
+                || Math.abs(guide.height - this.lastGuide.height) > threshold;
+            this.lastGuide = guide;
+            // flush if moved
+            if (needsFlush) this.flush();
+        },
     },
 };
 </script>

@@ -155,7 +155,7 @@ export default {
                 'next_preset': this.buttonNext,
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
-                'refresh': this.refreshScreen,
+                'home': this.refreshScreen,
                 'hide': () => this.escapeRadio(true),
             };
             return frames.map((frame) => ({

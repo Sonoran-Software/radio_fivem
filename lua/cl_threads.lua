@@ -106,12 +106,7 @@ function initThreads()
                     -- print("has radio")
                     QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem',
                                                      function(hasItem)
-                        if not hasItem then
-                            Radio.Has = false
-                            Radio:Toggle(false)
-                        else
-                            Radio.Has = true
-                        end
+                        Radio.Has = hasItem
                     end, Config.RadioItem.name)
                 end
             end
