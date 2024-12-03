@@ -1,6 +1,6 @@
 function checkFramePermissions(player)
 	local allowedFrames = {}
-	if not Config.frames.departments then
+	if not Config.frames.departments or (type(Config.frames.departments) == 'table' and next(Config.frames.departments) == nil) then
 		Config.frames.departments = {
 			['common'] = {
 				label = 'Common',
