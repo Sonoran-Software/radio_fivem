@@ -8,7 +8,7 @@
             </div>
             <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
                 <div>
-                    You are in a 911 call. Use <code>{{ emergencyCallCommand }}</code> to end it
+                    You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
                 <div v-if="emergencyCall.peers.length > 0">
                     You are now with a dispatcher!
@@ -129,9 +129,6 @@ export default {
         showMobileRadio() {
             return this.showRadio && this.inVehicle;
         },
-        stateFreqName() {
-            return this.$store.getters.freqName;
-        },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
 
@@ -155,8 +152,8 @@ export default {
                 'next_preset': this.buttonNext,
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
-                'home': this.buttonHome,
-                'hide': () => this.hideRadio(true),
+                'home': this.refreshScreen,
+                'hide': () => this.escapeRadio(true),
             };
             return frames.map((frame) => ({
                 ...frame,
@@ -200,10 +197,6 @@ export default {
         },
     },
     watch: {
-        stateFreqName(newVal) {
-            if (!this.$store.state.connected) return;
-            this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
-        },
         skinNames() {
             this.updateAvailableSkins();
         }
@@ -243,6 +236,9 @@ export default {
                 case 'setVisible':
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
+                    break;
+                case 'refresh':
+                    this.refreshScreen();
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.data.enabled, event.data.displayName, event.data.callCommand);
@@ -362,7 +358,7 @@ export default {
                                 type: 'setUiPositions', data: this.positions
                             });
                         } else {
-                            this.hideRadio(false);
+                            this.escapeRadio(false);
                         }
                         break;
                     case 'ArrowUp':
@@ -471,11 +467,18 @@ export default {
             }
             return skinOptions;
         },
-        hideRadio(forceful) {
-            this.postClient({ type: 'hide', force: forceful });
+        escapeRadio(hide) {
+            this.postClient({ type: 'escape' });
+            if (hide) this.showRadio = false;
+
+            // notify player on how to hide radio if this is the first time
+            const LS_KEY = 'hide_portable_hint_seen';
+            if (hide || this.inVehicle || localStorage.getItem(LS_KEY)) return;
+            this.notifyPlayer('~g~HINT~s~: Use ~y~/radio hide~s~ or press the ~p~purple button~s~ to hide the radio');
+            localStorage.setItem(LS_KEY, 'true');
         },
-        notifyPlayer(message, ignorestate) {
-            if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
+        notifyPlayer(message) {
+            this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
             this.sendToSocket({
@@ -540,32 +543,28 @@ export default {
         updateAvailableSkins() {
             this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
+        refreshScreen() {
+            if (this.$refs.standaloneFrame.length === 0) return;
+            this.$refs.standaloneFrame[0].flush(true);
+            this.postClient({
+                type: "refreshScreen"
+            });
+        },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
             this.postClient({
                 type: "panic"
             });
         },
-        buttonHome() {
-            if (this.$refs.standaloneFrame.length === 0) return;
-            this.$refs.standaloneFrame[0].flush(true);
-            this.postClient({
-                type: "home"
-            });
-        },
         buttonPrev() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.getters.sublvl == 0)
-                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Prev Preset");
             this.prevPreset();
         },
         buttonNext() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.getters.sublvl == 0)
-                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Next Preset");
             this.nextPreset();
         },
@@ -579,7 +578,7 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"));
         },
         setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
@@ -598,6 +597,7 @@ export default {
         },
         onStandaloneConnected() {
             this.updateGamestate();
+            this.updateAvailableSkins();
         }
     }
 };

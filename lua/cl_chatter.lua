@@ -6,6 +6,17 @@ function initChatter()
 		playerStates = states
 	end)
 
+	local function pedHasComponent(ped, componentId, drawableId, textureId)
+		local drawableOffset = 14
+		if componentId >= drawableOffset then -- components 14 and above are props (hats, glasses, etc)
+			return GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId and
+				(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId - 1)
+		else
+			return GetPedPropIndex(ped, componentId) == drawableId and
+				(not textureId or GetPedPropTextureIndex(ped, componentId) == textureId - 1)
+		end
+	end
+
 	local chatterSources = {}
 
 	-- find the near players, and send the required channels to listen on
@@ -33,12 +44,8 @@ function initChatter()
 
 				if type(Config.chatterExclusions) == 'table' then
 					for _, exclusion in ipairs(Config.chatterExclusions) do
-						if GetPedPropIndex(ped, exclusion.componentId) == exclusion.drawableId then
-							for _, texture in ipairs(exclusion.textures) do
-								if GetPedPropTextureIndex(ped, exclusion.componentId) == texture - 1 then
-									goto continue
-								end
-							end
+						if pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture) then
+							goto continue
 						end
 					end
 				end
@@ -46,7 +53,6 @@ function initChatter()
 				-- find the index of the existing chatter source
 				local idx = 0
 				for i = 1, #chatterSources do
-					-- chatterPlayerPed = GetPlayerPed(chatterSources[i].player)
 					if chatterSources[i].player == ply then
 						idx = i
 						break

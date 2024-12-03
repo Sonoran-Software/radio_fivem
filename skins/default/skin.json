@@ -3,7 +3,7 @@
   "frames": [
     {
       "type": "portable",
-      "body": { "image": "radio-portable.png", "width": 17 },
+      "body": { "image": "radio-portable.webp", "width": 17 },
       "controls": [
         {
           "action": "power",
@@ -32,6 +32,13 @@
           "left": 4,
           "width": 2,
           "height": 1.25
+        },
+        {
+          "action": "hide",
+          "bottom": 25,
+          "left": 16.375,
+          "width": 1.25,
+          "height": 2.25
         },
         {
           "action": "home",

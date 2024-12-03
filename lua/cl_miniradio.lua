@@ -265,7 +265,7 @@ function initMiniRadio()
         end
     end
 
-    function handleHome()
+    function handleRefreshScreen()
         activeChannels = {}
         setActiveUsers(activeChannels)
     end

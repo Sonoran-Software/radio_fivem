@@ -106,12 +106,7 @@ function initThreads()
                     -- print("has radio")
                     QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem',
                                                      function(hasItem)
-                        if not hasItem then
-                            Radio.Has = false
-                            Radio:Toggle(false)
-                        else
-                            Radio.Has = true
-                        end
+                        Radio.Has = hasItem
                     end, Config.RadioItem.name)
                 end
             end
@@ -161,9 +156,6 @@ function initThreads()
             end
             -- DebugPrint("Updating Radio State")
             SendNUIMessage({type = 'inVehicle', vehState = inVehicle})
-            if prevState ~= inVehicle then
-                SendNUIMessage({type = 'setVisible', visibility = false})
-            end
             for i = 1, #Towers do
                 local tower = Towers[i]
                 if tower then

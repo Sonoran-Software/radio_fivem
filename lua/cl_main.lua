@@ -5,7 +5,6 @@ local unitStatus = nil
 
 isTalking = false
 allowedMiniRadio = false
-inVehicle = false
 local tunnels = {}
 local authorized = false
 local allowedFrames = {}
@@ -53,6 +52,7 @@ function initClient()
 			}
 		})
 		critError = true
+		return
 	end
 
 	local comId = Config.comId or Config.communityId or Config.standaloneId
@@ -233,88 +233,70 @@ function initClient()
 			return nil
 		end
 	end
+	local function getConfigKeybind(name)
+		if Config.keybinds and Config.keybinds[name] then
+			return Config.keybinds[name]
+		end
+		return ''
+	end
+
+	function hasRadioItem()
+		local itemName = Config.RadioItem and Config.RadioItem.name
+		if not itemName then
+			itemName = 'sonoran_radio'
+		end
+
+		local QBCore = exports['qb-core']:GetCoreObject()
+		return not not QBCore and QBCore.Functions.HasItem(itemName)
+	end
 
 	function radioToggle(frame)
-		if critError or Config.critError then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
-				}
-			})
-			return
-		end
-		if Config.comId == nil or Config.comId == '' then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is no community ID set for SonoranRadio. Please contact the server owner.'
-				}
-			})
-			return
-		end
-		if authorized then
-			TriggerServerEvent('SonoranRadio::CheckPermissions')
-			if not Config.enforceRadioItem then
-				Radio.Has = true
-			end
-			if Radio.Has then
-				if frame == nil then
-					frame = 'default'
-				end
-				SendNUIMessage({
-					type = 'setCurrentSkin',
-					skin = frame,
-					skins = allowedFrames
-				})
-				radActive = not radActive
-				SendNUIMessage({
-					type = 'setUiPositions',
-					data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-				})
-				SendNUIMessage({
-					type = 'setVisible',
-					visibility = radActive,
-					pttKey = getPttKey()
-				})
-				if radActive then
-					SetNuiFocus(true, true)
-				else
-					SetNuiFocus(false, false)
-				end
-				Radio:Toggle(radActive)
-			else
-				if Config.enforceRadioItem then
-					TriggerEvent('chat:addMessage', {
-						color = {
-							255,
-							0,
-							0
-						},
-						multiline = true,
-						args = {
-							'Sonoran Radio',
-							'You must have a radio to use this command.'
-						}
-					})
-				end
-				DebugPrint('Radio Requested, but player doesn\'t have a radio.')
-			end
-		else
+		if not authorized then
 			SendNotification('Radio: ~r~No Permission~r~')
+			return
 		end
+
+		TriggerServerEvent('SonoranRadio::CheckPermissions')
+
+		local hasItem = not Config.enforceRadioItem or hasRadioItem()
+		if not hasItem then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Sonoran Radio',
+					'You must have a radio to use this command.'
+				}
+			})
+			DebugPrint('Radio Requested, but player doesn\'t have a radio.')
+			return
+		end
+
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame,
+			skins = allowedFrames
+		})
+		radActive = not radActive
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		})
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = radActive,
+			pttKey = getPttKey()
+		})
+		if radActive then
+			SetNuiFocus(true, true)
+		else
+			SetNuiFocus(false, false)
+		end
+		Radio:Toggle(radActive)
 	end
 
 	function emergencyCallCommand()
@@ -347,8 +329,18 @@ function initClient()
 	end)
 
 	RegisterCommand('radio', function(_, args)
-		if args[1] == emergencyCallCommand() then
+		local action = args[1]
+		if action == emergencyCallCommand() then
 			setEmergencyCall('toggle')
+		elseif action == 'hide' then
+			SendNUIMessage({
+				type = 'setVisible',
+				visibility = false
+			})
+		elseif action == 'refresh' then
+			SendNUIMessage({
+				type = 'refresh'
+			})
 		else
 			radioToggle()
 		end
@@ -465,11 +457,11 @@ function initClient()
 	RegisterCommand('sonradpanic', function()
 		TriggerEvent('SonoranRadio::API:PanicButton')
 	end)
-	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', '')
-	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', '')
-	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', '')
-	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', '')
-	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', '')
+	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
+	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', getConfigKeybind('nextChannel'))
+	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', getConfigKeybind('prevChannel'))
+	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', getConfigKeybind('power'))
+	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', getConfigKeybind('panic'))
 
 	-- add PTT for the standalone radio
 	RegisterCommand('+sonradptt', function()
@@ -484,7 +476,7 @@ function initClient()
 			state = false
 		})
 	end)
-	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', '|')
+	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
 	function Radio:Talking(toggle)
 		local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
@@ -554,36 +546,6 @@ function initClient()
 	-- end)
 
 	function Radio:Toggle(toggle)
-		if critError or Config.critError then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is a critical error with SonoranRadio configuration. There is no API Key, an invalid API Key or Community ID set. Please contact the server owner.'
-				}
-			})
-			return
-		end
-		if Config.comId == nil or Config.comId == '' then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {
-					'Sonoran Radio',
-					'There is no community ID set for SonoranRadio. Please contact the server owner.'
-				}
-			})
-			return
-		end
 		local playerPed = PlayerPedId()
 		local count = 0
 
@@ -686,15 +648,9 @@ function initClient()
 			initNui()
 		end
 
-		if data.type == 'hide' then
+		if data.type == 'escape' then
 			radActive = false
 			SetNuiFocus(false, false)
-			if not inVehicle or data.force then
-				SendNUIMessage({
-					type = 'setVisible',
-					visibility = radActive
-				})
-			end
 			Radio:Toggle(radActive)
 		end
 
@@ -726,8 +682,8 @@ function initClient()
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 		end
 
-		if data.type == 'home' then
-			handleHome()
+		if data.type == 'refreshScreen' then
+			handleRefreshScreen()
 		end
 
 		if data.type == 'currentSkinUpdated' then
@@ -765,36 +721,6 @@ function initClient()
 		TriggerEvent('chat:removeSuggestion', '/radiotalk')
 		Radio:Destroy()
 	end)
-
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
-	-- 		local prevState = inVehicle
-	-- 		-- DebugPrint("Getting Players Vehicle")
-
-	-- 		if not IsPedInAnyVehicle(PlayerPedId(), false) then
-	-- 			-- player is in vehicle
-	-- 			inVehicle = false
-	-- 		else
-	-- 			inVehicle = true
-	-- 		end
-
-	-- 		-- DebugPrint("Updating Radio State")
-	-- 		SendNUIMessage({
-	-- 			type = 'inVehicle',
-	-- 			vehState = inVehicle
-	-- 		})
-
-	-- 		if prevState ~= inVehicle then
-	-- 			SendNUIMessage({
-	-- 				type = 'setVisible',
-	-- 				visibility = false
-	-- 			})
-	-- 		end
-
-	-- 		Wait(100)
-	-- 	end
-	-- end)
 
 	local PlayerDead = false
 	local RadioLastState = nil
@@ -882,17 +808,7 @@ function initClient()
 				}
 			})
 		elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
-			if Config.RadioItem == nil then
-				Config.RadioItem = {
-					name = 'sonoran_radio',
-					label = 'Sonoran Radio',
-					weight = 1,
-					description = 'Communicate with others through the Sonoran Radio',
-				}
-			end
-			local QBCore = exports['qb-core']:GetCoreObject()
-			local hasRadio = QBCore.Functions.HasItem(Config.RadioItem.name)
-			if hasRadio then
+			if hasRadioItem() then
 				TriggerEvent('chat:addMessage', {
 					args = {
 						'^1SonoranRadio',
