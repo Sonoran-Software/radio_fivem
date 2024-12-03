@@ -22,6 +22,7 @@ function push(el, src) {
         frameEl.allow = 'microphone';
         frameEl.id = 'standalone-frame';
         frameEl.name = 'sonoranradio-standalone-screen';
+        if (!el) frameEl.style.opacity = '0%';
         document.body.appendChild(frameEl);
     }
     if (frameEl.src !== src)
