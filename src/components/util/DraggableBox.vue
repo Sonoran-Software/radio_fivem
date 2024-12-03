@@ -94,10 +94,6 @@ export default {
 </script>
 
 <style scoped>
-.draggable>* {
-  overflow: hidden;
-}
-
 .draggable {
   position: fixed;
 }

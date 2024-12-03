@@ -34,6 +34,13 @@
           "height": 1
         },
         {
+          "action": "hide",
+          "bottom": 11.875,
+          "left": 12.875,
+          "width": 1.25,
+          "height": 2.25
+        },
+        {
           "action": "home",
           "bottom": 12.625,
           "left": 4.875,

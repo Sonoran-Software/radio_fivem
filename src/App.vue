@@ -129,9 +129,6 @@ export default {
         showMobileRadio() {
             return this.showRadio && this.inVehicle;
         },
-        stateFreqName() {
-            return this.$store.getters.freqName;
-        },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
 
@@ -200,10 +197,6 @@ export default {
         },
     },
     watch: {
-        stateFreqName(newVal) {
-            if (!this.$store.state.connected) return;
-            this.notifyPlayer("Channel: ~y~" + newVal || 'Custom Frequency');
-        },
         skinNames() {
             this.updateAvailableSkins();
         }
@@ -477,9 +470,15 @@ export default {
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
             if (hide) this.showRadio = false;
+
+            // notify player on how to hide radio if this is the first time
+            const LS_KEY = 'hide_portable_hint_seen';
+            if (hide || this.inVehicle || localStorage.getItem(LS_KEY)) return;
+            this.notifyPlayer('~g~HINT~s~: Use ~y~/radio hide~s~ or press the ~p~purple button~s~ to hide the radio');
+            localStorage.setItem(LS_KEY, 'true');
         },
-        notifyPlayer(message, ignorestate) {
-            if (this.radioPower || ignorestate) this.postClient({ type: "notify", message: message });
+        notifyPlayer(message) {
+            this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
             this.sendToSocket({
@@ -560,16 +559,12 @@ export default {
         buttonPrev() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.getters.sublvl == 0)
-                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Prev Preset");
             this.prevPreset();
         },
         buttonNext() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            if (this.$store.getters.sublvl == 0)
-                return void this.notifyPlayer("Radio: ~r~Button Disabled (Free Mode)")
             this.notifyPlayer("Radio: ~y~Next Preset");
             this.nextPreset();
         },
@@ -583,7 +578,7 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"), true);
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"));
         },
         setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;

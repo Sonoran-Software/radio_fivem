@@ -1,6 +1,7 @@
 /node_modules
 /.vscode
 /dist*
+/bkup*
 /config.lua
 /towers.json
 /speakers.json
