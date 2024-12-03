@@ -276,9 +276,6 @@ function initClient()
 			return
 		end
 
-		if frame == nil then
-			frame = 'default'
-		end
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame,

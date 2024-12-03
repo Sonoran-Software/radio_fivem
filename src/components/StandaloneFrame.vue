@@ -22,7 +22,6 @@ function push(el, src) {
         frameEl.allow = 'microphone';
         frameEl.id = 'standalone-frame';
         frameEl.name = 'sonoranradio-standalone-screen';
-        if (!el) frameEl.style.opacity = '0%';
         document.body.appendChild(frameEl);
     }
     if (frameEl.src !== src)
@@ -30,7 +29,7 @@ function push(el, src) {
 
     frameEl.style.pointerEvents = 'auto';
     // the caller wants the frame to exist, but not be visible
-    if (!el) return;
+    if (!el) return (frameEl.style.opacity = '0%');
 
     // scale iframe based on guide font size
     const elStyles = window.getComputedStyle(el);
