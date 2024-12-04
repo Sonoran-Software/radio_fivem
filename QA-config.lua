@@ -17,7 +17,7 @@ Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace p
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
-Config.enforceRadioItem = true
+Config.enforceRadioItem = false
 Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
 	name = 'sonoran_radio',  -- Item name in your inventory | STRING
 	label = 'Sonoran Radio', -- Label for the item in your inventory | STRING
@@ -53,7 +53,7 @@ Config.notifications = {
 
 -- Radio Item Settings --
 Config.frames = {
-	permissionMode = "qbcore",
+	permissionMode = "none",
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['SAHP'] = {
