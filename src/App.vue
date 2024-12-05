@@ -237,6 +237,9 @@ export default {
                     this.showRadio = event.data.visibility;
                     this.pttKeyName = event.data.pttKey;
                     break;
+                case 'reset':
+                    localStorage.clear();
+                    this.positions = {};
                 case 'refresh':
                     this.refreshScreen();
                     break;

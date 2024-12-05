@@ -341,12 +341,24 @@ function initClient()
 			SendNUIMessage({
 				type = 'refresh'
 			})
+		elseif action == 'reset' then
+			-- debug print ui info to console
+			print('SONORAN RADIO UI POSITION DATA')
+			print(json.encode(GetResourceKvpString('ui_pos_dic')))
+
+			SetResourceKvp('ui_pos_dic', '{}')
+			SendNUIMessage({ type = 'reset' })
 		else
 			radioToggle()
 		end
 	end)
 	RegisterCommand('sonradradio', radioToggle)
-	TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
+	local emergCommandHint = emergencyCallCommand()
+	if emergCommandHint:find("%s") then
+		emergCommandHint = '"' .. emergCommandHint .. '"'
+	end
+	TriggerEvent('chat:addSuggestion', '/radio', 'Open or focus Sonoran Radio', {{name = emergCommandHint..'|hide|refresh|reset', help = 'Subcommand'}})
+
 	RegisterCommand('radiotalk', function()
 		Radio.TalkAnim = not Radio.TalkAnim
 		if Radio.TalkAnim then
@@ -356,24 +368,6 @@ function initClient()
 		end
 	end)
 	RegisterKeyMapping('radiotalk', 'Toggle Radio Talk Animation', 'keyboard', '')
-
-	RegisterCommand('radioreset', function(source, args)
-		SendNUIMessage({
-			type = 'reset'
-		})
-		if args[1] == 'ui' then
-			-- debug print ui info to console
-			print('SONORAN RADIO UI POSITION DATA')
-			print(json.encode(GetResourceKvpString('ui_pos_dic')))
-
-			SetResourceKvp('ui_pos_dic', '{}')
-			SendNUIMessage({
-				type = 'setUiPositions',
-				data = {}
-			})
-		end
-	end)
-	TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak', {{name = 'ui', help = 'Reset UI Positions'}})
 
 	RegisterCommand('radiohud', function(source, args, rawCommand)
 		-- toggle Radio.Hud
