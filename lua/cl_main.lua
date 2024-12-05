@@ -276,12 +276,12 @@ function initClient()
 			return
 		end
 
+		radActive = not radActive
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame,
 			skins = allowedFrames
 		})
-		radActive = not radActive
 		SendNUIMessage({
 			type = 'setUiPositions',
 			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -362,6 +362,10 @@ function initClient()
 			type = 'reset'
 		})
 		if args[1] == 'ui' then
+			-- debug print ui info to console
+			print('SONORAN RADIO UI POSITION DATA')
+			print(json.encode(GetResourceKvpString('ui_pos_dic')))
+
 			SetResourceKvp('ui_pos_dic', '{}')
 			SendNUIMessage({
 				type = 'setUiPositions',
