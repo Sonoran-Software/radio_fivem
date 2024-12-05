@@ -58,7 +58,7 @@
     },
     {
       "type": "vehicle",
-      "body": { "image": "radio-mobile.webp", "width": 50 },
+      "body": { "image": "radio-mobile.png", "width": 50 },
       "controls": [
         {
           "action": "power",
