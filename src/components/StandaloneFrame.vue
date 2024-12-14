@@ -3,30 +3,37 @@
 </template>
 
 <script>
-/** @type {HTMLIFrameElement | null} */
-export let frameEl = null;
-let refs = 0;
 let cacheBust = Date.now();
 
+/** @type {Record<string, {el: HTMLIFrameElement, refs: number}>} */
+const frames = {};
+
 /**
+ * @param {string} key
  * @param {HTMLElement?} el
  * @param {string} src
  */
-function push(el, src) {
-    refs++;
+function push(key, el, src) {
+    let frameData = frames[key];
 
     // create frame if not exists
-    if (!frameEl) {
-        frameEl = document.createElement('iframe');
+    if (!frameData) {
+        const frameEl = document.createElement('iframe');
         frameEl.src = src;
         frameEl.allow = 'microphone';
-        frameEl.id = 'standalone-frame';
-        frameEl.name = 'sonoranradio-standalone-screen';
+        frameEl.id = `sonoranradio-${key}-frame`;
+        frameEl.name = 'sonoranradio-screen';
+        frameEl.classList.add('sonoranradio-iframe');
         document.body.appendChild(frameEl);
+
+        frames[key] = frameData = {el: frameEl, refs: 0};
     }
+
+    frameData.refs++;
+
+    const frameEl = frameData.el;
     if (frameEl.src !== src)
         frameEl.src = src;
-
     frameEl.style.pointerEvents = 'auto';
     // the caller wants the frame to exist, but not be visible
     if (!el) return (frameEl.style.opacity = '0%');
@@ -39,17 +46,38 @@ function push(el, src) {
 
     // line up frame to guide
     const rect = el.getBoundingClientRect();
+    frameEl.style.zIndex = elStyles.zIndex;
     frameEl.style.top = `${rect.top}px`;
     frameEl.style.left = `${rect.left}px`;
     frameEl.style.width = `${rect.width / scale}px`;
     frameEl.style.height = `${rect.height / scale}px`;
-    frameEl.style.zIndex = elStyles.zIndex + 1;
     frameEl.style.opacity = '100%';
 }
-function pop() {
-    if (--refs !== 0) return;
-    frameEl.style.opacity = '0%';
-    frameEl.style.pointerEvents = 'none';
+/**
+ * @param {string} key
+ * @param {boolean} remove
+ */
+function pop(key, remove) {
+    const frameData = frames[key];
+    if (!frameData) return;
+
+    if (remove) {
+        delete frames[key];
+        // allow the frame to unload before being removed
+        frameData.el.contentWindow.location.replace('about:blank');
+        setTimeout(() => frameData.el.remove(), 0);
+    } else if (--frameData.refs <= 0) {
+        frameData.el.style.opacity = '0%';
+        frameData.el.style.pointerEvents = 'none';
+    }
+}
+
+/**
+ * @param {string} key
+ * @returns {HTMLIFrameElement | undefined}
+ */
+export function getFrameEl(key) {
+    return frames[key]?.el;
 }
 
 export default {
@@ -58,23 +86,21 @@ export default {
         url: { type: String, default: 'https://sonoranradio.com' },
         feature: { type: String, default: 'radio' },
         displayName: { type: String },
+        iframePersistent: { type: Boolean, default: false },
     },
-    emits: ['load'],
     data: () => ({
         interval: null,
         lastGuide: null,
         cacheBust,
     }),
     mounted() {
-        push(this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
-        frameEl.addEventListener('load', this.onLoad);
+        push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
         this.interval = setInterval(() => this.intervalRefresh(), 50);
         this.lastGuide = this.$refs['guide'].getBoundingClientRect();
     },
     beforeDestroy() {
         clearInterval(this.interval);
-        frameEl.removeEventListener('load', this.onLoad);
-        pop();
+        pop(this.feature, !this.iframePersistent);
     },
     computed: {
         shouldBeVisible() {
@@ -102,19 +128,13 @@ export default {
         },
     },
     methods: {
-        onLoad() {
-            this.$emit('load');
-        },
         flush(force) {
-            pop();
+            pop(this.feature, force);
             if (force) {
-                frameEl.remove();
-                frameEl = null;
-
                 const setTo = Date.now();
                 this.cacheBust = cacheBust = setTo;
             }
-            push(this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
+            push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
         },
         intervalRefresh() {
             if (!this.shouldBeVisible) return;
@@ -135,7 +155,7 @@ export default {
 </script>
 
 <style>
-#standalone-frame {
+iframe.sonoranradio-iframe {
     position: fixed;
     margin: 0;
     padding: 0;

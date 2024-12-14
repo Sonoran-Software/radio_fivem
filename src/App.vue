@@ -24,15 +24,22 @@
             </div>
         </div>
 
-
-        <!-- acts as standalone radio for hearing radios around the player -->
+        <!-- radio iframe for emergency calls -->
         <standalone-frame
-            v-if="emergencyCallEnabled || chatterEnabled"
+            v-if="emergencyCallEnabled"
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :feature="emergencyCallEnabled ? '911' :'chatter'"
             :display-name="emergencyCall.name"
+            feature="911"
+        />
+        <!-- radio iframe for nearby chatter -->
+        <standalone-frame
+            v-if="chatterEnabled"
+            ref="standaloneFrame"
+            :server-id="standaloneServerId"
+            :url="standaloneUrl"
+            feature="chatter"
         />
 
         <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
@@ -48,6 +55,7 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
+                            iframe-persistent
                         />
                     </primary-screen>
                 </skin-body-component>
@@ -73,7 +81,7 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
-import StandaloneFrame, { frameEl } from './components/StandaloneFrame.vue'
+import StandaloneFrame, { getFrameEl as getRadioFrameEl } from './components/StandaloneFrame.vue'
 
 export default {
     components: {
@@ -185,7 +193,7 @@ export default {
             return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
-            return this.emergencyCall.open && !!this.standaloneServerId && !this.radioPower;
+            return this.emergencyCall.open && !!this.standaloneServerId;
         },
         emergencyCallCommand() {
             const formatted = /\s/.test(this.emergencyCall.cmd) ? `"${this.emergencyCall.cmd}"` : this.emergencyCall.cmd;
@@ -212,30 +220,58 @@ export default {
     mounted() {
         setInterval(() => this.loop20(), 20000);
         this.selectSkin('default', true);
+
         window.addEventListener('message', (event) => {
             if (event.data.type === 'keyup' || event.data.type === 'keydown')
                 return void this.onKeyPressed(event.data, event.data.type);
-            // if event is from frameEl (standalone screen), treat as socket message
-            if (event.source === frameEl?.contentWindow)
-                return void this.socketMessage(event.data);
 
-            switch (event.data.type) {
+            // route messages from iframes to their handlers
+            if (event.source === getRadioFrameEl('radio')?.contentWindow)
+                return void this.onRadioFrameEvent(event.data);
+            else if (event.source === getRadioFrameEl('chatter')?.contentWindow)
+                return void this.onChatterFrameEvent(event.data);
+            else if (event.source === getRadioFrameEl('911')?.contentWindow)
+                return void this.onEmergencyCallFrameEvent(event.data);
+            else if (event.source?.frameElement)
+                return console.warn('unknown message event source', event.source, event);
+
+            // messages not coming from an iframe are coming from the client
+            this.onClientEvent(event.data);
+        });
+
+        this.postClient({ type: 'ready' });
+    },
+    methods: {
+        async postClient(data, route = "/data") {
+            const url = new URL(route, `https://${GetParentResourceName()}`);
+            const res = await fetch(url.toString(), {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+            if (res.status !== 200)
+                return console.error(`failed request with code: ${res.status}`);
+
+            const msg = await res.json();
+            if (msg !== "OK") throw new Error(`failed request with message: ${data}`);
+        },
+        onClientEvent(event) {
+            switch (event.type) {
                 case 'setStandalone':
-                    this.standaloneServerId = event.data.standaloneId;
-                    this.standaloneUrl = event.data.standaloneUrl;
-                    this.chatterFeatureEnabled = event.data.chatter;
-                    this.debug = event.data.debug;
+                    this.standaloneServerId = event.standaloneId;
+                    this.standaloneUrl = event.standaloneUrl;
+                    this.chatterFeatureEnabled = event.chatter;
+                    this.debug = event.debug;
                     break;
                 case 'power':
-                    this.radioPower = event.data.power || !this.radioPower;
+                    this.radioPower = event.power || !this.radioPower;
                     this.postClient({
                         type: 'power',
                         power: this.radioPower
                     });
                     break;
                 case 'setVisible':
-                    this.showRadio = event.data.visibility;
-                    this.pttKeyName = event.data.pttKey;
+                    this.showRadio = event.visibility;
+                    this.pttKeyName = event.pttKey;
                     break;
                 case 'reset':
                     localStorage.clear();
@@ -244,24 +280,26 @@ export default {
                     this.refreshScreen();
                     break;
                 case 'setEmergencyCall':
-                    this.setEmergencyCall(event.data.enabled, event.data.displayName, event.data.callCommand);
+                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
-                    this.sendToSocket({ type: 'ptt', state: event.data.state });
+                    this.postRadioFrame({ type: 'ptt', state: event.state });
                     break;
                 case 'setVolume':
-                    this.sendToSocket({ type: 'set_global_volume', volume: Math.min(event.data.volume, 250) });
+                    this.postRadioFrame({ type: 'set_global_volume', volume: Math.min(event.volume, 250) });
+                    this.postChatterFrame({ type: 'set_global_volume', volume: Math.min(event.volume, 250) });
+                    this.postEmergencyCallFrame({ type: 'set_global_volume', volume: Math.min(event.volume, 250) });
                     break;
                 case 'setTowerQuality':
-                    this.towerQuality = event.data.quality;
+                    this.towerQuality = event.quality;
                     this.updateGamestate();
                     break;
                 case 'radioHud':
-                    this.showTopRadio = event.data.size !== 'off';
+                    this.showTopRadio = event.size !== 'off';
                     break;
                 case 'pushButton':
-                    switch (event.data.button) {
+                    switch (event.button) {
                         case 'prev':
                             this.buttonPrev();
                             break;
@@ -277,79 +315,115 @@ export default {
                     }
                     break;
                 case 'goToPreset':
-                    this.goToPreset(event.data.preset);
+                    this.goToPreset(event.preset);
                     break;
                 case 'callUpdate':
-                    this.sendToSocket({ type: 'set_call', call: event.data.call });
+                    // CAD call update (NOT EMERGENCY CALL)
+                    this.postRadioFrame({ type: 'set_call', call: event.call });
                     break;
                 case 'unitStatus':
-                    this.$store.commit('setUnitStatus', event.data.status);
+                    this.$store.commit('setUnitStatus', event.status);
                     break;
                 case 'inVehicle':
-                    this.inVehicle = event.data.vehState;
+                    this.inVehicle = event.vehState;
                     break;
                 case 'setUiPositions':
-                    if (typeof event.data.data !== 'object') break;
-                    this.positions = event.data.data;
+                    if (typeof event.data !== 'object') break;
+                    this.positions = event.data;
                     break;
                 case 'setSkins':
                 case 'setCurrentSkin':
-                    if (event.data.skins) // update available skins
-                    if (event.data.skins !== this.selectSkinIds) {
-                        this.selectSkinIds = event.data.skins;
+                    if (event.skins) // update available skins
+                    if (event.skins !== this.selectSkinIds) {
+                        this.selectSkinIds = event.skins;
                         this.updateAvailableSkins();
                     } else {
-                        this.selectSkinIds = event.data.skins;
+                        this.selectSkinIds = event.skins;
                     }
-                    if (event.data.skin) // update current ski
-                        this.selectSkin(event.data.skin);
+                    if (event.skin) // update current ski
+                        this.selectSkin(event.skin);
                     break;
                 case 'chatterChannelsUpdate':
-                    if (!this.chatterEnabled) return;
-                    this.sendToSocket({
+                    this.postChatterFrame({
                         type: 'set_scanner_channels',
-                        channelIds: event.data.channelIds,
+                        channelIds: event.channelIds,
                     })
                     break;
                 case 'chatterCameraUpdate':
-                    if (!this.chatterEnabled) return;
-                    this.sendToSocket({
+                    this.postChatterFrame({
                         type: 'set_audio_listener_orientation',
-                        coord: event.data.coord,
-                        forward: event.data.forward,
-                        up: event.data.up
+                        coord: event.coord,
+                        forward: event.forward,
+                        up: event.up
                     });
                     break;
                 case 'chatterSourcesUpdate':
-                    if (!this.chatterEnabled) return;
-                    this.sendToSocket({
+                    this.postChatterFrame({
                         type: 'set_audio_source_positions',
-                        sources: event.data.sources,
+                        sources: event.sources,
                     });
                     break;
             }
-        });
-
-        this.postClient({ type: 'ready' });
-    },
-    methods: {
-        postClient(data, route = "/data") {
-            const url = new URL(route, `https://sonoranradio`);
-            fetch(url.toString(), {
-                method: "POST",
-                body: JSON.stringify(data),
-            }).then((res) => {
-                if (res.status !== 200)
-                    return console.error(`failed request with code: ${res.status}`);
-
-                const msg = res.json().then((data) => {
-                    if (data !== "OK") console.error(`failed request with message: ${data}`);
-                }).catch((err) => console.error(err));
-
-            }).catch((err) => {
-                console.error(err);
-            });
         },
+
+        postRadioFrame(data) {
+            getRadioFrameEl('radio')?.contentWindow.postMessage(data, '*');
+        },
+        onRadioFrameEvent(event) {
+            switch (event.type) {
+                case "radio_connected":
+                    console.log('radio connected');
+                    this.$store.commit('setConnected', this.radioPower);
+                    this.$store.commit('setRadioConfig', event.config);
+                    this.onStandaloneConnected();
+                    break;
+                case "radio_disconnected":
+                    this.$store.commit('setConnected', false);
+                    break;
+                case 'config_updated':
+                    this.$store.commit('setRadioConfig', event.config);
+                    break;
+                case 'state_updated':
+                    this.$store.commit('setRadioState', event.state);
+                    this.postClient({ type: 'stateUpdated', state: event.state });
+                    break;
+                case 'mic_status':
+                    this.$store.commit('setRadioTalking', event.micOpen);
+                    this.postClient({ type: 'talking', talking: event.micOpen });
+                    break;
+                case 'peer_talk_status':
+                    this.$store.commit('setPeerTalkStatus', event.peer);
+                    break;
+                case 'set_skin':
+                    this.selectSkin(event.skinId || 'default');
+                    break;
+                case 'reposition':
+                    this.dragMode = true;
+                    break;
+            }
+        },
+        postChatterFrame(data) {
+            getRadioFrameEl('chatter')?.contentWindow.postMessage(data, '*');
+        },
+        onChatterFrameEvent(event) {
+            switch (event.type) {}
+        },
+        postEmergencyCallFrame(data) {
+            getRadioFrameEl('911')?.contentWindow.postMessage(data, '*');
+        },
+        onEmergencyCallFrameEvent(event) {
+            switch (event.type) {
+                case "radio_disconnected":
+                    // we were kicked on the radio, so end the call
+                    this.setEmergencyCall(false);
+                    break;
+                case 'call_peers':
+                    console.log('call_peers', event.peers);
+                    this.emergencyCall.peers = event.peers;
+                    break;
+            }
+        },
+
         onKeyPressed(e, type) {
             if (type === 'keyup') {
                 switch (e.code) {
@@ -376,7 +450,7 @@ export default {
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
-                this.sendToSocket({ type: 'ptt', state: type === 'keydown' });
+                this.postRadioFrame({ type: 'ptt', state: type === 'keydown' });
             }
         },
         async querySkinNoCache(skinId) {
@@ -484,74 +558,29 @@ export default {
             this.postClient({ type: "notify", message: message });
         },
         updateGamestate() {
-            this.sendToSocket({
+            this.postRadioFrame({
                 type: "set_gamestate",
                 state: { tower_quality: this.towerQuality },
             });
         },
         nextPreset() {
-            this.sendToSocket({
+            this.postRadioFrame({
                 type: 'preset_next',
             })
         },
         prevPreset() {
-            this.sendToSocket({
+            this.postRadioFrame({
                 type: 'preset_prev',
             })
         },
-        socketMessage(event) {
-            switch (event.type) {
-                case "radio_connected":
-                    console.log('radio connected');
-                    this.$store.commit('setConnected', this.radioPower);
-                    this.$store.commit('setRadioConfig', event.config);
-                    this.onStandaloneConnected();
-                    break;
-                case "radio_disconnected":
-                    this.$store.commit('setConnected', false);
-                    // we were kicked on the radio, so end the call
-                    if (this.emergencyCall.open) this.setEmergencyCall(false);
-                    break;
-                case 'config_updated':
-                    this.$store.commit('setRadioConfig', event.config);
-                    break;
-                case 'state_updated':
-                    this.$store.commit('setRadioState', event.state);
-                    if (this.radioPower)
-                        this.postClient({ type: 'stateUpdated', state: event.state });
-                    break;
-                case 'mic_status':
-                    if (!this.radioPower) return;
-                    this.$store.commit('setRadioTalking', event.micOpen);
-                    this.postClient({type: 'talking', talking: event.micOpen});
-                    break;
-                case 'peer_talk_status':
-                    this.$store.commit('setPeerTalkStatus', event.peer);
-                    break;
-                case 'call_peers':
-                    this.emergencyCall.peers = event.peers;
-                    break;
-                case 'set_skin':
-                    this.selectSkin(event.skinId || 'default');
-                    break;
-                case 'reposition':
-                    this.dragMode = true;
-                    break;
-            }
-        },
-        sendToSocket(data) {
-            if (frameEl) frameEl.contentWindow.postMessage(data, '*');
-            // else console.warn("frameEl does not exist, but tried to send message", data);
-        },
         updateAvailableSkins() {
-            this.sendToSocket({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
+            this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         refreshScreen() {
-            if (this.$refs.standaloneFrame.length === 0) return;
-            this.$refs.standaloneFrame[0].flush(true);
-            this.postClient({
-                type: "refreshScreen"
-            });
+            for (const standaloneFrame of this.$refs.standaloneFrame) {
+                standaloneFrame.flush(true);
+            }
+            this.postClient({ type: "refreshScreen" });
         },
         buttonPanic() {
             this.notifyPlayer("Radio: ~r~Panic Pressed!");
@@ -577,7 +606,7 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.sendToSocket({
+            this.postRadioFrame({
                 type: 'power',
                 power: this.radioPower
             });
