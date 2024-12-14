@@ -327,6 +327,10 @@ export default {
                 case 'inVehicle':
                     this.inVehicle = event.vehState;
                     break;
+                case 'noRadioItem':
+                    this.radioPower = false;
+                    if (this.showRadio) this.escapeRadio(true);
+                    break;
                 case 'setUiPositions':
                     if (typeof event.data !== 'object') break;
                     this.positions = event.data;

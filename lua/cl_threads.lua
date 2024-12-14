@@ -107,6 +107,9 @@ function initThreads()
                     QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem',
                                                      function(hasItem)
                         Radio.Has = hasItem
+                        if not hasItem then
+                            SendNUIMessage({ type = 'noRadioItem' })
+                        end
                     end, Config.RadioItem.name)
                 end
             end
