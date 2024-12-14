@@ -60,7 +60,8 @@ export default new Vuex.Store({
             if (!connected) {
                 state.radioConfig = null;
                 state.radioState = null;
-                state.unitStatus = -1;
+                state.talking = false;
+                state.peersTalking = [];
             }
         },
         setRadioConfig(state, radioConfig) {

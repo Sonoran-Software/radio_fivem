@@ -103,9 +103,7 @@ export default {
             showRadio: false,
             showTopRadio: false,
             radioPower: false,
-            currPreset: 0,
-            currScreen: "",
-            topRadioSize: "lg",
+            escapeMode: localStorage.getItem("escape_mode") || "keep",
             inVehicle: false,
             towerQuality: 1.0,
 
@@ -133,9 +131,44 @@ export default {
             nudgePath: null,
         }
     },
+    created() {
+        window.addEventListener('keyup', (event) => {
+            this.onKeyPressed(event, 'keyup');
+        });
+        window.addEventListener('keydown', (event) => {
+            this.onKeyPressed(event, 'keydown');
+        });
+    },
+    mounted() {
+        setInterval(() => this.loop20(), 20000);
+        this.selectSkin('default', true);
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'keyup' || event.data.type === 'keydown')
+                return void this.onKeyPressed(event.data, event.data.type);
+
+            // route messages from iframes to their handlers
+            if (event.source === getRadioFrameEl('radio')?.contentWindow)
+                return void this.onRadioFrameEvent(event.data);
+            else if (event.source === getRadioFrameEl('chatter')?.contentWindow)
+                return void this.onChatterFrameEvent(event.data);
+            else if (event.source === getRadioFrameEl('911')?.contentWindow)
+                return void this.onEmergencyCallFrameEvent(event.data);
+            else if (event.source?.frameElement)
+                return console.warn('unknown message event source', event.source, event);
+
+            // messages not coming from an iframe are coming from the client
+            this.onClientEvent(event.data);
+        });
+
+        this.postClient({ type: 'ready' });
+    },
     computed: {
-        showMobileRadio() {
-            return this.showRadio && this.inVehicle;
+        radioVisible() {
+            return this.showRadio || (this.escapeMode === 'transmit_only' && this.$store.state.talking);
+        },
+        mobileRadioVisible() {
+            return this.radioVisible && this.inVehicle;
         },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
@@ -148,8 +181,8 @@ export default {
             };
 
             let frames = [];
-            if (this.showMobileRadio) frames.push(getFrame('vehicle'));
-            else if (this.showRadio) frames.push(getFrame('portable'));
+            if (this.mobileRadioVisible) frames.push(getFrame('vehicle'));
+            else if (this.radioVisible) frames.push(getFrame('portable'));
             if (this.showTopRadio) frames.push(getFrame('hud'));
 
             // dedupe frames by type
@@ -209,38 +242,6 @@ export default {
             this.updateAvailableSkins();
         }
     },
-    created() {
-        window.addEventListener('keyup', (event) => {
-            this.onKeyPressed(event, 'keyup');
-        });
-        window.addEventListener('keydown', (event) => {
-            this.onKeyPressed(event, 'keydown');
-        });
-    },
-    mounted() {
-        setInterval(() => this.loop20(), 20000);
-        this.selectSkin('default', true);
-
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'keyup' || event.data.type === 'keydown')
-                return void this.onKeyPressed(event.data, event.data.type);
-
-            // route messages from iframes to their handlers
-            if (event.source === getRadioFrameEl('radio')?.contentWindow)
-                return void this.onRadioFrameEvent(event.data);
-            else if (event.source === getRadioFrameEl('chatter')?.contentWindow)
-                return void this.onChatterFrameEvent(event.data);
-            else if (event.source === getRadioFrameEl('911')?.contentWindow)
-                return void this.onEmergencyCallFrameEvent(event.data);
-            else if (event.source?.frameElement)
-                return console.warn('unknown message event source', event.source, event);
-
-            // messages not coming from an iframe are coming from the client
-            this.onClientEvent(event.data);
-        });
-
-        this.postClient({ type: 'ready' });
-    },
     methods: {
         async postClient(data, route = "/data") {
             const url = new URL(route, `https://${GetParentResourceName()}`);
@@ -276,6 +277,7 @@ export default {
                 case 'reset':
                     localStorage.clear();
                     this.positions = {};
+                    this.escapeMode = 'keep';
                 case 'refresh':
                     this.refreshScreen();
                     break;
@@ -374,6 +376,7 @@ export default {
             getRadioFrameEl('radio')?.contentWindow.postMessage(data, '*');
         },
         onRadioFrameEvent(event) {
+            console.log('radio event', event.type);
             switch (event.type) {
                 case "radio_connected":
                     console.log('radio connected');
@@ -400,6 +403,9 @@ export default {
                     break;
                 case 'set_skin':
                     this.selectSkin(event.skinId || 'default');
+                    break;
+                case 'set_escape_mode':
+                    this.setEscapeMode(event.mode);
                     break;
                 case 'reposition':
                     this.dragMode = true;
@@ -457,6 +463,7 @@ export default {
                 this.postRadioFrame({ type: 'ptt', state: type === 'keydown' });
             }
         },
+
         async querySkinNoCache(skinId) {
             const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
             const res = await fetch(`${BASE}/${skinId}/skin.json`)
@@ -548,16 +555,26 @@ export default {
             }
             return skinOptions;
         },
+
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
-            if (hide) this.showRadio = false;
+            if (hide || this.escapeMode !== 'keep') this.showRadio = false;
 
             // notify player on how to hide radio if this is the first time
             const LS_KEY = 'hide_portable_hint_seen';
-            if (hide || this.inVehicle || localStorage.getItem(LS_KEY)) return;
+            if (hide || this.escapeMode !== 'keep' || localStorage.getItem(LS_KEY)) return;
             this.notifyPlayer('~g~HINT~s~: Use ~y~/radio hide~s~ or press the ~p~purple button~s~ to hide the radio');
             localStorage.setItem(LS_KEY, 'true');
         },
+        setEscapeMode(mode) {
+            this.escapeMode = mode;
+            localStorage.setItem("escape_mode", mode);
+            this.updateEscapeMode();
+        },
+        updateEscapeMode() {
+            this.postRadioFrame({ type: 'escape_mode', mode: this.escapeMode });
+        },
+
         notifyPlayer(message) {
             this.postClient({ type: "notify", message: message });
         },
@@ -634,6 +651,7 @@ export default {
         onStandaloneConnected() {
             this.updateGamestate();
             this.updateAvailableSkins();
+            this.updateEscapeMode();
         }
     }
 };
