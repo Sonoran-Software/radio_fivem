@@ -46,7 +46,6 @@ function push(key, el, src) {
 
     // line up frame to guide
     const rect = el.getBoundingClientRect();
-    frameEl.style.zIndex = elStyles.zIndex;
     frameEl.style.top = `${rect.top}px`;
     frameEl.style.left = `${rect.left}px`;
     frameEl.style.width = `${rect.width / scale}px`;
@@ -85,7 +84,7 @@ export default {
         serverId: { type: [Number, String], required: true },
         url: { type: String, default: 'https://sonoranradio.com' },
         feature: { type: String, default: 'radio' },
-        displayName: { type: String },
+        query: { type: Object, default: () => ({}) },
         iframePersistent: { type: Boolean, default: false },
     },
     data: () => ({
@@ -115,7 +114,9 @@ export default {
             const page = pages[this.feature];
 
             const query = new URLSearchParams();
-            if (this.displayName) query.append('displayName', this.displayName);
+            for (const [key, value] of Object.entries(this.query))
+                if (value)
+                    query.append(key, value);
             query.append('autoconnect', 'true');
             query.append('fivem', 'true');
             query.append('cacheBust', this.cacheBust);

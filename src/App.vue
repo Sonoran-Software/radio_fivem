@@ -30,7 +30,7 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :display-name="emergencyCall.name"
+            :query="{ displayName: emergencyCall.name }"
             feature="911"
         />
         <!-- radio iframe for nearby chatter -->
@@ -55,6 +55,7 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
+                            :query="{screen: frame.screen.style}"
                             iframe-persistent
                         />
                     </primary-screen>
