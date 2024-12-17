@@ -473,6 +473,51 @@ AddEventHandler('onResourceStart', function(resourceName)
 			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
+	local chatterFile = LoadResourceFile(resourceName, 'chatter.json')
+	local chatterFileName = 'chatter.json'
+
+	if not chatterFile then
+		chatterFile = LoadResourceFile(resourceName, 'chatter.DEFAULT.json')
+		print('[SonoranRadio] - Using default chatter configuration - Please update your chatter.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename chatter.DEFAULT.json to chatter.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/chatter.DEFAULT.json', GetResourcePath(resourceName) .. '/chatter.json') then
+			print('[SonoranRadio] - Failed to rename chatter.DEFAULT.json to chatter.json')
+			chatterFileName = 'chatter.DEFAULT.json'
+		else
+			print('[SonoranRadio] - Successfully renamed chatter.DEFAULT.json to chatter.json')
+			chatterFileName = 'chatter.json'
+		end
+	end
+
+	-- Load JSON
+	local chat = LoadResourceFile(resourceName, chatterFileName)
+	local chatter = json.decode(chat) or {}
+
+	-- Function to check if a config item exists in the JSON
+	local function isConfigInJson(jsonTable, configItem)
+		for _, item in ipairs(jsonTable) do
+			if item.componentId == configItem.componentId and item.drawableId == configItem.drawableId then
+				return true -- Found, no need to add
+			end
+		end
+		return false -- Not found
+	end
+
+	-- Add missing Config.chatterExclusions to the chatter JSON
+	local updated = false
+	for _, exclusion in ipairs(Config.chatterExclusions) do
+		if not isConfigInJson(chatter, exclusion) then
+			table.insert(chatter, exclusion)
+			updated = true
+		end
+	end
+
+	-- Save updated chatter.json if changes were made
+	if updated then
+		SaveResourceFile(resourceName, 'chatter.json', json.encode(chatter, { indent = true }), -1)
+		print('[SonoranRadio] - Config file chatterExclusions is being phased out. Please use chatter.json instead.')
+		print('[SonoranRadio] - Your current config has been successfully moved to chatter.json.')
+	end
 end)
 
 exports('performApiRequest', performApiRequest)
