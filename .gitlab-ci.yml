@@ -50,7 +50,7 @@ resource-deploy-QAServer:
         -X POST
         -d '{"root": "/resources/[sonoranradio]/","files": ["sonoranradio.zip"]}'
     - cd ../
-    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; cd /resources/[sonoranradio]/sonoranradio; put QA-config.lua -o config.lua; mv towers.DEFAULT.json towers.json; mv tunnels.DEFAULT.json tunnels.json; mv speakers.DEFAULT.json speakers.json; cd ../; rmdir sonoranradio_updatehelper; bye"
+    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM01_Ptero_User $FiveM01_Ptero_Pass; cd /resources/[sonoranradio]/sonoranradio; put QA-config.lua -o config.lua; mv towers.DEFAULT.json towers.json; mv tunnels.DEFAULT.json tunnels.json; mv speakers.DEFAULT.json speakers.json; mv chatter.DEFAULT.json chatter.json; cd ../; rmdir sonoranradio_updatehelper; bye"
 
   tags:
     - linux, build, shell, development
