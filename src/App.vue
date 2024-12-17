@@ -331,7 +331,7 @@ export default {
                     this.inVehicle = event.vehState;
                     break;
                 case 'noRadioItem':
-                    this.radioPower = false;
+                    if (this.radioPower) this.buttonPower();
                     if (this.showRadio) this.escapeRadio(true);
                     break;
                 case 'setUiPositions':
