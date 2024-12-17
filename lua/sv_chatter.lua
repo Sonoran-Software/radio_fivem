@@ -42,6 +42,11 @@ RegisterNetEvent('Chatter:clientChatterSync', function()
 	while #chatterConfig == 0 do
 		Wait(10)
 	end
-	local sonoradData = {}
 	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
+end)
+
+RegisterNetEvent('Chatter:saveChatterConfig', function(config)
+	chatterConfig = config
+	SaveResourceFile(GetCurrentResourceName(), 'chatter.json', json.encode(chatterConfig, { indent = true }), -1)
+	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
 end)

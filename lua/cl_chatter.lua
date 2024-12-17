@@ -205,7 +205,7 @@ function initChatter()
 			Wait(50)
 		end
 	end)
-	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfig)
-		chatterConfig = chatterConfig
+	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfigServer)
+		chatterConfig = chatterConfigServer
 	end)
 end
