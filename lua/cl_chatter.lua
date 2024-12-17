@@ -1,5 +1,4 @@
 function initChatter()
-	chatterConfig = {}
 	if Config.chatter == false then return end -- if chatter is disabled, skip this script
 
 	local playerStates = {}
@@ -206,7 +205,7 @@ function initChatter()
 			Wait(50)
 		end
 	end)
-	ReigsterNetEvent('Chatter:clientChatterSync_c', function(chatterConfig)
+	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfig)
 		chatterConfig = chatterConfig
 	end)
 end

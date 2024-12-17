@@ -24,6 +24,7 @@ local selectedConfig = {
     textures = {}
 }
 
+chatterConfig = {}
 
 local textureNames = {
     "Head", "Mask", "Hair", "Torso", "Legs", "Bags", "Feet", "Accessories",
@@ -84,6 +85,10 @@ Citizen.CreateThread(function()
 			if WarMenu.MenuButton('Degradation Zones', 'degradeMenu') then
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
+			end
+			if Config.chatter then
+				if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
+				end
 			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
