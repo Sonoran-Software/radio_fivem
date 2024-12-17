@@ -11,7 +11,7 @@ local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
-chatterFileName = 'chatter.json'
+chatterFileName = 'earpieces.json'
 chatterConfig = {}
 local clientConfig = {}
 
@@ -475,23 +475,23 @@ AddEventHandler('onResourceStart', function(resourceName)
 			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
-	local chatterFile = LoadResourceFile(resourceName, 'chatter.json')
+	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
 	if not chatterFile then
-		chatterFile = LoadResourceFile(resourceName, 'chatter.DEFAULT.json')
-		print('[SonoranRadio] - Using default chatter configuration - Please update your chatter.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename chatter.DEFAULT.json to chatter.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/chatter.DEFAULT.json', GetResourcePath(resourceName) .. '/chatter.json') then
-			print('[SonoranRadio] - Failed to rename chatter.DEFAULT.json to chatter.json')
-			chatterFileName = 'chatter.DEFAULT.json'
+		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
+		print('[SonoranRadio] - Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
+		print('[SonoranRadio] - Attempting to rename earpieces.DEFAULT.json to earpieces.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/earpieces.DEFAULT.json', GetResourcePath(resourceName) .. '/earpieces.json') then
+			print('[SonoranRadio] - Failed to rename earpieces.DEFAULT.json to earpieces.json')
+			chatterFileName = 'earpieces.DEFAULT.json'
 		else
-			print('[SonoranRadio] - Successfully renamed chatter.DEFAULT.json to chatter.json')
-			chatterFileName = 'chatter.json'
+			print('[SonoranRadio] - Successfully renamed earpieces.DEFAULT.json to earpieces.json')
+			chatterFileName = 'earpieces.json'
 		end
 	end
 	-- Load JSON
 	local chat = LoadResourceFile(resourceName, chatterFileName)
 	local chatter = json.decode(chat) or {}
-
+	local luaConfig = {}
 	-- Function to check if a config item exists in the JSON
 	local function isConfigInJson(jsonTable, configItem)
 		for _, item in ipairs(jsonTable) do
@@ -506,18 +506,18 @@ AddEventHandler('onResourceStart', function(resourceName)
 	local updated = false
 	for _, exclusion in ipairs(Config.chatterExclusions) do
 		if not isConfigInJson(chatter, exclusion) then
-			table.insert(chatter, exclusion)
+			table.insert(luaConfig, exclusion)
 			updated = true
 		end
 	end
 
-	-- Save updated chatter.json if changes were made
+	-- Save updated earpieces.json if changes were made
 	if updated then
-		SaveResourceFile(resourceName, 'chatter.json', json.encode(chatter, { indent = true }), -1)
-		print('[SonoranRadio] - Config file chatterExclusions is being phased out. Please use chatter.json instead.')
-		print('[SonoranRadio] - Your current config has been successfully moved to chatter.json.')
+		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
+		print('[SonoranRadio] - Config file chatterExclusions is being phased out. Please use earpieces.json instead.')
+		print('[SonoranRadio] - Your current config has been successfully moved to earpieces.json.')
 	end
-	chatterConfig = chatter
+	chatterConfig = luaConfig
 end)
 
 exports('performApiRequest', performApiRequest)

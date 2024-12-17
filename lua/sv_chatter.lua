@@ -47,6 +47,6 @@ end)
 
 RegisterNetEvent('Chatter:saveChatterConfig', function(config)
 	chatterConfig = config
-	SaveResourceFile(GetCurrentResourceName(), 'chatter.json', json.encode(chatterConfig, { indent = true }), -1)
+	SaveResourceFile(GetCurrentResourceName(), 'earpieces.json', json.encode(chatterConfig, { indent = true }), -1)
 	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
 end)
