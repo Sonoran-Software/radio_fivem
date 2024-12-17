@@ -11,6 +11,8 @@ local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
+chatterFileName = 'chatter.json'
+chatterConfig = {}
 local clientConfig = {}
 
 if Config == nil then
@@ -474,8 +476,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end)
 	local chatterFile = LoadResourceFile(resourceName, 'chatter.json')
-	local chatterFileName = 'chatter.json'
-
 	if not chatterFile then
 		chatterFile = LoadResourceFile(resourceName, 'chatter.DEFAULT.json')
 		print('[SonoranRadio] - Using default chatter configuration - Please update your chatter.json file name to prevent this message from appearing.')
@@ -488,7 +488,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 			chatterFileName = 'chatter.json'
 		end
 	end
-
 	-- Load JSON
 	local chat = LoadResourceFile(resourceName, chatterFileName)
 	local chatter = json.decode(chat) or {}
@@ -518,6 +517,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		print('[SonoranRadio] - Config file chatterExclusions is being phased out. Please use chatter.json instead.')
 		print('[SonoranRadio] - Your current config has been successfully moved to chatter.json.')
 	end
+	chatterConfig = chatter
 end)
 
 exports('performApiRequest', performApiRequest)

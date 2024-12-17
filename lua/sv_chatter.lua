@@ -36,3 +36,12 @@ Citizen.CreateThread(function()
 		Citizen.Wait(5000)
 	end
 end)
+
+RegisterNetEvent('Chatter:clientChatterSync', function()
+	local source = source
+	while #chatterConfig == 0 do
+		Wait(10)
+	end
+	local sonoradData = {}
+	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
+end)

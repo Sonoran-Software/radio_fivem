@@ -1,4 +1,5 @@
 function initChatter()
+	chatterConfig = {}
 	if Config.chatter == false then return end -- if chatter is disabled, skip this script
 
 	local playerStates = {}
@@ -195,5 +196,17 @@ function initChatter()
 
 			Citizen.Wait(0)
 		end
+	end)
+	CreateThread(function()
+		while not NetworkIsPlayerActive(PlayerId()) do
+			Wait(10)
+		end
+		TriggerServerEvent('Chatter:clientChatterSync')
+		while #chatterConfig == 0 do
+			Wait(50)
+		end
+	end)
+	ReigsterNetEvent('Chatter:clientChatterSync_c', function(chatterConfig)
+		chatterConfig = chatterConfig
 	end)
 end

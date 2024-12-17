@@ -178,7 +178,7 @@ Citizen.CreateThread(function()
 				end
 				WarMenu.Display()
 			end
-			for index, item in ipairs(config) do
+			for index, item in ipairs(chatterConfig) do
 				local menuId = 'editItem_' .. index
 
 				if WarMenu.IsMenuOpened(menuId) then
@@ -195,7 +195,7 @@ Citizen.CreateThread(function()
 					end
 
 					if WarMenu.Button("Remove Item", "Confirm Removal") then
-						table.remove(config, index)
+						table.remove(chatterConfig, index)
 						WarMenu.CloseMenu()
 						break
 					end
@@ -1540,11 +1540,16 @@ end
 
 -- Main Chatter Menu
 function chatterMenu()
-	if WarMenu.Button('Add EUP Chatter Config') then
-		WarMenu.OpenMenu('addChatterConfig')
-	end
-	if WarMenu.Button('Edit EUP Chatter Config') then
-		WarMenu.OpenMenu('editChatterConfig')
+	if #chatterConfig == 0 then
+		if WarMenu.Button('Chatter Is Currently Disabled') then
+		end
+	else
+		if WarMenu.Button('Add EUP Chatter Config') then
+			WarMenu.OpenMenu('addChatterConfig')
+		end
+		if WarMenu.Button('Edit EUP Chatter Config') then
+			WarMenu.OpenMenu('editChatterConfig')
+		end
 	end
 end
 
@@ -1580,7 +1585,7 @@ function addChatterConfig()
 end
 
 function editChatterConfig()
-	for index, item in ipairs(config) do
+	for index, item in ipairs(chatterConfig) do
 		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
 		if WarMenu.MenuButton(label, 'editItem_' .. index) then
 			-- Create a submenu for each item
