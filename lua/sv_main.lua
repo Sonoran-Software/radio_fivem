@@ -504,7 +504,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	-- Add missing Config.chatterExclusions to the chatter JSON
 	local updated = false
-	for _, exclusion in ipairs(Config.chatterExclusions) do
+	for _, exclusion in ipairs(Config.chatterExclusions or {}) do
 		if not isConfigInJson(chatter, exclusion) then
 			table.insert(luaConfig, exclusion)
 			updated = true

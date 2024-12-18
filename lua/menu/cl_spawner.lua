@@ -219,14 +219,14 @@ Citizen.CreateThread(function()
 
 		-- Props Loop (Existing Code)
 		for tmpProp = 0, 4 do
-			local realProp = (tmpProp > 2) and (tmpProp + 3) or tmpProp
+			local realProp = (tmpProp >= 3) and (tmpProp + 3) or tmpProp
 			local menuId = 'prop_' .. tmpProp
-
 			if WarMenu.IsMenuOpened(menuId) then
 				local currentProp = GetPedPropIndex(PlayerPedId(), realProp)
-				local maxTextures = GetNumberOfPedPropTextureVariations(PlayerPedId(), realProp)
-
-				if WarMenu.Button("Select Prop", string.format("Drawable ID: %d", currentProp)) then
+				local maxTextures = GetNumberOfPedPropTextureVariations(PlayerPedId(), realProp, currentProp)
+				print('Current Prop: ' .. currentProp)
+				print('realProp', realProp)
+				if WarMenu.Button("Select Prop", string.format("Prop ID: %d", currentProp)) then
 					selectedConfig.componentId = realProp
 					selectedConfig.drawableId = currentProp
 					selectedConfig.textures = {}
@@ -237,10 +237,10 @@ Citizen.CreateThread(function()
 					local hoverState = WarMenu.IsItemHovered() -- Check if this item is being hovered over
 					-- Highlight the component if hovering
 					if hoverState then
-						SetPedComponentVariation(PlayerPedId(), realProp, currentProp, i, 2) -- Change texture to the current selection
+						SetPedPropIndex(PlayerPedId(), realProp, currentProp, i, 2) -- Change texture to the current selection
 					else
 						-- Restore the default texture (use i=0 as the default texture for simplicity)
-						SetPedComponentVariation(PlayerPedId(), realProp, currentProp, 0, 2)
+						SetPedPropIndex(PlayerPedId(), realProp, currentProp, 0, 2)
 					end
 
 					WarMenu.CheckBox(string.format("Texture #%d", i + 1), isSelected, function(checked)
@@ -280,45 +280,21 @@ Citizen.CreateThread(function()
 			end
 			for index, item in ipairs(chatterConfig) do
 				local menuId = 'editItem_' .. index
-
 				if WarMenu.IsMenuOpened(menuId) then
-					if WarMenu.Button("Edit Drawable ID", string.format("Current: %d", item.drawableId)) then
-						local input = GetUserInput("Enter Drawable ID", tostring(item.drawableId), 10)
-						if tonumber(input) then
-							item.drawableId = tonumber(input)
+					SetPedComponentVariation(PlayerPedId(), item.componentId, item.drawableId, 0, 2)
+					for i = 0, GetNumberOfPedTextureVariations(PlayerPedId(), item.componentId, item.drawableId) - 1 do
+						SetPedComponentVariation(PlayerPedId(), item.componentId, item.drawableId, i, 2)
+						if i == GetNumberOfPedTextureVariations(PlayerPedId(), item.componentId, item.drawableId) - 1 then
+							i = 0
+						else
+							i = i + 1
 						end
 					end
-
-					if WarMenu.Button("Edit Textures") then
-						-- Open texture editor
-						WarMenu.CreateMenu('editTextures_' .. index, 'Edit Textures')
-					end
-
 					if WarMenu.Button("Remove Item", "Confirm Removal") then
 						table.remove(chatterConfig, index)
+						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
 						WarMenu.CloseMenu()
 						break
-					end
-
-					WarMenu.Display()
-				end
-
-				-- Submenu for editing textures
-				local textureMenuId = 'editTextures_' .. index
-				if WarMenu.IsMenuOpened(textureMenuId) then
-					for textureIndex, texture in ipairs(item.textures) do
-						local label = string.format("Texture #%d", texture)
-
-						if WarMenu.Button(label, "Remove Texture") then
-							table.remove(item.textures, textureIndex)
-						end
-					end
-
-					if WarMenu.Button("Add New Texture") then
-						local input = GetUserInput("Enter Texture ID", "", 10)
-						if tonumber(input) then
-							table.insert(item.textures, tonumber(input))
-						end
 					end
 
 					WarMenu.Display()
@@ -1640,7 +1616,7 @@ end
 
 -- Main Chatter Menu
 function chatterMenu()
-	if #chatterConfig == 0 then
+	if not chatterConfig then
 		if WarMenu.Button('Chatter Is Currently Disabled') then
 		end
 	else
@@ -1672,7 +1648,7 @@ function addChatterConfig()
 
 	-- Props (0-4 mapped to real IDs)
 	for tmpProp = 0, 4 do
-		local realProp = (tmpProp > 2) and (tmpProp + 3) or tmpProp
+		local realProp = (tmpProp >= 3) and (tmpProp + 3) or tmpProp
 		local currentProp = GetPedPropIndex(PlayerPedId(), realProp) -- Current prop ID
 		local menuId = 'prop_' .. tmpProp
 
@@ -1691,7 +1667,7 @@ function editChatterConfig()
 		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
 		if WarMenu.MenuButton(label, 'editItem_' .. index) then
 			-- Create a submenu for each item
-			WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item')
+			WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
 		end
 	end
 end
