@@ -478,13 +478,13 @@ AddEventHandler('onResourceStart', function(resourceName)
 	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
 	if not chatterFile then
 		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
-		print('[SonoranRadio] - Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename earpieces.DEFAULT.json to earpieces.json')
+		infoLog('Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
+		infoLog('Attempting to rename earpieces.DEFAULT.json to earpieces.json')
 		if not CopyFile(GetResourcePath(resourceName) .. '/earpieces.DEFAULT.json', GetResourcePath(resourceName) .. '/earpieces.json') then
-			print('[SonoranRadio] - Failed to rename earpieces.DEFAULT.json to earpieces.json')
+			errorLog('Failed to rename earpieces.DEFAULT.json to earpieces.json. Please manually rename')
 			chatterFileName = 'earpieces.DEFAULT.json'
 		else
-			print('[SonoranRadio] - Successfully renamed earpieces.DEFAULT.json to earpieces.json')
+			infoLog('Successfully renamed earpieces.DEFAULT.json to earpieces.json')
 			chatterFileName = 'earpieces.json'
 		end
 	end
@@ -514,10 +514,12 @@ AddEventHandler('onResourceStart', function(resourceName)
 	-- Save updated earpieces.json if changes were made
 	if updated then
 		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
-		print('[SonoranRadio] - Config file chatterExclusions is being phased out. Please use earpieces.json instead.')
-		print('[SonoranRadio] - Your current config has been successfully moved to earpieces.json.')
+		infoLog('Updated earpieces.json with missing chatter exclusions.')
 	end
 	chatterConfig = luaConfig
+	if Config.chatterExclusion then
+		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
+	end
 end)
 
 exports('performApiRequest', performApiRequest)
