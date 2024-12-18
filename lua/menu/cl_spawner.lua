@@ -278,18 +278,9 @@ Citizen.CreateThread(function()
 
 				WarMenu.Display()
 			end
-			for index, item in ipairs(chatterConfig) do
+			for index, item in ipairs(chatterConfig or {}) do
 				local menuId = 'editItem_' .. index
 				if WarMenu.IsMenuOpened(menuId) then
-					SetPedComponentVariation(PlayerPedId(), item.componentId, item.drawableId, 0, 2)
-					for i = 0, GetNumberOfPedTextureVariations(PlayerPedId(), item.componentId, item.drawableId) - 1 do
-						SetPedComponentVariation(PlayerPedId(), item.componentId, item.drawableId, i, 2)
-						if i == GetNumberOfPedTextureVariations(PlayerPedId(), item.componentId, item.drawableId) - 1 then
-							i = 0
-						else
-							i = i + 1
-						end
-					end
 					if WarMenu.Button("Remove Item", "Confirm Removal") then
 						table.remove(chatterConfig, index)
 						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
@@ -1663,6 +1654,9 @@ function addChatterConfig()
 end
 
 function editChatterConfig()
+	if #chatterConfig == 0 then
+		TriggerServerEvent('Chatter:clientChatterSync')
+	end
 	for index, item in ipairs(chatterConfig) do
 		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
 		if WarMenu.MenuButton(label, 'editItem_' .. index) then
