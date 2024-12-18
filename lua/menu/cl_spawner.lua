@@ -89,6 +89,9 @@ Citizen.CreateThread(function()
 		WarMenu.CreateSubMenu('prop_' .. tmpProp, 'addChatterConfig', 'Select ' .. propNames[tmpProp + 1])
 		WarMenu.SetMenuTitleBackgroundSprite('prop_' .. tmpProp, 'radio_menu_header', 'option_1')
 	end
+	for index, _ in ipairs(chatterConfig) do
+        WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
+    end
 	while true do
 		if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 			if WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu') then
@@ -1688,7 +1691,7 @@ function editChatterConfig()
 		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
 		if WarMenu.MenuButton(label, 'editItem_' .. index) then
 			-- Create a submenu for each item
-			WarMenu.CreateMenu('editItem_' .. index, 'Edit Item')
+			WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item')
 		end
 	end
 end

@@ -207,5 +207,10 @@ function initChatter()
 	end)
 	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfigServer)
 		chatterConfig = chatterConfigServer
+		for index, _ in ipairs(chatterConfig) do
+			if not WarMenu.DoesMenuExist('editItem_' .. index) then
+				WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
+			end
+		end
 	end)
 end
