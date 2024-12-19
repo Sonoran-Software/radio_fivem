@@ -4,16 +4,6 @@ import Vue from "vue";
 import App from "./App.vue";
 import store from "./store";
 
-const el = document.createElement("div");
-el.id = "root";
-document.body.appendChild(el);
-
-new Vue({
-  el,
-  store,
-  render: (h) => h(App),
-});
-
 const miniradioFrame = document.createElement('iframe');
 miniradioFrame.src = `https://cfx-nui-${GetParentResourceName()}/miniradio/miniradio.html`;
 miniradioFrame.style.position = 'absolute';
@@ -48,4 +38,15 @@ window.addEventListener('message', (ev) => {
     ev.stopImmediatePropagation();
     xsoundFrame.contentWindow.postMessage(ev.data, '*');
   }
+});
+
+// initialize the root element and vue instance
+const el = document.createElement("div");
+el.id = "root";
+document.body.appendChild(el);
+
+new Vue({
+  el,
+  store,
+  render: (h) => h(App),
 });

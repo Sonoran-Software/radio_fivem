@@ -1,0 +1,22 @@
+[
+    {
+        "componentId": 2,
+        "drawableId": 1,
+        "texture": [0]
+    },
+    {
+        "componentId": 2,
+        "drawableId": 2,
+        "texture": [0]
+    },
+    {
+        "componentId": 24,
+        "drawableId": 2,
+        "texture": [0]
+    },
+    {
+        "componentId": 18,
+        "drawableId": 42,
+        "texture": [0]
+    }
+]

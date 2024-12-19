@@ -28,6 +28,7 @@ files {
     'miniradio/**/*',
     'skins/**/*',
     'lua/xsound/html/**/*',
+    'earpieces.json'
 }
 ui_page 'dist/ui.html'
 

@@ -36,3 +36,17 @@ Citizen.CreateThread(function()
 		Citizen.Wait(5000)
 	end
 end)
+
+RegisterNetEvent('Chatter:clientChatterSync', function()
+	local source = source
+	while #chatterConfig == 0 do
+		Wait(10)
+	end
+	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
+end)
+
+RegisterNetEvent('Chatter:saveChatterConfig', function(config)
+	chatterConfig = config
+	SaveResourceFile(GetCurrentResourceName(), 'earpieces.json', json.encode(chatterConfig, { indent = true }), -1)
+	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
+end)

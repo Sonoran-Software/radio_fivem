@@ -280,6 +280,16 @@ function WarMenu.CreateMenu(id, title, subTitle, style)
 	menus[id] = menu
 end
 
+function WarMenu.DoesMenuExist(id)
+	return menus[id] ~= nil
+end
+
+function WarMenu.DeleteMenu(id)
+	if menus[id] then
+		menus[id] = nil
+	end
+end
+
 function WarMenu.CreateSubMenu(id, parent, subTitle, style)
 	local parentMenu = menus[parent]
 	if not parentMenu then

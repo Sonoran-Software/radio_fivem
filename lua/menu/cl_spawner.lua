@@ -18,6 +18,26 @@ local toneboardState = {
 	calculatedHeading = nil
 }
 
+local selectedConfig = {
+    componentId = nil,
+    drawableId = nil,
+    textures = {}
+}
+
+local currentTexture = nil
+local hoveredTexture = nil -- Track the currently hovered texture
+
+chatterConfig = {}
+
+local textureNames = {
+    "Head", "Mask", "Hair", "Torso", "Legs", "Bags", "Feet", "Accessories",
+    "Undershirt", "Body Armor", "Decals", "Tops"
+}
+
+local propNames = {
+    "Hat", "Glasses", "Earrings", "Watches", "Bracelets"
+}
+
 local creatingZone = false
 local radioScaleform = nil
 
@@ -49,6 +69,29 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardMoveMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardDeleteMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure EUP Radio Chatter')
+	WarMenu.SetMenuTitleBackgroundSprite('chatterMenu', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Chatter Config')
+	WarMenu.SetMenuTitleBackgroundSprite('addChatterConfig', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Edit Chatter Config')
+	WarMenu.SetMenuTitleBackgroundSprite('editChatterConfig', 'radio_menu_header', 'option_1')
+	WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Chatter Config')
+	WarMenu.SetMenuTitleBackgroundSprite('deleteChatterConfig', 'radio_menu_header', 'option_1')
+		-- Pre-create all drawable submenus
+	for drawable = 0, 11 do
+		WarMenu.CreateSubMenu('drawable_' .. drawable, 'addChatterConfig', 'Select ' .. textureNames[drawable + 1])
+		WarMenu.SetMenuTitleBackgroundSprite('drawable_' .. drawable, 'radio_menu_header', 'option_1')
+	end
+
+	-- Pre-create all prop submenus
+	for tmpProp = 0, 4 do
+		local realProp = (tmpProp > 2) and (tmpProp + 3) or tmpProp
+		WarMenu.CreateSubMenu('prop_' .. tmpProp, 'addChatterConfig', 'Select ' .. propNames[tmpProp + 1])
+		WarMenu.SetMenuTitleBackgroundSprite('prop_' .. tmpProp, 'radio_menu_header', 'option_1')
+	end
+	for index, _ in ipairs(chatterConfig) do
+        WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
+    end
 	while true do
 		if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 			if WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu') then
@@ -61,6 +104,10 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
+			-- if Config.chatter then
+			-- 	if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
+			-- 	end
+			-- end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
 			spawningRadioRepeater()
@@ -86,6 +133,164 @@ Citizen.CreateThread(function()
 		elseif WarMenu.IsMenuOpened('toneboardDeleteMenu') then
 			toneboardDeleteMenu()
 			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('chatterMenu') then
+			chatterMenu()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('addChatterConfig') then
+			addChatterConfig()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('editChatterConfig') then
+			editChatterConfig()
+			WarMenu.Display()
+		elseif WarMenu.IsMenuOpened('deleteChatterConfig') then
+			deleteChatterConfig()
+			WarMenu.Display()
+		end
+		-- Loop for Drawables (Components)
+		for drawable = 0, 11 do
+			local menuId = 'drawable_' .. drawable
+			if WarMenu.IsMenuOpened(menuId) then
+				local currentDrawable = GetPedDrawableVariation(PlayerPedId(), drawable)
+				local maxTextures = GetNumberOfPedTextureVariations(PlayerPedId(), drawable, currentDrawable)
+
+				-- Select Drawable
+				if WarMenu.Button("Select Drawable", string.format("Drawable ID: %d", currentDrawable)) then
+					selectedConfig.componentId = drawable
+					selectedConfig.drawableId = currentDrawable
+					selectedConfig.textures = {}
+				end
+
+				for i = 0, maxTextures - 1 do
+					local isSelected = selectedConfig.textures[i + 1] ~= nil -- Check if texture is selected
+
+					-- Use CheckBox and hover detection
+					if WarMenu.CheckBox(string.format("Texture #%d", i + 1), isSelected, function(checked)
+						if checked then
+							selectedConfig.textures[i + 1] = i
+						else
+							selectedConfig.textures[i + 1] = nil
+						end
+					end) then
+						-- This triggers when CheckBox is interacted with
+					end
+
+					-- Hover state detection (AFTER CheckBox)
+					if WarMenu.IsItemHovered() then
+						hoveredTexture = i -- Track the hovered texture
+					end
+				end
+
+				-- Highlight the hovered texture only once outside the loop
+				if hoveredTexture ~= nil then
+					SetPedComponentVariation(PlayerPedId(), drawable, currentDrawable, hoveredTexture, 0)
+				else
+					-- Restore to default texture when not hovering
+					SetPedComponentVariation(PlayerPedId(), drawable, currentDrawable, currentTexture, 0)
+				end
+				-- Save Config
+				if WarMenu.Button("Save Config", "Confirm Selection") then
+					local finalConfig = {
+						componentId = selectedConfig.componentId,
+						drawableId = selectedConfig.drawableId,
+						textures = {}
+					}
+
+					-- Collect selected textures
+					for _, texture in pairs(selectedConfig.textures) do
+						table.insert(finalConfig.textures, texture)
+					end
+
+					table.insert(chatterConfig, finalConfig)
+					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+
+					-- Reset selectedConfig
+					selectedConfig = {
+						componentId = nil,
+						drawableId = nil,
+						textures = {}
+					}
+
+					WarMenu.CloseMenu()
+				end
+
+				WarMenu.Display()
+			end
+		end
+
+		-- Props Loop (Existing Code)
+		for tmpProp = 0, 4 do
+			local realProp = (tmpProp >= 3) and (tmpProp + 3) or tmpProp
+			local menuId = 'prop_' .. tmpProp
+			if WarMenu.IsMenuOpened(menuId) then
+				local currentProp = GetPedPropIndex(PlayerPedId(), realProp)
+				local maxTextures = GetNumberOfPedPropTextureVariations(PlayerPedId(), realProp, currentProp)
+				print('Current Prop: ' .. currentProp)
+				print('realProp', realProp)
+				if WarMenu.Button("Select Prop", string.format("Prop ID: %d", currentProp)) then
+					selectedConfig.componentId = realProp
+					selectedConfig.drawableId = currentProp
+					selectedConfig.textures = {}
+				end
+
+				for i = 0, maxTextures - 1 do
+					local isSelected = selectedConfig.textures[i + 1] ~= nil -- Check if texture is selected
+					local hoverState = WarMenu.IsItemHovered() -- Check if this item is being hovered over
+					-- Highlight the component if hovering
+					if hoverState then
+						SetPedPropIndex(PlayerPedId(), realProp, currentProp, i, 2) -- Change texture to the current selection
+					else
+						-- Restore the default texture (use i=0 as the default texture for simplicity)
+						SetPedPropIndex(PlayerPedId(), realProp, currentProp, 0, 2)
+					end
+
+					WarMenu.CheckBox(string.format("Texture #%d", i + 1), isSelected, function(checked)
+						if checked then
+							-- Add texture to the selectedConfig
+							selectedConfig.textures[i + 1] = i
+						else
+							-- Remove texture from the selectedConfig
+							selectedConfig.textures[i + 1] = nil
+						end
+					end)
+				end
+				if WarMenu.Button("Save Config", "Confirm Selection") then
+					local finalConfig = {
+						componentId = selectedConfig.componentId,
+						drawableId = selectedConfig.drawableId,
+						textures = {}
+					}
+
+					for _, texture in pairs(selectedConfig.textures) do
+						table.insert(finalConfig.textures, texture)
+					end
+
+					table.insert(chatterConfig, finalConfig)
+					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+
+					selectedConfig = {
+						componentId = nil,
+						drawableId = nil,
+						textures = {}
+					}
+
+					WarMenu.CloseMenu()
+				end
+
+				WarMenu.Display()
+			end
+			for index, item in ipairs(chatterConfig or {}) do
+				local menuId = 'editItem_' .. index
+				if WarMenu.IsMenuOpened(menuId) then
+					if WarMenu.Button("Remove Item", "Confirm Removal") then
+						table.remove(chatterConfig, index)
+						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+						WarMenu.CloseMenu()
+						break
+					end
+
+					WarMenu.Display()
+				end
+			end
 		end
 		Wait(0)
 	end
@@ -1395,5 +1600,68 @@ function toneboardMenu()
 	end
 	if WarMenu.Button('Delete Speaker') then
 		WarMenu.OpenMenu('toneboardDeleteMenu')
+	end
+end
+
+-- Jordan 12/16/2024 | Chatter Menu
+
+-- Main Chatter Menu
+function chatterMenu()
+	if not chatterConfig then
+		if WarMenu.Button('Chatter Is Currently Disabled') then
+		end
+	else
+		if WarMenu.Button('Add EUP Chatter Config') then
+			WarMenu.OpenMenu('addChatterConfig')
+		end
+		-- if WarMenu.Button('Edit EUP Chatter Config') then
+		-- 	WarMenu.OpenMenu('editChatterConfig')
+		-- end
+	end
+end
+
+-- Add Chatter Config Menu
+function addChatterConfig()
+	-- Credit: TomGrobbe: https://github.com/TomGrobbe/vMenu/blob/724099fa735565d359d119f8cf415a23f3b108a5/vMenu/menus/PlayerAppearance.cs#L623
+    -- Drawables
+-- Drawables (0-11)
+	for drawable = 0, 11 do
+		local currentDrawable = GetPedDrawableVariation(PlayerPedId(), drawable) -- Current drawable ID
+		local menuId = 'drawable_' .. drawable
+
+		-- Check if menu is opened for this drawable
+		if WarMenu.MenuButton(textureNames[drawable + 1], menuId) then
+			currentTexture = GetPedTextureVariation(PlayerPedId(), drawable) -- Current texture ID
+			-- Highlight the current component the player is wearing
+			SetPedComponentVariation(PlayerPedId(), drawable, currentDrawable, currentTexture, 2)
+		end
+	end
+
+	-- Props (0-4 mapped to real IDs)
+	for tmpProp = 0, 4 do
+		local realProp = (tmpProp >= 3) and (tmpProp + 3) or tmpProp
+		local currentProp = GetPedPropIndex(PlayerPedId(), realProp) -- Current prop ID
+		local menuId = 'prop_' .. tmpProp
+
+		-- Check if menu is opened for this prop
+		if WarMenu.MenuButton(propNames[tmpProp + 1], menuId) then
+			-- Highlight the current prop the player is wearing
+			if currentProp ~= -1 then -- Only apply if a prop is currently worn
+				currentTexture = GetPedPropTextureIndex(PlayerPedId(), realProp) -- Current prop texture ID
+			end
+		end
+	end
+end
+
+function editChatterConfig()
+	if #chatterConfig == 0 then
+		TriggerServerEvent('Chatter:clientChatterSync')
+	end
+	for index, item in ipairs(chatterConfig) do
+		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
+		if WarMenu.MenuButton(label, 'editItem_' .. index) then
+			-- Create a submenu for each item
+			WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
+		end
 	end
 end

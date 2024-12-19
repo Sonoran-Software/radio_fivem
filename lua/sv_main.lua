@@ -11,6 +11,8 @@ local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
+chatterFileName = 'earpieces.json'
+chatterConfig = {}
 local clientConfig = {}
 
 if Config == nil then
@@ -473,6 +475,51 @@ AddEventHandler('onResourceStart', function(resourceName)
 			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
+	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
+	if not chatterFile then
+		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
+		infoLog('Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
+		infoLog('Attempting to rename earpieces.DEFAULT.json to earpieces.json')
+		if not CopyFile(GetResourcePath(resourceName) .. '/earpieces.DEFAULT.json', GetResourcePath(resourceName) .. '/earpieces.json') then
+			errorLog('Failed to rename earpieces.DEFAULT.json to earpieces.json. Please manually rename')
+			chatterFileName = 'earpieces.DEFAULT.json'
+		else
+			infoLog('Successfully renamed earpieces.DEFAULT.json to earpieces.json')
+			chatterFileName = 'earpieces.json'
+		end
+	end
+	-- Load JSON
+	local chat = LoadResourceFile(resourceName, chatterFileName)
+	local chatter = json.decode(chat) or {}
+	local luaConfig = {}
+	-- Function to check if a config item exists in the JSON
+	local function isConfigInJson(jsonTable, configItem)
+		for _, item in ipairs(jsonTable) do
+			if item.componentId == configItem.componentId and item.drawableId == configItem.drawableId then
+				return true -- Found, no need to add
+			end
+		end
+		return false -- Not found
+	end
+
+	-- Add missing Config.chatterExclusions to the chatter JSON
+	local updated = false
+	for _, exclusion in ipairs(Config.chatterExclusions or {}) do
+		if not isConfigInJson(chatter, exclusion) then
+			table.insert(luaConfig, exclusion)
+			updated = true
+		end
+	end
+
+	-- Save updated earpieces.json if changes were made
+	if updated then
+		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
+		infoLog('Updated earpieces.json with missing chatter exclusions.')
+	end
+	chatterConfig = luaConfig
+	if Config.chatterExclusion then
+		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
+	end
 end)
 
 exports('performApiRequest', performApiRequest)
