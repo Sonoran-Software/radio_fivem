@@ -1614,9 +1614,9 @@ function chatterMenu()
 		if WarMenu.Button('Add EUP Chatter Config') then
 			WarMenu.OpenMenu('addChatterConfig')
 		end
-		if WarMenu.Button('Edit EUP Chatter Config') then
-			WarMenu.OpenMenu('editChatterConfig')
-		end
+		-- if WarMenu.Button('Edit EUP Chatter Config') then
+		-- 	WarMenu.OpenMenu('editChatterConfig')
+		-- end
 	end
 end
 
