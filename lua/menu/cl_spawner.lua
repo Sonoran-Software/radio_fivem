@@ -104,10 +104,10 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
-			if Config.chatter then
-				if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
-				end
-			end
+			-- if Config.chatter then
+			-- 	if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
+			-- 	end
+			-- end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
 			spawningRadioRepeater()
