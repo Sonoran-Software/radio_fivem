@@ -1700,10 +1700,25 @@ function editChatterConfig()
 		return
 	end
 	for index, item in ipairs(chatterConfig) do
-		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
-		if WarMenu.MenuButton(label, 'editItem_' .. index) then
-			-- Create a submenu for each item
-			WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
+		if not item.componentId or not item.drawableId then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Error',
+					'Invalid chatter config found for item at index ' .. index .. '. Please manually correct this in the earpieces.json.'
+				}
+			})
+		else
+			local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
+			if WarMenu.MenuButton(label, 'editItem_' .. index) then
+				-- Create a submenu for each item
+				WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
+			end
 		end
 	end
 end
