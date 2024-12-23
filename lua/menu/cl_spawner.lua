@@ -104,10 +104,10 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
-			-- if Config.chatter then
-			-- 	if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
-			-- 	end
-			-- end
+			if Config.chatter then
+				if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
+				end
+			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
 			spawningRadioRepeater()
@@ -202,6 +202,18 @@ Citizen.CreateThread(function()
 
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+					TriggerEvent('chat:addMessage', {
+						color = {
+							255,
+							0,
+							0
+						},
+						multiline = true,
+						args = {
+							'Chatter Config',
+							'Config saved successfully'
+						}
+					})
 
 					-- Reset selectedConfig
 					selectedConfig = {
@@ -209,8 +221,6 @@ Citizen.CreateThread(function()
 						drawableId = nil,
 						textures = {}
 					}
-
-					WarMenu.CloseMenu()
 				end
 
 				WarMenu.Display()
@@ -266,14 +276,24 @@ Citizen.CreateThread(function()
 
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+					TriggerEvent('chat:addMessage', {
+						color = {
+							255,
+							0,
+							0
+						},
+						multiline = true,
+						args = {
+							'Chatter Config',
+							'Config saved successfully'
+						}
+					})
 
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
 						textures = {}
 					}
-
-					WarMenu.CloseMenu()
 				end
 
 				WarMenu.Display()
@@ -284,7 +304,18 @@ Citizen.CreateThread(function()
 					if WarMenu.Button("Remove Item", "Confirm Removal") then
 						table.remove(chatterConfig, index)
 						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
-						WarMenu.CloseMenu()
+						TriggerEvent('chat:addMessage', {
+							color = {
+								255,
+								0,
+								0
+							},
+							multiline = true,
+							args = {
+								'Chatter Config',
+								'Config removed successfully'
+							}
+						})
 						break
 					end
 
@@ -1656,6 +1687,20 @@ end
 function editChatterConfig()
 	if #chatterConfig == 0 then
 		TriggerServerEvent('Chatter:clientChatterSync')
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Error',
+				'No chatter config found. Please try again.'
+			}
+		})
+		WarMenu.OpenMenu('chatterMenu')
+		return
 	end
 	for index, item in ipairs(chatterConfig) do
 		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
