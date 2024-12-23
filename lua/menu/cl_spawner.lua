@@ -190,8 +190,8 @@ Citizen.CreateThread(function()
 				-- Save Config
 				if WarMenu.Button("Save Config", "Confirm Selection") then
 					local finalConfig = {
-						componentId = selectedConfig.componentId,
-						drawableId = selectedConfig.drawableId,
+						componentId = drawable,
+						drawableId = currentDrawable,
 						textures = {}
 					}
 
@@ -234,8 +234,6 @@ Citizen.CreateThread(function()
 			if WarMenu.IsMenuOpened(menuId) then
 				local currentProp = GetPedPropIndex(PlayerPedId(), realProp)
 				local maxTextures = GetNumberOfPedPropTextureVariations(PlayerPedId(), realProp, currentProp)
-				print('Current Prop: ' .. currentProp)
-				print('realProp', realProp)
 				if WarMenu.Button("Select Prop", string.format("Prop ID: %d", currentProp)) then
 					selectedConfig.componentId = realProp
 					selectedConfig.drawableId = currentProp
@@ -265,15 +263,14 @@ Citizen.CreateThread(function()
 				end
 				if WarMenu.Button("Save Config", "Confirm Selection") then
 					local finalConfig = {
-						componentId = selectedConfig.componentId,
-						drawableId = selectedConfig.drawableId,
+						componentId = realProp,
+						drawableId = currentProp,
 						textures = {}
 					}
 
 					for _, texture in pairs(selectedConfig.textures) do
 						table.insert(finalConfig.textures, texture)
 					end
-
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
 					TriggerEvent('chat:addMessage', {
@@ -1645,9 +1642,9 @@ function chatterMenu()
 		if WarMenu.Button('Add EUP Chatter Config') then
 			WarMenu.OpenMenu('addChatterConfig')
 		end
-		-- if WarMenu.Button('Edit EUP Chatter Config') then
-		-- 	WarMenu.OpenMenu('editChatterConfig')
-		-- end
+		if WarMenu.Button('Edit EUP Chatter Config') then
+			WarMenu.OpenMenu('editChatterConfig')
+		end
 	end
 end
 
