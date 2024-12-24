@@ -24,26 +24,24 @@ function initChatter()
 		local MIN_DIST = 15.0
 
 		while true do
-			local allChatterSources = {}
+			local chatterSourcePlayers = {}
 			local myPos = GetFinalRenderedCamCoord()
 			-- create or update close players in chatterSources
 			for _, ply in ipairs(GetActivePlayers()) do
-				-- player is me, skip
 				if ply == PlayerId() then
 					goto continue
 				end
-				-- player not close enough, skip
+
 				local ped = GetPlayerPed(ply)
 				if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > MIN_DIST then
 					goto continue
 				end
-				-- player doesn't have radio state, skip
+
 				local state = playerStates[GetPlayerServerId(ply)]
 				if not state then
 					goto continue
 				end
 
-				-- check if the ped is excluded from chatter because of a clothing item
 				if type(Config.chatterExclusions) == 'table' then
 					for _, exclusion in ipairs(Config.chatterExclusions) do
 						if pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture) then
@@ -52,32 +50,37 @@ function initChatter()
 					end
 				end
 
-				-- insert the chatter source
-				table.insert(allChatterSources, {player = ply, state = state})
+				-- find the index of the existing chatter source
+				local idx = 0
+				for i = 1, #chatterSources do
+					if chatterSources[i].player == ply then
+						idx = i
+						break
+					end
+				end
+				if idx > 0 then
+					chatterSources[idx].state = state
+				else
+					table.insert(chatterSources, {player = ply, state = state})
+				end
+
+				table.insert(chatterSourcePlayers, ply)
 				::continue::
 			end
 
-			-- find whether the closest source is an emergency call
-			local closest = math.huge
-			local closestIsEmergencyCall = false
-			for i = 1, #allChatterSources do
-				local cs = allChatterSources[i]
-				local dist = #(GetEntityCoords(GetPlayerPed(cs.player)) - myPos)
-				if dist < closest then
-					closest = dist
-					closestIsEmergencyCall = type(cs.state.primaryChId) == 'string'
+			-- remove players that are not chatter sources anymore
+			for i = #chatterSources, 1, -1 do
+				local keep = false
+				for _, ply in ipairs(chatterSourcePlayers) do
+					if chatterSources[i].player == ply then
+						keep = true
+						break
+					end
+				end
+				if not keep then
+					table.remove(chatterSources, i)
 				end
 			end
-
-			-- filter out emergency or non-emergency sources based on closestIsEmergencyCall
-			for i = #allChatterSources, 1, -1 do
-				local isEmergencyCall = type(allChatterSources[i].state.primaryChId) == 'string'
-				if isEmergencyCall ~= closestIsEmergencyCall then
-					table.remove(allChatterSources, i)
-				end
-			end
-
-			chatterSources = allChatterSources
 
 			-- find the frequencies we need to listen to for chatter
 			-- duplicates don't matter because it's handled in the frontend
@@ -124,7 +127,6 @@ function initChatter()
 		return #(cur - last) > threshold
 	end
 
-	-- keep chatter source positions updated
 	Citizen.CreateThread(function()
 		local throttleMillis = 20
 		local lastUpdate = 0

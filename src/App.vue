@@ -121,7 +121,6 @@ export default {
                 open: false,
                 name: 'Guest',
                 peers: [],
-                state: null,
                 cmd: '911',
             },
 
@@ -425,15 +424,12 @@ export default {
         },
         onEmergencyCallFrameEvent(event) {
             switch (event.type) {
-                case 'radio_connected':
-                    this.emergencyCall.state = event.state;
-                    this.postClient({ type: 'stateUpdatedEmergencyCall', state: event.state });
-                    break;
                 case "radio_disconnected":
                     // we were kicked on the radio, so end the call
                     this.setEmergencyCall(false);
                     break;
                 case 'call_peers':
+                    console.log('call_peers', event.peers);
                     this.emergencyCall.peers = event.peers;
                     break;
             }
@@ -643,23 +639,15 @@ export default {
             this.emergencyCall.open = enable;
             if (displayName) this.emergencyCall.name = displayName;
             if (cmd) this.emergencyCall.cmd = cmd;
-            if (!enable) {
-                // reset the emergency call state
+            if (!enable) // reset peers when call ends
                 this.emergencyCall.peers = [];
-                this.emergencyCall.state = null;
-            }
-            this.postClient({ type: 'emergencyCall', enabled: enable })
         },
         loop20() {
-            // keep pushing stateUpdated every 20s
+            if (!this.radioPower) return;
+            // keep pushing stateUpdated every 20s while the radio is on
             // NOTE: chatter won't work without this (the server clears stale data after 30s of no update)
-            if (this.emergencyCallEnabled) {
-                const state = this.emergencyCall.state;
-                if (state) this.postClient({ type: 'stateUpdatedEmergencyCall', state });
-            } else if (this.radioPower) {
-                const state = this.$store.state.radioState;
-                if (state) this.postClient({ type: 'stateUpdated', state });
-            }
+            const state = this.$store.state.radioState;
+            if (state) this.postClient({ type: 'stateUpdated', state });
         },
         onStandaloneConnected() {
             this.updateGamestate();

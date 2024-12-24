@@ -4,7 +4,6 @@ local thisUnit = {}
 local unitStatus = nil
 
 isTalking = false
-isEmergCallActive = false
 allowedMiniRadio = false
 local tunnels = {}
 local authorized = false
@@ -675,14 +674,10 @@ function initClient()
 			SetResourceKvp('ui_pos_dic', json.encode(data.data))
 		end
 
-		if data.type == 'stateUpdated' or data.type == 'stateUpdatedEmergencyCall' then
+		if data.type == 'stateUpdated' then
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
-		end
-
-		if data.type == 'emergencyCall' then
-			isEmergCallActive = data.enabled
 		end
 
 		if data.type == 'refreshScreen' then
