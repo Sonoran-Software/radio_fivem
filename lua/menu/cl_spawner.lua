@@ -69,13 +69,13 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardMoveMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardDeleteMenu', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure EUP Radio Chatter')
+	WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure Chatter Earpieces')
 	WarMenu.SetMenuTitleBackgroundSprite('chatterMenu', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Chatter Config')
+	WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Earpiece Item')
 	WarMenu.SetMenuTitleBackgroundSprite('addChatterConfig', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Edit Chatter Config')
+	WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Remove Earpiece Item')
 	WarMenu.SetMenuTitleBackgroundSprite('editChatterConfig', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Chatter Config')
+	WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Earpiece Config')
 	WarMenu.SetMenuTitleBackgroundSprite('deleteChatterConfig', 'radio_menu_header', 'option_1')
 		-- Pre-create all drawable submenus
 	for drawable = 0, 11 do
@@ -104,10 +104,10 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
-			-- if Config.chatter then
-			-- 	if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
-			-- 	end
-			-- end
+			if Config.chatter then
+				if WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu') then
+				end
+			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
 			spawningRadioRepeater()
@@ -190,8 +190,8 @@ Citizen.CreateThread(function()
 				-- Save Config
 				if WarMenu.Button("Save Config", "Confirm Selection") then
 					local finalConfig = {
-						componentId = selectedConfig.componentId,
-						drawableId = selectedConfig.drawableId,
+						componentId = drawable,
+						drawableId = currentDrawable,
 						textures = {}
 					}
 
@@ -202,6 +202,18 @@ Citizen.CreateThread(function()
 
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+					TriggerEvent('chat:addMessage', {
+						color = {
+							255,
+							0,
+							0
+						},
+						multiline = true,
+						args = {
+							'Earpiece Config',
+							'Config saved successfully'
+						}
+					})
 
 					-- Reset selectedConfig
 					selectedConfig = {
@@ -209,8 +221,7 @@ Citizen.CreateThread(function()
 						drawableId = nil,
 						textures = {}
 					}
-
-					WarMenu.CloseMenu()
+					WarMenu.OpenMenu('chatterMenu')
 				end
 
 				WarMenu.Display()
@@ -224,8 +235,6 @@ Citizen.CreateThread(function()
 			if WarMenu.IsMenuOpened(menuId) then
 				local currentProp = GetPedPropIndex(PlayerPedId(), realProp)
 				local maxTextures = GetNumberOfPedPropTextureVariations(PlayerPedId(), realProp, currentProp)
-				print('Current Prop: ' .. currentProp)
-				print('realProp', realProp)
 				if WarMenu.Button("Select Prop", string.format("Prop ID: %d", currentProp)) then
 					selectedConfig.componentId = realProp
 					selectedConfig.drawableId = currentProp
@@ -255,25 +264,35 @@ Citizen.CreateThread(function()
 				end
 				if WarMenu.Button("Save Config", "Confirm Selection") then
 					local finalConfig = {
-						componentId = selectedConfig.componentId,
-						drawableId = selectedConfig.drawableId,
+						componentId = realProp,
+						drawableId = currentProp,
 						textures = {}
 					}
 
 					for _, texture in pairs(selectedConfig.textures) do
 						table.insert(finalConfig.textures, texture)
 					end
-
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
+					TriggerEvent('chat:addMessage', {
+						color = {
+							255,
+							0,
+							0
+						},
+						multiline = true,
+						args = {
+							'Earpiece Config',
+							'Config saved successfully'
+						}
+					})
 
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
 						textures = {}
 					}
-
-					WarMenu.CloseMenu()
+					WarMenu.OpenMenu('chatterMenu')
 				end
 
 				WarMenu.Display()
@@ -281,13 +300,23 @@ Citizen.CreateThread(function()
 			for index, item in ipairs(chatterConfig or {}) do
 				local menuId = 'editItem_' .. index
 				if WarMenu.IsMenuOpened(menuId) then
-					if WarMenu.Button("Remove Item", "Confirm Removal") then
+					if WarMenu.Button("Remove Earpiece Item", "Confirm Removal") then
 						table.remove(chatterConfig, index)
 						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
-						WarMenu.CloseMenu()
-						break
+						TriggerEvent('chat:addMessage', {
+							color = {
+								255,
+								0,
+								0
+							},
+							multiline = true,
+							args = {
+								'Earpiece Config',
+								'Earpiece removed successfully'
+							}
+						})
+						WarMenu.OpenMenu('chatterMenu')
 					end
-
 					WarMenu.Display()
 				end
 			end
@@ -1611,12 +1640,12 @@ function chatterMenu()
 		if WarMenu.Button('Chatter Is Currently Disabled') then
 		end
 	else
-		if WarMenu.Button('Add EUP Chatter Config') then
+		if WarMenu.Button('Add Earpiece Item') then
 			WarMenu.OpenMenu('addChatterConfig')
 		end
-		-- if WarMenu.Button('Edit EUP Chatter Config') then
-		-- 	WarMenu.OpenMenu('editChatterConfig')
-		-- end
+		if WarMenu.Button('Remove Earpiece Item') then
+			WarMenu.OpenMenu('editChatterConfig')
+		end
 	end
 end
 
@@ -1656,12 +1685,41 @@ end
 function editChatterConfig()
 	if #chatterConfig == 0 then
 		TriggerServerEvent('Chatter:clientChatterSync')
+		TriggerEvent('chat:addMessage', {
+			color = {
+				255,
+				0,
+				0
+			},
+			multiline = true,
+			args = {
+				'Error',
+				'No earpiece config found. Please try again.'
+			}
+		})
+		WarMenu.OpenMenu('chatterMenu')
+		return
 	end
 	for index, item in ipairs(chatterConfig) do
-		local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
-		if WarMenu.MenuButton(label, 'editItem_' .. index) then
-			-- Create a submenu for each item
-			WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
+		if not item.componentId or not item.drawableId then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {
+					'Error',
+					'Invalid earpiece config found for item at index ' .. index .. '. Please manually correct this in the earpieces.json.'
+				}
+			})
+		else
+			local label = string.format("Component %d | Drawable %d", item.componentId, item.drawableId)
+			if WarMenu.MenuButton(label, 'editItem_' .. index) then
+				-- Create a submenu for each item
+				WarMenu.CreateSubMenu('editItem_' .. index, 'editChatterConfig', 'Edit Item')
+			end
 		end
 	end
 end
