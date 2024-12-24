@@ -315,10 +315,8 @@ Citizen.CreateThread(function()
 								'Earpiece removed successfully'
 							}
 						})
-						break
 						WarMenu.OpenMenu('chatterMenu')
 					end
-
 					WarMenu.Display()
 				end
 			end
