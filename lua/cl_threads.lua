@@ -1,8 +1,11 @@
-local spawnedTalkingLoop = false
 function initThreads()
+    local spawnedTalkingLoop = false
+    function shouldTalkInGame()
+        return (isTalking and Config.talkSync) or isEmergCallActive
+    end
     function spawnTalkingLoop()
         Citizen.CreateThread(function()
-            while isTalking and Config.talkSync do
+            while shouldTalkInGame() do
                 SetControlNormal(0, 249, 1.0);
                 Wait(0)
             end
@@ -12,7 +15,7 @@ function initThreads()
     -- 0 MS Thread
     Citizen.CreateThread(function()
         while true do
-            if isTalking and Config.talkSync and not spawnedTalkingLoop then
+            if shouldTalkInGame() and not spawnedTalkingLoop then
                 spawnedTalkingLoop = true
                 spawnTalkingLoop()
             end
