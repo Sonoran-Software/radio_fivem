@@ -12,6 +12,7 @@ const frames = {};
  * @param {string} key
  * @param {HTMLElement?} el
  * @param {string} src
+ * @returns {void}
  */
 function push(key, el, src) {
     let frameData = frames[key];
@@ -36,7 +37,7 @@ function push(key, el, src) {
         frameEl.src = src;
     frameEl.style.pointerEvents = 'auto';
     // the caller wants the frame to exist, but not be visible
-    if (!el) return (frameEl.style.opacity = '0%');
+    if (!el) return void (frameEl.style.opacity = '0%');
 
     // scale iframe based on guide font size
     const elStyles = window.getComputedStyle(el);
