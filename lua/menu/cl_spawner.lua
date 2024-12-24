@@ -69,13 +69,13 @@ Citizen.CreateThread(function()
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardMoveMenu', 'radio_menu_header', 'option_1')
 	WarMenu.CreateSubMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
 	WarMenu.SetMenuTitleBackgroundSprite('toneboardDeleteMenu', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure EUP Radio Chatter')
+	WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure Chatter Earpieces')
 	WarMenu.SetMenuTitleBackgroundSprite('chatterMenu', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Chatter Config')
+	WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Earpiece Item')
 	WarMenu.SetMenuTitleBackgroundSprite('addChatterConfig', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Edit Chatter Config')
+	WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Remove Earpiece Item')
 	WarMenu.SetMenuTitleBackgroundSprite('editChatterConfig', 'radio_menu_header', 'option_1')
-	WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Chatter Config')
+	WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Earpiece Config')
 	WarMenu.SetMenuTitleBackgroundSprite('deleteChatterConfig', 'radio_menu_header', 'option_1')
 		-- Pre-create all drawable submenus
 	for drawable = 0, 11 do
@@ -105,7 +105,7 @@ Citizen.CreateThread(function()
 			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
 			end
 			if Config.chatter then
-				if WarMenu.MenuButton('Configure EUP Radio Chatter', 'chatterMenu') then
+				if WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu') then
 				end
 			end
 			WarMenu.Display()
@@ -210,7 +210,7 @@ Citizen.CreateThread(function()
 						},
 						multiline = true,
 						args = {
-							'Chatter Config',
+							'Earpiece Config',
 							'Config saved successfully'
 						}
 					})
@@ -221,6 +221,7 @@ Citizen.CreateThread(function()
 						drawableId = nil,
 						textures = {}
 					}
+					WarMenu.OpenMenu('chatterMenu')
 				end
 
 				WarMenu.Display()
@@ -281,7 +282,7 @@ Citizen.CreateThread(function()
 						},
 						multiline = true,
 						args = {
-							'Chatter Config',
+							'Earpiece Config',
 							'Config saved successfully'
 						}
 					})
@@ -291,6 +292,7 @@ Citizen.CreateThread(function()
 						drawableId = nil,
 						textures = {}
 					}
+					WarMenu.OpenMenu('chatterMenu')
 				end
 
 				WarMenu.Display()
@@ -298,7 +300,7 @@ Citizen.CreateThread(function()
 			for index, item in ipairs(chatterConfig or {}) do
 				local menuId = 'editItem_' .. index
 				if WarMenu.IsMenuOpened(menuId) then
-					if WarMenu.Button("Remove Item", "Confirm Removal") then
+					if WarMenu.Button("Remove Earpiece Item", "Confirm Removal") then
 						table.remove(chatterConfig, index)
 						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
 						TriggerEvent('chat:addMessage', {
@@ -309,11 +311,12 @@ Citizen.CreateThread(function()
 							},
 							multiline = true,
 							args = {
-								'Chatter Config',
-								'Config removed successfully'
+								'Earpiece Config',
+								'Earpiece removed successfully'
 							}
 						})
 						break
+						WarMenu.OpenMenu('chatterMenu')
 					end
 
 					WarMenu.Display()
@@ -1639,10 +1642,10 @@ function chatterMenu()
 		if WarMenu.Button('Chatter Is Currently Disabled') then
 		end
 	else
-		if WarMenu.Button('Add EUP Chatter Config') then
+		if WarMenu.Button('Add Earpiece Item') then
 			WarMenu.OpenMenu('addChatterConfig')
 		end
-		if WarMenu.Button('Edit EUP Chatter Config') then
+		if WarMenu.Button('Remove Earpiece Item') then
 			WarMenu.OpenMenu('editChatterConfig')
 		end
 	end
@@ -1693,7 +1696,7 @@ function editChatterConfig()
 			multiline = true,
 			args = {
 				'Error',
-				'No chatter config found. Please try again.'
+				'No earpiece config found. Please try again.'
 			}
 		})
 		WarMenu.OpenMenu('chatterMenu')
@@ -1710,7 +1713,7 @@ function editChatterConfig()
 				multiline = true,
 				args = {
 					'Error',
-					'Invalid chatter config found for item at index ' .. index .. '. Please manually correct this in the earpieces.json.'
+					'Invalid earpiece config found for item at index ' .. index .. '. Please manually correct this in the earpieces.json.'
 				}
 			})
 		else
