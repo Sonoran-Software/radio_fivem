@@ -369,6 +369,7 @@ export default {
                     this.postChatterFrame({
                         type: 'set_audio_source_positions',
                         sources: event.sources,
+                        isMuffled: event.isMuffled,
                     });
                     break;
             }

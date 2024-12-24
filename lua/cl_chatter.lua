@@ -118,46 +118,84 @@ function initChatter()
 	end
 	local function vectorChanged(cur, last, threshold)
 		threshold = threshold or 0.05
-		if not last then
+		if not cur or not last then
 			return true
 		end
 		return #(cur - last) > threshold
+	end
+
+	local function doesVehicleHaveAllWindowsIntact(veh)
+		local windowBones = {
+			[0] = 'window_lf',
+			[1] = 'window_rf',
+			[2] = 'window_lr',
+			[3] = 'window_rr',
+			-- tbh idk what these windows are
+			[4] = 'window_lm',
+			[5] = 'window_rm',
+			--
+			[6] = 'windscreen',
+			[7] = 'windscreen_r',
+		}
+		for windowIndex, boneName in pairs(windowBones) do
+			local boneIndex = GetEntityBoneIndexByName(veh, boneName)
+			if boneIndex >= 0 and not IsVehicleWindowIntact(veh, windowIndex) then
+				return false
+			end
+		end
+		return true
 	end
 
 	-- keep chatter source positions updated
 	Citizen.CreateThread(function()
 		local throttleMillis = 20
 		local lastUpdate = 0
-		local lastCount = 0
+		local lastPos = nil
+		local lastIsMuffled = false
 		while true do
-			local needsUpdate = lastCount ~= #chatterSources
-			lastCount = #chatterSources
+			local closestSourcePly = nil
+			local closestSourcePos = nil
+			local closestSourceDist = math.huge
 
-			local sourcePositions = {}
+			-- find the closest chatter source
+			-- NOTE: the closest is the only one that matters rn, since chatter only supports one source
+			local myPos = GetFinalRenderedCamCoord()
 			for _, info in ipairs(chatterSources) do
 				local pos = GetEntityCoords(GetPlayerPed(info.player))
-				if vectorChanged(pos, info.pos, 1.0) then
-					needsUpdate = true
-					info.pos = pos
+				local dist = #(myPos - pos)
+				if dist < closestSourceDist then
+					closestSourceDist = dist
+					closestSourcePos = pos
+					closestSourcePly = info.player
 				end
-				table.insert(sourcePositions, pos)
 			end
 
+			-- check if the closest source is muffled
+			local isMuffled = false
+			local ped = GetPlayerPed(closestSourcePly)
+			if DoesEntityExist(ped) then
+				local veh = GetVehiclePedIsIn(ped, false)
+				isMuffled = DoesEntityExist(veh) and doesVehicleHaveAllWindowsIntact(veh)
+			end
+
+			local needsUpdate = (closestSourcePos ~= lastPos and vectorChanged(closestSourcePos, lastPos, 1.0)) or isMuffled ~= lastIsMuffled
 			if needsUpdate then
-				local myPos = GetFinalRenderedCamCoord()
-				table.sort(sourcePositions, function(a, b)
-					return #(a - myPos) < #(b - myPos)
-				end)
+				lastPos = closestSourcePos
+				lastIsMuffled = isMuffled
+
+				local sources = closestSourcePos ~= nil and {closestSourcePos} or {}
+				SendNUIMessage({
+					type = 'chatterSourcesUpdate',
+					sources = sources,
+					isMuffled = isMuffled,
+				})
 
 				-- wait for the throttle
 				local diff = lastUpdate + throttleMillis - GetGameTimer()
 				if diff > 0 then
 					Citizen.Wait(diff)
+					lastUpdate = GetGameTimer()
 				end
-				SendNUIMessage({
-					type = 'chatterSourcesUpdate',
-					sources = sourcePositions,
-				})
 			end
 			Citizen.Wait(0)
 		end
