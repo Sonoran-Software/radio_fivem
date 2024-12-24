@@ -80,30 +80,6 @@ Config.frames = {
 	}
 }
 
--- Radio Chatter Exclusion Settings --
-Config.chatterExclusions = {
-	{
-		componentId = 2, -- Ears
-		drawableId = 0, -- Number in vMenu MP Ped Component list
-		textures = {1} -- Texture ID in vMenu MP Ped Component list
-	},
-	{
-		componentId = 2, -- Ears
-		drawableId = 1, -- Number in vMenu MP Ped Component list
-		textures = {1} -- Texture ID in vMenu MP Ped Component list
-	},
-	{
-		componentId = 2, -- Ears
-		drawableId = 2, -- Number in vMenu MP Ped Component list
-		textures = {1} -- Texture ID in vMenu MP Ped Component list
-	},
-	{
-		componentId = 2, -- Ears
-		drawableId = 41, -- Number in vMenu MP Ped Component list
-		textures = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12} -- Texture ID in vMenu MP Ped Component list
-	},
-}
-
 -- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
 -- Mobile repeater keybinds
