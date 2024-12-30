@@ -379,7 +379,6 @@ export default {
             getRadioFrameEl('radio')?.contentWindow.postMessage(data, '*');
         },
         onRadioFrameEvent(event) {
-            console.log('radio event', event.type);
             switch (event.type) {
                 case "radio_connected":
                     console.log('radio connected');
