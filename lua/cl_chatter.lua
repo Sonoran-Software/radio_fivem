@@ -137,13 +137,39 @@ function initChatter()
 			[6] = 'windscreen',
 			[7] = 'windscreen_r',
 		}
+		local hasAnyWindows = false
 		for windowIndex, boneName in pairs(windowBones) do
 			local boneIndex = GetEntityBoneIndexByName(veh, boneName)
-			if boneIndex >= 0 and not IsVehicleWindowIntact(veh, windowIndex) then
-				return false
+			if boneIndex >= 0 then
+				hasAnyWindows = true
+				if not IsVehicleWindowIntact(veh, windowIndex) then
+					return false
+				end
 			end
 		end
-		return true
+		return hasAnyWindows
+	end
+	local function doesVehicleHaveAllDoorsClosed(veh)
+		local doorBones = {
+			[0] = 'door_dside_f',
+			[1] = 'door_pside_f',
+			[2] = 'door_dside_r',
+			[3] = 'door_pside_r',
+		}
+		local hasAnyDoors = false
+		for doorIndex, boneName in pairs(doorBones) do
+			local boneIndex = GetEntityBoneIndexByName(veh, boneName)
+			if boneIndex >= 0 then
+				hasAnyDoors = true
+				if GetVehicleDoorAngleRatio(veh, doorIndex) > 0.05 then
+					return false
+				end
+			end
+		end
+		return hasAnyDoors
+	end
+	local function isVehicleAudioMuffled(veh)
+		return doesVehicleHaveAllDoorsClosed(veh) and doesVehicleHaveAllWindowsIntact(veh)
 	end
 
 	-- keep chatter source positions updated
@@ -175,7 +201,7 @@ function initChatter()
 			local ped = GetPlayerPed(closestSourcePly)
 			if DoesEntityExist(ped) then
 				local veh = GetVehiclePedIsIn(ped, false)
-				isMuffled = DoesEntityExist(veh) and doesVehicleHaveAllWindowsIntact(veh)
+				isMuffled = DoesEntityExist(veh) and isVehicleAudioMuffled(veh)
 			end
 
 			local needsUpdate = (closestSourcePos ~= lastPos and vectorChanged(closestSourcePos, lastPos, 1.0)) or isMuffled ~= lastIsMuffled
