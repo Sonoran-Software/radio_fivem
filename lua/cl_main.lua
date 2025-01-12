@@ -36,6 +36,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initToneboard()
 	initTowers()
 	initClient()
+	initScanners()
 end)
 
 function initClient()

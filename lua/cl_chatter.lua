@@ -17,6 +17,17 @@ function initChatter()
 		end
 	end
 
+	local function getPlayerScanList(ply)
+		local state = playerStates[GetPlayerServerId(ply)]
+		if not state then return nil end -- they don't have a state
+
+		local scanList = {state.primaryChId}
+		for _, chId in ipairs(state.scannedChIds) do
+			table.insert(scanList, chId)
+		end
+		return scanList
+	end
+
 	local chatterSources = {}
 
 	-- find the near players, and send the required channels to listen on
@@ -38,8 +49,8 @@ function initChatter()
 					goto continue
 				end
 				-- player doesn't have radio state, skip
-				local state = playerStates[GetPlayerServerId(ply)]
-				if not state then
+				local scanList = getPlayerScanList(ply)
+				if not scanList then
 					goto continue
 				end
 
@@ -53,69 +64,23 @@ function initChatter()
 				end
 
 				-- insert the chatter source
-				table.insert(allChatterSources, {player = ply, state = state})
+				table.insert(allChatterSources, {
+					sourceEntity = ped,
+					scanList = scanList,
+				})
 				::continue::
 			end
 
-			-- find whether the closest source is an emergency call
-			local closest = math.huge
-			local closestIsEmergencyCall = false
-			for i = 1, #allChatterSources do
-				local cs = allChatterSources[i]
-				local dist = #(GetEntityCoords(GetPlayerPed(cs.player)) - myPos)
-				if dist < closest then
-					closest = dist
-					closestIsEmergencyCall = type(cs.state.primaryChId) == 'string'
-				end
+			-- TODO: add scanner chatter sources
+			for _, source in ipairs(getScannerChatterSources()) do
+				table.insert(allChatterSources, source)
 			end
-
-			-- filter out emergency or non-emergency sources based on closestIsEmergencyCall
-			for i = #allChatterSources, 1, -1 do
-				local isEmergencyCall = type(allChatterSources[i].state.primaryChId) == 'string'
-				if isEmergencyCall ~= closestIsEmergencyCall then
-					table.remove(allChatterSources, i)
-				end
-			end
-
 			chatterSources = allChatterSources
-
-			-- find the frequencies we need to listen to for chatter
-			-- duplicates don't matter because it's handled in the frontend
-			local listenChannelIds = {}
-			for _, info in ipairs(chatterSources) do
-				if info.state.spec ~= 2 then goto continue end
-
-				table.insert(listenChannelIds, info.state.primaryChId)
-				for i = 1, #info.state.scannedChIds do
-					table.insert(listenChannelIds, info.state.scannedChIds[i])
-				end
-				::continue::
-			end
-			SendNUIMessage({
-				type = 'chatterChannelsUpdate',
-				channelIds = listenChannelIds,
-			})
 
 			Citizen.Wait(500)
 		end
 	end)
 
-	local function getForwardVector(pitch, yaw)
-		pitch = math.rad(pitch)
-		yaw = math.rad(yaw)
-		local x = -math.sin(yaw) * math.cos(pitch)
-		local y = math.cos(yaw) * math.cos(pitch)
-		local z = math.sin(pitch)
-
-		return vec3(x, y, z)
-	end
-	local function getUpVector(roll)
-		roll = math.rad(roll)
-		local x = math.sin(roll)
-		local y = 0
-		local z = math.cos(roll)
-		return vec3(x, y, z)
-	end
 	local function vectorChanged(cur, last, threshold)
 		threshold = threshold or 0.05
 		if not cur or not last then
@@ -172,60 +137,124 @@ function initChatter()
 		return doesVehicleHaveAllDoorsClosed(veh) and doesVehicleHaveAllWindowsIntact(veh)
 	end
 
+	local function containsAll(tbl1, tbl2)
+		local function countElements(tbl)
+			local counts = {}
+			for _, value in ipairs(tbl) do
+				counts[value] = (counts[value] or 0) + 1
+			end
+			return counts
+		end
+
+		local counts1 = countElements(tbl1 or {})
+		local counts2 = countElements(tbl2 or {})
+		for key, count in pairs(counts1) do
+			if counts2[key] ~= count then
+				return false -- mismatched counts
+			end
+		end
+		return true
+	end
+
 	-- keep chatter source positions updated
 	Citizen.CreateThread(function()
-		local throttleMillis = 20
-		local lastUpdate = 0
-		local lastPos = nil
-		local lastIsMuffled = false
+		local last = {
+			pos = nil,
+			scanList = {},
+			isMuffled = false,
+			isSpatial = true,
+		}
 		while true do
-			local closestSourcePly = nil
 			local closestSourcePos = nil
 			local closestSourceDist = math.huge
-
+			local closestSourceInfo = nil
 			-- find the closest chatter source
 			-- NOTE: the closest is the only one that matters rn, since chatter only supports one source
 			local myPos = GetFinalRenderedCamCoord()
 			for _, info in ipairs(chatterSources) do
-				local pos = GetEntityCoords(GetPlayerPed(info.player))
-				local dist = #(myPos - pos)
-				if dist < closestSourceDist then
-					closestSourceDist = dist
-					closestSourcePos = pos
-					closestSourcePly = info.player
+				local pos = DoesEntityExist(info.sourceEntity) and GetEntityCoords(info.sourceEntity) or info.pos
+				if pos then
+					local dist = #(myPos - pos)
+					if dist < closestSourceDist then
+						closestSourcePos = pos
+						closestSourceDist = dist
+						closestSourceInfo = info
+					end
 				end
 			end
 
-			-- check if the closest source is muffled
-			local isMuffled = false
-			local ped = GetPlayerPed(closestSourcePly)
-			if DoesEntityExist(ped) then
-				local veh = GetVehiclePedIsIn(ped, false)
-				isMuffled = DoesEntityExist(veh) and isVehicleAudioMuffled(veh)
-			end
+			local updatePayload
 
-			local needsUpdate = (closestSourcePos ~= lastPos and vectorChanged(closestSourcePos, lastPos, 1.0)) or isMuffled ~= lastIsMuffled
-			if needsUpdate then
-				lastPos = closestSourcePos
-				lastIsMuffled = isMuffled
+			-- reset the chatter sources if nothing is nearby
+			if not closestSourceInfo and last.pos ~= nil then
+				last.pos = nil
+				updatePayload = {
+					sources = {},
+					channelIds = {},
+					isMuffled = false,
+					isSpatial = true,
+				}
+			elseif not closestSourceInfo then
+				-- pass
+			else
+				-- whether or not spatiality should be applied
+				local isSpatial = closestSourceInfo.sourceEntity ~= PlayerPedId()
 
-				local sources = closestSourcePos ~= nil and {closestSourcePos} or {}
-				SendNUIMessage({
-					type = 'chatterSourcesUpdate',
-					sources = sources,
-					isMuffled = isMuffled,
-				})
+				-- check if the closest source is muffled (ped in vehicle with all windows/doors closed)
+				local isMuffled = false
+				if isSpatial and DoesEntityExist(closestSourceInfo.sourceEntity) and IsEntityAPed(closestSourceInfo.sourceEntity) then
+					local veh = GetVehiclePedIsIn(closestSourceInfo.sourceEntity, false)
+					isMuffled = DoesEntityExist(veh) and isVehicleAudioMuffled(veh)
+				end
 
-				-- wait for the throttle
-				local diff = lastUpdate + throttleMillis - GetGameTimer()
-				if diff > 0 then
-					Citizen.Wait(diff)
-					lastUpdate = GetGameTimer()
+				-- check if all conditions are the similar (if not, then update)
+				local similar =
+					isMuffled == last.isMuffled and 
+					isSpatial == last.isSpatial and
+					(closestSourcePos == last.pos or not vectorChanged(closestSourcePos, last.pos, 1.0)) and
+					containsAll(closestSourceInfo.scanList, last.scanList)
+				if not similar then
+					last.pos = closestSourcePos
+					last.scanList = closestSourceInfo.scanList
+					last.isMuffled = isMuffled
+					last.isSpatial = isSpatial
+
+					updatePayload = {
+						sources = {closestSourcePos},
+						channelIds = closestSourceInfo.scanList,
+						isMuffled = isMuffled,
+						isSpatial = isSpatial,
+					}
 				end
 			end
+
+			-- send update payload if given
+			if updatePayload then
+				print('CHATTER DEBUG UPDATE', json.encode(updatePayload))
+				updatePayload.type = 'chatterSourcesUpdate'
+				SendNUIMessage(updatePayload)
+			end
+
 			Citizen.Wait(0)
 		end
 	end)
+
+	local function getForwardVector(pitch, yaw)
+		pitch = math.rad(pitch)
+		yaw = math.rad(yaw)
+		local x = -math.sin(yaw) * math.cos(pitch)
+		local y = math.cos(yaw) * math.cos(pitch)
+		local z = math.sin(pitch)
+
+		return vec3(x, y, z)
+	end
+	local function getUpVector(roll)
+		roll = math.rad(roll)
+		local x = math.sin(roll)
+		local y = 0
+		local z = math.cos(roll)
+		return vec3(x, y, z)
+	end
 
 	-- keep the camera position and rotation updated
 	Citizen.CreateThread(function()

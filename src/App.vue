@@ -351,12 +351,6 @@ export default {
                     if (event.skin) // update current ski
                         this.selectSkin(event.skin);
                     break;
-                case 'chatterChannelsUpdate':
-                    this.postChatterFrame({
-                        type: 'set_scanner_channels',
-                        channelIds: event.channelIds,
-                    })
-                    break;
                 case 'chatterCameraUpdate':
                     this.postChatterFrame({
                         type: 'set_audio_listener_orientation',
@@ -370,6 +364,11 @@ export default {
                         type: 'set_audio_source_positions',
                         sources: event.sources,
                         isMuffled: event.isMuffled,
+                        isSpatial: event.isSpatial,
+                    });
+                    this.postChatterFrame({
+                        type: 'set_scanner_channels',
+                        channelIds: event.channelIds,
                     });
                     break;
             }

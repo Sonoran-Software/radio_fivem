@@ -374,11 +374,11 @@ function initThreads()
                 ::continue::
             end
 
-            if bestTowerQuality == 0.0 then
-                DebugPrint('closest tower out of range')
-            else
-                DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
-            end
+            -- if bestTowerQuality == 0.0 then
+            --     DebugPrint('closest tower out of range')
+            -- else
+            --     DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
+            -- end
             bestRackQuality = 0.0
             local pCoords = GetEntityCoords(GetPlayerPed(-1))
             for i = 1, #racks do
@@ -426,11 +426,11 @@ function initThreads()
                 ::continue::
             end
 
-            if bestRackQuality == 0.0 then
-                DebugPrint('closest rack out of range')
-            else
-                DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
-            end
+            -- if bestRackQuality == 0.0 then
+            --     DebugPrint('closest rack out of range')
+            -- else
+            --     DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
+            -- end
             bestCellRepeaterQuality = 0.0
             local pCoords = GetEntityCoords(GetPlayerPed(-1))
             for i = 1, #CellRepeaters do
@@ -479,12 +479,12 @@ function initThreads()
                 ::continue::
             end
 
-            if bestCellRepeaterQuality == 0.0 then
-                DebugPrint('closest cell repeater out of range')
-            else
-                DebugPrint(('best cell repeater quality:%.4f'):format(
-                               bestCellRepeaterQuality))
-            end
+            -- if bestCellRepeaterQuality == 0.0 then
+            --     DebugPrint('closest cell repeater out of range')
+            -- else
+            --     DebugPrint(('best cell repeater quality:%.4f'):format(
+            --                    bestCellRepeaterQuality))
+            -- end
             -- Check if the players vehicle's radio repeater is active and if the player has control of the vehicle (not in a cutscene, etc.)
             if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
                             'RepeaterActive') and
