@@ -1,6 +1,7 @@
 Speakers = {}
 
 TriggerEvent('sonoranradio::RegisterPushEvent', 'play_tone', function(data)
+	DebugPrint('Received play_tone event from radio service.', json.encode(data))
     local tone = data.payload.src;
     local stationIds = data.payload.ids;
 	for i = 1, #Speakers do

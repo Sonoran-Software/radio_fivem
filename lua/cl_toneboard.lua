@@ -121,10 +121,10 @@ function initToneboard()
         speakers = {}
     end)
 
-    RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
+    RegisterNetEvent('SonoranRadio:PlayTone', function(speakers, tone)
         for _, tonePlay in pairs(tone) do
-            debugPrint(('adding tone %s to queue'):format(tonePlay))
-            table.insert(queue, {speaker, tonePlay})
+            DebugPrint(('adding tone %s to speaker %s\'s queue'):format(tonePlay, speakers.Id))
+            table.insert(queue, {speaker = speakers, sound = tonePlay})
         end
     end)
 
@@ -133,25 +133,35 @@ function initToneboard()
             Citizen.Wait(500);
             if #queue > 0 then
                 for i = 1, #queue do
-                    local speaker = queue[i][1]
-                    local tone = queue[i][2]
-                    if not playingSpeakers[speaker] then
-                        debugPrint(('playing tone %s on speaker %s'):format(tone,
-                                                                          speaker))
+                    if not queue[i] then goto continue end
+                    local speaker = queue[i].speaker
+                    local tone = queue[i].sound
+                    Wait(100)
+                    if not playingSpeakers[speaker.Id] then
+                        DebugPrint(('playing tone %s on speaker %s'):format(tone,
+                                                                          speaker.Id))
+                        playingSpeakers[speaker.Id] = tone
                         PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
                         Distance(speaker.Id, speaker.Range)
-                        table.insert(playingSpeakers, speaker)
                     end
+                    ::continue::
                 end
             end
         end
     end)
 
     RegisterNetEvent('xSound:songStopPlaying', function(id)
-        for i = 1, #playingSpeakers do
-            if playingSpeakers[i].Id == id then
-                debugPrint(('removing speaker %s from playingSpeakers'):format(id))
-                table.remove(playingSpeakers, i)
+        for k, v in pairs(playingSpeakers) do
+            if k == id then
+                DebugPrint(('removing speaker %s from playingSpeakers'):format(id))
+                for i = 1, #queue do
+                    if queue[i].sound == v and queue[i].speaker.Id == k then
+                        table.remove(queue, i)
+                        DebugPrint(('removed %s from queue'):format(v))
+                        break
+                    end
+                end
+                playingSpeakers[k] = nil
                 break
             end
         end
