@@ -54,7 +54,6 @@ end)
 -- scanners across the entire server
 local globalScanners = {}
 RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
-	print('pushing scanner', id, json.encode(data))
 	globalScanners[id] = data
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
 end)

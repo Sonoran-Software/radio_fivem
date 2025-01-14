@@ -101,7 +101,7 @@ else
 				description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 			}
 		end
-		exports['qb-core']:AddItem(Config.RadioItem.name, {
+		exports['qb-core']:AddItem(Config.ScannerItem.name, {
 			name = Config.ScannerItem.name,
 			label = Config.ScannerItem.label,
 			weight = Config.ScannerItem.weight,
@@ -116,7 +116,6 @@ else
 		QBCore.Functions.CreateUseableItem(Config.ScannerItem.name, function(source, item)
 			local src = source
 			local Player = QBCore.Functions.GetPlayer(src)
-			print('use scanner item', json.encode(item))
 			TriggerClientEvent('qb-sonrad:use-scanner', source)
 		end)
 

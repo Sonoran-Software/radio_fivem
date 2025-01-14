@@ -68,12 +68,11 @@ function initScanners()
 		EndTextCommandThefeedPostTicker(false, false)
 	end
 	local function pushScanner(id)
-		-- if id ~= 0 then
+		if id ~= 0 then
 			TriggerServerEvent('SonoranRadio::pushScanner', id, scanners[id])
-		-- end
+		end
 	end
 	RegisterNetEvent('SonoranRadio::receiveScanners', function(s)
-		print('received scanners', json.encode(s))
 		local localScanner = scanners[0]
 		scanners = s
 		scanners[0] = localScanner
@@ -125,7 +124,7 @@ function initScanners()
 			local QBCore = exports['qb-core']:GetCoreObject()
 			while true do
 				if GetResourceState('qb-inventory') == 'started' then
-					QBCore.Function.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
+					QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
 						scannerDrops = {}
 						local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 						for dropId, drop in pairs(drops) do
@@ -161,7 +160,7 @@ function initScanners()
 				end
 
 
-				if allwoed and nearDropId and not WarMenu.IsAnyMenuOpened() then
+				if allowed and nearDropId and not WarMenu.IsAnyMenuOpened() then
 					BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
 					EndTextCommandDisplayHelp(0, false, true, 100)
 
