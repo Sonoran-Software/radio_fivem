@@ -74,22 +74,29 @@ function initThreads()
         local destroyedMusicList = {}
         while true do
             CheckForCloseMusic()
-            if #playingSpeakers > 0 then
-                local playerPos = GetEntityCoords(GetPlayerPed(-1));
-                local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-                for _, v in pairs(playingSpeakers) do
-                    local propPos = GetSpeakerCoords(v);
+            local playerPos = GetEntityCoords(GetPlayerPed(-1));
+            local playerHeading = GetEntityHeading(GetPlayerPed(-1));
+            for k, v in pairs(playingSpeakers) do
+                local foundSpeaker = nil
+                for i = 1, #speakers do
+                    if speakers[i].Id == k then
+                        foundSpeaker = speakers[i]
+                        break
+                    end
+                end
+                if foundSpeaker then
+                    local propPos = GetSpeakerCoords(foundSpeaker);
                     SendNUIMessage({
-                        name = v.Id,
+                        name = foundSpeaker.Id,
                         status = "updateSound",
                         playerX = playerPos.x,
                         playerY = playerPos.y,
                         playerZ = playerPos.z,
                         playerHeading = playerHeading,
-                        speakerX = v.PropPosition.x,
-                        speakerY = v.PropPosition.y,
-                        speakerZ = v.PropPosition.z,
-                        maxDistance = v.Range,
+                        speakerX = foundSpeaker.PropPosition.x,
+                        speakerY = foundSpeaker.PropPosition.y,
+                        speakerZ = foundSpeaker.PropPosition.z,
+                        maxDistance = foundSpeaker.Range,
                         xsound = true,
                         distance = #(playerPos - propPos)
                     })

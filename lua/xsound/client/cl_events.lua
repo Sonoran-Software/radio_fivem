@@ -21,7 +21,7 @@ RegisterNUICallback("data_status", function(data, cb)
                 soundInfo[data.id].timeStamp = 0
             end
             soundInfo[data.id].maxDuration = data.time
-            TriggerEvent("xSound:songStopPlaying", data.id)
+            -- TriggerEvent("xSound:songStopPlaying", data.id)
             soundInfo[data.id].SkipTimeStamp = nil
         end
     end

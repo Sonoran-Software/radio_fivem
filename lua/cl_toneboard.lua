@@ -140,9 +140,9 @@ function initToneboard()
                     if not playingSpeakers[speaker.Id] then
                         DebugPrint(('playing tone %s on speaker %s'):format(tone,
                                                                           speaker.Id))
-                        playingSpeakers[speaker.Id] = tone
                         PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
                         Distance(speaker.Id, speaker.Range)
+                        playingSpeakers[speaker.Id] = tone
                     end
                     ::continue::
                 end
