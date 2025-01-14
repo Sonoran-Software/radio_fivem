@@ -123,6 +123,7 @@ function initToneboard()
 
     RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
         for _, tonePlay in pairs(tone) do
+            debugPrint(('adding tone %s to queue'):format(tonePlay))
             table.insert(queue, {speaker, tonePlay})
         end
     end)
@@ -135,6 +136,8 @@ function initToneboard()
                     local speaker = queue[i][1]
                     local tone = queue[i][2]
                     if not playingSpeakers[speaker] then
+                        debugPrint(('playing tone %s on speaker %s'):format(tone,
+                                                                          speaker))
                         PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
                         Distance(speaker.Id, speaker.Range)
                         table.insert(playingSpeakers, speaker)
@@ -147,6 +150,7 @@ function initToneboard()
     RegisterNetEvent('xSound:songStopPlaying', function(id)
         for i = 1, #playingSpeakers do
             if playingSpeakers[i].Id == id then
+                debugPrint(('removing speaker %s from playingSpeakers'):format(id))
                 table.remove(playingSpeakers, i)
                 break
             end
