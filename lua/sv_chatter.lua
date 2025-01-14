@@ -50,3 +50,11 @@ RegisterNetEvent('Chatter:saveChatterConfig', function(config)
 	SaveResourceFile(GetCurrentResourceName(), 'earpieces.json', json.encode(chatterConfig, { indent = true }), -1)
 	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
 end)
+
+-- scanners across the entire server
+local globalScanners = {}
+RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
+	print('pushing scanner', id, json.encode(data))
+	globalScanners[id] = data
+	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
+end)

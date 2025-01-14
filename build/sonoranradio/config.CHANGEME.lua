@@ -15,7 +15,9 @@ Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antenn
 Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
+Config.acePermsForScanners = false -- Restrict using the scanner to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
+Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
 Config.enforceRadioItem = false
 Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
 	name = 'sonoran_radio',  -- Item name in your inventory
@@ -23,7 +25,12 @@ Config.RadioItem = {		 -- Note: Changes to this item will require a server resta
 	weight = 1, 			 -- Weight of the item in your inventory
 	description = 'Communicate with others through the Sonoran Radio', -- Description of the item in your inventory
 }
-Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
+Config.ScannerItem = {
+	name = 'sonoran_radio_scanner', -- Item ID
+	label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+	weight = 1, -- Weight of the item in your inventory
+	description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+}
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore

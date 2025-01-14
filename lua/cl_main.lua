@@ -350,16 +350,34 @@ function initClient()
 
 			SetResourceKvp('ui_pos_dic', '{}')
 			SendNUIMessage({ type = 'reset' })
+		elseif action == 'scanner' and not Config.enforceRadioItem then
+			openLocalScanner()
 		else
 			radioToggle()
 		end
 	end)
 	RegisterCommand('sonradradio', radioToggle)
-	local emergCommandHint = emergencyCallCommand()
-	if emergCommandHint:find("%s") then
-		emergCommandHint = '"' .. emergCommandHint .. '"'
+
+	local radioSubcommands = {
+		emergencyCallCommand(),
+		'hide',
+		'refresh',
+		'reset'
+	}
+	if not Config.enforceRadioItem then
+		table.insert(radioSubcommands, 2, 'scanner')
 	end
-	TriggerEvent('chat:addSuggestion', '/radio', 'Open or focus Sonoran Radio', {{name = emergCommandHint..'|hide|refresh|reset', help = 'Subcommand'}})
+	local radioSubcommandHint = ''
+	for i = 1, #radioSubcommands do
+		local hint = radioSubcommands[i]
+		if hint:find("%s") then
+			hint = '"' .. hint .. '"'
+		end
+
+		if i ~= 1 then radioSubcommandHint = radioSubcommandHint .. '|' end
+		radioSubcommandHint = radioSubcommandHint .. hint
+	end
+	TriggerEvent('chat:addSuggestion', '/radio', 'Open or focus Sonoran Radio', {{name = radioSubcommandHint, help = 'Subcommand'}})
 
 	RegisterCommand('radiotalk', function()
 		Radio.TalkAnim = not Radio.TalkAnim
@@ -693,6 +711,10 @@ function initClient()
 		if data.type == 'currentSkinUpdated' then
 			frame = data.skin
 			SetResourceKvp('sonoranradio_skin', frame)
+		end
+
+		if data.type == 'setChatterConfig' then
+			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
 		end
 
 		cb('OK')

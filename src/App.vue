@@ -417,7 +417,12 @@ export default {
             getRadioFrameEl('chatter')?.contentWindow.postMessage(data, '*');
         },
         onChatterFrameEvent(event) {
-            switch (event.type) {}
+            switch (event.type) {
+                case 'radio_connected':
+                case 'config_updated':
+                    this.postClient({ type: 'setChatterConfig', config: event.config });
+                    break;
+            }
         },
         postEmergencyCallFrame(data) {
             getRadioFrameEl('911')?.contentWindow.postMessage(data, '*');

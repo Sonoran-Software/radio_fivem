@@ -71,7 +71,6 @@ function initChatter()
 				::continue::
 			end
 
-			-- TODO: add scanner chatter sources
 			for _, source in ipairs(getScannerChatterSources()) do
 				table.insert(allChatterSources, source)
 			end
