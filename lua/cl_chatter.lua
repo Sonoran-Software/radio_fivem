@@ -229,7 +229,6 @@ function initChatter()
 
 			-- send update payload if given
 			if updatePayload then
-				print('CHATTER DEBUG UPDATE', json.encode(updatePayload))
 				updatePayload.type = 'chatterSourcesUpdate'
 				SendNUIMessage(updatePayload)
 			end
