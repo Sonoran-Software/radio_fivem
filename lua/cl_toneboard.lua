@@ -1,5 +1,6 @@
 function initToneboard()
     speakers = {}
+    local queue = {}
     playingSpeakers = {}
     local speakerStyles = {
         ['speakerSmallWall'] = "hei_prop_bank_alarm_01",
@@ -121,37 +122,27 @@ function initToneboard()
     end)
 
     RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
-        PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
-        Distance(speaker.Id, speaker.Range)
-        table.insert(playingSpeakers, speaker)
+        for _, tonePlay in pairs(tone) do
+            table.insert(queue, {speaker, tonePlay})
+        end
     end)
 
-    -- Citizen.CreateThread(function()
-    --     while true do
-    --         Citizen.Wait(500);
-    --         if #playingSpeakers == 0 then goto continue end
-    --         local playerPos = GetEntityCoords(GetPlayerPed(-1));
-    --         local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-    --         for _, v in pairs(playingSpeakers) do
-    --             local propPos = GetSpeakerCoords(v);
-    --             SendNUIMessage({
-    --                 name = v.Id,
-    --                 status = "updateSound",
-    --                 playerX = playerPos.x,
-    --                 playerY = playerPos.y,
-    --                 playerZ = playerPos.z,
-    --                 playerHeading = playerHeading,
-    --                 speakerX = v.PropPosition.x,
-    --                 speakerY = v.PropPosition.y,
-    --                 speakerZ = v.PropPosition.z,
-    --                 maxDistance = v.Range,
-    --                 xsound = true,
-    --                 distance = #(playerPos - propPos)
-    --             })
-    --         end
-    --         ::continue::
-    --     end
-    -- end);
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(500);
+            if #queue > 0 then
+                for i = 1, #queue do
+                    local speaker = queue[i][1]
+                    local tone = queue[i][2]
+                    if not playingSpeakers[speaker] then
+                        PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
+                        Distance(speaker.Id, speaker.Range)
+                        table.insert(playingSpeakers, speaker)
+                    end
+                end
+            end
+        end
+    end)
 
     RegisterNetEvent('xSound:songStopPlaying', function(id)
         for i = 1, #playingSpeakers do
