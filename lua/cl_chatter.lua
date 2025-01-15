@@ -7,11 +7,18 @@ function initChatter()
 	end)
 
 	local function pedHasComponent(ped, componentId, drawableId, textureId)
+		DebugPrint(('Checking is ped has valid chatter exception component. Ped: %s | Component ID: %s | Drawable ID: %s | Texture ID: %s'):format(ped, componentId, drawableId, textureId))
 		local drawableOffset = 14
 		if componentId >= drawableOffset then -- components 14 and above are props (hats, glasses, etc)
+			DebugPrint('Component ID is a prop (over 14)')
+			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId))
+			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId - 1))
 			return GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId and
 				(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId - 1)
 		else
+			DebugPrint('Component ID is not a prop (under 14)')
+			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId) == drawableId))
+			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId) == textureId - 1))
 			return GetPedPropIndex(ped, componentId) == drawableId and
 				(not textureId or GetPedPropTextureIndex(ped, componentId) == textureId - 1)
 		end
@@ -44,9 +51,13 @@ function initChatter()
 				end
 
 				-- check if the ped is excluded from chatter because of a clothing item
-				if type(Config.chatterExclusions) == 'table' then
-					for _, exclusion in ipairs(Config.chatterExclusions) do
-						if pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture) then
+				if type(chatterConfig) == 'table' then
+					DebugPrint('Checking chatter exclusions')
+					for _, exclusion in ipairs(chatterConfig) do
+						local hasComponent = pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture)
+						DebugPring('Has component: ' .. tostring(hasComponent))
+						if hasComponent then
+							DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
 							goto continue
 						end
 					end
