@@ -121,13 +121,7 @@ function initScanners()
 	end
 
 	-- qb-inventory INTEGRATION
-	local scannerDrops = {
-		['test'] = {coords = {
-			x = 1756.12,
-			y = 3263.28,
-			z = 41.33
-		}}
-	}
+	local scannerDrops = {}
 	if Config.enforceRadioItem then
 		RegisterNetEvent('qb-sonrad:use-scanner', function()
 			openLocalScanner()
