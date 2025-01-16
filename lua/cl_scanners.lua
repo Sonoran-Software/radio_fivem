@@ -19,14 +19,15 @@ function initScanners()
 			end
 		end
 
+		if not profiles then error('set nil config?') end
+
 		-- remove hidden profiles
 		for i = #profiles, 1, -1 do
 			if profiles[i].visibility ~= 'public' then
 				table.remove(profiles, i)
 			end
 		end
-
-		if not profiles then error('set nil config?') end
+		-- sort by order index and save
 		table.sort(profiles, function(a, b)
 			return orderIndexSafe(a) < orderIndexSafe(b)
 		end)
@@ -40,6 +41,7 @@ function initScanners()
 
 	-- SCANNER MENU LOGIC
 	local scanners = {}
+	local inventoryScannerId = 0
 	local function isScannerPowered(id)
 		return not not scanners[id] and scanners[id].powered
 	end
@@ -61,7 +63,6 @@ function initScanners()
 
 		local nextIndex = (curIndex + n - 1) % #sProfiles + 1
 		scanner.channelId = sProfiles[nextIndex].id
-		-- TODO: display notification of current selected channel
 
 		BeginTextCommandThefeedPost('STRING')
 		AddTextComponentSubstringPlayerName('Channel: ~b~' .. sProfiles[nextIndex].displayName)
@@ -109,33 +110,55 @@ function initScanners()
 		end)
 	end
 	function openLocalScanner()
-		openScanner(0)
+		if inventoryScannerId ~= nil then
+			openScanner(inventoryScannerId)
+		end
 	end
 
 	-- qb-inventory INTEGRATION
-	local scannerDrops = {}
+	local scannerDrops = {
+		['test'] = {coords = {
+			x = 1756.12,
+			y = 3263.28,
+			z = 41.33
+		}}
+	}
 	if Config.enforceRadioItem then
 		RegisterNetEvent('qb-sonrad:use-scanner', function()
 			openLocalScanner()
 		end)
 
 		Citizen.CreateThread(function()
-			-- find all qb-inventory drops containing scanner items
 			local QBCore = exports['qb-core']:GetCoreObject()
-			while true do
+			while Config.enforceRadioItem do
 				if GetResourceState('qb-inventory') == 'started' then
+					local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+
+					-- find all qb-inventory drops containing scanner items
 					QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
 						scannerDrops = {}
-						local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 						for dropId, drop in pairs(drops) do
 							for _, item in ipairs(drop.items) do
 								if item.name == scannerItemName then
-									scannerDrops[dropId] = drop
+									local scannerId = item.info.scannerId or dropId
+									scannerDrops[scannerId] = drop
 									break
 								end
 							end
 						end
 					end)
+
+					-- find the scanner in the player's inventory
+					inventoryScannerId = nil
+					local playerData = QBCore.Functions.GetPlayerData()
+					local inventory = json.decode(playerData.inventory)
+					for _, item in ipairs(inventory) do
+						if item.name == scannerItemName then
+							inventoryScannerId = item.info.scannerId or 0
+							print('found scanner in inventory', inventoryScannerId)
+							break
+						end
+					end
 				end
 
 				-- query every 5s
@@ -157,6 +180,7 @@ function initScanners()
 						nearDropId = dropId
 						nearDropDist = dist
 					end
+					DrawMarker(1, coords.x, coords.y, coords.z, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0.5, 255, 0, 0, 255, false, false, 2, nil, nil, false)
 				end
 
 
@@ -183,7 +207,7 @@ function initScanners()
 		for id, scanner in pairs(scanners) do
 			if scanner.powered then
 				local sourcePos
-				if id == 0 then -- local scanner
+				if id == inventoryScannerId then -- local scanner
 					sourcePos = GetEntityCoords(PlayerPedId())
 				elseif scannerDrops[id] then -- dropped scanner
 					sourcePos = vec3(scannerDrops[id].coords.x, scannerDrops[id].coords.y, scannerDrops[id].coords.z)

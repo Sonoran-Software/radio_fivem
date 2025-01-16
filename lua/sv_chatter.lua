@@ -57,3 +57,14 @@ RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
 	globalScanners[id] = data
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
 end)
+
+local function giveScannerItem(source)
+	local id
+	repeat
+		id = tostring(math.random(1, 999999))
+	until not globalScanners[id]
+
+	exports['qb-inventory']:AddItem(source, 'sonoran_radio_scanner', 1, false, {scannerId = genId()}, 'sonoranradio')
+end
+RegisterCommand('givescanneritem', giveScannerItem, true)
+exports('giveScannerItem', giveScannerItem)
