@@ -260,6 +260,7 @@ function initMiniRadio()
     end)
 
     function handleRadioPower(powerState)
+        TriggerEvent('SonoranRadio:CarRadioPower', powerState)
         if not powerState then
             activeChannels = {}
             setActiveUsers(activeChannels)
