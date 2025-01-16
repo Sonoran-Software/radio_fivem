@@ -64,7 +64,7 @@ local function giveScannerItem(source)
 		id = tostring(math.random(1, 999999))
 	until not globalScanners[id]
 
-	exports['qb-inventory']:AddItem(source, 'sonoran_radio_scanner', 1, false, {scannerId = genId()}, 'sonoranradio')
+	exports['qb-inventory']:AddItem(source, 'sonoran_radio_scanner', 1, false, {scannerId = id}, 'sonoranradio')
 end
 RegisterCommand('givescanneritem', giveScannerItem, true)
 exports('giveScannerItem', giveScannerItem)

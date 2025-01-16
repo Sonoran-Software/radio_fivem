@@ -83,7 +83,7 @@ function initScanners()
 	WarMenu.CreateMenu('scannerControls', 'Scanner Controls', 'Sonoran Software')
 	WarMenu.SetTitleColor('scannerControls', 0, 0, 0, 255)
 	WarMenu.SetMenuTitleBackgroundSprite('scannerControls', 'radio_menu_header', 'option_1')
-	function openScanner(scannerId)
+	function openScanner(scannerId, startCoords)
 		if not allowed then return end
 
 		Citizen.CreateThread(function()
@@ -101,6 +101,11 @@ function initScanners()
 					if WarMenu.Button('Previous Channel') then
 						advScanner(scannerId, -1)
 					end
+				end
+
+				local myPos = GetEntityCoords(PlayerPedId())
+				if startCoords ~= nil and #(myPos - startCoords) > 5.0 then
+					WarMenu.CloseMenu()
 				end
 
 				WarMenu.Display()
@@ -151,11 +156,9 @@ function initScanners()
 					-- find the scanner in the player's inventory
 					inventoryScannerId = nil
 					local playerData = QBCore.Functions.GetPlayerData()
-					local inventory = json.decode(playerData.inventory)
-					for _, item in ipairs(inventory) do
+					for _, item in ipairs(playerData.items or {}) do
 						if item.name == scannerItemName then
 							inventoryScannerId = item.info.scannerId or 0
-							print('found scanner in inventory', inventoryScannerId)
 							break
 						end
 					end
@@ -180,7 +183,6 @@ function initScanners()
 						nearDropId = dropId
 						nearDropDist = dist
 					end
-					DrawMarker(1, coords.x, coords.y, coords.z, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0.5, 255, 0, 0, 255, false, false, 2, nil, nil, false)
 				end
 
 
@@ -216,7 +218,7 @@ function initScanners()
 				local myPos = GetFinalRenderedCamCoord()
 				if sourcePos and #(sourcePos - myPos) < 15.0 then
 					table.insert(sources, {
-						sourceEntity = id == 0 and PlayerPedId() or nil,
+						sourceEntity = id == inventoryScannerId and PlayerPedId() or nil,
 						pos = sourcePos,
 						scanList = {scanner.channelId},
 					})
