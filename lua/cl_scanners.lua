@@ -103,10 +103,9 @@ function initScanners()
 					end
 				end
 
-				local closeMenu = startCoords ~= nil and
-					#(GetEntityCoords(PlayerPedId()) - startCoords) > 5.0 or
-					inventoryScannerId ~= scannerId
-				if closeMenu then
+				if startCoords == nil and inventoryScannerId ~= scannerId then
+					WarMenu.CloseMenu()
+				elseif startCoords ~= nil and #(GetEntityCoords(PlayerPedId()) - startCoords) > 5.0 then
 					WarMenu.CloseMenu()
 				end
 
@@ -160,8 +159,8 @@ function initScanners()
 					end
 				end
 
-				-- query every 5s
-				Citizen.Wait(5000)
+				-- query every 1s
+				Citizen.Wait(1000)
 			end
 		end)
 
