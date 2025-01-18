@@ -8,9 +8,10 @@ function initScanners()
 	end)
 
 	-- SCANNER PROFILES
+	local allProfiles = {}
 	local sProfiles = {}
 	local sDefaultProfileId = nil
-	function setScannerProfiles(profiles, defaultProfileId)
+	local function orderProfiles(profiles)
 		local function orderIndexSafe(profile)
 			if type(profile.orderIndex) ~= 'number' then
 				return math.huge
@@ -18,26 +19,68 @@ function initScanners()
 				return profile.orderIndex
 			end
 		end
-
-		if not profiles then error('set nil config?') end
-
-		-- remove hidden profiles
-		for i = #profiles, 1, -1 do
-			if profiles[i].visibility ~= 'public' then
-				table.remove(profiles, i)
-			end
-		end
-		-- sort by order index and save
 		table.sort(profiles, function(a, b)
 			return orderIndexSafe(a) < orderIndexSafe(b)
 		end)
-		sProfiles = profiles
+		return profiles
+	end
+	function setScannerProfiles(profiles, defaultProfileId)
+		if not profiles then error('set nil config?') end
+		-- copy profiles to allProfiles
+		-- NOTE: assignment is NOT good enough because we modify the table below
+		allProfiles = {}
+		for i, prof in ipairs(profiles) do
+			allProfiles[i] = prof
+		end
 
+		-- remove hidden profiles, which are then queried to see if they are allowed to access them
+		local hiddenProfiles = {}
+		for i = #profiles, 1, -1 do
+			local prof = profiles[i]
+			if prof.visibility ~= 'public' then
+				table.insert(hiddenProfiles, {id = prof.id, displayName = prof.displayName})
+				table.remove(profiles, i)
+			end
+		end
+		if #hiddenProfiles > 0 then
+			TriggerServerEvent('SonoranRadio::checkProfilePerms', hiddenProfiles)
+		end
+
+		sProfiles = orderProfiles(profiles)
 		if defaultProfileId == nil and sProfiles[1] then
 			defaultProfileId = sProfiles[1].id
 		end
 		sDefaultProfileId = defaultProfileId
 	end
+	RegisterNetEvent('SonoranRadio::allowScannerProfiles', function(profileIds)
+		for _, profId in ipairs(profileIds) do
+			-- find the profile in allProfiles
+			local profile
+			for _, prof in ipairs(allProfiles) do
+				if prof.id == profId then
+					profile = prof
+					break
+				end
+			end
+
+			-- look for the profile in sProfiles
+			local sProfIndex
+			for i, prof in ipairs(sProfiles) do
+				if prof.id == profId then
+					sProfIndex = i
+					break
+				end
+			end
+
+			-- add back hidden profile that we allowed
+			-- (if it's not already in sProfiles)
+			if profile and sProfIndex == nil then
+				table.insert(sProfiles, profile)
+			end
+		end
+
+		sProfiles = orderProfiles(sProfiles)
+	end)
 
 	-- SCANNER MENU LOGIC
 	local scanners = {}
