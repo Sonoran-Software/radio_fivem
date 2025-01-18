@@ -103,8 +103,10 @@ function initScanners()
 					end
 				end
 
-				local myPos = GetEntityCoords(PlayerPedId())
-				if startCoords ~= nil and #(myPos - startCoords) > 5.0 then
+				local closeMenu = startCoords ~= nil and
+					#(GetEntityCoords(PlayerPedId()) - startCoords) > 5.0 or
+					inventoryScannerId ~= scannerId
+				if closeMenu then
 					WarMenu.CloseMenu()
 				end
 
@@ -167,7 +169,7 @@ function initScanners()
 			AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
 
 			while true do
-				local myPos = GetFinalRenderedCamCoord()
+				local myPos = GetEntityCoords(PlayerPedId())
 				local nearDropId = nil
 				local nearDropDist = 5.0
 				for dropId, drop in pairs(scannerDrops) do
@@ -179,13 +181,12 @@ function initScanners()
 					end
 				end
 
-
 				if allowed and nearDropId and not WarMenu.IsAnyMenuOpened() then
 					BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
 					EndTextCommandDisplayHelp(0, false, true, 100)
 
 					if IsControlJustReleased(0, 38) then
-						openScanner(nearDropId)
+						openScanner(nearDropId, myPos)
 					end
 
 					Citizen.Wait(0)

@@ -58,13 +58,42 @@ RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
 end)
 
-local function giveScannerItem(source)
-	local id
-	repeat
-		id = tostring(math.random(1, 999999))
-	until not globalScanners[id]
+-- check for radio scanners and add metadata if needed
+Citizen.CreateThread(function()
+	local function genId()
+		local id
+		repeat
+			id = tostring(math.random(1, 999999))
+		until not globalScanners[id]
+		return id
+	end
 
-	exports['qb-inventory']:AddItem(source, 'sonoran_radio_scanner', 1, false, {scannerId = id}, 'sonoranradio')
-end
-RegisterCommand('givescanneritem', giveScannerItem, true)
-exports('giveScannerItem', giveScannerItem)
+	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+	while Config.enforceRadioItem do
+		local QBCore
+		repeat
+			Citizen.Wait(1000)
+			QBCore = exports['qb-core']:GetCoreObject()
+		until QBCore ~= nil
+
+		for i = 0, GetNumPlayerIndices() - 1 do
+			local source = GetPlayerFromIndex(i)
+			local Player = QBCore.Functions.GetPlayer(tonumber(source))
+			if not Player then goto continue end
+
+			local updatedItems = false
+			for _, item in ipairs(Player.PlayerData.items or {}) do
+				if item.name == scannerItemName and item.info.scannerId == nil then
+					updatedItems = true
+					item.info.scannerId = genId()
+				end
+			end
+
+			if updatedItems then
+				Player.Functions.SetPlayerData('items', Player.PlayerData.items)
+			end
+
+			::continue::
+		end
+	end
+end)
