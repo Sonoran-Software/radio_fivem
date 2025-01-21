@@ -50,6 +50,8 @@ else
 	end
 
 	if Config.enforceRadioItem then
+		QBCore = exports['qb-core']:GetCoreObject()
+
 		if Config.RadioItem == nil then
 			errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 			Config.RadioItem = {
@@ -59,7 +61,6 @@ else
 				description = 'Communicate with others through the Sonoran Radio',
 			}
 		end
-		QBCore = exports['qb-core']:GetCoreObject()
 		exports['qb-core']:AddItem(Config.RadioItem.name, {
 			name = Config.RadioItem.name,
 			label = Config.RadioItem.label,
@@ -89,6 +90,33 @@ else
 			else
 				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
 			end
+		end)
+
+		if Config.ScannerItem == nil then
+			errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+			Config.ScannerItem = {
+				name = 'sonoran_radio_scanner', -- Item ID
+				label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+				weight = 1, -- Weight of the item in your inventory
+				description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+			}
+		end
+		exports['qb-core']:AddItem(Config.ScannerItem.name, {
+			name = Config.ScannerItem.name,
+			label = Config.ScannerItem.label,
+			weight = Config.ScannerItem.weight,
+			type = 'item',
+			image = 'radio.png',
+			unique = true,
+			useable = true,
+			shouldClose = true,
+			combinable = false,
+			description = Config.ScannerItem.description,
+		})
+		QBCore.Functions.CreateUseableItem(Config.ScannerItem.name, function(source, item)
+			local src = source
+			local Player = QBCore.Functions.GetPlayer(src)
+			TriggerClientEvent('qb-sonrad:use-scanner', source)
 		end)
 
 		QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
@@ -179,6 +207,10 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 		end
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+	end
+	local scannerAceAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
+	if scannerAceAllowed then
+		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source)
 	end
 end)
 

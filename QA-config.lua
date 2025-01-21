@@ -1,7 +1,7 @@
 Config = {}
 
 Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819'
-Config.apiKey = 'c7d748d9-0184-458a-bc05-d0a9c53d2122'
+Config.apiKey = '73ddb2c7-ebef-4cc4-8453-76fed7c55ac3'
 Config.debug = false -- PER MAX: NEVER set debug to enabled by default on QA. Please manually edit config file using SFTP or https://game.sonoranservers.com
 Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
 Config.apiUrl = 'https://radioapi.dev.sonoransoftware.com/'
@@ -15,14 +15,21 @@ Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antenn
 Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
+Config.acePermsForScanners = false -- Restrict using the scanner to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.acePermsForRadioUsers = false -- Restrict usage of the radio users to an ace permission
-Config.enforceRadioItem = false
+Config.enforceRadioItem = true
 Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
 	name = 'sonoran_radio',  -- Item name in your inventory | STRING
 	label = 'Sonoran Radio', -- Label for the item in your inventory | STRING
 	weight = 1, 			 -- Weight of the item in your inventory | INT
 	description = 'Communicate with others through the Sonoran Radio', -- Description of the item in your inventory | STRING
+}
+Config.ScannerItem = {
+	name = 'sonoran_radio_scanner', -- Item ID
+	label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+	weight = 1, -- Weight of the item in your inventory
+	description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 }
 Config.disableRadioOnDeath = true
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn

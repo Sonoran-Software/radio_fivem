@@ -74,22 +74,29 @@ function initThreads()
         local destroyedMusicList = {}
         while true do
             CheckForCloseMusic()
-            if #playingSpeakers > 0 then
-                local playerPos = GetEntityCoords(GetPlayerPed(-1));
-                local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-                for _, v in pairs(playingSpeakers) do
-                    local propPos = GetSpeakerCoords(v);
+            local playerPos = GetEntityCoords(GetPlayerPed(-1));
+            local playerHeading = GetEntityHeading(GetPlayerPed(-1));
+            for k, v in pairs(playingSpeakers) do
+                local foundSpeaker = nil
+                for i = 1, #speakers do
+                    if speakers[i].Id == k then
+                        foundSpeaker = speakers[i]
+                        break
+                    end
+                end
+                if foundSpeaker then
+                    local propPos = GetSpeakerCoords(foundSpeaker);
                     SendNUIMessage({
-                        name = v.Id,
+                        name = foundSpeaker.Id,
                         status = "updateSound",
                         playerX = playerPos.x,
                         playerY = playerPos.y,
                         playerZ = playerPos.z,
                         playerHeading = playerHeading,
-                        speakerX = v.PropPosition.x,
-                        speakerY = v.PropPosition.y,
-                        speakerZ = v.PropPosition.z,
-                        maxDistance = v.Range,
+                        speakerX = foundSpeaker.PropPosition.x,
+                        speakerY = foundSpeaker.PropPosition.y,
+                        speakerZ = foundSpeaker.PropPosition.z,
+                        maxDistance = foundSpeaker.Range,
                         xsound = true,
                         distance = #(playerPos - propPos)
                     })
@@ -374,11 +381,11 @@ function initThreads()
                 ::continue::
             end
 
-            if bestTowerQuality == 0.0 then
-                DebugPrint('closest tower out of range')
-            else
-                DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
-            end
+            -- if bestTowerQuality == 0.0 then
+            --     DebugPrint('closest tower out of range')
+            -- else
+            --     DebugPrint(('best tower quality:%.4f'):format(bestTowerQuality))
+            -- end
             bestRackQuality = 0.0
             local pCoords = GetEntityCoords(GetPlayerPed(-1))
             for i = 1, #racks do
@@ -426,11 +433,11 @@ function initThreads()
                 ::continue::
             end
 
-            if bestRackQuality == 0.0 then
-                DebugPrint('closest rack out of range')
-            else
-                DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
-            end
+            -- if bestRackQuality == 0.0 then
+            --     DebugPrint('closest rack out of range')
+            -- else
+            --     DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
+            -- end
             bestCellRepeaterQuality = 0.0
             local pCoords = GetEntityCoords(GetPlayerPed(-1))
             for i = 1, #CellRepeaters do
@@ -479,12 +486,12 @@ function initThreads()
                 ::continue::
             end
 
-            if bestCellRepeaterQuality == 0.0 then
-                DebugPrint('closest cell repeater out of range')
-            else
-                DebugPrint(('best cell repeater quality:%.4f'):format(
-                               bestCellRepeaterQuality))
-            end
+            -- if bestCellRepeaterQuality == 0.0 then
+            --     DebugPrint('closest cell repeater out of range')
+            -- else
+            --     DebugPrint(('best cell repeater quality:%.4f'):format(
+            --                    bestCellRepeaterQuality))
+            -- end
             -- Check if the players vehicle's radio repeater is active and if the player has control of the vehicle (not in a cutscene, etc.)
             if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
                             'RepeaterActive') and

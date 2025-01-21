@@ -1,5 +1,6 @@
 function initToneboard()
     speakers = {}
+    local queue = {}
     playingSpeakers = {}
     local speakerStyles = {
         ['speakerSmallWall'] = "hei_prop_bank_alarm_01",
@@ -120,43 +121,47 @@ function initToneboard()
         speakers = {}
     end)
 
-    RegisterNetEvent('SonoranRadio:PlayTone', function(speaker, tone)
-        PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
-        Distance(speaker.Id, speaker.Range)
-        table.insert(playingSpeakers, speaker)
+    RegisterNetEvent('SonoranRadio:PlayTone', function(speakers, tone)
+        for _, tonePlay in pairs(tone) do
+            DebugPrint(('adding tone %s to speaker %s\'s queue'):format(tonePlay, speakers.Id))
+            table.insert(queue, {speaker = speakers, sound = tonePlay})
+        end
     end)
 
-    -- Citizen.CreateThread(function()
-    --     while true do
-    --         Citizen.Wait(500);
-    --         if #playingSpeakers == 0 then goto continue end
-    --         local playerPos = GetEntityCoords(GetPlayerPed(-1));
-    --         local playerHeading = GetEntityHeading(GetPlayerPed(-1));
-    --         for _, v in pairs(playingSpeakers) do
-    --             local propPos = GetSpeakerCoords(v);
-    --             SendNUIMessage({
-    --                 name = v.Id,
-    --                 status = "updateSound",
-    --                 playerX = playerPos.x,
-    --                 playerY = playerPos.y,
-    --                 playerZ = playerPos.z,
-    --                 playerHeading = playerHeading,
-    --                 speakerX = v.PropPosition.x,
-    --                 speakerY = v.PropPosition.y,
-    --                 speakerZ = v.PropPosition.z,
-    --                 maxDistance = v.Range,
-    --                 xsound = true,
-    --                 distance = #(playerPos - propPos)
-    --             })
-    --         end
-    --         ::continue::
-    --     end
-    -- end);
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(500);
+            if #queue > 0 then
+                for i = 1, #queue do
+                    if not queue[i] then goto continue end
+                    local speaker = queue[i].speaker
+                    local tone = queue[i].sound
+                    Wait(100)
+                    if not playingSpeakers[speaker.Id] then
+                        DebugPrint(('playing tone %s on speaker %s'):format(tone,
+                                                                          speaker.Id))
+                        PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
+                        Distance(speaker.Id, speaker.Range)
+                        playingSpeakers[speaker.Id] = tone
+                    end
+                    ::continue::
+                end
+            end
+        end
+    end)
 
     RegisterNetEvent('xSound:songStopPlaying', function(id)
-        for i = 1, #playingSpeakers do
-            if playingSpeakers[i].Id == id then
-                table.remove(playingSpeakers, i)
+        for k, v in pairs(playingSpeakers) do
+            if k == id then
+                DebugPrint(('removing speaker %s from playingSpeakers'):format(id))
+                for i = 1, #queue do
+                    if queue[i].sound == v and queue[i].speaker.Id == k then
+                        table.remove(queue, i)
+                        DebugPrint(('removed %s from queue'):format(v))
+                        break
+                    end
+                end
+                playingSpeakers[k] = nil
                 break
             end
         end

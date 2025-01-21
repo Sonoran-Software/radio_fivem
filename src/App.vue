@@ -351,12 +351,6 @@ export default {
                     if (event.skin) // update current ski
                         this.selectSkin(event.skin);
                     break;
-                case 'chatterChannelsUpdate':
-                    this.postChatterFrame({
-                        type: 'set_scanner_channels',
-                        channelIds: event.channelIds,
-                    })
-                    break;
                 case 'chatterCameraUpdate':
                     this.postChatterFrame({
                         type: 'set_audio_listener_orientation',
@@ -370,6 +364,11 @@ export default {
                         type: 'set_audio_source_positions',
                         sources: event.sources,
                         isMuffled: event.isMuffled,
+                        isSpatial: event.isSpatial,
+                    });
+                    this.postChatterFrame({
+                        type: 'set_scanner_channels',
+                        channelIds: event.channelIds,
                     });
                     break;
             }
@@ -418,7 +417,12 @@ export default {
             getRadioFrameEl('chatter')?.contentWindow.postMessage(data, '*');
         },
         onChatterFrameEvent(event) {
-            switch (event.type) {}
+            switch (event.type) {
+                case 'radio_connected':
+                case 'config_updated':
+                    this.postClient({ type: 'setChatterConfig', config: event.config });
+                    break;
+            }
         },
         postEmergencyCallFrame(data) {
             getRadioFrameEl('911')?.contentWindow.postMessage(data, '*');
