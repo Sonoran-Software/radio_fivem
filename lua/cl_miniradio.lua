@@ -254,7 +254,7 @@ function initMiniRadio()
                 })
             end
         end
-        TriggerEvent('SonoranRadio:CarRadioUpdate', {signal = getSignalQuality(), channels = activeChannels})
+        TriggerEvent('SonoranRadio:CarRadioUpdate', {signal = getSignalQuality(), users = users})
         setActiveUsers(activeChannels)
         cb('OK')
     end)
