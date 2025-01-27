@@ -275,4 +275,9 @@ function initMiniRadio()
     RegisterNUICallback('SaveMiniRadioPos', function(data)
         SetModulePos("hud", data.x, data.y)
     end)
+    RegisterNetEvent('SonoranRadio::RequestClientData', function()
+        SendNUIMessage({
+            type = "get_connected_users",
+        })
+    end)
 end
