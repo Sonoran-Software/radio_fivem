@@ -597,6 +597,22 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	f:write(json.encode(saveData))
 	f:close()
 	Speakers = speakers
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['id'] = speaker.Id
+		})
+	end
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
 	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
 end)
 
