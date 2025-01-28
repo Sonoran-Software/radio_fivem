@@ -371,6 +371,11 @@ export default {
                         channelIds: event.channelIds,
                     });
                     break;
+                case 'get_connected_users':
+                    this.postRadioFrame({
+                        type: 'get_connected_users',
+                    });
+                    break;
             }
         },
 

@@ -939,4 +939,11 @@ function initClient()
 	RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 	end)
+
+	RegisterNetEvent('SonoranRadio::RequestClientData', function()
+        SendNUIMessage({
+            type = "get_connected_users",
+        })
+    end)
+
 end
