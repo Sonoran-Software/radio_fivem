@@ -589,6 +589,8 @@ end)
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	local saveData = {};
 	for _, t in ipairs(speakers) do
+		t.Handle = nil -- Remove the key 'handle'
+		t.Spawned = nil -- Remove the key 'spawned'
 		table.insert(saveData, t)
 	end
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
