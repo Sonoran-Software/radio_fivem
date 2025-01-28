@@ -240,7 +240,6 @@ export default {
         },
         isPanicking() {
             const myState = this.$store.state.radioState;
-            console.log(myState, typeof myState);
             if (!myState) return undefined;
             else return !!myState.panic;
         },
@@ -432,8 +431,8 @@ export default {
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
-                case 'display_error':
-                    this.notifyPlayer(`Radio Error: ~r~${event.error}`);
+                case "display_error":
+                    this.notifyPlayer(`~r~Radio Error: ~s~${event.error}`);
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
