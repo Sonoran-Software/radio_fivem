@@ -432,6 +432,9 @@ export default {
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case 'display_error':
+                    this.notifyPlayer(`Radio Error: ~r~${event.error}`);
+                    break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
                     break;
