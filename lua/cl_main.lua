@@ -941,9 +941,12 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::RequestClientData', function()
-        SendNUIMessage({
-            type = "get_connected_users",
-        })
+		TriggerEvent('SonoranRadio:CarRadioPower', Radio.On)
+		if Radio.On then
+			SendNUIMessage({
+				type = "get_connected_users",
+			})
+		end
     end)
 
 end
