@@ -311,7 +311,6 @@ function initClient()
 			displayName = GetPlayerName(PlayerId()),
 			callCommand = emergencyCallCommand(),
 		})
-		TriggerEvent('SonoranRadio::API:EmergencyCall', enabled)
 	end
 	exports('setEmergencyCall', function(enabled)
 		setEmergencyCall(enabled)
@@ -334,6 +333,16 @@ function initClient()
 		local action = args[1]
 		if action == emergencyCallCommand() then
 			setEmergencyCall('toggle')
+		elseif action == 'channel' or action == 'scan' or action == 'scanlist' then
+			local selectId = tonumber(args[2])
+			if selectId == nil then return end
+
+			local passEvents = {
+				channel = 'togglePrimaryChannel',
+				scan = 'toggleScanChannel',
+				scanlist = 'selectScanList'
+			}
+			SendNUIMessage({ type = passEvents[action], id = selectId })
 		elseif action == 'hide' then
 			SendNUIMessage({
 				type = 'setVisible',
@@ -360,6 +369,9 @@ function initClient()
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
+		'channel',
+		'scanlist',
+		'scan',
 		'hide',
 		'refresh',
 		'reset'
@@ -444,8 +456,11 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:PanicButton')
-	AddEventHandler('SonoranRadio::API:PanicButton', function()
-		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+	AddEventHandler('SonoranRadio::API:PanicButton', function(status)
+		if status then
+			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		else
+		end
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:SetPreset')
@@ -677,7 +692,13 @@ function initClient()
 		end
 
 		if data.type == 'panic' then
-			TriggerEvent('SonoranRadio::API:PanicButton')
+			TriggerEvent('SonoranRadio::API:PanicButton', data.status)
+		end
+
+		if data.type == 'emergencyCallStatus' then
+			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
+		elseif data.type == 'emergencyCallDispatcher' then
+			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.available)
 		end
 
 		if data.type == 'power' then

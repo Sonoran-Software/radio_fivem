@@ -238,10 +238,40 @@ export default {
             const peersTalking = [...this.$store.state.peersTalking];
             return peersTalking.sort((a, b) => a.displayName - b.displayName)
         },
+        isPanicking() {
+            const myState = this.$store.state.radioState;
+            console.log(myState, typeof myState);
+            if (!myState) return undefined;
+            else return !!myState.panic;
+        },
+        internalEmergencyCallOpen() {
+            return this.emergencyCall.open;
+        },
+        internalEmergencyCallDispatcherConnected() {
+            return this.emergencyCall.peers.length > 0;
+        },
     },
     watch: {
         skinNames() {
             this.updateAvailableSkins();
+        },
+        isPanicking(status) {
+            this.postClient({
+                type: "panic",
+                status: status,
+            });
+        },
+        internalEmergencyCallOpen(status) {
+            this.postClient({
+                type: 'emergencyCallStatus',
+                status,
+            });
+        },
+        internalEmergencyCallDispatcherConnected(available) {
+            this.postClient({
+                type: 'emergencyCallDispatcher',
+                available,
+            })
         }
     },
     methods: {
@@ -266,7 +296,7 @@ export default {
                     this.debug = event.debug;
                     break;
                 case 'power':
-                    this.radioPower = event.power || !this.radioPower;
+                    this.radioPower = event.power !== undefined ? !!event.power : !this.radioPower;
                     this.postClient({
                         type: 'power',
                         power: this.radioPower
@@ -301,6 +331,15 @@ export default {
                     break;
                 case 'radioHud':
                     this.showTopRadio = event.size !== 'off';
+                    break;
+                case 'togglePrimaryChannel':
+                    this.postRadioFrame({ type: 'toggle_primary_channel', channelId: event.id });
+                    break;
+                case 'toggleScanChannel':
+                    this.postRadioFrame({ type: 'toggle_scan_channel', channelId: event.id });
+                    break;
+                case 'selectScanList':
+                    this.postRadioFrame({ type: 'select_scan_list', scanListId: event.id });
                     break;
                 case 'pushButton':
                     switch (event.button) {
@@ -618,10 +657,13 @@ export default {
             this.postClient({ type: "refreshScreen" });
         },
         buttonPanic() {
-            this.notifyPlayer("Radio: ~r~Panic Pressed!");
-            this.postClient({
-                type: "panic"
-            });
+            if (this.isPanicking === undefined) return;
+
+            if (!this.isPanicking)
+                this.notifyPlayer("Radio: ~r~Panic Pressed!");
+            else
+                this.notifyPlayer('Radio: ~r~Stopped Panicking');
+            this.postRadioFrame({ type: 'set_panicking', panicking: !this.isPanicking });
         },
         buttonPrev() {
             if (!this.$store.state.connected)
