@@ -607,8 +607,16 @@ export default {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         refreshScreen() {
-            for (const standaloneFrame of this.$refs.standaloneFrame) {
-                standaloneFrame.flush(true);
+            // Get all <standalone-frame> references (emergency call frame, chatter frame, radio viewer frame)
+            const standaloneFrames = this.$refs.standaloneFrame;
+            if (Array.isArray(standaloneFrames)) {
+                // Multiple frames: Iterate through each
+                standaloneFrames.forEach(frame => frame.flush(true));
+            } else if (standaloneFrames) {
+                // Single frame: Directly call flush
+                standaloneFrames.flush(true);
+            } else {
+                console.warn('No standaloneFrame references found.');
             }
             this.postClient({ type: "refreshScreen" });
         },
