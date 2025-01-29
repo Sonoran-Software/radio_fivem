@@ -659,7 +659,7 @@ export default {
         },
         nextPreset() {
             this.postRadioFrame({
-                type: 'group_preset_next ',
+                type: 'group_preset_next',
             })
         },
         prevPreset() {
