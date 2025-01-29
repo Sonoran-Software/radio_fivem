@@ -49,7 +49,6 @@
         }
       ],
       "screen": {
-        "style": "text",
         "bottom": 5.875,
         "height": 18.125,
         "left": 3.2185,
