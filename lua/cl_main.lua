@@ -1028,11 +1028,13 @@ function initClient()
 	Citizen.CreateThread(function()
 		if GetResourceState('lvc') == 'started' then
 			lvcStarted = true
-			AddEventHandler('lvc:updateThirdParty', function(data)
-				local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-				state_lxsiren = data.state_lxsiren[veh]
-				state_pwrcall = data.state_pwrcall[veh]
-				if state_lxsiren > 0 or state_pwrcall > 0 then
+			AddEventHandler('lvc:UpdateThirdParty', function(data)
+				data = json.encode(data)
+				data = json.decode(data)
+				state_lxsiren = data.state_lxsiren
+				state_pwrcall = data.state_pwrcall
+				state_airmanu = data.state_airmanu
+				if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = true
@@ -1062,15 +1064,17 @@ function initClient()
 		end
 	end)
 
-	AddEventHandler('onResourceStart', function(resourceName)
+	RegisterNetEvent('onResourceStart', function(resourceName)
 		if resourceName == 'lvc' then
 			if not lvcStarted then
 				lvcStarted = true
-				AddEventHandler('lvc:updateThirdParty', function(data)
-					local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-					state_lxsiren = data.state_lxsiren[veh]
-					state_pwrcall = data.state_pwrcall[veh]
-					if state_lxsiren > 0 or state_pwrcall > 0 then
+				AddEventHandler('lvc:UpdateThirdParty', function(data)
+					data = json.encode(data)
+					data = json.decode(data)
+					state_lxsiren = data.state_lxsiren
+					state_pwrcall = data.state_pwrcall
+					state_airmanu = data.state_airmanu
+					if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 						SendNUIMessage({
 							type = 'siren_toggle',
 							state = true
@@ -1082,7 +1086,7 @@ function initClient()
 						})
 					end
 				end)
-			end
+				end
 		end
 	end)
 
