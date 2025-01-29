@@ -142,6 +142,9 @@ function initThreads()
                     end
                 end
             end
+            if IsVehicleSirenOn(GetVehiclePedIsIn(GetPlayerPed(-1), false)) then
+            else
+            end
             Citizen.Wait(500)
         end
     end)

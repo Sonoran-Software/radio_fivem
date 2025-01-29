@@ -348,6 +348,18 @@ export default {
                         case 'next':
                             this.buttonNext();
                             break;
+                        case 'group_next':
+                            this.nextGroup();
+                            break;
+                        case 'group_prev':
+                            this.prevGroup();
+                            break;
+                        case 'vol_up':
+                            this.postRadioFrame({ type: 'notch_vol_up' });
+                            break;
+                        case 'vol_down':
+                            this.postRadioFrame({ type: 'notch_vol_down' });
+                            break;
                         case 'power':
                             this.buttonPower();
                             break;
@@ -412,6 +424,12 @@ export default {
                 case 'get_connected_users':
                     this.postRadioFrame({
                         type: 'get_connected_users',
+                    });
+                    break;
+                case 'siren_toggle':
+                    this.postRadioFrame({
+                        type: 'siren_toggle',
+                        state : event.state
                     });
                     break;
             }
@@ -641,12 +659,22 @@ export default {
         },
         nextPreset() {
             this.postRadioFrame({
-                type: 'preset_next',
+                type: 'group_preset_next ',
             })
         },
         prevPreset() {
             this.postRadioFrame({
-                type: 'preset_prev',
+                type: 'group_preset_prev',
+            })
+        },
+        nextGroup() {
+            this.postRadioFrame({
+                type: 'group_next',
+            })
+        },
+        prevGroup() {
+            this.postRadioFrame({
+                type: 'group_prev',
             })
         },
         updateAvailableSkins() {

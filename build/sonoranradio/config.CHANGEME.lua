@@ -66,7 +66,11 @@ Config.keybinds = {
 	['panic'] = '',
 	['nextChannel'] = '',
 	['prevChannel'] = '',
-	['talkAnim'] = ''
+	['talkAnim'] = '',
+	['nextGroup'] = '',
+	['prevGroup'] = '',
+	['volUp'] = '',
+	['volDown'] = ''
 }
 
 -- Radio Item Settings --

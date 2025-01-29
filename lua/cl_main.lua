@@ -447,6 +447,38 @@ function initClient()
 		})
 	end)
 
+	RegisterNetEvent('SonoranRadio::API:GroupNext')
+	AddEventHandler('SonoranRadio::API:GroupNext', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'group_next'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:GroupPrev')
+	AddEventHandler('SonoranRadio::API:GroupPrev', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'group_prev'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:VolumeUp')
+	AddEventHandler('SonoranRadio::API:VolumeUp', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'vol_up'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:VolumeDown')
+	AddEventHandler('SonoranRadio::API:VolumeDown', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'vol_down'
+		})
+	end)
+
 	RegisterNetEvent('SonoranRadio::API:PowerToggle')
 	AddEventHandler('SonoranRadio::API:PowerToggle', function()
 		SendNUIMessage({
@@ -481,6 +513,14 @@ function initClient()
 		TriggerEvent('SonoranRadio::API:PrevPreset')
 	end)
 
+	RegisterCommand('sonradgroupnext', function()
+		TriggerEvent('SonoranRadio::API:GroupNext')
+	end)
+
+	RegisterCommand('sonradgroupprev', function()
+		TriggerEvent('SonoranRadio::API:GroupPrev')
+	end)
+
 	-- Power
 	RegisterCommand('sonradpower', function()
 		TriggerEvent('SonoranRadio::API:PowerToggle')
@@ -490,11 +530,25 @@ function initClient()
 	RegisterCommand('sonradpanic', function()
 		TriggerEvent('SonoranRadio::API:PanicButton')
 	end)
+
+	RegisterCommand('sonradvolup', function()
+		TriggerEvent('SonoranRadio::API:VolumeUp')
+	end)
+
+	RegisterCommand('sonradvoldown', function()
+		TriggerEvent('SonoranRadio::API:VolumeDown')
+	end)
+
 	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
 	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', getConfigKeybind('nextChannel'))
 	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', getConfigKeybind('prevChannel'))
 	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', getConfigKeybind('power'))
 	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', getConfigKeybind('panic'))
+	RegisterKeyMapping('sonradgroupnext', 'Next Group', 'keyboard', getConfigKeybind('nextGroup'))
+	RegisterKeyMapping('sonradgroupprev', 'Prev Group', 'keyboard', getConfigKeybind('prevGroup'))
+	RegisterKeyMapping('sonradvolup', 'Volume Up', 'keyboard', getConfigKeybind('volUp'))
+	RegisterKeyMapping('sonradvoldown', 'Volume Down', 'keyboard', getConfigKeybind('volDown'))
+
 
 	-- add PTT for the standalone radio
 	RegisterCommand('+sonradptt', function()
@@ -970,4 +1024,71 @@ function initClient()
 		end
     end)
 
+	local lvcStarted = false
+	Citizen.CreateThread(function()
+		if GetResourceState('lvc') == 'started' then
+			lvcStarted = true
+			AddEventHandler('lvc:updateThirdParty', function(data)
+				local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+				state_lxsiren = data.state_lxsiren[veh]
+				state_pwrcall = data.state_pwrcall[veh]
+				if state_lxsiren > 0 or state_pwrcall > 0 then
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = true
+					})
+				else
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = false
+					})
+				end
+			end)
+		else
+			while true and not lvcStarted do
+				if IsVehicleSirenOn(GetVehiclePedIsIn(PlayerPedId(), false)) then
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = true
+					})
+				else
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = false
+					})
+				end
+				Citizen.Wait(500)
+			end
+		end
+	end)
+
+	AddEventHandler('onResourceStart', function(resourceName)
+		if resourceName == 'lvc' then
+			if not lvcStarted then
+				lvcStarted = true
+				AddEventHandler('lvc:updateThirdParty', function(data)
+					local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+					state_lxsiren = data.state_lxsiren[veh]
+					state_pwrcall = data.state_pwrcall[veh]
+					if state_lxsiren > 0 or state_pwrcall > 0 then
+						SendNUIMessage({
+							type = 'siren_toggle',
+							state = true
+						})
+					else
+						SendNUIMessage({
+							type = 'siren_toggle',
+							state = false
+						})
+					end
+				end)
+			end
+		end
+	end)
+
+	AddEventHandler('onResourceStop', function(resourceName)
+		if resourceName == 'lvc' then
+			lvcStarted = false
+		end
+	end)
 end
