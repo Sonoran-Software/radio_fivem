@@ -1476,7 +1476,7 @@ function toneboardMoveMenu()
 			}
 			array.z = array.z + toneboardState.moveSpeed
 			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 
 		elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 			local array = {
@@ -1486,7 +1486,7 @@ function toneboardMoveMenu()
 			}
 			array.z = array.z - toneboardState.moveSpeed
 			foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+			SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
 
 		elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 			foundHandle.heading = foundHandle.heading + toneboardState.moveSpeed

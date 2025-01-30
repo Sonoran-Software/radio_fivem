@@ -66,7 +66,7 @@ function initChatter()
 					DebugPrint('Checking chatter exclusions')
 					for _, exclusion in ipairs(chatterConfig) do
 						local hasComponent = pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture)
-						DebugPring('Has component: ' .. tostring(hasComponent))
+						DebugPrint('Has component: ' .. tostring(hasComponent))
 						if hasComponent then
 							DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
 							goto continue

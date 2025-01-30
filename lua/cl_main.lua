@@ -10,7 +10,7 @@ local tunnels = {}
 local authorized = false
 local allowedFrames = {}
 local critError = false
-local frame = 'default'
+local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 polyZonesTable = {}
 Config = {}
 
@@ -279,11 +279,13 @@ function initClient()
 		end
 
 		radActive = not radActive
-		SendNUIMessage({
-			type = 'setCurrentSkin',
-			skin = frame,
-			skins = allowedFrames
-		})
+		if frame then
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame,
+				skins = allowedFrames
+			})
+		end
 		SendNUIMessage({
 			type = 'setUiPositions',
 			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -304,24 +306,24 @@ function initClient()
 	function emergencyCallCommand()
 		return Config.emergencyCallCommand or '911'
 	end
-	function setEmergencyCall(enabled)
+	function setEmergencyCall(enabled, displayName)
+		if type(displayName) ~= 'string' then
+			displayName = GetPlayerName(PlayerId())
+		end
 		SendNUIMessage({
 			type = 'setEmergencyCall',
 			enabled = enabled,
-			displayName = GetPlayerName(PlayerId()),
+			displayName = displayName,
 			callCommand = emergencyCallCommand(),
 		})
-		TriggerEvent('SonoranRadio::API:EmergencyCall', enabled)
 	end
-	exports('setEmergencyCall', function(enabled)
-		setEmergencyCall(enabled)
-	end)
+	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
 	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 		DebugPrint('Authorized for Radio Usage')
-		allowedMiniRadio = miniRadio
 		authorized = true
+		allowedMiniRadio = miniRadio
 		allowedFrames = frames
 		SendNUIMessage({
 			type = 'setCurrentSkin',
@@ -334,6 +336,16 @@ function initClient()
 		local action = args[1]
 		if action == emergencyCallCommand() then
 			setEmergencyCall('toggle')
+		elseif action == 'channel' or action == 'scan' or action == 'scanlist' then
+			local selectId = tonumber(args[2])
+			if selectId == nil then return end
+
+			local passEvents = {
+				channel = 'togglePrimaryChannel',
+				scan = 'toggleScanChannel',
+				scanlist = 'selectScanList'
+			}
+			SendNUIMessage({ type = passEvents[action], id = selectId })
 		elseif action == 'hide' then
 			SendNUIMessage({
 				type = 'setVisible',
@@ -360,6 +372,9 @@ function initClient()
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
+		'channel',
+		'scanlist',
+		'scan',
 		'hide',
 		'refresh',
 		'reset'
@@ -435,6 +450,38 @@ function initClient()
 		})
 	end)
 
+	RegisterNetEvent('SonoranRadio::API:GroupNext')
+	AddEventHandler('SonoranRadio::API:GroupNext', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'group_next'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:GroupPrev')
+	AddEventHandler('SonoranRadio::API:GroupPrev', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'group_prev'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:VolumeUp')
+	AddEventHandler('SonoranRadio::API:VolumeUp', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'vol_up'
+		})
+	end)
+
+	RegisterNetEvent('SonoranRadio::API:VolumeDown')
+	AddEventHandler('SonoranRadio::API:VolumeDown', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'vol_down'
+		})
+	end)
+
 	RegisterNetEvent('SonoranRadio::API:PowerToggle')
 	AddEventHandler('SonoranRadio::API:PowerToggle', function()
 		SendNUIMessage({
@@ -444,8 +491,11 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:PanicButton')
-	AddEventHandler('SonoranRadio::API:PanicButton', function()
-		TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+	AddEventHandler('SonoranRadio::API:PanicButton', function(status)
+		if status then
+			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		else
+		end
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:SetPreset')
@@ -466,6 +516,14 @@ function initClient()
 		TriggerEvent('SonoranRadio::API:PrevPreset')
 	end)
 
+	RegisterCommand('sonradgroupnext', function()
+		TriggerEvent('SonoranRadio::API:GroupNext')
+	end)
+
+	RegisterCommand('sonradgroupprev', function()
+		TriggerEvent('SonoranRadio::API:GroupPrev')
+	end)
+
 	-- Power
 	RegisterCommand('sonradpower', function()
 		TriggerEvent('SonoranRadio::API:PowerToggle')
@@ -475,11 +533,25 @@ function initClient()
 	RegisterCommand('sonradpanic', function()
 		TriggerEvent('SonoranRadio::API:PanicButton')
 	end)
+
+	RegisterCommand('sonradvolup', function()
+		TriggerEvent('SonoranRadio::API:VolumeUp')
+	end)
+
+	RegisterCommand('sonradvoldown', function()
+		TriggerEvent('SonoranRadio::API:VolumeDown')
+	end)
+
 	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
-	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', getConfigKeybind('nextChannel'))
-	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', getConfigKeybind('prevChannel'))
+	RegisterKeyMapping('sonradnext', 'Next Channel (In Group)', 'keyboard', getConfigKeybind('nextChannel'))
+	RegisterKeyMapping('sonradprev', 'Prev Channel (In Group)', 'keyboard', getConfigKeybind('prevChannel'))
 	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', getConfigKeybind('power'))
 	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', getConfigKeybind('panic'))
+	RegisterKeyMapping('sonradgroupnext', 'Next Group', 'keyboard', getConfigKeybind('nextGroup'))
+	RegisterKeyMapping('sonradgroupprev', 'Prev Group', 'keyboard', getConfigKeybind('prevGroup'))
+	RegisterKeyMapping('sonradvolup', 'Volume Up', 'keyboard', getConfigKeybind('volUp'))
+	RegisterKeyMapping('sonradvoldown', 'Volume Down', 'keyboard', getConfigKeybind('volDown'))
+
 
 	-- add PTT for the standalone radio
 	RegisterCommand('+sonradptt', function()
@@ -677,7 +749,13 @@ function initClient()
 		end
 
 		if data.type == 'panic' then
-			TriggerEvent('SonoranRadio::API:PanicButton')
+			TriggerEvent('SonoranRadio::API:PanicButton', data.status)
+		end
+
+		if data.type == 'emergencyCallStatus' then
+			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
+		elseif data.type == 'emergencyCallDispatcher' then
+			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.available)
 		end
 
 		if data.type == 'power' then
@@ -734,7 +812,6 @@ function initClient()
 			print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 			Radio.TalkAnim = false
 		end
-		frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 	end)
 
 	AddEventHandler('onResourceStop', function(resource)
@@ -822,31 +899,9 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or 'default'
-		if Config.frames.permissionMode == 'ace' then
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-		elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
-			if hasRadioItem() then
-				TriggerEvent('chat:addMessage', {
-					args = {
-						'^1SonoranRadio',
-						'Changed your radio skin to ' .. frame .. ''
-					}
-				})
-				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-				SendNUIMessage({
-					type = 'setCurrentSkin',
-					skin = frame
-				})
-			else
+
+		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not hasRadioItem() then
+			if not hasRadioItem() then
 				TriggerEvent('chat:addMessage', {
 					color = {
 						255,
@@ -854,37 +909,25 @@ function initClient()
 						0
 					},
 					multiline = true,
-					args = {
-						'Sonoran Radio',
-						'You must have a radio to change frames.'
-					}
+					args = {'Sonoran Radio','You must have a radio to change frames.'}
 				})
+				return
+			else
+				-- update the item metadata
+				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
 			end
-		elseif Config.frames.permissionMode == 'qbcore' and not Config.enforceRadioItem then
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-			TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
-		else
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-			TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
 		end
+
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
 	end)
 
 	TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
@@ -938,5 +981,89 @@ function initClient()
 
 	RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
+	end)
+
+	RegisterNetEvent('SonoranRadio::RequestClientData', function()
+		TriggerEvent('SonoranRadio:CarRadioPower', Radio.On)
+		if Radio.On then
+			Wait(1000)
+			SendNUIMessage({
+				type = "get_connected_users",
+			})
+		end
+    end)
+	if Config.luxartResourceName == nil then
+		Config.luxartResourceName = 'lvc'
+	end
+	local lvcStarted = false
+	Citizen.CreateThread(function()
+		if GetResourceState(Config.luxartResourceName) == 'started' then
+			lvcStarted = true
+			AddEventHandler('lvc:UpdateThirdParty', function(data)
+				data = json.encode(data)
+				data = json.decode(data)
+				state_lxsiren = data.state_lxsiren
+				state_pwrcall = data.state_pwrcall
+				state_airmanu = data.state_airmanu
+				if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = true
+					})
+				else
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = false
+					})
+				end
+			end)
+		else
+			while true and not lvcStarted do
+				if IsVehicleSirenOn(GetVehiclePedIsIn(PlayerPedId(), false)) then
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = true
+					})
+				else
+					SendNUIMessage({
+						type = 'siren_toggle',
+						state = false
+					})
+				end
+				Citizen.Wait(500)
+			end
+		end
+	end)
+
+	RegisterNetEvent('onResourceStart', function(resourceName)
+		if resourceName == Config.luxartResourceName then
+			if not lvcStarted then
+				lvcStarted = true
+				AddEventHandler('lvc:UpdateThirdParty', function(data)
+					data = json.encode(data)
+					data = json.decode(data)
+					state_lxsiren = data.state_lxsiren
+					state_pwrcall = data.state_pwrcall
+					state_airmanu = data.state_airmanu
+					if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
+						SendNUIMessage({
+							type = 'siren_toggle',
+							state = true
+						})
+					else
+						SendNUIMessage({
+							type = 'siren_toggle',
+							state = false
+						})
+					end
+				end)
+				end
+		end
+	end)
+
+	AddEventHandler('onResourceStop', function(resourceName)
+		if resourceName == Config.luxartResourceName then
+			lvcStarted = false
+		end
 	end)
 end

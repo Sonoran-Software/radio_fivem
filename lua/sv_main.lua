@@ -180,11 +180,8 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	else
 		allowedMiniRadio = true
 	end
-	if acePermsForRadio then
-		if IsPlayerAceAllowed(source, 'sonoranradio.use') then
-			TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
-		end
-	else
+	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(source, 'sonoranradio.use')
+	if radioAceAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
 	end
 	if acePermsForTowerRepair then
@@ -498,6 +495,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 			['id'] = speaker.Id
 		})
 	end
+	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
@@ -589,12 +587,31 @@ end)
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	local saveData = {};
 	for _, t in ipairs(speakers) do
+		t.Handle = nil -- Remove the key 'handle'
+		t.Spawned = nil -- Remove the key 'spawned'
 		table.insert(saveData, t)
 	end
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
 	Speakers = speakers
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['id'] = speaker.Id
+		})
+	end
+	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
 	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
 end)
 

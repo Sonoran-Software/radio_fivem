@@ -24,6 +24,14 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 		Wait(10)
 	end
 	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, Speakers)
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['id'] = speaker.Id
+		})
+	end
+	DebugPrint('Sending speaker locations to radio service based upon call to SonoranRadio::SyncSpeakers' ..  json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
