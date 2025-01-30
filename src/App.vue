@@ -398,8 +398,7 @@ export default {
                     } else {
                         this.selectSkinIds = event.skins;
                     }
-                    if (event.skin) // update current ski
-                        this.selectSkin(event.skin);
+                    if (event.skin) this.selectSkin(event.skin);
                     break;
                 case 'chatterCameraUpdate':
                     this.postChatterFrame({
