@@ -10,7 +10,7 @@ local tunnels = {}
 local authorized = false
 local allowedFrames = {}
 local critError = false
-local frame = 'default'
+local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 polyZonesTable = {}
 Config = {}
 
@@ -279,11 +279,13 @@ function initClient()
 		end
 
 		radActive = not radActive
-		SendNUIMessage({
-			type = 'setCurrentSkin',
-			skin = frame,
-			skins = allowedFrames
-		})
+		if frame then
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame,
+				skins = allowedFrames
+			})
+		end
 		SendNUIMessage({
 			type = 'setUiPositions',
 			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -304,23 +306,24 @@ function initClient()
 	function emergencyCallCommand()
 		return Config.emergencyCallCommand or '911'
 	end
-	function setEmergencyCall(enabled)
+	function setEmergencyCall(enabled, displayName)
+		if type(displayName) ~= 'string' then
+			displayName = GetPlayerName(PlayerId())
+		end
 		SendNUIMessage({
 			type = 'setEmergencyCall',
 			enabled = enabled,
-			displayName = GetPlayerName(PlayerId()),
+			displayName = displayName,
 			callCommand = emergencyCallCommand(),
 		})
 	end
-	exports('setEmergencyCall', function(enabled)
-		setEmergencyCall(enabled)
-	end)
+	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
 	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
 		DebugPrint('Authorized for Radio Usage')
-		allowedMiniRadio = miniRadio
 		authorized = true
+		allowedMiniRadio = miniRadio
 		allowedFrames = frames
 		SendNUIMessage({
 			type = 'setCurrentSkin',
@@ -809,7 +812,6 @@ function initClient()
 			print('BigDaddy-RadioAnimation Started... disabling SonoranRadio talk animations')
 			Radio.TalkAnim = false
 		end
-		frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 	end)
 
 	AddEventHandler('onResourceStop', function(resource)
@@ -897,31 +899,9 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or 'default'
-		if Config.frames.permissionMode == 'ace' then
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-		elseif Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem then
-			if hasRadioItem() then
-				TriggerEvent('chat:addMessage', {
-					args = {
-						'^1SonoranRadio',
-						'Changed your radio skin to ' .. frame .. ''
-					}
-				})
-				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-				SendNUIMessage({
-					type = 'setCurrentSkin',
-					skin = frame
-				})
-			else
+
+		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not hasRadioItem() then
+			if not hasRadioItem() then
 				TriggerEvent('chat:addMessage', {
 					color = {
 						255,
@@ -929,37 +909,25 @@ function initClient()
 						0
 					},
 					multiline = true,
-					args = {
-						'Sonoran Radio',
-						'You must have a radio to change frames.'
-					}
+					args = {'Sonoran Radio','You must have a radio to change frames.'}
 				})
+				return
+			else
+				-- update the item metadata
+				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
 			end
-		elseif Config.frames.permissionMode == 'qbcore' and not Config.enforceRadioItem then
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-			TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
-		else
-			TriggerEvent('chat:addMessage', {
-				args = {
-					'^1SonoranRadio',
-					'Changed your radio skin to ' .. frame .. ''
-				}
-			})
-			TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame
-			})
 		end
+
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame
+		})
+		TriggerEvent('chat:addMessage', {
+			args = {
+				'^1SonoranRadio',
+				'Changed your radio skin to ' .. frame .. ''
+			}
+		})
 	end)
 
 	TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
