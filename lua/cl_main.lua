@@ -540,8 +540,8 @@ function initClient()
 	end)
 
 	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
-	RegisterKeyMapping('sonradnext', 'Next Preset', 'keyboard', getConfigKeybind('nextChannel'))
-	RegisterKeyMapping('sonradprev', 'Prev Preset', 'keyboard', getConfigKeybind('prevChannel'))
+	RegisterKeyMapping('sonradnext', 'Next Channel (In Group)', 'keyboard', getConfigKeybind('nextChannel'))
+	RegisterKeyMapping('sonradprev', 'Prev Channel (In Group)', 'keyboard', getConfigKeybind('prevChannel'))
 	RegisterKeyMapping('sonradpower', 'Radio Power', 'keyboard', getConfigKeybind('power'))
 	RegisterKeyMapping('sonradpanic', 'Radio Panic', 'keyboard', getConfigKeybind('panic'))
 	RegisterKeyMapping('sonradgroupnext', 'Next Group', 'keyboard', getConfigKeybind('nextGroup'))
@@ -1018,6 +1018,7 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::RequestClientData', function()
 		TriggerEvent('SonoranRadio:CarRadioPower', Radio.On)
 		if Radio.On then
+			Wait(1000)
 			SendNUIMessage({
 				type = "get_connected_users",
 			})

@@ -15,6 +15,7 @@ function PerformHttpRequestS(url, cb, method, data, headers)
 	exports['sonoranradio']:HandleHttpRequest(url, cb, method, data, headers)
 end
 local rateLimitedEndpoints = {}
+
 function performApiRequest(postData, type, cb)
 	if Config.apiKey == nil or Config.comId == nil then
 		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
@@ -34,7 +35,7 @@ function performApiRequest(postData, type, cb)
 	end
 	if rateLimitedEndpoints[type] == nil then
 		PerformHttpRequestS(url, function(statusCode, res, headers)
-			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(payload), url))
+			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(postData), url))
 			if statusCode == 200 or statusCode == 201 and res ~= nil then
 				debugLog('result: ' .. tostring(res))
 				if res == 'Sonoran Radio: Backend Service Reached' or res == 'Backend Service Reached' then
@@ -84,7 +85,7 @@ function performApiRequest(postData, type, cb)
 			['Content-Type'] = 'application/json'
 		})
 	else
-		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(payload)))
+		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(postData)))
 	end
 end
 

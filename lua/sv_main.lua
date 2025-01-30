@@ -498,6 +498,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 			['id'] = speaker.Id
 		})
 	end
+	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
@@ -604,6 +605,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 			['id'] = speaker.Id
 		})
 	end
+	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
