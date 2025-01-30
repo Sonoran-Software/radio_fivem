@@ -992,10 +992,12 @@ function initClient()
 			})
 		end
     end)
-
+	if Config.luxartResourceName == nil then
+		Config.luxartResourceName = 'lvc'
+	end
 	local lvcStarted = false
 	Citizen.CreateThread(function()
-		if GetResourceState('lvc') == 'started' then
+		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
@@ -1034,7 +1036,7 @@ function initClient()
 	end)
 
 	RegisterNetEvent('onResourceStart', function(resourceName)
-		if resourceName == 'lvc' then
+		if resourceName == Config.luxartResourceName then
 			if not lvcStarted then
 				lvcStarted = true
 				AddEventHandler('lvc:UpdateThirdParty', function(data)
@@ -1060,7 +1062,7 @@ function initClient()
 	end)
 
 	AddEventHandler('onResourceStop', function(resourceName)
-		if resourceName == 'lvc' then
+		if resourceName == Config.luxartResourceName then
 			lvcStarted = false
 		end
 	end)
