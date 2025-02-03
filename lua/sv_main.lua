@@ -517,6 +517,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 			infoLog('Successfully renamed earpieces.DEFAULT.json to earpieces.json')
 			chatterFileName = 'earpieces.json'
 		end
+	else
+		chatterFileName = 'earpieces.json'
 	end
 	-- Load JSON
 	local chat = LoadResourceFile(resourceName, chatterFileName)
@@ -540,15 +542,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 			updated = true
 		end
 	end
-
+	chatterConfig = chatter
 	-- Save updated earpieces.json if changes were made
 	if updated then
 		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
+		chatterConfig = luaConfig
 	end
-	chatterConfig = luaConfig
+
+	DebugPrint('Loaded chatterConfig ' .. json.encode(chatterConfig))
 	if Config.chatterExclusion then
 		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end

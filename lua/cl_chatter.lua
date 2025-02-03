@@ -12,15 +12,15 @@ function initChatter()
 		if componentId >= drawableOffset then -- components 14 and above are props (hats, glasses, etc)
 			DebugPrint('Component ID is a prop (over 14)')
 			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId))
-			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId - 1))
+			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId ))
 			return GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId and
 				(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId - 1)
 		else
 			DebugPrint('Component ID is not a prop (under 14)')
 			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId) == drawableId))
-			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId) == textureId - 1))
+			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId) == textureId))
 			return GetPedPropIndex(ped, componentId) == drawableId and
-				(not textureId or GetPedPropTextureIndex(ped, componentId) == textureId - 1)
+				(not textureId or GetPedPropTextureIndex(ped, componentId) == textureId)
 		end
 	end
 
@@ -65,11 +65,13 @@ function initChatter()
 				if type(chatterConfig) == 'table' then
 					DebugPrint('Checking chatter exclusions')
 					for _, exclusion in ipairs(chatterConfig) do
-						local hasComponent = pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, exclusion.texture)
-						DebugPrint('Has component: ' .. tostring(hasComponent))
-						if hasComponent then
-							DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
-							goto continue
+						for _, texture in ipairs(exclusion.texture) do
+							local hasComponent = pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, texture)
+							DebugPrint('Has component: ' .. tostring(hasComponent))
+							if hasComponent then
+								DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
+								goto continue
+							end
 						end
 					end
 				end
