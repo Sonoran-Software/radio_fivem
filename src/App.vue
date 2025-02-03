@@ -697,13 +697,13 @@ export default {
         buttonPrev() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            this.notifyPlayer("Radio: ~y~Prev Preset");
+            this.notifyPlayer("Radio: ~y~Prev Channel");
             this.prevPreset();
         },
         buttonNext() {
             if (!this.$store.state.connected)
                 return void this.notifyPlayer("Radio: ~r~Not Connected")
-            this.notifyPlayer("Radio: ~y~Next Preset");
+            this.notifyPlayer("Radio: ~y~Next Channel");
             this.nextPreset();
         },
         buttonPower() {
