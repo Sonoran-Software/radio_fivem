@@ -102,7 +102,7 @@ function initClient()
 	end)
 
 	Radio = {
-		Has = false,
+		HasItem = false,
 		Open = false,
 		On = false,
 		Enabled = true,
@@ -138,7 +138,6 @@ function initClient()
 	local PlayerData = nil
 	if Config.enforceRadioItem then
 		QBCore = exports['qb-core']:GetCoreObject()
-		PlayerData = {}
 	end
 
 	CreateThread(function()
@@ -243,14 +242,26 @@ function initClient()
 		return ''
 	end
 
-	function hasRadioItem()
+	function playerHasItem(QBCore, itemName)
+		local hasItem = false
+		if type(QBCore.Functions.GetItemByName) == 'table' then
+			hasItem = not not QBCore.Functions.GetItemByName(itemName)
+		elseif type(QBCore.Functions.HasItem) == 'table' then
+			hasItem = not not QBCore.Functions.HasItem(Config.RadioItem.name)
+		end
+		if not hasItem then
+			return false
+		end
+
+		local PlayerData = QBCore.Functions.GetPlayerData()
+		return not PlayerData.metadata['isdead'] and not PlayerData.metadata['inlaststand']
+	end
+	function playerHasRadioItem(QBCore)
 		local itemName = Config.RadioItem and Config.RadioItem.name
 		if not itemName then
 			itemName = 'sonoran_radio'
 		end
-
-		local QBCore = exports['qb-core']:GetCoreObject()
-		return not not QBCore and QBCore.Functions.HasItem(itemName)
+		return playerHasItem(QBCore, itemName)
 	end
 
 	function radioToggle(frame)
@@ -261,7 +272,7 @@ function initClient()
 
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 
-		local hasItem = not Config.enforceRadioItem or hasRadioItem()
+		local hasItem = not Config.enforceRadioItem or Radio.HasItem
 		if not hasItem then
 			TriggerEvent('chat:addMessage', {
 				color = {
@@ -917,22 +928,17 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or 'default'
 
-		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not hasRadioItem() then
-			if not hasRadioItem() then
-				TriggerEvent('chat:addMessage', {
-					color = {
-						255,
-						0,
-						0
-					},
-					multiline = true,
-					args = {'Sonoran Radio','You must have a radio to change frames.'}
-				})
-				return
-			else
-				-- update the item metadata
-				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			end
+		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {'Sonoran Radio','You must have a radio to change frames.'}
+			})
+			return
 		end
 
 		SendNUIMessage({

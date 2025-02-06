@@ -118,26 +118,6 @@ else
 			local Player = QBCore.Functions.GetPlayer(src)
 			TriggerClientEvent('qb-sonrad:use-scanner', source)
 		end)
-
-		QBCore.Functions.CreateCallback('qb-sonrad:server:GetItem', function(source, cb, item)
-			local src = source
-			local Player = QBCore.Functions.GetPlayer(src)
-			if Player ~= nil then
-				local RadioItem = nil
-				if type(Player.Functions.GetItemByName) == 'table' then
-					RadioItem = Player.Functions.GetItemByName(Config.RadioItem.name)
-				elseif type(Player.Functions.HasItem) == 'table' then
-					RadioItem = Player.Functions.HasItem(Config.RadioItem.name)
-				end
-				if RadioItem ~= nil and not Player.PlayerData.metadata['isdead'] and not Player.PlayerData.metadata['inlaststand'] then
-					cb(true)
-				else
-					cb(false)
-				end
-			else
-				cb(false)
-			end
-		end)
 	end
 end
 
