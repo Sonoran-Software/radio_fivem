@@ -242,6 +242,10 @@ function initClient()
 	end
 
 	function playerHasItem(QBCore, itemName)
+		if not LocalPlayer.state.isLoggedIn then
+			return false
+		end
+
 		local hasItem = false
 		if type(QBCore.Functions.GetItemByName) == 'table' then
 			hasItem = not not QBCore.Functions.GetItemByName(itemName)
@@ -733,7 +737,6 @@ function initClient()
 		SetNuiFocus(false, false)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		initNui()
-		LocalPlayer.state:set('sonoranradio_state', nil, true)
 
 		DebugPrint('Sonoran Radio Started!')
 	end)
