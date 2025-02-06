@@ -69,10 +69,12 @@ Citizen.CreateThread(function()
 	end
 
 	local QBCore
-	repeat
-		Citizen.Wait(1000)
-		QBCore = exports['qb-core']:GetCoreObject({'Functions'})
-	until QBCore ~= nil
+	if Config.enforceRadioItem then
+		repeat
+			Citizen.Wait(1000)
+			QBCore = exports['qb-core']:GetCoreObject({'Functions'})
+		until QBCore ~= nil
+	end
 
 	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 	while Config.enforceRadioItem do
