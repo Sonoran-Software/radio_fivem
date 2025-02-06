@@ -448,6 +448,9 @@ export default {
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case "pending_approval":
+                    this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
+                    break;
                 case "display_error":
                     this.notifyPlayer(`~r~Radio Error: ~s~${event.error}`);
                     break;
@@ -745,6 +748,10 @@ export default {
             this.updateGamestate();
             this.updateAvailableSkins();
             this.updateEscapeMode();
+            this.postClient({
+                type: 'radioConnected',
+                config: this.$store.state.radioConfig
+            });
         }
     }
 };
