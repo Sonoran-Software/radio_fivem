@@ -112,15 +112,9 @@ function initThreads()
                     }
                 end
                 local QBCore = exports['qb-core']:GetCoreObject()
-                if LocalPlayer.state.isLoggedIn then
-                    -- print("has radio")
-                    QBCore.Functions.TriggerCallback('qb-sonrad:server:GetItem',
-                                                     function(hasItem)
-                        Radio.Has = hasItem
-                        if not hasItem then
-                            SendNUIMessage({ type = 'noRadioItem' })
-                        end
-                    end, Config.RadioItem.name)
+                Radio.HasItem = playerHasRadioItem(QBCore)
+                if not Radio.HasItem then
+                    SendNUIMessage({ type = 'noRadioItem' })
                 end
             end
             ped = PlayerPedId()

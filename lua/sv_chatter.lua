@@ -68,19 +68,16 @@ Citizen.CreateThread(function()
 		return id
 	end
 
+	local QBCore
+	repeat
+		Citizen.Wait(1000)
+		QBCore = exports['qb-core']:GetCoreObject({'Functions'})
+	until QBCore ~= nil
+
 	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 	while Config.enforceRadioItem do
-		local QBCore
-		repeat
-			Citizen.Wait(1000)
-			QBCore = exports['qb-core']:GetCoreObject()
-		until QBCore ~= nil
-
-		for i = 0, GetNumPlayerIndices() - 1 do
-			local source = GetPlayerFromIndex(i)
-			local Player = QBCore.Functions.GetPlayer(tonumber(source))
-			if not Player then goto continue end
-
+		local QBPlayers = QBCore.Functions.GetQBPlayers()
+		for _, Player in ipairs(QBPlayers) do
 			local updatedItems = false
 			for _, item in ipairs(Player.PlayerData.items or {}) do
 				if item.name == scannerItemName and item.info.scannerId == nil then
@@ -92,9 +89,9 @@ Citizen.CreateThread(function()
 			if updatedItems then
 				Player.Functions.SetPlayerData('items', Player.PlayerData.items)
 			end
-
-			::continue::
 		end
+
+		Citizen.Wait(1000)
 	end
 end)
 
