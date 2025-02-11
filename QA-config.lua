@@ -12,6 +12,7 @@ Config.chatter = true
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
+Config.acePermSync = false -- Sync radio permissions aces with the server when connecting to the radio
 Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
