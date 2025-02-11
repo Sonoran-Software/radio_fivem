@@ -6,21 +6,16 @@ author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
 version '$RESOURCE_VERSION'
 
-shared_scripts {
-    'lua/**/sh_*.lua'
-}
 
-server_scripts {
-    'config.lua',
-    'lua/**/sv_*.lua',
-    'lua/update/unzip.js',
-    'lua/update/updater.lua',
-    'lua/**/sv_*.js',
-}
+server_script 'config.lua'
+server_script 'lua/http.js'
+server_script 'lua/update/unzip.js'
+server_script 'lua/update/updater.lua'
 
-client_scripts {
-    'lua/**/cl_*.lua'
-}
+shared_script 'lua/**/sh_*.lua'
+server_script 'lua/**/sv_*.lua'
+client_script 'lua/**/cl_*.lua'
+
 
 -- setup for nui
 files {

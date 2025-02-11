@@ -6,7 +6,7 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         path: destInfo.pathname,
         port: destInfo.port,
         method: method,
-        headers: headers || {}
+        headers: headers != null && typeof headers == 'object' && !Array.isArray(headers) ? headers : {}
     };
     options.headers['X-SonoranRadio-Version'] = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
