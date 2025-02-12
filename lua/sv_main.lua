@@ -541,6 +541,9 @@ end)
 exports('performApiRequest', performApiRequest)
 
 RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	DebugPrint('Processing towers to file ' .. json.encode(towers))
+	DebugPrint('Processing racks to file ' .. json.encode(racks))
+	DebugPrint('Processing cell to file ' .. json.encode(cell))
 	local saveData = {};
 	for _, t in ipairs(towers) do
 		if not t.DontSaveMe then
@@ -570,6 +573,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
+	DebugPrint('Processing speakers to file ' .. json.encode(speakers))
 	local saveData = {};
 	for _, t in ipairs(speakers) do
 		t.Handle = nil -- Remove the key 'handle'
