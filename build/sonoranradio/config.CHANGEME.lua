@@ -32,7 +32,7 @@ Config.ScannerItem = {
 	weight = 1, -- Weight of the item in your inventory
 	description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 }
-Config.disableRadioOnDeath = true -- Disables radio PTT when dead
+Config.disableRadioOnDeath = true -- Disables radio when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
