@@ -132,14 +132,12 @@ Citizen.CreateThread(function()
 		elseif WarMenu.IsMenuOpened('degradeEditMenu') then
 			degradeEditMenu()
 			WarMenu.Display()
-		elseif WarMenu.IsMenuOpen('degradeDeleteMenu') then
-			local zone = polyZonesTable[polyzoneState.index]
-			if WarMenu.Button('Delete ' .. zone.options.name) then
+		elseif WarMenu.IsMenuOpened('degradeDeleteMenu') then
+			local zone = polyZonesTable[polyzoneState.zoneId]
+			if WarMenu.Button('Delete ' .. polyzoneState.zoneId) then
                 zone:destroy()
-                table.remove(polyZonesTable, polyzoneState.index)
-				TriggerServerEvent('SonoranRadio:PolyZone:UpdateZones', polyZonesTable)
-                polyzoneState.index = 1
-                polyzoneState.zoneId = nil
+				polyZonesTable[polyzoneState.zoneId] = nil
+				TriggerServerEvent('SonoranRadio:PolyZone:DeleteZone', polyzoneState.zoneId)
 				TriggerEvent('chat:addMessage', {
 					color = {
 						255,
@@ -149,9 +147,11 @@ Citizen.CreateThread(function()
 					multiline = true,
 					args = {
 						'Success',
-						'Zone ' .. zone.options.name .. ' has been deleted.'
+						'Zone ' .. polyzoneState.zoneId .. ' has been deleted.'
 					}
 				})
+				polyzoneState.index = 1
+                polyzoneState.zoneId = nil
 				WarMenu.OpenMenu('degradeEditMenu')
 			end
 			WarMenu.Display()
@@ -1052,6 +1052,8 @@ function degradeMenu()
 		TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
 		TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
 	end
+	if WarMenu.MenuButton('Edit Degradation Zone', 'degradeEditMenu') then
+	end
 	local pressed, input = WarMenu.InputButton('Degradation Strength', 'Degradation Strength (0.0-1.0 - Higher is more)', tostring(degradeStrength), 5, tostring(degradeStrength))
 	if pressed then
 		if pressed then
@@ -1110,7 +1112,25 @@ function degradeMenu()
 	end
 end
 
-local function getClosestPointOnPolygon(polygon, playerCoords)
+local function getClosestPointOnLineSegment(A, B, P, defaultZ)
+    defaultZ = defaultZ or P.z or 0
+    -- Use defaultZ if A.z or B.z are missing
+    local A3 = vector3(A.x, A.y, defaultZ)
+    local B3 = vector3(B.x, B.y, defaultZ)
+
+    local AB = B3 - A3
+    local AP = P - A3
+    local ab2 = (AB.x * AB.x) + (AB.y * AB.y) + (AB.z * AB.z)
+    local ap_ab = (AP.x * AB.x) + (AP.y * AB.y) + (AP.z * AB.z)
+    local t = math.max(0, math.min(1, ap_ab / ab2))
+
+    return A3 + (AB * t)
+end
+
+local function getClosestPointOnPolygon(polygon, P)
+    -- If the polygon has minZ and maxZ, use the midpoint as the default z value.
+    local defaultZ = (polygon.minZ and polygon.maxZ) and ((polygon.minZ + polygon.maxZ) / 2) or P.z or 0
+
     local closestPoint = nil
     local minDistance = math.huge
 
@@ -1118,11 +1138,9 @@ local function getClosestPointOnPolygon(polygon, playerCoords)
         local currentPoint = polygon[i]
         local nextPoint = polygon[i + 1] or polygon[1] -- Loop back to the first point
 
-        -- Find the closest point on this segment
-        local pointOnSegment = getClosestPointOnLineSegment(currentPoint, nextPoint, playerCoords)
-
-        -- Calculate distance
-        local distance = #(playerCoords - pointOnSegment)
+        -- Pass in defaultZ so that A and B get a valid z value
+        local pointOnSegment = getClosestPointOnLineSegment(currentPoint, nextPoint, P, defaultZ)
+        local distance = #(P - pointOnSegment)
 
         if distance < minDistance then
             minDistance = distance
@@ -1133,70 +1151,67 @@ local function getClosestPointOnPolygon(polygon, playerCoords)
     return closestPoint, minDistance
 end
 
-local function getClosestPointOnLineSegment(A, B, P)
-    local AP = P - A
-    local AB = B - A
-    local ab2 = AB.x * AB.x + AB.y * AB.y
-    local ap_ab = AP.x * AB.x + AP.y * AB.y
-    local t = math.max(0, math.min(1, ap_ab / ab2))
-
-    return vector3(A.x + AB.x * t, A.y + AB.y * t, A.z + AB.z * t)
-end
-
 function degradeEditMenu()
     local buttonLabel = zoneVisibility and "Hide Zones" or "Show Zones"
 
     -- Toggle all zones' visibility
     if WarMenu.Button(buttonLabel) then
         zoneVisibility = not zoneVisibility
-        for _, zone in ipairs(polyZonesTable) do
-            if zoneVisibility then
-                zone:toggleDraw(true, {0, 255, 0}) -- Green when visible
-            else
-                zone:toggleDraw(false) -- Hide when disabled
-            end
-        end
     end
 
-    -- Generate zone list for the ComboBox
+	for _, zone in pairs(polyZonesTable) do -- Use `pairs()` instead of `ipairs()`
+		if zoneVisibility then
+			zone:toggleDraw(true, {0, 255, 0}) -- Green when visible
+		else
+			zone:toggleDraw(false) -- Hide when disabled
+		end
+	end
+
+    -- Generate a sorted list of zone names for the ComboBox
     local polyZoneLabels = {}
-    for _, zone in ipairs(polyZonesTable) do
-        table.insert(polyZoneLabels, zone.options.name)
+    local zoneKeys = {}
+
+    for zoneName, _ in pairs(polyZonesTable) do
+        table.insert(polyZoneLabels, zoneName)
+        table.insert(zoneKeys, zoneName) -- Store actual keys separately
     end
 
     -- Handle zone selection from ComboBox
     if WarMenu.ComboBox('Select Zone:', polyZoneLabels, polyzoneState.index, polyzoneState.index, function(current)
-        -- Reset previous zone to green (if zones are visible)
-        if polyzoneState.index and polyZonesTable[polyzoneState.index] and zoneVisibility then
-            polyZonesTable[polyzoneState.index]:toggleDraw(true, {0, 255, 0}) -- Green
+        -- Get the selected zone name
+        local selectedZoneName = zoneKeys[current]
+
+        -- Reset previous zone color to green (if zones are visible)
+        if polyzoneState.index and polyzoneState.zoneId and zoneVisibility then
+            polyZonesTable[polyzoneState.zoneId]:toggleDraw(true, {0, 255, 0}) -- Green
         else
-            polyZonesTable[polyzoneState.index]:toggleDraw(false) -- Hide
+            if polyzoneState.zoneId then
+                polyZonesTable[polyzoneState.zoneId]:toggleDraw(false) -- Hide
+            end
         end
-
-        -- Set new selected zone
+        -- Update selected state
         polyzoneState.index = current
-        polyzoneState.zoneId = polyZones[current]
-    end) then
-        local zone = polyZonesTable[polyzoneState.index]
-        if zone then
-            -- Highlight hovered zone in Red
-            zone:toggleDraw(true, {255, 0, 0})
+        polyzoneState.zoneId = selectedZoneName
 
-            local playerPed = PlayerPedId()
-            local playerCoords = GetEntityCoords(playerPed)
+		local zone = polyZonesTable[polyzoneState.zoneId]
+		if zone then
+			zone:toggleDraw(true, {255, 0, 0}) -- Red
+			local playerPed = PlayerPedId()
+			local playerCoords = GetEntityCoords(playerPed)
 
-            -- Get closest distance
-            local _, distance = getClosestPointOnPolygon(zone.points, playerCoords)
+			-- Get closest distance
+			local _, distance = getClosestPointOnPolygon(zone.points, playerCoords)
 
-            if WarMenu.Button('Distance to ' .. zone.options.name .. ': ' .. distance .. 'm') then
-            end
+			if WarMenu.Button('Distance to ' .. polyzoneState.zoneId .. ': ' .. string.format("%.1f", distance) .. 'm') then
+			end
 
-            -- Delete Zone
-            if WarMenu.Button('Delete Zone') then
+			-- Delete Zone
+			if WarMenu.Button('Delete Zone') then
 				WarMenu.OpenMenu('degradeDeleteMenu')
-            end
-        end
-    end
+			end
+		end
+    end) then
+	end
 end
 
 

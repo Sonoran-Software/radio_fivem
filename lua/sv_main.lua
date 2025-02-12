@@ -630,8 +630,13 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
-RegisterNetEvent('SonoranRadio:PolyZone:UpdateZones', function(zones)
-	tunnels = zones
+RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
+	for i = 1, #tunnels do
+		if tunnels[i].options.name == zoneName then
+			table.remove(tunnels, i)
+			break
+		end
+	end
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
 	f:write(json.encode(tunnels))
 	f:close()
