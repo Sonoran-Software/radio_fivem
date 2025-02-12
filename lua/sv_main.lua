@@ -541,6 +541,9 @@ end)
 exports('performApiRequest', performApiRequest)
 
 RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	DebugPrint('Processing towers to file ' .. json.encode(towers))
+	DebugPrint('Processing racks to file ' .. json.encode(racks))
+	DebugPrint('Processing cell to file ' .. json.encode(cell))
 	local saveData = {};
 	for _, t in ipairs(towers) do
 		if not t.DontSaveMe then
@@ -560,6 +563,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
+	DebugPrint('Saved towers to file ' .. json.encode(saveData))
 	Towers = towers
 	Servers = racks
 	CellRepeaters = cell
@@ -569,6 +573,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
+	DebugPrint('Processing speakers to file ' .. json.encode(speakers))
 	local saveData = {};
 	for _, t in ipairs(speakers) do
 		t.Handle = nil -- Remove the key 'handle'
@@ -578,6 +583,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
+	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
 	Speakers = speakers
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
@@ -624,6 +630,19 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		name = name
 	}
 	table.insert(tunnels, obj)
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
+	f:write(json.encode(tunnels))
+	f:close()
+	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+end)
+
+RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
+	for i = 1, #tunnels do
+		if tunnels[i].options.name == zoneName then
+			table.remove(tunnels, i)
+			break
+		end
+	end
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
 	f:write(json.encode(tunnels))
 	f:close()

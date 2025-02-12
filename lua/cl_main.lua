@@ -10,6 +10,7 @@ local tunnels = {}
 local authorized = false
 local allowedFrames = {}
 local critError = false
+local calledSyncAcePerms = false
 local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 polyZonesTable = {}
 Config = {}
@@ -777,6 +778,21 @@ function initClient()
 			Radio.On = data.power
 		end
 
+		if data.type == 'radioConnected' and data.config.myself and not calledSyncAcePerms then
+			-- we don't want to send all profiles since there could be a lot of data,
+			-- so just extract the data we need
+			local profilesInfo = {}
+			for _, prof in ipairs(data.config.profiles) do
+				if prof.visibility ~= 'public' then
+					table.insert(profilesInfo, { id = prof.id, displayName = prof.displayName, visibility = prof.visibility })
+				end
+			end
+			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.config.myself.accId, profilesInfo, false)
+			calledSyncAcePerms = true
+		elseif data.type == 'radioNeedsAuth' then
+			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.accId, {}, true)
+		end
+
 		if data.type == 'talking' then
 			Radio:Talking(data.talking)
 		end
@@ -797,6 +813,7 @@ function initClient()
 		end
 
 		if data.type == 'refreshScreen' then
+			calledSyncAcePerms = false
 			handleRefreshScreen()
 		end
 
@@ -1000,10 +1017,15 @@ function initClient()
 				type = "get_connected_users",
 			})
 		end
-    end)
-	if Config.luxartResourceName == nil then
-		Config.luxartResourceName = 'lvc'
-	end
+		if Config.luxartResourceName == nil then
+			Config.luxartResourceName = 'lvc'
+		end
+	end)
+
+	RegisterNetEvent('SonoranRadio::RefreshScreen', function()
+		SendNUIMessage({ type = 'refresh' })
+	end)
+
 	local lvcStarted = false
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
