@@ -650,6 +650,14 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
+RegisterNetEvent('SonoranRadio:PolyZone:UpdateZones', function(zones)
+	tunnels = zones
+	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. polyZoneFileName, 'w+'))
+	f:write(json.encode(tunnels))
+	f:close()
+	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+end)
+
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
 	if level == 'debug' then
 		debugLog(message)

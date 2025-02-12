@@ -125,7 +125,7 @@ function PolyZone:TransformPoint(point)
   return point
 end
 
-function PolyZone:draw()
+function PolyZone:draw(show, color)
   local zDrawDist = 45.0
   local oColor = self.debugColors.outline or defaultColorOutline
   local oR, oG, oB = oColor[1], oColor[2], oColor[3]
@@ -597,4 +597,8 @@ end
 
 function PolyZone:getBoundingBoxCenter()
   return self.center
+end
+
+function PolyZone:toggleDraw(state, color)
+  self:draw(state, color)
 end
