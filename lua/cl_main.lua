@@ -10,6 +10,7 @@ local tunnels = {}
 local authorized = false
 local allowedFrames = {}
 local critError = false
+local calledSyncAcePerms = false
 local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
 polyZonesTable = {}
 Config = {}
@@ -101,7 +102,7 @@ function initClient()
 	end)
 
 	Radio = {
-		Has = false,
+		HasItem = false,
 		Open = false,
 		On = false,
 		Enabled = true,
@@ -137,7 +138,6 @@ function initClient()
 	local PlayerData = nil
 	if Config.enforceRadioItem then
 		QBCore = exports['qb-core']:GetCoreObject()
-		PlayerData = {}
 	end
 
 	CreateThread(function()
@@ -242,14 +242,30 @@ function initClient()
 		return ''
 	end
 
-	function hasRadioItem()
+	function playerHasItem(QBCore, itemName)
+		if not LocalPlayer.state.isLoggedIn then
+			return false
+		end
+
+		local hasItem = false
+		if type(QBCore.Functions.GetItemByName) == 'table' then
+			hasItem = not not QBCore.Functions.GetItemByName(itemName)
+		elseif type(QBCore.Functions.HasItem) == 'table' then
+			hasItem = not not QBCore.Functions.HasItem(Config.RadioItem.name)
+		end
+		if not hasItem then
+			return false
+		end
+
+		local PlayerData = QBCore.Functions.GetPlayerData()
+		return not PlayerData.metadata['isdead'] and not PlayerData.metadata['inlaststand']
+	end
+	function playerHasRadioItem(QBCore)
 		local itemName = Config.RadioItem and Config.RadioItem.name
 		if not itemName then
 			itemName = 'sonoran_radio'
 		end
-
-		local QBCore = exports['qb-core']:GetCoreObject()
-		return not not QBCore and QBCore.Functions.HasItem(itemName)
+		return playerHasItem(QBCore, itemName)
 	end
 
 	function radioToggle(frame)
@@ -260,7 +276,7 @@ function initClient()
 
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 
-		local hasItem = not Config.enforceRadioItem or hasRadioItem()
+		local hasItem = not Config.enforceRadioItem or Radio.HasItem
 		if not hasItem then
 			TriggerEvent('chat:addMessage', {
 				color = {
@@ -722,7 +738,6 @@ function initClient()
 		SetNuiFocus(false, false)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		initNui()
-		LocalPlayer.state:set('sonoranradio_state', nil, true)
 
 		DebugPrint('Sonoran Radio Started!')
 	end)
@@ -763,6 +778,21 @@ function initClient()
 			Radio.On = data.power
 		end
 
+		if data.type == 'radioConnected' and data.config.myself and not calledSyncAcePerms then
+			-- we don't want to send all profiles since there could be a lot of data,
+			-- so just extract the data we need
+			local profilesInfo = {}
+			for _, prof in ipairs(data.config.profiles) do
+				if prof.visibility ~= 'public' then
+					table.insert(profilesInfo, { id = prof.id, displayName = prof.displayName, visibility = prof.visibility })
+				end
+			end
+			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.config.myself.accId, profilesInfo, false)
+			calledSyncAcePerms = true
+		elseif data.type == 'radioNeedsAuth' then
+			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.accId, {}, true)
+		end
+
 		if data.type == 'talking' then
 			Radio:Talking(data.talking)
 		end
@@ -783,6 +813,7 @@ function initClient()
 		end
 
 		if data.type == 'refreshScreen' then
+			calledSyncAcePerms = false
 			handleRefreshScreen()
 		end
 
@@ -900,22 +931,17 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or 'default'
 
-		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not hasRadioItem() then
-			if not hasRadioItem() then
-				TriggerEvent('chat:addMessage', {
-					color = {
-						255,
-						0,
-						0
-					},
-					multiline = true,
-					args = {'Sonoran Radio','You must have a radio to change frames.'}
-				})
-				return
-			else
-				-- update the item metadata
-				TriggerServerEvent('SonoranRadio::AdminSkinChange_s', frame)
-			end
+		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
+			TriggerEvent('chat:addMessage', {
+				color = {
+					255,
+					0,
+					0
+				},
+				multiline = true,
+				args = {'Sonoran Radio','You must have a radio to change frames.'}
+			})
+			return
 		end
 
 		SendNUIMessage({
@@ -991,10 +1017,15 @@ function initClient()
 				type = "get_connected_users",
 			})
 		end
-    end)
-	if Config.luxartResourceName == nil then
-		Config.luxartResourceName = 'lvc'
-	end
+		if Config.luxartResourceName == nil then
+			Config.luxartResourceName = 'lvc'
+		end
+	end)
+
+	RegisterNetEvent('SonoranRadio::RefreshScreen', function()
+		SendNUIMessage({ type = 'refresh' })
+	end)
+
 	local lvcStarted = false
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then

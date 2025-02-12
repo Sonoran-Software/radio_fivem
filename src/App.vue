@@ -48,7 +48,7 @@
                 <skin-body-img v-if="frame.body" :body-skin="frame.body" />
 
                 <skin-body-component v-if="frame.screen" :bounds="frame.screen"
-                    @click="(nudgePath = [frame.type, 'screen'])">
+                    @click.middle="(nudgePath = [frame.type, 'screen'])">
                     <primary-screen :on="radioPower">
                         <standalone-frame
                             v-if="radioPower && standaloneServerId && !dragMode"
@@ -67,7 +67,7 @@
 
                 <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
                     <button class="radio-control" v-on="ctrl.events"
-                        @click.right="nudgePath = [frame.type, 'controls', i]"></button>
+                        @click.middle="nudgePath = [frame.type, 'controls', i]"></button>
                     <code v-if="debug || help" class="label-on-top"
                         :class="{ 'hack': ctrl.action === 'next_preset' }">{{ ctrl.action }}</code>
                 </skin-body-component>
@@ -105,6 +105,7 @@ export default {
             showTopRadio: false,
             radioPower: false,
             escapeMode: localStorage.getItem("escape_mode") || "keep",
+            nextPrevMode: 'preset',
             inVehicle: false,
             towerQuality: 1.0,
 
@@ -192,6 +193,9 @@ export default {
 
             const ACTIONS = {
                 'power': this.buttonPower,
+                'next': this.buttonNext,
+                'prev': this.buttonPrev,
+                // below two are only included for legacy support
                 'next_preset': this.buttonNext,
                 'prev_preset': this.buttonPrev,
                 'panic': this.buttonPanic,
@@ -203,7 +207,8 @@ export default {
                 controls: frame.controls.map((ctrl) => ({
                     ...ctrl,
                     events: {
-                        click: (e) => e.button === 0 && ACTIONS[ctrl.action](e)
+                        click: (e) => e.button === 0 && ACTIONS[ctrl.action](e), // lmb
+                        contextmenu: (e) => e.button === 2 && ACTIONS[ctrl.action](e), // rmb
                     }
                 })),
             }));
@@ -448,6 +453,9 @@ export default {
                 case "radio_disconnected":
                     this.$store.commit('setConnected', false);
                     break;
+                case "pending_approval":
+                    this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
+                    break;
                 case "display_error":
                     this.notifyPlayer(`~r~Radio Error: ~s~${event.error}`);
                     break;
@@ -657,31 +665,31 @@ export default {
             });
         },
         nextPreset() {
-            this.postRadioFrame({
-                type: 'group_preset_next',
-            })
+            this.postRadioFrame({type: 'group_preset_next'});
         },
         prevPreset() {
-            this.postRadioFrame({
-                type: 'group_preset_prev',
-            })
+            this.postRadioFrame({type: 'group_preset_prev'});
         },
         nextGroup() {
-            this.postRadioFrame({
-                type: 'group_next',
-            })
+            this.postRadioFrame({type: 'group_next'});
         },
         prevGroup() {
-            this.postRadioFrame({
-                type: 'group_prev',
-            })
+            this.postRadioFrame({type: 'group_prev'});
         },
         updateAvailableSkins() {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         refreshScreen() {
-            for (const standaloneFrame of this.$refs.standaloneFrame) {
-                standaloneFrame.flush(true);
+            // Get all <standalone-frame> references (emergency call frame, chatter frame, radio viewer frame)
+            const standaloneFrames = this.$refs.standaloneFrame;
+            if (Array.isArray(standaloneFrames)) {
+                // Multiple frames: Iterate through each
+                standaloneFrames.forEach(frame => frame.flush(true));
+            } else if (standaloneFrames) {
+                // Single frame: Directly call flush
+                standaloneFrames.flush(true);
+            } else {
+                console.warn('No standaloneFrame references found.');
             }
             this.postClient({ type: "refreshScreen" });
         },
@@ -694,17 +702,38 @@ export default {
                 this.notifyPlayer('Radio: ~r~Stopped Panicking');
             this.postRadioFrame({ type: 'set_panicking', panicking: !this.isPanicking });
         },
-        buttonPrev() {
-            if (!this.$store.state.connected)
-                return void this.notifyPlayer("Radio: ~r~Not Connected")
-            this.notifyPlayer("Radio: ~y~Prev Preset");
-            this.prevPreset();
+        changeNextPrevMode() {
+            this.nextPrevMode = this.nextPrevMode === 'preset' ? 'group' : 'preset';
+            if (this.nextPrevMode === 'preset')
+                this.notifyPlayer(`Radio: ~y~Now selecting channels`);
+            else
+                this.notifyPlayer(`Radio: ~y~Now selecting groups`);
         },
-        buttonNext() {
+        buttonPrev(e) {
             if (!this.$store.state.connected)
-                return void this.notifyPlayer("Radio: ~r~Not Connected")
-            this.notifyPlayer("Radio: ~y~Next Preset");
-            this.nextPreset();
+                this.notifyPlayer("Radio: ~r~Not Connected")
+            else if (e.button === 2) {
+                this.changeNextPrevMode();
+            } else if (this.nextPrevMode === 'preset') {
+                this.notifyPlayer("Radio: ~y~Previous channel");
+                this.prevPreset();
+            } else {
+                this.notifyPlayer("Radio: ~y~Previous group");
+                this.prevGroup();
+            }
+        },
+        buttonNext(e) {
+            if (!this.$store.state.connected)
+                this.notifyPlayer("Radio: ~r~Not Connected")
+            else if (e.button === 2) {
+                this.changeNextPrevMode();
+            } else if (this.nextPrevMode === 'preset') {
+                this.notifyPlayer("Radio: ~y~Next channel");
+                this.nextPreset();
+            } else {
+                this.notifyPlayer("Radio: ~y~Next group");
+                this.nextGroup();
+            }
         },
         buttonPower() {
             this.radioPower = !this.radioPower;
@@ -716,7 +745,7 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On~g~" : "~r~Off~r~"));
+            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On" : "~r~Off"));
         },
         setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
@@ -745,6 +774,10 @@ export default {
             this.updateGamestate();
             this.updateAvailableSkins();
             this.updateEscapeMode();
+            this.postClient({
+                type: 'radioConnected',
+                config: this.$store.state.radioConfig
+            });
         }
     }
 };
