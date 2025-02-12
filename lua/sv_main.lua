@@ -560,6 +560,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. jsonFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
+	DebugPrint('Saved towers to file ' .. json.encode(saveData))
 	Towers = towers
 	Servers = racks
 	CellRepeaters = cell
@@ -578,6 +579,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	local f = assert(io.open(GetResourcePath('sonoranradio') .. '/' .. speakersFileName, 'w+'))
 	f:write(json.encode(saveData))
 	f:close()
+	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
 	Speakers = speakers
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
