@@ -12,7 +12,7 @@ Config.chatter = true -- Hear chatter from other players if their radio is on
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
-Config.acePermSync = false -- Sync radio permissions aces with the server when connecting to the radio
+Config.acePermSync = false -- Sync radio community auto-approval and permissions with ace permissions
 Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
@@ -32,13 +32,13 @@ Config.ScannerItem = {
 	weight = 1, -- Weight of the item in your inventory
 	description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 }
-Config.disableRadioOnDeath = true
+Config.disableRadioOnDeath = true -- Disables radio PTT when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
-Config.noPhysicalCellRepeaters = false -- Set to true to disable physical cell repeaters
-Config.noPhysicalRacks = false -- Set to true to disable physical server racks
-Config.noPhysicalTowers = false -- Set to true to disable physical towers
+Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
+Config.noPhysicalRacks = false -- Set to true to hide physical server racks
+Config.noPhysicalTowers = false -- Set to true to hide physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
 Config.emergencyCallCommand = '911' -- Command suffix to start or stop an emergency call (i.e. '911' == /radio 911)
 Config.luxartResourceName = 'lvc' -- Resource name for Luxart Vehicle Control (Required for siren control)
@@ -105,33 +105,6 @@ Config.frames = {
 			}
 		}
 	}
-}
-
--- Radio Chatter Exclusion Settings --
-Config.chatterExclusions = {
-	-- See for prop component ids: https://docs.fivem.net/natives/?_0x829F2E2
-	{
-		componentId = 2, -- Ears
-		drawableId = 1, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
-	},
-	{
-		componentId = 2, -- Ears
-		drawableId = 2, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
-	},
-	-- all componentIds >= 14 are drawables
-	-- See for drawable component ids (and add 14): https://docs.fivem.net/natives/?_0x262B14F48D29DE80
-	{
-		componentId = 24, -- Decl (Outer Shirts)
-		drawableId = 2, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
-	},
-	{
-		componentId = 18, -- Lowr (Pants)
-		drawableId = 42, -- Number in vMenu MP Ped Component list
-		texture = 0 -- Texture ID in vMenu MP Ped Component list
-	},
 }
 
 -- Enable mobile repeaters
