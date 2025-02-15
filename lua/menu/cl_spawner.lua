@@ -21,7 +21,7 @@ local toneboardState = {
 local selectedConfig = {
     componentId = nil,
     drawableId = nil,
-    textures = {}
+    texture = {}
 }
 
 local currentTexture = nil
@@ -253,7 +253,7 @@ Citizen.CreateThread(function()
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
-						textures = {}
+						texture = {}
 					}
 					WarMenu.OpenMenu('chatterMenu')
 				end
@@ -324,7 +324,7 @@ Citizen.CreateThread(function()
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
-						textures = {}
+						texture = {}
 					}
 					WarMenu.OpenMenu('chatterMenu')
 				end
