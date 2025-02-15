@@ -21,7 +21,7 @@ local toneboardState = {
 local selectedConfig = {
     componentId = nil,
     drawableId = nil,
-    textures = {}
+    texture = {}
 }
 
 local currentTexture = nil
@@ -191,18 +191,18 @@ Citizen.CreateThread(function()
 				if WarMenu.Button("Select Drawable", string.format("Drawable ID: %d", currentDrawable)) then
 					selectedConfig.componentId = drawable
 					selectedConfig.drawableId = currentDrawable
-					selectedConfig.textures = {}
+					selectedConfig.texture = {}
 				end
 
 				for i = 0, maxTextures - 1 do
-					local isSelected = selectedConfig.textures[i + 1] ~= nil -- Check if texture is selected
+					local isSelected = selectedConfig.texture[i + 1] ~= nil -- Check if texture is selected
 
 					-- Use CheckBox and hover detection
 					if WarMenu.CheckBox(string.format("Texture #%d", i + 1), isSelected, function(checked)
 						if checked then
-							selectedConfig.textures[i + 1] = i
+							selectedConfig.texture[i + 1] = i
 						else
-							selectedConfig.textures[i + 1] = nil
+							selectedConfig.texture[i + 1] = nil
 						end
 					end) then
 						-- This triggers when CheckBox is interacted with
@@ -230,8 +230,8 @@ Citizen.CreateThread(function()
 					}
 
 					-- Collect selected textures
-					for _, texture in pairs(selectedConfig.textures) do
-						table.insert(finalConfig.textures, texture)
+					for _, texture in pairs(selectedConfig.texture) do
+						table.insert(finalConfig.texture, texture)
 					end
 
 					table.insert(chatterConfig, finalConfig)
@@ -253,7 +253,7 @@ Citizen.CreateThread(function()
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
-						textures = {}
+						texture = {}
 					}
 					WarMenu.OpenMenu('chatterMenu')
 				end
@@ -272,11 +272,11 @@ Citizen.CreateThread(function()
 				if WarMenu.Button("Select Prop", string.format("Prop ID: %d", currentProp)) then
 					selectedConfig.componentId = realProp
 					selectedConfig.drawableId = currentProp
-					selectedConfig.textures = {}
+					selectedConfig.texture = {}
 				end
 
 				for i = 0, maxTextures - 1 do
-					local isSelected = selectedConfig.textures[i + 1] ~= nil -- Check if texture is selected
+					local isSelected = selectedConfig.texture[i + 1] ~= nil -- Check if texture is selected
 					local hoverState = WarMenu.IsItemHovered() -- Check if this item is being hovered over
 					-- Highlight the component if hovering
 					if hoverState then
@@ -289,10 +289,10 @@ Citizen.CreateThread(function()
 					WarMenu.CheckBox(string.format("Texture #%d", i + 1), isSelected, function(checked)
 						if checked then
 							-- Add texture to the selectedConfig
-							selectedConfig.textures[i + 1] = i
+							selectedConfig.texture[i + 1] = i
 						else
 							-- Remove texture from the selectedConfig
-							selectedConfig.textures[i + 1] = nil
+							selectedConfig.texture[i + 1] = nil
 						end
 					end)
 				end
@@ -303,8 +303,8 @@ Citizen.CreateThread(function()
 						textures = {}
 					}
 
-					for _, texture in pairs(selectedConfig.textures) do
-						table.insert(finalConfig.textures, texture)
+					for _, texture in pairs(selectedConfig.texture) do
+						table.insert(finalConfig.texture, texture)
 					end
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
@@ -324,7 +324,7 @@ Citizen.CreateThread(function()
 					selectedConfig = {
 						componentId = nil,
 						drawableId = nil,
-						textures = {}
+						texture = {}
 					}
 					WarMenu.OpenMenu('chatterMenu')
 				end

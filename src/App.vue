@@ -712,7 +712,7 @@ export default {
         buttonPrev(e) {
             if (!this.$store.state.connected)
                 this.notifyPlayer("Radio: ~r~Not Connected")
-            else if (e.button === 2) {
+            else if (e?.button === 2) {
                 this.changeNextPrevMode();
             } else if (this.nextPrevMode === 'preset') {
                 this.notifyPlayer("Radio: ~y~Previous channel");
@@ -725,7 +725,7 @@ export default {
         buttonNext(e) {
             if (!this.$store.state.connected)
                 this.notifyPlayer("Radio: ~r~Not Connected")
-            else if (e.button === 2) {
+            else if (e?.button === 2) {
                 this.changeNextPrevMode();
             } else if (this.nextPrevMode === 'preset') {
                 this.notifyPlayer("Radio: ~y~Next channel");

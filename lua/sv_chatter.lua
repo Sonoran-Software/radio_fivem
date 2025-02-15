@@ -1,12 +1,31 @@
 if Config.chatter == false then return end -- if chatter is disabled, skip this script
 
 local radioStates = {}
-local function pushRadioStates(s)
+local lastRadioStatesPush = 0
+
+local function pushRadioStatesNow()
 	local states = {}
 	for ply, info in pairs(radioStates) do
 		states[ply] = info.state
 	end
-	TriggerClientEvent('SonoranRadio::ReceiveRadioStates', s or -1, states)
+
+	TriggerClientEvent('SonoranRadio::ReceiveRadioStates', -1, states)
+	lastRadioPush = GetGameTimer()
+end
+local function pushRadioStates()
+	local toWait = 2500 - (GetGameTimer() - lastRadioStatesPush)
+	if toWait <= 0 then
+		-- push radio states immediately
+		pushRadioStatesNow()
+		return
+	end
+
+	local last = lastRadioStatesPush
+	Citizen.CreateThread(function()
+		Citizen.Wait(toWait)
+		-- if lastRadioStatesPush was updated, another thread already pushed the states
+		if last == lastRadioStatesPush then pushRadioStatesNow() end
+	end)
 end
 
 RegisterNetEvent('SonoranRadio::SetRadioState', function(state)
