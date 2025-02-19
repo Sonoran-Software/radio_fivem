@@ -380,6 +380,12 @@ function initClient()
 			SendNUIMessage({ type = 'reset' })
 		elseif action == 'scanner' and not Config.enforceRadioItem then
 			openLocalScanner()
+		elseif action == 'displayname' then
+			local name = table.concat(args, ' ', 2)
+			SendNUIMessage({
+				type = 'set_display_name',
+				name = name
+			})
 		else
 			radioToggle()
 		end
@@ -393,7 +399,8 @@ function initClient()
 		'scan',
 		'hide',
 		'refresh',
-		'reset'
+		'reset',
+		'displayname'
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
@@ -1098,3 +1105,12 @@ function initClient()
 		end
 	end)
 end
+
+function handleNameChange(name)
+	SendNUIMessage({
+		type = 'set_display_name',
+		name = name
+	})
+end
+
+exports('handleNameChange', handleNameChange)

@@ -717,3 +717,11 @@ end
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
+
+function serverNameChange(data)
+	performApiRequest(data, 'SET-USER-DISPLAY-NAME', function(data, success)
+		if not success then
+			errorLog('Failed to set server name for radio service. Please check your configuration.')
+		end
+	end)
+end
