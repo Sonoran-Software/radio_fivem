@@ -725,3 +725,4 @@ function serverNameChange(data)
 		end
 	end)
 end
+exports('serverNameChange', serverNameChange)
