@@ -560,7 +560,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 			table.insert(saveData, t)
 		end
 	end
-	SaveResourceFile(resourceName, jsonFileName, json.encode(saveData, { indent = true }), -1)
+	SaveResourceFile(GetCurrentResourceName(), jsonFileName, json.encode(saveData, { indent = true }), -1)
 	DebugPrint('Saved towers to file ' .. json.encode(saveData))
 	Towers = towers
 	Servers = racks
@@ -578,7 +578,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 		t.Spawned = nil -- Remove the key 'spawned'
 		table.insert(saveData, t)
 	end
-	SaveResourceFile(resourceName, speakersFileName, json.encode(saveData, { indent = true }), -1)
+	SaveResourceFile(GetCurrentResourceName(), speakersFileName, json.encode(saveData, { indent = true }), -1)
 	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
 	Speakers = speakers
 	local locations = {}
@@ -626,7 +626,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		name = name
 	}
 	table.insert(tunnels, obj)
-	SaveResourceFile(resourceName, polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
@@ -637,7 +637,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 			break
 		end
 	end
-	SaveResourceFile(resourceName, polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
