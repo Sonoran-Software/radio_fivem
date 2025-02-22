@@ -909,6 +909,10 @@ function initClient()
 		end
 	end)
 
+	exports('isRadioActive', function()
+		return Radio.Enabled
+	end)
+
 	local QBDeath = false
 
 	RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
