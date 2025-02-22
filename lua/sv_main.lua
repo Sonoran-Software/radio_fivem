@@ -15,11 +15,13 @@ chatterFileName = 'earpieces.json'
 chatterConfig = {}
 local clientConfig = {}
 
-if Config == nil then
+if type(Config) ~= 'table' then
 	critError = true
-	print('!!! CRITICAL ERROR !!!')
-	print('Config file not found, did you forget to rename it?')
-	print('!!! CRITICAL ERROR !!!')
+	print('^1!!! CRITICAL ERROR !!!^7')
+	print('Sonoran Radio configuration not found! Possible reasons:')
+	print('1. You have not renamed config.CHANGEME.lua to config.lua')
+	print('2. You have made a syntax error in your config.lua file')
+	print('^1!!! CRITICAL ERROR !!!^7')
 else
 	for k, v in pairs(Config) do
 		if k ~= "apiKey" then
@@ -292,7 +294,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
-	if not Config.apiKey or not Config.comId then
+	if critError or not Config or not Config.apiKey or not Config.comId then
 		errorLog('API Key or Community ID not set. Please check your configuration.')
 		critError = true
 		return
@@ -660,13 +662,12 @@ local function sendConsole(level, color, message)
 	if Config ~= nil then
 		debugging = (Config.debug == true and Config.debug ~= 'false')
 	end
-	local time = os and os.date('%X') or LocalTime()
 	local info = debug.getinfo(3, 'S')
 	local source = '.'
 	if info.source:find('@@sonoranradio') then
 		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
 	end
-	local msg = ('[%s][%s:%s%s^7]%s %s^0'):format(time, debugging and source or 'SonoranRadio', color, level, color, message)
+	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, message)
 	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
 		print(msg)
 	end
