@@ -89,28 +89,51 @@ Citizen.CreateThread(function()
 
 	local QBCore
 	if Config.enforceRadioItem then
-		repeat
-			Citizen.Wait(1000)
-			QBCore = exports['qb-core']:GetCoreObject({'Functions'})
-		until QBCore ~= nil
+		if frameworkEnum == 1 then
+			repeat
+				Citizen.Wait(1000)
+				QBCore = exports['qb-core']:GetCoreObject({'Functions'})
+			until QBCore ~= nil
+		end
 	end
 
 	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 	while Config.enforceRadioItem do
-		local QBPlayers = QBCore.Functions.GetQBPlayers()
-		for _, Player in ipairs(QBPlayers) do
-			local updatedItems = false
-			for _, item in ipairs(Player.PlayerData.items or {}) do
-				if item.name == scannerItemName and item.info.scannerId == nil then
-					updatedItems = true
-					item.info.scannerId = genId()
-				end
-			end
+        local QBPlayers = {}
 
-			if updatedItems then
-				Player.Functions.SetPlayerData('items', Player.PlayerData.items)
-			end
-		end
+        -- Retrieve players based on the active framework
+        if frameworkEnum == 1 then
+            QBPlayers = QBCore.Functions.GetQBPlayers()
+        elseif frameworkEnum == 2 then
+            QBPlayers = exports.qbx_core:GetQBPlayers() or {}
+        end
+
+        for _, Player in ipairs(QBPlayers) do
+            local updatedItems = false
+            local items = Player.PlayerData.items or {}
+
+            for _, item in ipairs(items) do
+                if item.name == scannerItemName then
+                    -- Ensure item.info exists before checking/updating scannerId
+                    if not item.info then
+                        item.info = {}
+                    end
+                    if item.info.scannerId == nil then
+                        updatedItems = true
+                        item.info.scannerId = genId()
+                    end
+                end
+            end
+
+            if updatedItems then
+                -- Update player items based on the active framework
+                if frameworkEnum == 1 then
+                    Player.Functions.SetPlayerData('items', items)
+                elseif frameworkEnum == 2 then
+                    Player.Functions.SetPlayerData('items', items)
+                end
+            end
+        end
 
 		Citizen.Wait(1000)
 	end

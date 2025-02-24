@@ -52,74 +52,136 @@ else
 	end
 
 	if Config.enforceRadioItem then
-		QBCore = exports['qb-core']:GetCoreObject()
+		if frameworkEnum == 1 then
+			QBCore = exports['qb-core']:GetCoreObject()
 
-		if Config.RadioItem == nil then
-			errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
-			Config.RadioItem = {
-				name = 'sonoran_radio',
-				label = 'Sonoran Radio',
-				weight = 1,
-				description = 'Communicate with others through the Sonoran Radio',
-			}
-		end
-		exports['qb-core']:AddItem(Config.RadioItem.name, {
-			name = Config.RadioItem.name,
-			label = Config.RadioItem.label,
-			weight = Config.RadioItem.weight,
-			type = 'item',
-			image = 'radio.png',
-			unique = true,
-			useable = true,
-			shouldClose = true,
-			combinable = false,
-			description = Config.RadioItem.description,
-		})
-		QBCore.Functions.CreateUseableItem(Config.RadioItem.name, function(source, item)
-			local src = source
-			local Player = QBCore.Functions.GetPlayer(src)
-			local radio = nil
-			if type(Player.Functions.GetItemByName) == 'table' then
-				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
-			elseif type(Player.Functions.HasItem) == 'table' then
-				radio = Player.Functions.HasItem(Config.RadioItem.name)
+			if Config.RadioItem == nil then
+				errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.RadioItem = {
+					name = 'sonoran_radio',
+					label = 'Sonoran Radio',
+					weight = 1,
+					description = 'Communicate with others through the Sonoran Radio',
+				}
 			end
-			if not radio then
-				return
-			end
-			if not radio.info.frame then
-				TriggerClientEvent('qb-sonrad:use', source, 'default')
-			else
-				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
-			end
-		end)
+			exports['qb-core']:AddItem(Config.RadioItem.name, {
+				name = Config.RadioItem.name,
+				label = Config.RadioItem.label,
+				weight = Config.RadioItem.weight,
+				type = 'item',
+				image = 'radio.png',
+				unique = true,
+				useable = true,
+				shouldClose = true,
+				combinable = false,
+				description = Config.RadioItem.description,
+			})
+			QBCore.Functions.CreateUseableItem(Config.RadioItem.name, function(source, item)
+				local src = source
+				local Player = QBCore.Functions.GetPlayer(src)
+				local radio = nil
+				if type(Player.Functions.GetItemByName) == 'table' then
+					radio = Player.Functions.GetItemByName(Config.RadioItem.name)
+				elseif type(Player.Functions.HasItem) == 'table' then
+					radio = Player.Functions.HasItem(Config.RadioItem.name)
+				end
+				if not radio then
+					return
+				end
+				if not radio.info.frame then
+					TriggerClientEvent('qb-sonrad:use', source, 'default')
+				else
+					TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
+				end
+			end)
 
-		if Config.ScannerItem == nil then
-			errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
-			Config.ScannerItem = {
-				name = 'sonoran_radio_scanner', -- Item ID
-				label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
-				weight = 1, -- Weight of the item in your inventory
-				description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
-			}
+			if Config.ScannerItem == nil then
+				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.ScannerItem = {
+					name = 'sonoran_radio_scanner', -- Item ID
+					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+					weight = 1, -- Weight of the item in your inventory
+					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+				}
+			end
+			exports['qb-core']:AddItem(Config.ScannerItem.name, {
+				name = Config.ScannerItem.name,
+				label = Config.ScannerItem.label,
+				weight = Config.ScannerItem.weight,
+				type = 'item',
+				image = 'radio.png',
+				unique = true,
+				useable = true,
+				shouldClose = true,
+				combinable = false,
+				description = Config.ScannerItem.description,
+			})
+			QBCore.Functions.CreateUseableItem(Config.ScannerItem.name, function(source, item)
+				local src = source
+				local Player = QBCore.Functions.GetPlayer(src)
+				TriggerClientEvent('qb-sonrad:use-scanner', source)
+			end)
+		elseif frameworkEnum == 2 then
+			if Config.RadioItem == nil then
+				errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.RadioItem = {
+					name = 'sonoran_radio',
+					label = 'Sonoran Radio',
+					weight = 1,
+					description = 'Communicate with others through the Sonoran Radio',
+				}
+			end
+			exports['qb-core']:AddItem(Config.RadioItem.name, {
+				name = Config.RadioItem.name,
+				label = Config.RadioItem.label,
+				weight = Config.RadioItem.weight,
+				type = 'item',
+				image = 'radio.png',
+				unique = true,
+				useable = true,
+				shouldClose = true,
+				combinable = false,
+				description = Config.RadioItem.description,
+			})
+			exports.qbx_core:CreateUseableItem(Config.RadioItem.name, function(source, item)
+				local src = source
+				local radio = exports.ox_inventory:GetItem(src, itemName)
+				if not radio then
+					return
+				end
+				if not radio.info.frame then
+					TriggerClientEvent('qb-sonrad:use', source, 'default')
+				else
+					TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
+				end
+			end)
+
+			if Config.ScannerItem == nil then
+				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.ScannerItem = {
+					name = 'sonoran_radio_scanner', -- Item ID
+					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+					weight = 1, -- Weight of the item in your inventory
+					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+				}
+			end
+			exports['qb-core']:AddItem(Config.ScannerItem.name, {
+				name = Config.ScannerItem.name,
+				label = Config.ScannerItem.label,
+				weight = Config.ScannerItem.weight,
+				type = 'item',
+				image = 'radio.png',
+				unique = true,
+				useable = true,
+				shouldClose = true,
+				combinable = false,
+				description = Config.ScannerItem.description,
+			})
+			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
+				local src = source
+				TriggerClientEvent('qb-sonrad:use-scanner', source)
+			end)
 		end
-		exports['qb-core']:AddItem(Config.ScannerItem.name, {
-			name = Config.ScannerItem.name,
-			label = Config.ScannerItem.label,
-			weight = Config.ScannerItem.weight,
-			type = 'item',
-			image = 'radio.png',
-			unique = true,
-			useable = true,
-			shouldClose = true,
-			combinable = false,
-			description = Config.ScannerItem.description,
-		})
-		QBCore.Functions.CreateUseableItem(Config.ScannerItem.name, function(source, item)
-			local src = source
-			local Player = QBCore.Functions.GetPlayer(src)
-			TriggerClientEvent('qb-sonrad:use-scanner', source)
-		end)
 	end
 end
 
@@ -240,20 +302,51 @@ end)
 
 RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 	if Config.enforceRadioItem then
-		local QBCore = exports['qb-core']:GetCoreObject()
-		local Player = QBCore.Functions.GetPlayer(source)
-		local radio = nil
-		if type(Player.Functions.GetItemByName) == 'function' then
-			radio = Player.Functions.GetItemByName(Config.RadioItem.name)
-		elseif type(Player.Functions.HasItem) == 'function' then
-			radio = Player.Functions.HasItem(Config.RadioItem.name)
+		local Player = nil
+		if frameworkEnum == 1 then
+			local QBCore = exports['qb-core']:GetCoreObject()
+			Player = QBCore.Functions.GetPlayer(source)
+		elseif frameworkEnum == 2 then
+			Player = exports.qbx_core:GetPlayer(source)
 		end
-		if radio ~= nil then
-			local radioSlot = radio.slot
-			Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
-			Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
-				frame = newFrame
-			})
+
+		if not Player then
+			return
+		end
+
+		local radio = nil
+		local radioSlot = nil
+
+		if inventoryEnum == 1 then
+			if type(Player.Functions.GetItemByName) == 'function' then
+				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
+			elseif type(Player.Functions.HasItem) == 'function' then
+				radio = Player.Functions.HasItem(Config.RadioItem.name)
+			end
+
+			if radio then
+				radioSlot = radio.slot
+				Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
+				Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
+					frame = newFrame
+				})
+			end
+		elseif inventoryEnum == 2 then
+			local inv = exports.ox_inventory:GetInventory(source) or {}
+			for _, item in ipairs(inv) do
+				if item.name == Config.RadioItem.name then
+					radio = item
+					radioSlot = item.slot
+					break
+				end
+			end
+
+			if radio then
+				exports.ox_inventory:RemoveItem(source, Config.RadioItem.name, 1, radioSlot)
+				exports.ox_inventory:AddItem(source, Config.RadioItem.name, 1, radioSlot, {
+					frame = newFrame
+				})
+			end
 		end
 	end
 end)

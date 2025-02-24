@@ -163,81 +163,81 @@ function initScanners()
 			openScanner(inventoryScannerId)
 		end
 	end
-
-	-- qb-inventory INTEGRATION
 	local scannerDrops = {}
-	if Config.enforceRadioItem then
-		RegisterNetEvent('qb-sonrad:use-scanner', function()
-			openLocalScanner()
-		end)
+	if frameworkEnum == 1 and inventoryEnum == 1 then
+		-- qb-inventory INTEGRATION
+		if Config.enforceRadioItem then
+			RegisterNetEvent('qb-sonrad:use-scanner', function()
+				openLocalScanner()
+			end)
 
-		Citizen.CreateThread(function()
-			local QBCore = exports['qb-core']:GetCoreObject()
-			while Config.enforceRadioItem do
-				if GetResourceState('qb-inventory') == 'started' then
-					local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+			Citizen.CreateThread(function()
+				local QBCore = exports['qb-core']:GetCoreObject()
+				while Config.enforceRadioItem do
+					if GetResourceState('qb-inventory') == 'started' then
+						local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 
-					-- find all qb-inventory drops containing scanner items
-					QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
-						scannerDrops = {}
-						for dropId, drop in pairs(drops) do
-							for _, item in ipairs(drop.items) do
-								if item.name == scannerItemName then
-									local scannerId = item.info.scannerId or dropId
-									scannerDrops[scannerId] = drop
-									break
+						-- find all qb-inventory drops containing scanner items
+						QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
+							scannerDrops = {}
+							for dropId, drop in pairs(drops) do
+								for _, item in ipairs(drop.items) do
+									if item.name == scannerItemName then
+										local scannerId = item.info.scannerId or dropId
+										scannerDrops[scannerId] = drop
+										break
+									end
 								end
 							end
+						end)
+
+						-- find the scanner in the player's inventory
+						inventoryScannerId = nil
+						local playerData = QBCore.Functions.GetPlayerData()
+						for _, item in ipairs(playerData.items or {}) do
+							if item.name == scannerItemName then
+								inventoryScannerId = item.info.scannerId or 0
+								break
+							end
 						end
-					end)
-
-					-- find the scanner in the player's inventory
-					inventoryScannerId = nil
-					local playerData = QBCore.Functions.GetPlayerData()
-					for _, item in ipairs(playerData.items or {}) do
-						if item.name == scannerItemName then
-							inventoryScannerId = item.info.scannerId or 0
-							break
-						end
-					end
-				end
-
-				-- query every 1s
-				Citizen.Wait(1000)
-			end
-		end)
-
-		Citizen.CreateThread(function()
-			AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
-
-			while true do
-				local myPos = GetEntityCoords(PlayerPedId())
-				local nearDropId = nil
-				local nearDropDist = 5.0
-				for dropId, drop in pairs(scannerDrops) do
-					local coords = vec3(drop.coords.x, drop.coords.y, drop.coords.z)
-					local dist = #(coords - myPos)
-					if dist < nearDropDist then
-						nearDropId = dropId
-						nearDropDist = dist
-					end
-				end
-
-				if allowed and nearDropId and not WarMenu.IsAnyMenuOpened() then
-					BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
-					EndTextCommandDisplayHelp(0, false, true, 100)
-
-					if IsControlJustReleased(0, 38) then
-						openScanner(nearDropId, myPos)
 					end
 
-					Citizen.Wait(0)
-				else
-					Citizen.Wait(500)
+					-- query every 1s
+					Citizen.Wait(1000)
 				end
-			end
-		end)
+			end)
+		end
 	end
+	Citizen.CreateThread(function()
+		AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
+
+		while true do
+			local myPos = GetEntityCoords(PlayerPedId())
+			local nearDropId = nil
+			local nearDropDist = 5.0
+			for dropId, drop in pairs(scannerDrops) do
+				local coords = vec3(drop.coords.x, drop.coords.y, drop.coords.z)
+				local dist = #(coords - myPos)
+				if dist < nearDropDist then
+					nearDropId = dropId
+					nearDropDist = dist
+				end
+			end
+
+			if allowed and nearDropId and not WarMenu.IsAnyMenuOpened() then
+				BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
+				EndTextCommandDisplayHelp(0, false, true, 100)
+
+				if IsControlJustReleased(0, 38) then
+					openScanner(nearDropId, myPos)
+				end
+
+				Citizen.Wait(0)
+			else
+				Citizen.Wait(500)
+			end
+		end
+	end)
 
 	-- SCANNER CHATTER API
 	function getScannerChatterSources()

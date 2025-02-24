@@ -54,3 +54,26 @@ function notifyClient(notification, urgent)
         })
 	end
 end
+
+frameworkEnum = 0;
+inventoryEnum = 0;
+-- Enums | 0 = None, 1 = QBCore, 2 = Ox_Inventory
+function getInventory()
+	if GetResourceState('qb-inventory') == 'started' then
+		inventoryEnum = 1
+	elseif GetResourceState('ox_inventory') == 'started' then
+		inventoryEnum = 2
+	else
+		inventoryEnum = 0
+	end
+end
+
+function getFramework()
+	if GetResourceState('qb-core') == 'started' then
+		frameworkEnum = 1
+	elseif GetResourceState('qbx_core') == 'started' then
+		frameworkEnum = 2
+	else
+		frameworkEnum = 0
+	end
+end
