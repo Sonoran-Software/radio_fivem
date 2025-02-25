@@ -881,6 +881,8 @@ function initClient()
 		if GetCurrentResourceName() ~= resource then
 			return
 		end
+		getInventory()
+		getFramework()
 		DebugPrint('Sonoran Radio Starting...')
 		TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 		TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')

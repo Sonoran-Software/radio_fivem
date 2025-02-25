@@ -387,6 +387,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
+	getInventory()
+	getFramework()
 	if critError or not Config or not Config.apiKey or not Config.comId then
 		errorLog('API Key or Community ID not set. Please check your configuration.')
 		critError = true
