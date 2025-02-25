@@ -66,7 +66,7 @@ function getInventory()
 			inventoryEnum = 2
 		else
 			inventoryEnum = 0
-			warnLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed.')
+			errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. https://sonoran.link/radiocodes')
 		end
 	end
 end
@@ -79,7 +79,7 @@ function getFramework()
 			frameworkEnum = 2
 		else
 			frameworkEnum = 0
-			warnLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed.')
+			errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. https://sonoran.link/radiocodes')
 		end
 	end
 end
