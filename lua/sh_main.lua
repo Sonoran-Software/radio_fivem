@@ -73,10 +73,12 @@ end
 
 function getFramework()
 	if Config.enforceRadioItem then
-		if GetResourceState('qb-core') == 'started' then
-			frameworkEnum = 1
-		elseif GetResourceState('qbx_core') == 'started' then
+		if GetResourceState('qbx_core') == 'started' then
 			frameworkEnum = 2
+			return
+		elseif GetResourceState('qb-core') == 'started' then
+			frameworkEnum = 1
+			return
 		else
 			frameworkEnum = 0
 			errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. https://sonoran.link/radiocodes')

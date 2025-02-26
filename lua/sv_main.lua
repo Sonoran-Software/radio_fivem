@@ -50,8 +50,9 @@ else
 	if Config.acePermsForServerRepair ~= nil then
 		acePermsForServerRepair = Config.acePermsForServerRepair
 	end
-
 	if Config.enforceRadioItem then
+		getFramework()
+		getInventory()
 		if frameworkEnum == 1 then
 			QBCore = exports['qb-core']:GetCoreObject()
 
@@ -131,18 +132,6 @@ else
 					description = 'Communicate with others through the Sonoran Radio',
 				}
 			end
-			exports['qb-core']:AddItem(Config.RadioItem.name, {
-				name = Config.RadioItem.name,
-				label = Config.RadioItem.label,
-				weight = Config.RadioItem.weight,
-				type = 'item',
-				image = 'radio.png',
-				unique = true,
-				useable = true,
-				shouldClose = true,
-				combinable = false,
-				description = Config.RadioItem.description,
-			})
 			exports.qbx_core:CreateUseableItem(Config.RadioItem.name, function(source, item)
 				local src = source
 				local radio = exports.ox_inventory:GetItem(src, itemName)
@@ -165,18 +154,6 @@ else
 					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 				}
 			end
-			exports['qb-core']:AddItem(Config.ScannerItem.name, {
-				name = Config.ScannerItem.name,
-				label = Config.ScannerItem.label,
-				weight = Config.ScannerItem.weight,
-				type = 'item',
-				image = 'radio.png',
-				unique = true,
-				useable = true,
-				shouldClose = true,
-				combinable = false,
-				description = Config.ScannerItem.description,
-			})
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
 				local src = source
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
