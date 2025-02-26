@@ -300,11 +300,11 @@ Citizen.CreateThread(function()
 					local finalConfig = {
 						componentId = realProp,
 						drawableId = currentProp,
-						textures = {}
+						texture = {}
 					}
 
 					for _, texture in pairs(selectedConfig.texture) do
-						table.insert(finalConfig.textures, texture)
+						table.insert(finalConfig.texture, texture)
 					end
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
