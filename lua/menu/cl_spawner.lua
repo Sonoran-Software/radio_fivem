@@ -304,7 +304,7 @@ Citizen.CreateThread(function()
 					}
 
 					for _, texture in pairs(selectedConfig.texture) do
-						table.insert(finalConfig.texture, texture)
+						table.insert(finalConfig.textures, texture)
 					end
 					table.insert(chatterConfig, finalConfig)
 					TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
