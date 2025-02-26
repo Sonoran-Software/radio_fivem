@@ -28,6 +28,8 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	getFramework()
+	getInventory()
 	initCell()
 	initChatter()
 	initMiniRadio()
@@ -255,7 +257,6 @@ function initClient()
 		if frameworkEnum == 0 or inventoryEnum == 0 then
 			return false
 		end
-
 		if inventoryEnum == 1 then
 			-- qb-inventory (QBCore functions)
 			local hasItem = false
@@ -285,7 +286,7 @@ function initClient()
 					elseif frameworkEnum == 1 then
 						playerData = QBCore.Functions.GetPlayerData()
 					end
-					result = playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+					result = not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 				else
 					result = false
 				end
@@ -883,6 +884,7 @@ function initClient()
 		end
 		getInventory()
 		getFramework()
+
 		DebugPrint('Sonoran Radio Starting...')
 		TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 		TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')

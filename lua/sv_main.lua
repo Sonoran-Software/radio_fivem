@@ -134,14 +134,15 @@ else
 			end
 			exports.qbx_core:CreateUseableItem(Config.RadioItem.name, function(source, item)
 				local src = source
-				local radio = exports.ox_inventory:GetItem(src, itemName)
+				local radio = exports.ox_inventory:GetSlotIdWithItem(src, Config.RadioItem.name, {}, false)
 				if not radio then
 					return
 				end
-				if not radio.info.frame then
+				local itemSlot = exports.ox_inventory:GetSlot(src, radio)
+				if not itemSlot.metadata.frame then
 					TriggerClientEvent('qb-sonrad:use', source, 'default')
 				else
-					TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
+					TriggerClientEvent('qb-sonrad:use', source, itemSlot.metadata.frame)
 				end
 			end)
 
@@ -155,7 +156,6 @@ else
 				}
 			end
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
-				local src = source
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
 		end
