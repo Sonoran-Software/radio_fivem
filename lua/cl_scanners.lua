@@ -207,6 +207,43 @@ function initScanners()
 				end
 			end)
 		end
+	elseif frameworkEnum == 2 and inventoryEnum == 2 then
+		if Config.enforceRadioItem then
+			RegisterNetEvent('qb-sonrad:use-scanner', function()
+				openLocalScanner()
+			end)
+
+			Citizen.CreateThread(function()
+				while Config.enforceRadioItem do
+					local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+					-- find all qb-inventory drops containing scanner items
+					-- QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
+					-- 	scannerDrops = {}
+					-- 	for dropId, drop in pairs(drops) do
+					-- 		for _, item in ipairs(drop.items) do
+					-- 			if item.name == scannerItemName then
+					-- 				local scannerId = item.info.scannerId or dropId
+					-- 				scannerDrops[scannerId] = drop
+					-- 				break
+					-- 			end
+					-- 		end
+					-- 	end
+					-- end)
+
+					-- find the scanner in the player's inventory
+					inventoryScannerId = nil
+					local playerItem = exports.ox_inventory:GetPlayerItems()
+					for _, item in ipairs(playerItem or {}) do
+						if item.name == scannerItemName then
+							inventoryScannerId = item.metadata.scannerId or 0
+							break
+						end
+					end
+					-- query every 1s
+					Citizen.Wait(1000)
+				end
+			end)
+		end
 	end
 	Citizen.CreateThread(function()
 		AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
