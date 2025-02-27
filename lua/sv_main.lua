@@ -132,6 +132,14 @@ else
 					description = 'Communicate with others through the Sonoran Radio',
 				}
 			end
+			if not exports.ox_inventory:Items(Config.RadioItem.name) then
+				errorLog('Ox_Inventory detected on Qbox, ' .. Config.RadioItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
+				return
+			end
+			if not exports.ox_inventory:Items(Config.ScannerItem.name) then
+				errorLog('Ox_Inventory detected on Qbox, ' .. Config.ScannerItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
+				return
+			end
 			exports.qbx_core:CreateUseableItem(Config.RadioItem.name, function(source, item)
 				local src = source
 				local radio = exports.ox_inventory:GetSlotIdWithItem(src, Config.RadioItem.name, {}, false)
