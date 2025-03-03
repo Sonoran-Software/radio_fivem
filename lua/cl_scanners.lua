@@ -213,11 +213,11 @@ function initScanners()
 			end)
 			if not lib then
 				if GetResourceState('ox_lib') ~= 'started' then
-					errorLog('ox_lib must be started before this resource.', 0)
+					error('ox_lib must be started before this resource.', 0)
 				end
 				local chunk = LoadResourceFile('ox_lib', 'init.lua')
 				if not chunk then
-					errorLog('failed to load resource file @ox_lib/init.lua', 0)
+					error('failed to load resource file @ox_lib/init.lua', 0)
 				end
 				load(chunk, '@@ox_lib/init.lua', 't')()
 			end
