@@ -7,6 +7,7 @@ local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
 local tunnels = {}
+local scanners = {}
 local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
@@ -165,6 +166,30 @@ else
 			end
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
+			end)
+		end
+		RegisterNetEvent('SonoranRadio::DropItem::Scanner', function()
+			local src = source
+			local coords = GetEntityCoords(GetPlayerPed(src))
+			table.insert('scanners', {dropId = src, coords = coords})
+		end)
+
+		if inventoryEnum == 2 then
+			if not lib then
+				if GetResourceState('ox_lib') ~= 'started' then
+					errorLog('ox_lib must be started before this resource.', 0)
+				end
+
+				local chunk = LoadResourceFile('ox_lib', 'init.lua')
+
+				if not chunk then
+					errorLog('failed to load resource file @ox_lib/init.lua', 0)
+				end
+
+				load(chunk, '@@ox_lib/init.lua', 't')()
+			end
+			lib.callback.register('getScanners', function(source)
+				return scanners
 			end)
 		end
 	end

@@ -190,7 +190,6 @@ function initScanners()
 								end
 							end
 						end)
-
 						-- find the scanner in the player's inventory
 						inventoryScannerId = nil
 						local playerData = QBCore.Functions.GetPlayerData()
@@ -207,30 +206,33 @@ function initScanners()
 				end
 			end)
 		end
-	elseif frameworkEnum == 2 and inventoryEnum == 2 then
+	elseif inventoryEnum == 2 then
 		if Config.enforceRadioItem then
 			RegisterNetEvent('qb-sonrad:use-scanner', function()
 				openLocalScanner()
 			end)
+			if not lib then
+				if GetResourceState('ox_lib') ~= 'started' then
+					errorLog('ox_lib must be started before this resource.', 0)
+				end
+				local chunk = LoadResourceFile('ox_lib', 'init.lua')
+				if not chunk then
+					errorLog('failed to load resource file @ox_lib/init.lua', 0)
+				end
+				load(chunk, '@@ox_lib/init.lua', 't')()
+			end
 
 			Citizen.CreateThread(function()
 				while Config.enforceRadioItem do
 					local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
-					-- find all qb-inventory drops containing scanner items
-					-- QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
-					-- 	scannerDrops = {}
-					-- 	for dropId, drop in pairs(drops) do
-					-- 		for _, item in ipairs(drop.items) do
-					-- 			if item.name == scannerItemName then
-					-- 				local scannerId = item.info.scannerId or dropId
-					-- 				scannerDrops[scannerId] = drop
-					-- 				break
-					-- 			end
-					-- 		end
-					-- 	end
-					-- end)
-
-					-- find the scanner in the player's inventory
+					lib.callback('getScanners', function(scanners)
+						scannerDrops = {}
+						for dropId, scanner in pairs(scanners) do
+							local scannerId = scanner.dropId or dropId
+							scannerDrops[scannerId] = scanner
+							break
+						end
+					end)
 					inventoryScannerId = nil
 					local playerItem = exports.ox_inventory:GetPlayerItems()
 					for _, item in ipairs(playerItem or {}) do
