@@ -171,15 +171,11 @@ else
 		RegisterNetEvent('SonoranRadio::DropItem::Scanner', function()
 			local src = source
 			local coords = GetEntityCoords(GetPlayerPed(src))
-			table.insert('scanners', {dropId = src, coords = coords})
+			table.insert(scanners, {dropId = src, coords = coords})
 		end)
 
 		if inventoryEnum == 2 then
 			if not lib then
-				if GetResourceState('ox_lib') ~= 'started' then
-					errorLog('ox_lib must be started before this resource.', 0)
-				end
-
 				local chunk = LoadResourceFile('ox_lib', 'init.lua')
 
 				if not chunk then

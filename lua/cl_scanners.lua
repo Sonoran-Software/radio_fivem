@@ -225,7 +225,7 @@ function initScanners()
 			Citizen.CreateThread(function()
 				while Config.enforceRadioItem do
 					local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
-					lib.callback('getScanners', function(scanners)
+					lib.callback('getScanners', false, function(scanners)
 						scannerDrops = {}
 						for dropId, scanner in pairs(scanners) do
 							local scannerId = scanner.dropId or dropId
