@@ -1163,3 +1163,40 @@ function handleNameChange(name)
 end
 
 exports('handleNameChange', handleNameChange)
+
+
+local function sendConsole(level, color, message)
+	local debugging = true
+	if Config ~= nil then
+		debugging = (Config.debug == true and Config.debug ~= 'false')
+	end
+	local info = debug.getinfo(3, 'S')
+	local source = '.'
+	if info.source:find('@@sonoranradio') then
+		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
+	end
+	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, message)
+	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
+		print(msg)
+	end
+	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
+		table.insert(ErrorBuffer, 1, msg)
+	end
+	if level == 'DEBUG' and IsDuplicityVersion() then
+		if #DebugBuffer > 50 then
+			table.remove(DebugBuffer)
+		end
+		table.insert(DebugBuffer, 1, msg)
+	else
+		if not IsDuplicityVersion() then
+			if #MessageBuffer > 10 then
+				table.remove(MessageBuffer)
+			end
+			table.insert(MessageBuffer, 1, msg)
+		end
+	end
+end
+
+function errorLog(message)
+	sendConsole('ERROR', '^1', message)
+end

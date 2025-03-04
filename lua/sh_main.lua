@@ -55,6 +55,7 @@ function notifyClient(notification, urgent)
 	end
 end
 
+
 frameworkEnum = 0;
 inventoryEnum = 0;
 -- Enums | 0 = None, 1 = QBCore, 2 = Ox_Inventory
