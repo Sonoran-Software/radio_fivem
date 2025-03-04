@@ -65,6 +65,8 @@ function getInventory()
 			inventoryEnum = 1
 		elseif GetResourceState('ox_inventory') == 'started' then
 			inventoryEnum = 2
+		elseif GetResourceState('qs-inventory') == 'started' then
+			inventoryEnum = 1
 		else
 			inventoryEnum = 0
 			errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. https://sonoran.link/radiocodes')
