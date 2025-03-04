@@ -241,7 +241,7 @@ function initScanners()
 					end)
 					inventoryScannerId = nil
 					local playerItem = exports.ox_inventory:GetPlayerItems()
-					for _, item in pairs(playerItem ) do
+					for _, item in pairs(playerItem) do
 						if item.name == scannerItemName then
 							inventoryScannerId = item.metadata.scannerId or 0
 							break
