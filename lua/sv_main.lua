@@ -7,7 +7,7 @@ local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
 local tunnels = {}
-local scanners = {}
+scanners = {}
 local critError = false
 jsonFileName = 'towers.DEFAULT.json'
 polyZoneFileName = 'tunnels.DEFAULT.json'
@@ -168,12 +168,6 @@ else
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
 		end
-		RegisterNetEvent('SonoranRadio::DropItem::Scanner', function(item)
-			local src = source
-			local coords = GetEntityCoords(GetPlayerPed(src))
-			table.insert(scanners, {dropId = src, coords = coords})
-		end)
-
 		RegisterNetEvent('SonoranRadio::RemoveDrop::Scanner', function(scanner)
 			for k, v in pairs(scanners) do
 				if v.dropId == scanner.dropId then

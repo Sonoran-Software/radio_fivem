@@ -1,6 +1,6 @@
 function initScanners()
 	if Config.chatter == false then return end
-
+	local inMenu = false
 	-- SCANNER PERMS
 	local allowed = false
 	RegisterNetEvent('SonoranRadio::AuthorizeScanners', function()
@@ -122,15 +122,21 @@ function initScanners()
 		scanners[0] = localScanner
 	end)
 
+	RegisterNetEvent('menu:close', function(menu)
+		if menu.id == 'scannerControls' then
+			inMenu = false
+		end
+	end)
 	-- SCANNER MENUS
 	WarMenu.CreateMenu('scannerControls', 'Scanner Controls', 'Sonoran Software')
 	WarMenu.SetTitleColor('scannerControls', 0, 0, 0, 255)
 	WarMenu.SetMenuTitleBackgroundSprite('scannerControls', 'radio_menu_header', 'option_1')
 	function openScanner(scannerId, startCoords)
 		if not allowed then return end
-
+		if inMenu then return end
 		Citizen.CreateThread(function()
 			WarMenu.OpenMenu('scannerControls')
+			inMenu = true
 			while WarMenu.IsMenuOpened('scannerControls') do
 				local isPowered = isScannerPowered(scannerId)
 
@@ -228,7 +234,7 @@ function initScanners()
 					lib.callback('getScanners', false, function(scanners)
 						scannerDrops = {}
 						for dropId, scanner in pairs(scanners) do
-							local scannerId = scanner.scannerId or dropId
+							local scannerId = scanner.metadata.scannerId or dropId
 							scannerDrops[scannerId] = scanner
 							break
 						end
@@ -312,9 +318,9 @@ function initScanners()
 			end
 			if change.name == scannerItemName then
 				local sourcePos = GetEntityCoords(PlayerPedId())
-				for _, scanner in pairs(scanners) do
-					if #(sourcePos - vec3(scanner.coords.x, scanner.coords.y, scanner.coords.z)) < 20 then
-						TriggerServerEvent('SonoranRadio::RemoveDrop::Scanner', scanner)
+				for id, scanner in pairs(scannerDrops) do
+					if #(sourcePos - vec3(scannerDrops[id].coords.x, scannerDrops[id].coords.y, scannerDrops[id].coords.z)) < 20 then
+						TriggerServerEvent('SonoranRadio::RemoveDrop::Scanner', scannerDrops[id])
 					end
 				end
 			end

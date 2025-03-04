@@ -128,7 +128,6 @@ Citizen.CreateThread(function()
 					elseif inventoryEnum == 2 then
 						if item.metadata.scannerId == nil then
 							updatedItems = true
-							item.metadata.scannerId = genId()
 						end
 					end
                 end
@@ -139,7 +138,15 @@ Citizen.CreateThread(function()
                 if frameworkEnum == 1 then
                     Player.Functions.SetPlayerData('items', items)
                 elseif frameworkEnum == 2 then
-                    Player.Functions.SetPlayerData('items', items)
+					local ox_inventory = exports.ox_inventory
+					local scannerInInv = ox_inventory:Search(Player.PlayerData.userId, 'slots', scannerItemName)
+					for k, v in pairs(scannerInInv) do
+						scannerInInv = v
+						break
+					end
+
+					scannerInInv.metadata.scannerId = genId()
+					ox_inventory:SetMetadata(Player.PlayerData.userId, scannerInInv.slot, scannerInInv.metadata)
                 end
             end
 			::continue::
@@ -160,5 +167,25 @@ RegisterNetEvent('SonoranRadio::checkProfilePerms', function(profileInfos)
 
 	if #allowedProfileIds > 0 then
 		TriggerClientEvent('SonoranRadio::allowScannerProfiles', source, allowedProfileIds)
+	end
+end)
+
+Citizen.CreateThread(function()
+	Wait(5000)
+	if inventoryEnum == 2 then
+		local hookId = exports.ox_inventory:registerHook('swapItems', function(payload)
+			local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+			if payload.action == 'move' and payload.fromType == 'player' and payload.toType == 'drop' then
+				if payload.fromSlot.name == scannerItemName then
+					local src = payload.source
+					local coords = GetEntityCoords(GetPlayerPed(src))
+					payload.fromSlot.coords = coords
+					table.insert(scanners, 1, payload.fromSlot)
+				end
+			end
+			return true
+		end, {
+			print = false,
+		})
 	end
 end)
