@@ -215,7 +215,6 @@ function initScanners()
 	elseif inventoryEnum == 2 then
 		if Config.enforceRadioItem then
 			RegisterNetEvent('qb-sonrad:use-scanner', function()
-				print('got thing')
 				openLocalScanner()
 			end)
 			if not lib then
