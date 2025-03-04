@@ -228,7 +228,7 @@ function initScanners()
 					lib.callback('getScanners', false, function(scanners)
 						scannerDrops = {}
 						for dropId, scanner in pairs(scanners) do
-							local scannerId = scanner.dropId or dropId
+							local scannerId = scanner.scannerId or dropId
 							scannerDrops[scannerId] = scanner
 							break
 						end
@@ -304,4 +304,21 @@ function initScanners()
 
 		return sources
 	end
+	AddEventHandler('ox_inventory:updateInventory', function(changes)
+		local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+		for _, change in pairs(changes) do
+			if not change then
+				goto continue
+			end
+			if change.name == scannerItemName then
+				local sourcePos = GetEntityCoords(PlayerPedId())
+				for _, scanner in pairs(scanners) do
+					if #(sourcePos - vec3(scanner.coords.x, scanner.coords.y, scanner.coords.z)) < 20 then
+						TriggerServerEvent('SonoranRadio::RemoveDrop::Scanner', scanner)
+					end
+				end
+			end
+		end
+		::continue::
+	end)
 end

@@ -168,10 +168,18 @@ else
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
 		end
-		RegisterNetEvent('SonoranRadio::DropItem::Scanner', function()
+		RegisterNetEvent('SonoranRadio::DropItem::Scanner', function(item)
 			local src = source
 			local coords = GetEntityCoords(GetPlayerPed(src))
 			table.insert(scanners, {dropId = src, coords = coords})
+		end)
+
+		RegisterNetEvent('SonoranRadio::RemoveDrop::Scanner', function(scanner)
+			for k, v in pairs(scanners) do
+				if v.dropId == scanner.dropId then
+					table.remove(scanners, k)
+				end
+			end
 		end)
 
 		if inventoryEnum == 2 then

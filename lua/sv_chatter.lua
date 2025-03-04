@@ -105,23 +105,32 @@ Citizen.CreateThread(function()
         if frameworkEnum == 1 then
             QBPlayers = QBCore.Functions.GetQBPlayers()
         elseif frameworkEnum == 2 then
-            QBPlayers = exports.qbx_core:GetQBPlayers() or {}
+            QBPlayers = exports.qbx_core:GetQBPlayers()
         end
-
-        for _, Player in ipairs(QBPlayers) do
-            local updatedItems = false
+        for _, Player in pairs(QBPlayers) do
+			if not Player then
+				goto continue
+			end
+			local updatedItems = false
             local items = Player.PlayerData.items or {}
 
             for _, item in ipairs(items) do
                 if item.name == scannerItemName then
                     -- Ensure item.info exists before checking/updating scannerId
-                    if not item.info then
-                        item.info = {}
-                    end
-                    if item.info.scannerId == nil then
-                        updatedItems = true
-                        item.info.scannerId = genId()
-                    end
+					if inventoryEnum == 1 then
+						if not item.info then
+							item.info = {}
+						end
+						if item.info.scannerId == nil then
+							updatedItems = true
+							item.info.scannerId = genId()
+						end
+					elseif inventoryEnum == 2 then
+						if item.metadata.scannerId == nil then
+							updatedItems = true
+							item.metadata.scannerId = genId()
+						end
+					end
                 end
             end
 
@@ -133,8 +142,8 @@ Citizen.CreateThread(function()
                     Player.Functions.SetPlayerData('items', items)
                 end
             end
+			::continue::
         end
-
 		Citizen.Wait(1000)
 	end
 end)
