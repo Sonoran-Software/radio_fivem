@@ -236,7 +236,6 @@ function initScanners()
 						for dropId, scanner in pairs(scanners) do
 							local scannerId = scanner.metadata.scannerId or dropId
 							scannerDrops[scannerId] = scanner
-							break
 						end
 					end)
 					inventoryScannerId = nil

@@ -138,15 +138,15 @@ Citizen.CreateThread(function()
                 if frameworkEnum == 1 then
                     Player.Functions.SetPlayerData('items', items)
                 elseif frameworkEnum == 2 then
-					local ox_inventory = exports.ox_inventory
-					local scannerInInv = ox_inventory:Search(Player.PlayerData.userId, 'slots', scannerItemName)
+					local scannerInInv = exports.ox_inventory:Search(Player.PlayerData.source, 'slots', scannerItemName)
+					if not scannerInInv then return end
 					for k, v in pairs(scannerInInv) do
 						scannerInInv = v
 						break
 					end
 
 					scannerInInv.metadata.scannerId = genId()
-					ox_inventory:SetMetadata(Player.PlayerData.userId, scannerInInv.slot, scannerInInv.metadata)
+					exports.ox_inventory:SetMetadata(Player.PlayerData.source, scannerInInv.slot, scannerInInv.metadata)
                 end
             end
 			::continue::
@@ -180,7 +180,7 @@ Citizen.CreateThread(function()
 					local src = payload.source
 					local coords = GetEntityCoords(GetPlayerPed(src))
 					payload.fromSlot.coords = coords
-					table.insert(scanners, 1, payload.fromSlot)
+					table.insert(scanners, payload.fromSlot)
 				end
 			end
 			return true
