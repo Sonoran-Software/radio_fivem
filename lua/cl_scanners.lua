@@ -133,7 +133,7 @@ function initScanners()
 	WarMenu.SetMenuTitleBackgroundSprite('scannerControls', 'radio_menu_header', 'option_1')
 	function openScanner(scannerId, startCoords)
 		if not allowed then return end
-		if inMenu then return end
+		if WarMenu.IsMenuOpened('scannerControls') then return end
 		Citizen.CreateThread(function()
 			WarMenu.OpenMenu('scannerControls')
 			inMenu = true
@@ -240,10 +240,12 @@ function initScanners()
 					end)
 					inventoryScannerId = nil
 					local playerItem = exports.ox_inventory:GetPlayerItems()
-					for _, item in pairs(playerItem) do
-						if item.name == scannerItemName then
-							inventoryScannerId = item.metadata.scannerId or 0
-							break
+					if playerItem and type(playerItem) == 'table' then
+						for _, item in pairs(playerItem) do
+							if item.name == scannerItemName then
+								inventoryScannerId = item.metadata.scannerId or 0
+								break
+							end
 						end
 					end
 					-- query every 1s
