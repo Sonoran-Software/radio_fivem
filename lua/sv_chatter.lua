@@ -1,4 +1,4 @@
-if Config.chatter == false then return end -- if chatter is disabled, skip this script
+if not Config or Config.chatter == false then return end -- if chatter is disabled, skip this script
 
 local radioStates = {}
 local lastRadioStatesPush = 0
@@ -89,29 +89,68 @@ Citizen.CreateThread(function()
 
 	local QBCore
 	if Config.enforceRadioItem then
-		repeat
-			Citizen.Wait(1000)
-			QBCore = exports['qb-core']:GetCoreObject({'Functions'})
-		until QBCore ~= nil
+		if frameworkEnum == 1 then
+			repeat
+				Citizen.Wait(1000)
+				QBCore = exports['qb-core']:GetCoreObject({'Functions'})
+			until QBCore ~= nil
+		end
 	end
 
 	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 	while Config.enforceRadioItem do
-		local QBPlayers = QBCore.Functions.GetQBPlayers()
-		for _, Player in ipairs(QBPlayers) do
+        local QBPlayers = {}
+
+        -- Retrieve players based on the active framework
+        if frameworkEnum == 1 then
+            QBPlayers = QBCore.Functions.GetQBPlayers()
+        elseif frameworkEnum == 2 then
+            QBPlayers = exports.qbx_core:GetQBPlayers()
+        end
+        for _, Player in pairs(QBPlayers) do
+			if not Player then
+				goto continue
+			end
 			local updatedItems = false
-			for _, item in ipairs(Player.PlayerData.items or {}) do
-				if item.name == scannerItemName and item.info.scannerId == nil then
-					updatedItems = true
-					item.info.scannerId = genId()
-				end
-			end
+            local items = Player.PlayerData.items or {}
 
-			if updatedItems then
-				Player.Functions.SetPlayerData('items', Player.PlayerData.items)
-			end
-		end
+            for _, item in ipairs(items) do
+                if item.name == scannerItemName then
+                    -- Ensure item.info exists before checking/updating scannerId
+					if inventoryEnum == 1 then
+						if not item.info then
+							item.info = {}
+						end
+						if item.info.scannerId == nil then
+							updatedItems = true
+							item.info.scannerId = genId()
+						end
+					elseif inventoryEnum == 2 then
+						if item.metadata.scannerId == nil then
+							updatedItems = true
+						end
+					end
+                end
+            end
 
+            if updatedItems then
+                -- Update player items based on the active framework
+                if frameworkEnum == 1 then
+                    Player.Functions.SetPlayerData('items', items)
+                elseif frameworkEnum == 2 then
+					local scannerInInv = exports.ox_inventory:Search(Player.PlayerData.source, 'slots', scannerItemName)
+					if not scannerInInv then return end
+					for k, v in pairs(scannerInInv) do
+						scannerInInv = v
+						break
+					end
+
+					scannerInInv.metadata.scannerId = genId()
+					exports.ox_inventory:SetMetadata(Player.PlayerData.source, scannerInInv.slot, scannerInInv.metadata)
+                end
+            end
+			::continue::
+        end
 		Citizen.Wait(1000)
 	end
 end)
@@ -128,5 +167,25 @@ RegisterNetEvent('SonoranRadio::checkProfilePerms', function(profileInfos)
 
 	if #allowedProfileIds > 0 then
 		TriggerClientEvent('SonoranRadio::allowScannerProfiles', source, allowedProfileIds)
+	end
+end)
+
+Citizen.CreateThread(function()
+	Wait(5000)
+	if inventoryEnum == 2 then
+		local hookId = exports.ox_inventory:registerHook('swapItems', function(payload)
+			local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
+			if payload.action == 'move' and payload.fromType == 'player' and payload.toType == 'drop' then
+				if payload.fromSlot.name == scannerItemName then
+					local src = payload.source
+					local coords = GetEntityCoords(GetPlayerPed(src))
+					payload.fromSlot.coords = coords
+					table.insert(scanners, payload.fromSlot)
+				end
+			end
+			return true
+		end, {
+			print = false,
+		})
 	end
 end)

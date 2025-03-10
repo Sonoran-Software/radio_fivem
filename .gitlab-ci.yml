@@ -60,6 +60,35 @@ resource-deploy-QAServer:
     - standalone
     - standalone_dev
 
+resource-deploy-QAQBOXServer:
+  stage: deploy
+  script:
+    - cd build
+    - zip -r sonoranradio sonoranradio
+    - lftp -e "set sftp:auto-confirm yes; open sftp://GME01.SonoranServers.com:2022; user $FiveM02_Ptero_User $FiveM01_Ptero_Pass; rmdir /resources/[sonoranradio]; mkdir -p /resources/[sonoranradio]; cd /resources/[sonoranradio]; put sonoranradio.zip; bye"
+    - >-
+        curl "https://game.sonoranservers.com/api/client/servers/$FiveM02_ID/files/decompress"
+        -H "Content-Type: application/json"
+        -H "Authorization: Bearer $Ptero_API_Key"
+        -X POST
+        -d '{"root": "/resources/[sonoranradio]/","file": "sonoranradio.zip"}'
+    - >-
+        curl "https://game.sonoranservers.com/api/client/servers/$FiveM02_ID/files/delete"
+        -H "Content-Type: application/json"
+        -H "Authorization: Bearer $Ptero_API_Key"
+        -X POST
+        -d '{"root": "/resources/[sonoranradio]/","files": ["sonoranradio.zip"]}'
+    - cd ../
+    - lftp -e "open sftp://GME01.SonoranServers.com:2022; user $FiveM02_Ptero_User $FiveM01_Ptero_Pass; cd /resources/[sonoranradio]/sonoranradio; put QA-config.lua -o config.lua; mv towers.DEFAULT.json towers.json; mv tunnels.DEFAULT.json tunnels.json; mv speakers.DEFAULT.json speakers.json; mv earpieces.DEFAULT.json earpieces.json; cd ../; rmdir sonoranradio_updatehelper; bye"
+
+  tags:
+    - linux, build, shell, development
+  only:
+    - master
+    - development
+    - standalone
+    - standalone_dev
+
 resource-deploy-prod:
   stage: deploy
   script:

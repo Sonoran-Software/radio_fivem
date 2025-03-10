@@ -28,6 +28,8 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	getFramework()
+	getInventory()
 	initCell()
 	initChatter()
 	initMiniRadio()
@@ -137,13 +139,17 @@ function initClient()
 	local QBCore = nil
 	local PlayerData = nil
 	if Config.enforceRadioItem then
-		QBCore = exports['qb-core']:GetCoreObject()
+		if frameworkEnum == 1 then
+			QBCore = exports['qb-core']:GetCoreObject()
+		end
 	end
 
 	CreateThread(function()
 		if Config.enforceRadioItem then
-			while QBCore.Functions.GetPlayerData() == nil do
-				Wait(10)
+			if frameworkEnum == 1 then
+				while QBCore.Functions.GetPlayerData() == nil do
+					Wait(10)
+				end
 			end
 		end
 	end)
@@ -242,30 +248,66 @@ function initClient()
 		return ''
 	end
 
-	function playerHasItem(QBCore, itemName)
+	function playerHasItem(itemName)
 		if not LocalPlayer.state.isLoggedIn then
 			return false
 		end
 
-		local hasItem = false
-		if type(QBCore.Functions.GetItemByName) == 'table' then
-			hasItem = not not QBCore.Functions.GetItemByName(itemName)
-		elseif type(QBCore.Functions.HasItem) == 'table' then
-			hasItem = not not QBCore.Functions.HasItem(Config.RadioItem.name)
-		end
-		if not hasItem then
+		-- Ensure framework and inventory have been initialized
+		if frameworkEnum == 0 or inventoryEnum == 0 then
 			return false
 		end
+		if inventoryEnum == 1 then
+			-- qb-inventory (QBCore functions)
+			local hasItem = false
+			if type(QBCore.Functions.GetItemByName) == 'table' then
+				hasItem = QBCore.Functions.GetItemByName(itemName) ~= nil
+			elseif type(QBCore.Functions.HasItem) == 'table' then
+				hasItem = QBCore.Functions.HasItem(itemName) ~= nil
+			end
 
-		local PlayerData = QBCore.Functions.GetPlayerData()
-		return not PlayerData.metadata['isdead'] and not PlayerData.metadata['inlaststand']
+			if not hasItem then
+				return false
+			end
+
+			local playerData = QBCore.Functions.GetPlayerData()
+			return playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+
+		elseif inventoryEnum == 2 then
+			-- ox_inventory (asynchronous call converted to synchronous)
+			local done = false
+			local result = false
+
+			local count = exports.ox_inventory:GetItemCount(itemName)
+				if count > 0 then
+					local playerData
+					if frameworkEnum == 2 then
+						playerData = exports.qbx_core:GetPlayerData()
+					elseif frameworkEnum == 1 then
+						playerData = QBCore.Functions.GetPlayerData()
+					end
+					result = not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+				else
+					result = false
+				end
+				done = true
+			-- Wait until the asynchronous callback completes (with a timeout of 1000ms)
+			local startTime = GetGameTimer()
+			while not done and (GetGameTimer() - startTime < 1000) do
+				Citizen.Wait(0)
+			end
+
+			return result
+		else
+			return false
+		end
 	end
-	function playerHasRadioItem(QBCore)
+	function playerHasRadioItem()
 		local itemName = Config.RadioItem and Config.RadioItem.name
 		if not itemName then
 			itemName = 'sonoran_radio'
 		end
-		return playerHasItem(QBCore, itemName)
+		return playerHasItem(itemName)
 	end
 
 	function radioToggle(frame)
@@ -380,6 +422,12 @@ function initClient()
 			SendNUIMessage({ type = 'reset' })
 		elseif action == 'scanner' and not Config.enforceRadioItem then
 			openLocalScanner()
+		elseif action == 'displayname' then
+			local name = table.concat(args, ' ', 2)
+			SendNUIMessage({
+				type = 'set_display_name',
+				name = name
+			})
 		else
 			radioToggle()
 		end
@@ -393,7 +441,8 @@ function initClient()
 		'scan',
 		'hide',
 		'refresh',
-		'reset'
+		'reset',
+		'displayname'
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
@@ -829,6 +878,9 @@ function initClient()
 		if GetCurrentResourceName() ~= resource then
 			return
 		end
+		getInventory()
+		getFramework()
+
 		DebugPrint('Sonoran Radio Starting...')
 		TriggerEvent('chat:addSuggestion', '/radio', 'Open the Sonoran Radio Interface')
 		TriggerEvent('chat:addSuggestion', '/radioreset', 'Reconnect radio to teamspeak')
@@ -896,6 +948,10 @@ function initClient()
 			end
 			Radio.Enabled = true
 		end
+	end)
+
+	exports('isRadioActive', function()
+		return Radio.Enabled
 	end)
 
 	local QBDeath = false
@@ -1093,4 +1149,50 @@ function initClient()
 			lvcStarted = false
 		end
 	end)
+end
+
+function handleNameChange(name)
+	SendNUIMessage({
+		type = 'set_display_name',
+		name = name
+	})
+end
+
+exports('handleNameChange', handleNameChange)
+
+
+local function sendConsole(level, color, message)
+	local debugging = true
+	if Config ~= nil then
+		debugging = (Config.debug == true and Config.debug ~= 'false')
+	end
+	local info = debug.getinfo(3, 'S')
+	local source = '.'
+	if info.source:find('@@sonoranradio') then
+		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
+	end
+	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, message)
+	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
+		print(msg)
+	end
+	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
+		table.insert(ErrorBuffer, 1, msg)
+	end
+	if level == 'DEBUG' and IsDuplicityVersion() then
+		if #DebugBuffer > 50 then
+			table.remove(DebugBuffer)
+		end
+		table.insert(DebugBuffer, 1, msg)
+	else
+		if not IsDuplicityVersion() then
+			if #MessageBuffer > 10 then
+				table.remove(MessageBuffer)
+			end
+			table.insert(MessageBuffer, 1, msg)
+		end
+	end
+end
+
+function errorLog(message)
+	sendConsole('ERROR', '^1', message)
 end

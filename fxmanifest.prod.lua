@@ -1,7 +1,7 @@
 -- Release fxmanifest.lua --
 fx_version 'cerulean'
 game 'gta5'
-
+lua54 'yes'
 author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
 version '$RESOURCE_VERSION'
