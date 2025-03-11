@@ -111,8 +111,7 @@ function initThreads()
                         description = 'Communicate with others through the Sonoran Radio'
                     }
                 end
-                local QBCore = exports['qb-core']:GetCoreObject()
-                Radio.HasItem = playerHasRadioItem(QBCore)
+                Radio.HasItem = playerHasRadioItem()
                 if not Radio.HasItem then
                     SendNUIMessage({ type = 'noRadioItem' })
                 end
@@ -258,7 +257,7 @@ function initThreads()
     -- 1000 MS Thread
     CreateThread(function()
         local QBCore = nil
-        if Config.deathDetectionMethod == 'qbcore' then
+        if Config.deathDetectionMethod == 'qbcore' and frameworkEnum == 1 then
             QBCore = exports['qb-core']:GetCoreObject()
         end
         TriggerServerEvent('SonoranRadio:GetTunnels')

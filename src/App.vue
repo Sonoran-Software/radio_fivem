@@ -436,6 +436,11 @@ export default {
                         state : event.state
                     });
                     break;
+                case 'set_display_name':
+                    this.postRadioFrame({
+                        type: 'set_display_name',
+                        name: event.name
+                    })
             }
         },
 

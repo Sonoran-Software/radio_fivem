@@ -35,11 +35,16 @@ function initChatter()
 		return scanList
 	end
 
+	-- used for debugging
+	local psuedoChatterSources = {
+		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}}
+	}
+
+	local CHATTER_MIN_DIST = 15.0
 	local chatterSources = {}
 
 	-- find the near players, and send the required channels to listen on
 	Citizen.CreateThread(function()
-		local MIN_DIST = 15.0
 
 		while true do
 			local allChatterSources = {}
@@ -52,7 +57,7 @@ function initChatter()
 				end
 				-- player not close enough, skip
 				local ped = GetPlayerPed(ply)
-				if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > MIN_DIST then
+				if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - myPos) > CHATTER_MIN_DIST then
 					goto continue
 				end
 				-- player doesn't have radio state, skip
@@ -86,6 +91,11 @@ function initChatter()
 
 			for _, source in ipairs(getScannerChatterSources()) do
 				table.insert(allChatterSources, source)
+			end
+			if Config.debug and psuedoChatterSources then
+				for _, source in ipairs(psuedoChatterSources) do
+					table.insert(allChatterSources, source)
+				end
 			end
 			chatterSources = allChatterSources
 
@@ -178,7 +188,7 @@ function initChatter()
 		}
 		while true do
 			local closestSourcePos = nil
-			local closestSourceDist = math.huge
+			local closestSourceDist = CHATTER_MIN_DIST
 			local closestSourceInfo = nil
 			-- find the closest chatter source
 			-- NOTE: the closest is the only one that matters rn, since chatter only supports one source
@@ -298,6 +308,18 @@ function initChatter()
 			Citizen.Wait(0)
 		end
 	end)
+
+	-- display location of psuedo chatter sources in world
+	Citizen.CreateThread(function()
+		while Config.debug and psuedoChatterSources do
+			for _, source in ipairs(psuedoChatterSources) do
+				local pos = source.pos -- TODO: include entities
+				DrawMarker(1, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 255, 0, 0, 255, false, false, 2, false, nil, nil, false)
+			end
+			Citizen.Wait(0)
+		end
+	end)
+
 	CreateThread(function()
 		while not NetworkIsPlayerActive(PlayerId()) do
 			Wait(10)

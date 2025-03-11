@@ -555,6 +555,7 @@ function WarMenu.Display()
 				setMenuVisible(currentMenu.previousMenu, true)
 				PlaySoundFrontend(-1, 'BACK', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
 			else
+				TriggerEvent('menu:close', currentMenu)
 				WarMenu.CloseMenu()
 			end
 		end
