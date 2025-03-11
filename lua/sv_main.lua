@@ -831,7 +831,13 @@ function serverNameChange(data)
 	}
 	performApiRequest(postData, 'SET-USER-DISPLAY-NAME', function(data, success)
 		if not success then
-			errorLog('Failed to set server name for radio service. Please check your configuration.')
+			-- Ignore error if response contains "not found" (404)
+			if type(data) == "string" and data:lower():find("not found") then
+				debugLog('Failed to set display name, user not found.')
+				return
+			else
+				errorLog('Failed to set server name for radio service. Please check your configuration.')
+			end
 		end
 	end)
 end
