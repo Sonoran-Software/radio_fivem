@@ -36,8 +36,10 @@ export default new Vuex.Store({
                 return "lightblue";
         },
         channelProfile(state) {
-            const primaryChId = state.radioState?.primaryChId;
-            return state.radioConfig?.profiles.find(x => x.id === primaryChId);
+            const profiles = state.radioConfig?.profiles.filter(x =>
+                state.radioState?.primaryChIds.includes(x.id)
+            );
+            return profiles[0];
         },
         freqRecv(_state, getters) {
             if (!getters.channelProfile) return null;

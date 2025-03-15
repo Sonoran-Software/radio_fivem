@@ -27,8 +27,13 @@ function initChatter()
 	local function getPlayerScanList(ply)
 		local state = playerStates[GetPlayerServerId(ply)]
 		if not state then return nil end -- they don't have a state
+		if state.spec ~= 3 then return nil end -- outdated state spec
+		print('state spec is ok')
 
-		local scanList = {state.primaryChId}
+		local scanList = {}
+		for _, chId in ipairs(state.primaryChIds) do
+			table.insert(scanList, chId)
+		end
 		for _, chId in ipairs(state.scannedChIds) do
 			table.insert(scanList, chId)
 		end
@@ -45,7 +50,6 @@ function initChatter()
 
 	-- find the near players, and send the required channels to listen on
 	Citizen.CreateThread(function()
-
 		while true do
 			local allChatterSources = {}
 			local myPos = GetFinalRenderedCamCoord()
