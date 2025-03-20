@@ -167,7 +167,7 @@ AddEventHandler('RadioTower:KillDish', function(towerId, dishIndex)
 	tower.DishStatus[dishIndex] = 'dead'
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
-	TriggerEvent('SonoranRadio::API:TowerDishDestroyed', towerId, tower.DishStatus)
+	TriggerEvent('SonoranRadio::API:TowerDishDestroyed', source, towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent('RadioTower:RepairTower')
@@ -183,7 +183,7 @@ AddEventHandler('RadioTower:RepairTower', function(towerId)
 	end
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
-	TriggerEvent('SonoranRadio::API:TowerRepaired', towerId, tower.DishStatus)
+	TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
 end)
 
 -- API
