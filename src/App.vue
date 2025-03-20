@@ -82,7 +82,10 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
-import StandaloneFrame, { getFrameEl as getRadioFrameEl } from './components/StandaloneFrame.vue'
+import StandaloneFrame, {
+    getFrameEl as getRadioFrameEl,
+    removePersistentFrame as removeRadioFrame
+} from './components/StandaloneFrame.vue'
 
 export default {
     components: {
@@ -516,6 +519,9 @@ export default {
                 case 'call_peers':
                     this.emergencyCall.peers = event.peers;
                     break;
+                case "display_error":
+                    this.notifyPlayer(`~r~Emergency Call Error: ~s~${event.error}`);
+                    break;
             }
         },
 
@@ -746,11 +752,14 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.postRadioFrame({
-                type: 'power',
-                power: this.radioPower
-            });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On" : "~r~Off"));
+
+            if (this.radioPower) return;
+            // we need to remove the frame to "disconnect" from the radio
+            // normally the iframe persists because it is only hidden, not disconnected
+            this.$nextTick(() => {
+                removeRadioFrame('radio');
+            });
         },
         setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;

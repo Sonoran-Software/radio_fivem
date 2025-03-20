@@ -79,6 +79,14 @@ function pop(key, remove) {
 export function getFrameEl(key) {
     return frames[key]?.el;
 }
+/**
+ * @param {string} key
+ */
+export function removePersistentFrame(key) {
+    const refs = frames[key]?.refs ?? 0;
+    if (refs > 0) throw new Error('cannot remove persistent frame with references');
+    pop(key, true);
+}
 
 export default {
     props: {
