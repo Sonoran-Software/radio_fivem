@@ -24,7 +24,7 @@ function initChatter()
 		end
 	end
 
-	local function getPlayerScanList(ply)
+	local function getPlayerState(ply)
 		local state = playerStates[GetPlayerServerId(ply)]
 		if not state then return nil end -- they don't have a state
 		if state.spec ~= 3 then return nil end -- outdated state spec
@@ -37,12 +37,12 @@ function initChatter()
 		for _, chId in ipairs(state.scannedChIds) do
 			table.insert(scanList, chId)
 		end
-		return scanList
+		return state.identity, scanList
 	end
 
 	-- used for debugging
 	local psuedoChatterSources = {
-		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}}
+		{pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'dev_84f65ade-cdb3-11eb-818f-0242ac120004_28'}
 	}
 
 	local CHATTER_MIN_DIST = 15.0
@@ -65,7 +65,7 @@ function initChatter()
 					goto continue
 				end
 				-- player doesn't have radio state, skip
-				local scanList = getPlayerScanList(ply)
+				local identity, scanList = getPlayerState(ply)
 				if not scanList then
 					goto continue
 				end
@@ -89,6 +89,7 @@ function initChatter()
 				table.insert(allChatterSources, {
 					sourceEntity = ped,
 					scanList = scanList,
+					targetIdentity = identity
 				})
 				::continue::
 			end
@@ -96,7 +97,7 @@ function initChatter()
 			for _, source in ipairs(getScannerChatterSources()) do
 				table.insert(allChatterSources, source)
 			end
-			if Config.debug and psuedoChatterSources then
+			if Config.debug and psuedoChatterSources and #psuedoChatterSources > 0 then
 				for _, source in ipairs(psuedoChatterSources) do
 					table.insert(allChatterSources, source)
 				end
@@ -189,6 +190,7 @@ function initChatter()
 			scanList = {},
 			isMuffled = false,
 			isSpatial = true,
+			targetIdentity = nil,
 		}
 		while true do
 			local closestSourcePos = nil
@@ -237,6 +239,7 @@ function initChatter()
 				local similar =
 					isMuffled == last.isMuffled and
 					isSpatial == last.isSpatial and
+					closestSourceInfo.targetIdentity == last.targetIdentity and
 					(closestSourcePos == last.pos or not vectorChanged(closestSourcePos, last.pos, 1.0)) and
 					containsAll(closestSourceInfo.scanList, last.scanList)
 				if not similar then
@@ -244,6 +247,7 @@ function initChatter()
 					last.scanList = closestSourceInfo.scanList
 					last.isMuffled = isMuffled
 					last.isSpatial = isSpatial
+					last.targetIdentity = closestSourceInfo.targetIdentity
 
 					updatePayload = {
 						sources = {closestSourcePos},
@@ -251,6 +255,9 @@ function initChatter()
 						isMuffled = isMuffled,
 						isSpatial = isSpatial,
 					}
+					if closestSourceInfo.targetIdentity then
+						updatePayload.target = closestSourceInfo.targetIdentity
+					end
 				end
 			end
 

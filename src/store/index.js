@@ -11,6 +11,7 @@ const freqToString = (freq) => {
 export default new Vuex.Store({
     state: {
         connected: false,
+        identity: null,
 
         radioConfig: null,
         radioState: null,
@@ -57,8 +58,9 @@ export default new Vuex.Store({
         },
     },
     mutations: {
-        setConnected(state, connected) {
+        setConnected(state, {connected, identity}) {
             state.connected = connected;
+            state.identity = identity;
             if (!connected) {
                 state.radioConfig = null;
                 state.radioState = null;

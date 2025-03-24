@@ -422,6 +422,7 @@ export default {
                         sources: event.sources,
                         isMuffled: event.isMuffled,
                         isSpatial: event.isSpatial,
+                        target: event.target,
                     });
                     this.postChatterFrame({
                         type: 'set_scanner_channels',
@@ -454,12 +455,12 @@ export default {
             switch (event.type) {
                 case "radio_connected":
                     console.log('radio connected');
-                    this.$store.commit('setConnected', this.radioPower);
+                    this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
                     this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
-                    this.$store.commit('setConnected', false);
+                    this.$store.commit('setConnected', { connected: false });
                     break;
                 case "pending_approval":
                     this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
@@ -471,8 +472,10 @@ export default {
                     this.$store.commit('setRadioConfig', event.config);
                     break;
                 case 'state_updated':
-                    this.$store.commit('setRadioState', event.state);
-                    this.postClient({ type: 'stateUpdated', state: event.state });
+                    // include the identity in the state (used for audio ducking)
+                    const state = {...event.state, identity: this.$store.state.identity};
+                    this.$store.commit('setRadioState', state);
+                    this.postClient({ type: 'stateUpdated', state });
                     break;
                 case 'mic_status':
                     this.$store.commit('setRadioTalking', event.micOpen);
