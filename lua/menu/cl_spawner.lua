@@ -226,7 +226,7 @@ Citizen.CreateThread(function()
 					local finalConfig = {
 						componentId = drawable,
 						drawableId = currentDrawable,
-						textures = {}
+						texture = {}
 					}
 
 					-- Collect selected textures
