@@ -28,7 +28,6 @@ function initChatter()
 		local state = playerStates[GetPlayerServerId(ply)]
 		if not state then return nil end -- they don't have a state
 		if state.spec ~= 3 then return nil end -- outdated state spec
-		print('state spec is ok')
 
 		local scanList = {}
 		for _, chId in ipairs(state.primaryChIds) do
@@ -42,7 +41,7 @@ function initChatter()
 
 	-- used for debugging
 	local psuedoChatterSources = {
-		{pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'dev_84f65ade-cdb3-11eb-818f-0242ac120004_28'}
+		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'eyJ0eXAiOiJ1c2VyIiwiaWQiOiI4NGY2NWFkZS1jZGIzLTExZWItODE4Zi0wMjQyYWMxMjAwMDQiLCJub2R1cCI6ImZXbG1iZTVBIn0='}
 	}
 
 	local CHATTER_MIN_DIST = 15.0
