@@ -10,8 +10,11 @@
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
-                <div v-if="emergencyCall.peers.length > 0">
-                    You are now with a dispatcher!
+                <div v-if="emergencyCall.peers.length > 0" style="margin-top: 0.5rem">
+                    <span style="color:#5d8ee8">Dispatchers with you:</span>
+                    <div v-for="peer in emergencyCall.peers" :key="peer.id">
+                        {{ peer.name }}
+                    </div>
                 </div>
                 <div v-else style="color:orange" >Waiting for dispatcher...</div>
             </div>
