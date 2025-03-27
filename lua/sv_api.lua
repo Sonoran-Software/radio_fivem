@@ -58,9 +58,7 @@ function performApiRequest(postData, type, cb)
 				end
 				cb(res, false)
 			elseif statusCode == 404 then -- handle 404 requests, like from CHECK_APIID
-				errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
-				Config.critError = true
-				sendCritError()
+				warnLog('WARN_404: 404 response from API: ' .. tostring(res))
 				cb(res, false)
 			elseif statusCode == 429 then -- rate limited :(
 				if rateLimitedEndpoints[type] then
