@@ -257,8 +257,8 @@ export default {
         internalEmergencyCallOpen() {
             return this.emergencyCall.open;
         },
-        internalEmergencyCallDispatcherConnected() {
-            return this.emergencyCall.peers.length > 0;
+        internalEmergencyCallDispatchers() {
+            return this.emergencyCall.peers.map(x => x.name);
         },
     },
     watch: {
@@ -277,10 +277,10 @@ export default {
                 status,
             });
         },
-        internalEmergencyCallDispatcherConnected(available) {
+        internalEmergencyCallDispatchers(dispatcherNames) {
             this.postClient({
                 type: 'emergencyCallDispatcher',
-                available,
+                dispatcherNames,
             })
         }
     },

@@ -819,7 +819,7 @@ function initClient()
 		if data.type == 'emergencyCallStatus' then
 			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
 		elseif data.type == 'emergencyCallDispatcher' then
-			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.available)
+			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
 		end
 
 		if data.type == 'power' then
