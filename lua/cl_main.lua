@@ -494,10 +494,6 @@ function initClient()
 		SendNotification('Radio Volume: ~g~' .. volume .. '%~g~')
 	end)
 	TriggerEvent('chat:addSuggestion', '/radiovolume', 'Change the voice volume of all radios', {{name = 'volume', help = 'The volume percentage (0-250%)'}})
-	-- Talking Animation
-	-- RegisterCommand('sonradtalk', function()
-	-- 	Radio:Talking(isTalking)
-	-- end)
 
 	RegisterNetEvent('SonoranRadio::API:NextPreset')
 	AddEventHandler('SonoranRadio::API:NextPreset', function()
@@ -556,11 +552,11 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:PanicButton')
-	AddEventHandler('SonoranRadio::API:PanicButton', function(status)
-		if status then
-			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
-		else
-		end
+	AddEventHandler('SonoranRadio::API:PanicButton', function()
+		SendNUIMessage({
+			type = 'pushButton',
+			button = 'panic'
+		})
 	end)
 
 	RegisterNetEvent('SonoranRadio::API:SetPreset')
@@ -812,14 +808,14 @@ function initClient()
 			SendNotification(data.message)
 		end
 
-		if data.type == 'panic' then
-			TriggerEvent('SonoranRadio::API:PanicButton', data.status)
+		if data.type == 'panic' and data.status then
+			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
 		end
 
 		if data.type == 'emergencyCallStatus' then
 			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
 		elseif data.type == 'emergencyCallDispatcher' then
-			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.available)
+			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
 		end
 
 		if data.type == 'power' then
