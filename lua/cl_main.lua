@@ -867,6 +867,10 @@ function initClient()
 			SetResourceKvp('sonoranradio_skin', frame)
 		end
 
+		if data.type == 'chatterInit' then
+			chatterForceUpdate() -- force a resend of important chatter info
+		end
+
 		if data.type == 'setChatterConfig' then
 			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
 		end
