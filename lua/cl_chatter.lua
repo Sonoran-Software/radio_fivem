@@ -41,7 +41,7 @@ function initChatter()
 
 	-- used for debugging
 	local psuedoChatterSources = {
-		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'eyJ0eXAiOiJ1c2VyIiwiaWQiOiI4NGY2NWFkZS1jZGIzLTExZWItODE4Zi0wMjQyYWMxMjAwMDQiLCJub2R1cCI6ImZXbG1iZTVBIn0='}
+		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'eyJ0eXAiOiJ1c2VyIiwiaWQiOiI4NGY2NWFkZS1jZGIzLTExZWItODE4Zi0wMjQyYWMxMjAwMDQiLCJub2R1cCI6Ik1qcHFOaUMyIn0='}
 	}
 
 	local CHATTER_MIN_DIST = 15.0
@@ -183,6 +183,7 @@ function initChatter()
 	end
 
 	-- keep chatter source positions updated
+	local forceSourcesUpdate = false
 	Citizen.CreateThread(function()
 		local last = {
 			pos = nil,
@@ -241,7 +242,8 @@ function initChatter()
 					closestSourceInfo.targetIdentity == last.targetIdentity and
 					(closestSourcePos == last.pos or not vectorChanged(closestSourcePos, last.pos, 1.0)) and
 					containsAll(closestSourceInfo.scanList, last.scanList)
-				if not similar then
+				if not similar or forceSourcesUpdate then
+					forceSourcesUpdate = false
 					last.pos = closestSourcePos
 					last.scanList = closestSourceInfo.scanList
 					last.isMuffled = isMuffled
@@ -288,6 +290,7 @@ function initChatter()
 	end
 
 	-- keep the camera position and rotation updated
+	local forceCameraUpdate = false
 	Citizen.CreateThread(function()
 		local throttleMillis = 20
 		local lastUpdate = 0
@@ -300,8 +303,9 @@ function initChatter()
 			local forward = getForwardVector(rot.x, rot.z)
 			local up = getUpVector(rot.y)
 
-			local needsUpdate = vectorChanged(coord, lastCoord, 1.0) or vectorChanged(forward, lastForward) or vectorChanged(up, lastUp)
+			local needsUpdate = vectorChanged(coord, lastCoord, 1.0) or vectorChanged(forward, lastForward) or vectorChanged(up, lastUp) or forceCameraUpdate
 			if needsUpdate and GetGameTimer() - lastUpdate > throttleMillis then
+				forceCameraUpdate = false
 				lastUpdate = GetGameTimer()
 				lastCoord = coord
 				lastForward = forward
@@ -318,6 +322,11 @@ function initChatter()
 			Citizen.Wait(0)
 		end
 	end)
+
+	function chatterForceUpdate()
+		forceCameraUpdate = true
+		forceSourcesUpdate = true
+	end
 
 	-- display location of psuedo chatter sources in world
 	Citizen.CreateThread(function()
