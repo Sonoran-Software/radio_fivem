@@ -1283,23 +1283,43 @@ function initClient()
 	-- Gunshot listener
 	CreateThread(function()
 		while true do
-			local ped = PlayerPedId()
-			if IsPedShooting(ped) then
-				local weapon = GetSelectedPedWeapon(ped)
-				local category = GetWeaponCategory(weapon)
+			local playerPed = PlayerPedId()
+			local playerCoords = GetEntityCoords(playerPed)
 
-				if category then
-					local suppressed = IsWeaponSuppressed(weapon)
-					local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+			for _, ped in ipairs(GetGamePool('CPed')) do
+				if DoesEntityExist(ped) and not IsPedDeadOrDying(ped) then
+					local isPlayer = IsPedAPlayer(ped)
+					local pedId = NetworkGetPlayerIndexFromPed(ped)
 
-					if trackId then
-						ToggleAudio(true, trackId)
-						Wait(150)
-						ToggleAudio(false, trackId)
+					if isPlayer and (ped ~= playerPed or NetworkIsPlayerActive(pedId)) then
+						if IsPedShooting(ped) then
+							local weapon = GetSelectedPedWeapon(ped)
+							local category = GetWeaponCategory(weapon)
+
+							if category then
+								local suppressed = IsPedCurrentWeaponSilenced(ped)
+								local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+
+								-- Add "_other" if it's NOT the local player
+								if ped ~= playerPed then
+									baseTrackId = baseTrackId .. "_other"
+								end
+
+								-- Optional: Distance check to limit sound range
+								local pedCoords = GetEntityCoords(ped)
+								local dist = #(playerCoords - pedCoords)
+								if dist <= 100.0 then
+									ToggleAudio(true, baseTrackId)
+									Wait(150)
+									ToggleAudio(false, baseTrackId)
+								end
+							end
+						end
 					end
 				end
 			end
-			Wait(10)
+
+			Wait(50)
 		end
 	end)
 end
