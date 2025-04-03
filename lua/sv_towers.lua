@@ -156,17 +156,6 @@ AddEventHandler('RadioTower:clientTowerSync', function()
 	TriggerEvent('SonoranCAD::sonrad:SyncTowers', sonoradData)
 end)
 
-local DestroyRequests = {}
-RegisterNetEvent('RadioTower:Destroy')
-AddEventHandler('RadioTower:Destroy', function(coords)
-	local handshake = uuid()
-	DestroyRequests[source] = {
-		coords = coords,
-		secret = handshake
-	}
-	TriggerClientEvent('RadioTower:VerifyLocation', source, handshake)
-end)
-
 RegisterNetEvent('RadioTower:KillDish')
 AddEventHandler('RadioTower:KillDish', function(towerId, dishIndex)
 	local tower = GetTowerFromId(towerId)
@@ -178,6 +167,7 @@ AddEventHandler('RadioTower:KillDish', function(towerId, dishIndex)
 	tower.DishStatus[dishIndex] = 'dead'
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
+	TriggerEvent('SonoranRadio::API:TowerDishDestroyed', source, towerId, tower.DishStatus)
 end)
 
 RegisterNetEvent('RadioTower:RepairTower')
@@ -193,57 +183,8 @@ AddEventHandler('RadioTower:RepairTower', function(towerId)
 	end
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
+	TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
 end)
-
-RegisterNetEvent('RadioTower:clientLocationVerify')
-AddEventHandler('RadioTower:clientLocationVerify', function(coords, handshake)
-	if DestroyRequests[source] == nil or DestroyRequests[source].secret ~= handshake then
-		print('ERR: failed handshake')
-		return
-	end
-	local source = source
-	local dist1 = coords
-	local dist2 = DestroyRequests[source].coords
-	local dist = #(dist1 - dist2)
-	if dist > 5 then
-		print('ERR: failed location check')
-	else
-		local tower, idx = GetTower(dist2)
-		if not tower then
-			print('ERR: no tower found')
-			return
-		end
-		tower.Destruction = true
-		tower.DestructionTimer = GetGameTimer()
-		Towers[idx] = tower
-		TriggerClientEvent('RadioTower:SyncTowers', -1)
-		TriggerClientEvent('RadioTower:DestroyedTower', source, dist2)
-	end
-end)
-
--- AddEventHandler('onResourceStart', function(resource)
--- 	if GetCurrentResourceName() ~= resource then
--- 		return
--- 	end
--- 	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
--- 	local towers = json.decode(t)
--- 	for i = 1, #towers do
--- 		local obj = shallowcopy(RadioTower)
--- 		if towers[i].Id == nil then
--- 			obj.Id = uuid()
--- 		else
--- 			obj.Id = towers[i].Id
--- 		end
--- 		-- obj.Id = uuid()
--- 		obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
--- 		obj.Swankiness = towers[i].Swankiness
--- 		obj.Range = towers[i].Range
--- 		obj.Destruction = towers[i].Destruction
-
--- 		DebugPrint('setting up tower', json.encode(obj))
--- 		table.insert(Towers, obj)
--- 	end
--- end)
 
 -- API
 exports('createTower', function(config)

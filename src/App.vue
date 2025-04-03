@@ -10,8 +10,11 @@
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
-                <div v-if="emergencyCall.peers.length > 0">
-                    You are now with a dispatcher!
+                <div v-if="emergencyCall.peers.length > 0" style="margin-top: 0.5rem">
+                    <span style="color:#5d8ee8">Dispatchers with you:</span>
+                    <div v-for="peer in emergencyCall.peers" :key="peer.id">
+                        {{ peer.name }}
+                    </div>
                 </div>
                 <div v-else style="color:orange" >Waiting for dispatcher...</div>
             </div>
@@ -82,7 +85,10 @@ import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
 import Screen from './components/Screen.vue'
-import StandaloneFrame, { getFrameEl as getRadioFrameEl } from './components/StandaloneFrame.vue'
+import StandaloneFrame, {
+    getFrameEl as getRadioFrameEl,
+    removePersistentFrame as removeRadioFrame
+} from './components/StandaloneFrame.vue'
 
 export default {
     components: {
@@ -251,8 +257,8 @@ export default {
         internalEmergencyCallOpen() {
             return this.emergencyCall.open;
         },
-        internalEmergencyCallDispatcherConnected() {
-            return this.emergencyCall.peers.length > 0;
+        internalEmergencyCallDispatchers() {
+            return this.emergencyCall.peers.map(x => x.name);
         },
     },
     watch: {
@@ -271,10 +277,10 @@ export default {
                 status,
             });
         },
-        internalEmergencyCallDispatcherConnected(available) {
+        internalEmergencyCallDispatchers(dispatcherNames) {
             this.postClient({
                 type: 'emergencyCallDispatcher',
-                available,
+                dispatcherNames,
             })
         }
     },
@@ -419,6 +425,7 @@ export default {
                         sources: event.sources,
                         isMuffled: event.isMuffled,
                         isSpatial: event.isSpatial,
+                        target: event.target,
                     });
                     this.postChatterFrame({
                         type: 'set_scanner_channels',
@@ -451,12 +458,12 @@ export default {
             switch (event.type) {
                 case "radio_connected":
                     console.log('radio connected');
-                    this.$store.commit('setConnected', this.radioPower);
+                    this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
                     this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
-                    this.$store.commit('setConnected', false);
+                    this.$store.commit('setConnected', { connected: false });
                     break;
                 case "pending_approval":
                     this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
@@ -468,8 +475,10 @@ export default {
                     this.$store.commit('setRadioConfig', event.config);
                     break;
                 case 'state_updated':
-                    this.$store.commit('setRadioState', event.state);
-                    this.postClient({ type: 'stateUpdated', state: event.state });
+                    // include the identity in the state (used for audio ducking)
+                    const state = {...event.state, identity: this.$store.state.identity};
+                    this.$store.commit('setRadioState', state);
+                    this.postClient({ type: 'stateUpdated', state });
                     break;
                 case 'mic_status':
                     this.$store.commit('setRadioTalking', event.micOpen);
@@ -495,6 +504,7 @@ export default {
         onChatterFrameEvent(event) {
             switch (event.type) {
                 case 'radio_connected':
+                    this.postClient({ type: 'chatterInit' });
                 case 'config_updated':
                     this.postClient({ type: 'setChatterConfig', config: event.config });
                     break;
@@ -515,6 +525,9 @@ export default {
                     break;
                 case 'call_peers':
                     this.emergencyCall.peers = event.peers;
+                    break;
+                case "display_error":
+                    this.notifyPlayer(`~r~Emergency Call Error: ~s~${event.error}`);
                     break;
             }
         },
@@ -746,11 +759,14 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.postRadioFrame({
-                type: 'power',
-                power: this.radioPower
-            });
             this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On" : "~r~Off"));
+
+            if (this.radioPower) return;
+            // we need to remove the frame to "disconnect" from the radio
+            // normally the iframe persists because it is only hidden, not disconnected
+            this.$nextTick(() => {
+                removeRadioFrame('radio');
+            });
         },
         setEmergencyCall(enabled, displayName, cmd) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;

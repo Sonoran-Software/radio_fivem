@@ -24,20 +24,24 @@ function initChatter()
 		end
 	end
 
-	local function getPlayerScanList(ply)
+	local function getPlayerState(ply)
 		local state = playerStates[GetPlayerServerId(ply)]
 		if not state then return nil end -- they don't have a state
+		if state.spec ~= 3 then return nil end -- outdated state spec
 
-		local scanList = {state.primaryChId}
+		local scanList = {}
+		for _, chId in ipairs(state.primaryChIds) do
+			table.insert(scanList, chId)
+		end
 		for _, chId in ipairs(state.scannedChIds) do
 			table.insert(scanList, chId)
 		end
-		return scanList
+		return state.identity, scanList
 	end
 
 	-- used for debugging
 	local psuedoChatterSources = {
-		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}}
+		-- {pos = vec3(1759.71, 3245.96, 41.79), scanList = {6, 136}, targetIdentity = 'eyJ0eXAiOiJ1c2VyIiwiaWQiOiI4NGY2NWFkZS1jZGIzLTExZWItODE4Zi0wMjQyYWMxMjAwMDQiLCJub2R1cCI6Ik1qcHFOaUMyIn0='}
 	}
 
 	local CHATTER_MIN_DIST = 15.0
@@ -45,7 +49,6 @@ function initChatter()
 
 	-- find the near players, and send the required channels to listen on
 	Citizen.CreateThread(function()
-
 		while true do
 			local allChatterSources = {}
 			local myPos = GetFinalRenderedCamCoord()
@@ -61,7 +64,7 @@ function initChatter()
 					goto continue
 				end
 				-- player doesn't have radio state, skip
-				local scanList = getPlayerScanList(ply)
+				local identity, scanList = getPlayerState(ply)
 				if not scanList then
 					goto continue
 				end
@@ -85,6 +88,7 @@ function initChatter()
 				table.insert(allChatterSources, {
 					sourceEntity = ped,
 					scanList = scanList,
+					targetIdentity = identity
 				})
 				::continue::
 			end
@@ -92,7 +96,7 @@ function initChatter()
 			for _, source in ipairs(getScannerChatterSources()) do
 				table.insert(allChatterSources, source)
 			end
-			if Config.debug and psuedoChatterSources then
+			if Config.debug and psuedoChatterSources and #psuedoChatterSources > 0 then
 				for _, source in ipairs(psuedoChatterSources) do
 					table.insert(allChatterSources, source)
 				end
@@ -179,12 +183,14 @@ function initChatter()
 	end
 
 	-- keep chatter source positions updated
+	local forceSourcesUpdate = false
 	Citizen.CreateThread(function()
 		local last = {
 			pos = nil,
 			scanList = {},
 			isMuffled = false,
 			isSpatial = true,
+			targetIdentity = nil,
 		}
 		while true do
 			local closestSourcePos = nil
@@ -233,13 +239,16 @@ function initChatter()
 				local similar =
 					isMuffled == last.isMuffled and
 					isSpatial == last.isSpatial and
+					closestSourceInfo.targetIdentity == last.targetIdentity and
 					(closestSourcePos == last.pos or not vectorChanged(closestSourcePos, last.pos, 1.0)) and
 					containsAll(closestSourceInfo.scanList, last.scanList)
-				if not similar then
+				if not similar or forceSourcesUpdate then
+					forceSourcesUpdate = false
 					last.pos = closestSourcePos
 					last.scanList = closestSourceInfo.scanList
 					last.isMuffled = isMuffled
 					last.isSpatial = isSpatial
+					last.targetIdentity = closestSourceInfo.targetIdentity
 
 					updatePayload = {
 						sources = {closestSourcePos},
@@ -247,6 +256,9 @@ function initChatter()
 						isMuffled = isMuffled,
 						isSpatial = isSpatial,
 					}
+					if closestSourceInfo.targetIdentity then
+						updatePayload.target = closestSourceInfo.targetIdentity
+					end
 				end
 			end
 
@@ -278,6 +290,7 @@ function initChatter()
 	end
 
 	-- keep the camera position and rotation updated
+	local forceCameraUpdate = false
 	Citizen.CreateThread(function()
 		local throttleMillis = 20
 		local lastUpdate = 0
@@ -290,8 +303,9 @@ function initChatter()
 			local forward = getForwardVector(rot.x, rot.z)
 			local up = getUpVector(rot.y)
 
-			local needsUpdate = vectorChanged(coord, lastCoord, 1.0) or vectorChanged(forward, lastForward) or vectorChanged(up, lastUp)
+			local needsUpdate = vectorChanged(coord, lastCoord, 1.0) or vectorChanged(forward, lastForward) or vectorChanged(up, lastUp) or forceCameraUpdate
 			if needsUpdate and GetGameTimer() - lastUpdate > throttleMillis then
+				forceCameraUpdate = false
 				lastUpdate = GetGameTimer()
 				lastCoord = coord
 				lastForward = forward
@@ -308,6 +322,11 @@ function initChatter()
 			Citizen.Wait(0)
 		end
 	end)
+
+	function chatterForceUpdate()
+		forceCameraUpdate = true
+		forceSourcesUpdate = true
+	end
 
 	-- display location of psuedo chatter sources in world
 	Citizen.CreateThread(function()
