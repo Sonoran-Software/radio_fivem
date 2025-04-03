@@ -504,6 +504,7 @@ export default {
         onChatterFrameEvent(event) {
             switch (event.type) {
                 case 'radio_connected':
+                    this.postClient({ type: 'chatterInit' });
                 case 'config_updated':
                     this.postClient({ type: 'setChatterConfig', config: event.config });
                     break;
