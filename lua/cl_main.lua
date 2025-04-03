@@ -1153,6 +1153,179 @@ function initClient()
 			lvcStarted = false
 		end
 	end)
+
+	local currentLoopingSounds = {}
+	-- Define categorized track IDs
+	local TrackIDs = {
+		["VEHICLE_SIREN"] = "siren",
+		["BOAT"] = "boat_engine",
+		["HELI"] = "helicopter_rotors",
+		["PISTOL"] = "gunshot_pistol",
+		["RIFLE"] = "gunshot_rifle"
+	}
+
+	-- Define weapon categories
+	local WeaponCategories = {
+		["PISTOL"] = {
+			`weapon_pistol`,
+			`weapon_pistol_mk2`,
+			`weapon_combatpistol`,
+			`weapon_appistol`,
+			`weapon_stungun`,
+			`weapon_pistol50`,
+			`weapon_snspistol`,
+			`weapon_snspistol_mk2`,
+			`weapon_heavypistol`,
+			`weapon_vintagepistol`,
+			`weapon_flaregun`,
+			`weapon_marksmanpistol`,
+			`weapon_revolver`,
+			`weapon_revolver_mk2`,
+			`weapon_doubleaction`,
+			`weapon_ceramicpistol`,
+			`weapon_navyrevolver`,
+			`weapon_gadgetpistol`,
+			`weapon_stungun_mp`
+		},
+		["RIFLE"] = {
+			`weapon_assaultrifle`,
+			`weapon_assaultrifle_mk2`,
+			`weapon_carbinerifle`,
+			`weapon_carbinerifle_mk2`,
+			`weapon_advancedrifle`,
+			`weapon_specialcarbine`,
+			`weapon_specialcarbine_mk2`,
+			`weapon_bullpuprifle`,
+			`weapon_bullpuprifle_mk2`,
+			`weapon_compactrifle`,
+			`weapon_militaryrifle`,
+			`weapon_heavyrifle`,
+			`weapon_tacticalrifle`
+		}
+	}
+	-- Utility: check if weapon is suppressed
+	local function IsWeaponSuppressed(weapon)
+		return IsPedCurrentWeaponSilenced(PlayerPedId())
+	end
+
+	-- Utility: get weapon category
+	local function GetWeaponCategory(weapon)
+		for category, weapons in pairs(WeaponCategories) do
+			for _, w in ipairs(weapons) do
+				if weapon == w then
+					return category
+				end
+			end
+		end
+		return nil
+	end
+
+	-- Emit NUI event
+	local function ToggleAudio(start, trackId)
+		SendNUIMessage({
+			type = "toggle_background_audio",
+			start = start,
+			trackId = trackId
+		})
+	end
+
+	-- Main thread
+	CreateThread(function()
+		while true do
+			local ped = PlayerPedId()
+			local veh = GetVehiclePedIsIn(ped, false)
+
+			-- SIREN DETECTION
+			if veh and veh ~= 0 then
+				if IsVehicleSirenOn(veh) and not currentLoopingSounds["siren"] then
+					ToggleAudio(true, "siren")
+					currentLoopingSounds["siren"] = true
+				elseif not IsVehicleSirenOn(veh) and currentLoopingSounds["siren"] then
+					ToggleAudio(false, "siren")
+					currentLoopingSounds["siren"] = false
+				end
+
+				-- BOAT ENGINE DETECTION
+				if IsThisModelABoat(GetEntityModel(veh)) then
+					if not currentLoopingSounds["boat_engine"] then
+						ToggleAudio(true, "boat_engine")
+						currentLoopingSounds["boat_engine"] = true
+					end
+				else
+					if currentLoopingSounds["boat_engine"] then
+						ToggleAudio(false, "boat_engine")
+						currentLoopingSounds["boat_engine"] = false
+					end
+				end
+
+				-- HELICOPTER ROTORS DETECTION
+				if IsThisModelAHeli(GetEntityModel(veh)) then
+					if not currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(true, "helicopter_rotors")
+						currentLoopingSounds["helicopter_rotors"] = true
+					end
+				else
+					if currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(false, "helicopter_rotors")
+						currentLoopingSounds["helicopter_rotors"] = false
+					end
+				end
+			else
+				-- Reset all if not in vehicle
+				for id, playing in pairs(currentLoopingSounds) do
+					if playing then
+						ToggleAudio(false, id)
+						currentLoopingSounds[id] = false
+					end
+				end
+			end
+
+			Wait(500) -- adjust for responsiveness/performance
+		end
+	end)
+
+	-- Gunshot listener
+	CreateThread(function()
+		while true do
+			local playerPed = PlayerPedId()
+			local playerCoords = GetEntityCoords(playerPed)
+
+			for _, ped in ipairs(GetGamePool('CPed')) do
+				if DoesEntityExist(ped) and not IsPedDeadOrDying(ped) then
+					local isPlayer = IsPedAPlayer(ped)
+					local pedId = NetworkGetPlayerIndexFromPed(ped)
+
+					if isPlayer and (ped ~= playerPed or NetworkIsPlayerActive(pedId)) then
+						if IsPedShooting(ped) then
+							local weapon = GetSelectedPedWeapon(ped)
+							local category = GetWeaponCategory(weapon)
+
+							if category then
+								local suppressed = IsPedCurrentWeaponSilenced(ped)
+								local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+
+								-- Add "_other" if it's NOT the local player
+								if ped ~= playerPed then
+									baseTrackId = baseTrackId .. "_other"
+								end
+
+								-- Optional: Distance check to limit sound range
+								local pedCoords = GetEntityCoords(ped)
+								local dist = #(playerCoords - pedCoords)
+								if dist <= 100.0 then
+									ToggleAudio(true, baseTrackId)
+									Wait(150)
+									ToggleAudio(false, baseTrackId)
+								end
+							end
+						end
+					end
+				end
+			end
+
+			Wait(50)
+		end
+	end)
 end
 
 function handleNameChange(name)
