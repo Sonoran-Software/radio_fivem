@@ -773,6 +773,7 @@ function initClient()
 		SendNUIMessage({
 			type = 'setStandalone',
 			standaloneId = comId,
+			roomId = Config.serverId,
 			standaloneUrl = Config.radioUrl,
 			chatter = chatter,
 			debug = Config.debug,

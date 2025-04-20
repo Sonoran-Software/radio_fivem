@@ -14,7 +14,7 @@ polyZoneFileName = 'tunnels.DEFAULT.json'
 speakersFileName = 'speakers.DEFAULT.json'
 chatterFileName = 'earpieces.json'
 chatterConfig = {}
-local clientConfig = {}
+local clientConfig
 
 if type(Config) ~= 'table' then
 	critError = true
@@ -24,13 +24,10 @@ if type(Config) ~= 'table' then
 	print('2. You have made a syntax error in your config.lua file')
 	print('^1!!! CRITICAL ERROR !!!^7')
 else
-	for k, v in pairs(Config) do
-		if k ~= "apiKey" then
-			clientConfig[k] = v
-		end
-	end
 	RegisterNetEvent('SonoranRadio::core::RequestEnvironment', function()
-		TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', source, clientConfig)
+		if clientConfig then
+			TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', source, clientConfig)
+		end
 	end)
 	if not IsDuplicityVersion() then
 		RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
@@ -391,53 +388,91 @@ local function CopyFile(old_path, new_path)
 	return true
 end
 
+-- this function creates/initializes the sanitized clientConfig
+-- it returns a promise that can be waited with Citizen.Await
+--
+-- to create the clientConfig, we must wait for the serverId to be set in the config,
+-- which this function also acomplishes
+local function createClientConfig()
+	local d = promise.new()
+	Config.init = false
+	Citizen.CreateThreadNow(function()
+		local tries = 0
+		local webUrl = GetConvar('web_baseUrl', '')
+		while not webUrl and tries < 5 do
+			Citizen.Wait(15000)
+			tries = tries + 1
+			webUrl = GetConvar('web_baseUrl', '')
+		end
+
+		-- to create the client config, we must wait for the server-ip to be set so
+		-- we have a roomId. If this is the initial setup, then Config.serverId == nil
+		local pushUrl = 'https://'..webUrl..'/sonoranradio/events'
+		print('[SonoranRadio] - Attempting to set server IP for radio service... '..pushUrl)
+		exports['sonoranradio']:performApiRequest({
+			['id'] = Config.comId,
+			['key'] = Config.apiKey,
+			['roomId'] = Config.serverId,
+			['pushUrl'] = pushUrl,
+			['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
+		}, 'SET-SERVER-IP', function(data, success)
+			if not success then
+				d:reject('failed to update server IP')
+				errorLog('Failed to set server IP for radio service. Please check your configuration.')
+				return
+			end
+
+			data = json.decode(data)
+			-- if the room id doesn't match the one in the config, update the config file
+			if data.roomId ~= Config.serverId then
+				local configFile = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
+				configFile = configFile:gsub("[\n^]Config%.serverId%s*=[^\n]*", "") -- remove other "serverId" instances
+
+				-- insert the new serverId below the apiKey
+				configFile = configFile:gsub("Config%.apiKey%s*=%s*.-\n", function(line)
+					return line .. 'Config.serverId = '..data.roomId..'\n'
+				end, 1)
+
+				SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
+			end
+
+			Config.init = true
+			Config.serverId = data.roomId
+
+			-- create the client config
+			local clConfig = {}
+			for k, v in pairs(Config) do
+				if k ~= 'apiKey' and k ~= 'init' then
+					clConfig[k] = v
+				end
+			end
+			clientConfig = clConfig
+			d:resolve(clConfig)
+		end)
+	end)
+	return d
+end
+
 AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
-	getInventory()
-	getFramework()
 	if critError or not Config or not Config.apiKey or not Config.comId then
 		errorLog('API Key or Community ID not set. Please check your configuration.')
 		critError = true
 		return
 	end
-	local baseUrl = ""
-	local waitTime = 15000
-	local retryCount = 0
-	Citizen.CreateThread(function()
-		while retryCount <= 5 do
-			Wait(waitTime)
-			if GetConvar('web_baseUrl', '') ~= '' then
-				baseUrl = GetConvar('web_baseUrl', '')
-			end
-			if baseUrl == "" then
-				retryCount = retryCount + 1
-				if retryCount >= 2 then
-					errorLog('ERR 101: Unable to get webBaseURL (CFX Nucleus Proxy URL) on attempt '.. tostring(retryCount) .. '. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
-					if retryCount >= 5 then
-						errorLog('ERR 101: Maximum retries reached. Please ensure your CFX Nucleus Proxy URL is set correctly. Radio will be unable to receive push events. https://sonoran.link/radiocodes')
-						return
-					else
-						waitTime = waitTime * 2
-						print('[SonoranRadio] - Retrying in ' .. tostring(waitTime/1000) .. ' seconds...')
-					end
-				end
-			else
-				retryCount = 6
-				print('[SonoranRadio] - Attempting to set server IP for radio service... ' .. 'https://'.. baseUrl .. '/sonoranradio/events')
-				exports['sonoranradio']:performApiRequest({
-					['id'] = Config.comId,
-					['key'] = Config.apiKey,
-					['pushUrl'] = 'https://'.. baseUrl .. '/sonoranradio/events'
-				}, 'SET-SERVER-IP', function(data, success)
-					if not success then
-						errorLog('Failed to set server IP for radio service. Please check your configuration.')
-					end
-				end)
-			end
-		end
-	end)
+	Config.init = false
+	if Config.frames == nil or not Config.frames then
+		errorLog('Config.frames is not set. Please check your configuration.')
+		critError = true
+		return
+	end
+	getInventory()
+	getFramework()
+	local initConfigPromise = createClientConfig()
+
+	-- create a towers.json if it doesn't exist already
 	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
 	if not jsonFile then -- Request default if there was an issue getting the regular
 		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
@@ -507,12 +542,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 			table.insert(CellRepeaters, obj)
 		end
 	end
-	if Config.frames == nil or not Config.frames then
-		print('!!! CRITICAL ERROR !!!')
-		print('Config file not found or is outdated. Look for an updated config.CHANGEME.lua and ensure you rename it to config.lua.')
-		print('!!! CRITICAL ERROR !!!')
-		return
-	end
+
+	-- create a tunnels.json if it doesn't exist already
 	local polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.json')
 	if not polyZoneFile then -- Request default if there was an issue getting the regular
 		polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.DEFAULT.json')
@@ -541,6 +572,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		}
 		table.insert(tunnels, obj)
 	end
+
+	-- create a speakers.json if it doesn't exist already
 	local speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.json')
 	if not speakersFile then
 		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
@@ -573,23 +606,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		obj.Label = spkrs[i].Label
 		table.insert(Speakers, obj)
 	end
-	local locations = {}
-	for _, speaker in ipairs(Speakers) do
-		table.insert(locations, {
-			['label'] = speaker.Label,
-			['id'] = speaker.Id
-		})
-	end
-	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
-	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
-		['locations'] = locations
-	}, 'SET-SERVER-SPEAKERS', function(data, success)
-		if not success then
-			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
-		end
-	end)
+
+	-- create a earpieces.json if it doesn't exist already
 	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
 	if not chatterFile then
 		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
@@ -641,6 +659,28 @@ AddEventHandler('onResourceStart', function(resourceName)
 	if Config.chatterExclusion then
 		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end
+
+	-- set the speakers via the API
+	local locations = {}
+	for _, speaker in ipairs(Speakers) do
+		table.insert(locations, {
+			['label'] = speaker.Label,
+			['id'] = speaker.Id
+		})
+	end
+	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
+	exports['sonoranradio']:performApiRequest({
+		['id'] = Config.comId,
+		['key'] = Config.apiKey,
+		['locations'] = locations
+	}, 'SET-SERVER-SPEAKERS', function(data, success)
+		if not success then
+			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+		end
+	end)
+
+	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
 end)
 
 exports('performApiRequest', performApiRequest)
