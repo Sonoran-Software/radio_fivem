@@ -40,6 +40,9 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initTowers()
 	initClient()
 	initScanners()
+	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
+		initLbPhone()
+	end
 end)
 
 function initClient()

@@ -43,6 +43,7 @@ Config.talkSync = true -- Enable talking on the radio making you talk in game
 Config.tunnelDegradationStrength = 0.5 -- The strength of the tunnel degradation effect (0.0 - 1.0) 0.0 = no degradation, 1.0 = full degradation
 Config.emergencyCallCommand = '999' -- Command suffix to start or stop an emergency call (i.e. '911' == /radio 911)
 Config.luxartResourceName = 'lvc' -- Resource name for Luxart Vehicle Control (Required for siren control)
+Config.phoneResource = 'lb-phone' -- Which phone resource to utilize for 911 calls | OPTIONS: none (no phone resource) | lb-phone (https://lbscripts.com/)
 
 -- Notification Settings --
 Config.notifications = {
