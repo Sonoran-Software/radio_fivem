@@ -33,7 +33,7 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :query="{ displayName: emergencyCall.name }"
+            :query="{ roomId: standaloneRoomId, displayName: emergencyCall.name }"
             feature="911"
         />
         <!-- radio iframe for nearby chatter -->
@@ -42,6 +42,7 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
+            :query="{ roomId: standaloneRoomId }"
             feature="chatter"
         />
 
@@ -58,7 +59,7 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
-                            :query="{screen: frame.screen.style}"
+                            :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
                             iframe-persistent
                         />
                     </primary-screen>
@@ -104,6 +105,7 @@ export default {
             debug: false,
             help: false,
             standaloneServerId: null,
+            standaloneRoomId: null,
             standaloneUrl: null,
             pttKeyName: null,
 
@@ -301,6 +303,7 @@ export default {
             switch (event.type) {
                 case 'setStandalone':
                     this.standaloneServerId = event.standaloneId;
+                    this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug = event.debug;
