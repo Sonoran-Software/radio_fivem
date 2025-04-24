@@ -12,6 +12,7 @@
 function initLbPhone()
     CallData = {
         status = nil,
+        callID = nil,
         src = GetPlayerServerId(PlayerId()),
         hasDispatcher = false,
         dispatcherNames = nil,
@@ -106,6 +107,7 @@ function initLbPhone()
             end
 
             while not CallData.hasDispatcher do
+                Citizen.Wait(100)
 
                 local inCall = exports["lb-phone"]:IsInCall()
 
@@ -131,8 +133,7 @@ function initLbPhone()
 
                 else
                     --Call will be sent to voicemail automatically by lbphone after 11.3 seconds, ending call before LB sends to voicemail automatically
-
-                    if CallData.totalCallLength >- 10500 then
+                    if CallData.totalCallLength >= 10500 then
                         DebugPrint("Call Timed Out before dispatcher answered.")
 
                         CallData.status = "callTimedOut"
