@@ -102,19 +102,16 @@ Citizen.CreateThread(function()
     end
 	while true do
 		if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
-			if WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu') then
+			WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu')
+			WarMenu.MenuButton('Move Repeater', 'moveRadioMenu')
+			WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu')
+			if WarMenu.Button('Repair All Repeaters') then
+				TriggerServerEvent('RadioTower:RepairAllTowers')
 			end
-			if WarMenu.MenuButton('Move Repeater', 'moveRadioMenu') then
-			end
-			if WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu') then
-			end
-			if WarMenu.MenuButton('Degradation Zones', 'degradeMenu') then
-			end
-			if WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu') then
-			end
+			WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
+			WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
 			if Config.chatter then
-				if WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu') then
-				end
+				WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
 			end
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('spawnRadioMenu') then

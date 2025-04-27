@@ -101,6 +101,7 @@ function initTowers()
 	end
 	-- syncs the dead/alive state of dishes to their physical vehicles
 	function SyncDishStatus(tower, playSound)
+		if not tower.Dishes then return end -- if the tower doesn't have physical dishes, then don't do anything
 		for i = 1, #tower.Dishes do
 			local dish = tower.Dishes[i]
 			local dead = IsEntityDead(dish)
