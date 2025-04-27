@@ -264,9 +264,9 @@ function initClient()
 			-- qb-inventory (QBCore functions)
 			local hasItem = false
 			if type(QBCore.Functions.GetItemByName) == 'table' then
-				hasItem = QBCore.Functions.GetItemByName(itemName) ~= nil
+				hasItem = not not QBCore.Functions.GetItemByName(itemName)
 			elseif type(QBCore.Functions.HasItem) == 'table' then
-				hasItem = QBCore.Functions.HasItem(itemName) ~= nil
+				hasItem = not not QBCore.Functions.HasItem(itemName)
 			end
 
 			if not hasItem then
