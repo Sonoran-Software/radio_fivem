@@ -6,7 +6,7 @@
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
             </div>
-            <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
+            <div v-else-if="emergencyCall.open && emergencyCall.showHelpText" style="display: flex; flex-direction: column; align-items: center">
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
@@ -132,6 +132,7 @@ export default {
                 peers: [],
                 state: null,
                 cmd: '911',
+                showHelpText: true,
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -327,7 +328,7 @@ export default {
                     this.refreshScreen();
                     break;
                 case 'setEmergencyCall':
-                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand);
+                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
@@ -771,11 +772,12 @@ export default {
                 removeRadioFrame('radio');
             });
         },
-        setEmergencyCall(enabled, displayName, cmd) {
+        setEmergencyCall(enabled, displayName, cmd, showHelpText) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
             this.emergencyCall.open = enable;
             if (displayName) this.emergencyCall.name = displayName;
             if (cmd) this.emergencyCall.cmd = cmd;
+            if (showHelpText != null) this.emergencyCall.showHelpText = showHelpText;
             if (!enable) {
                 // reset the emergency call state
                 this.emergencyCall.peers = [];

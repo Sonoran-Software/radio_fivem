@@ -376,6 +376,7 @@ function initClient()
 			enabled = enabled,
 			displayName = displayName,
 			callCommand = emergencyCallCommand(),
+			showHelpText = Config.showEmergencyCallHelp or true
 		})
 	end
 	exports('setEmergencyCall', setEmergencyCall)
