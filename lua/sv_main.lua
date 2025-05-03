@@ -405,20 +405,22 @@ local function createClientConfig()
 			webUrl = GetConvar('web_baseUrl', '')
 		end
 
+		local roomId = Config.serverId or GetResourceKvpInt('standalone_serverId') or nil -- use the config value, or the KVP as a backup
 		-- to create the client config, we must wait for the server-ip to be set so
-		-- we have a roomId. If this is the initial setup, then Config.serverId == nil
+		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
+		-- roomId will be created by the backend
 		local pushUrl = 'https://'..webUrl..'/sonoranradio/events'
 		print('[SonoranRadio] - Attempting to set server IP for radio service... '..pushUrl)
 		exports['sonoranradio']:performApiRequest({
 			['id'] = Config.comId,
 			['key'] = Config.apiKey,
-			['roomId'] = Config.serverId,
+			['roomId'] = roomId,
 			['pushUrl'] = pushUrl,
 			['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
 		}, 'SET-SERVER-IP', function(data, success)
 			if not success then
 				d:reject('failed to update server IP')
-				errorLog('Failed to set server IP for radio service. Please check your configuration.')
+				errorLog('Failed to set server IP for radio service. Please check the comId and apiKey in your config file.')
 				return
 			end
 
@@ -433,16 +435,21 @@ local function createClientConfig()
 					return line .. 'Config.serverId = '..data.roomId..'\n'
 				end, 1)
 
-				SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
+				local configWriteSuccess = SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
+				if not configWriteSuccess then
+					-- couldn't write the file, but this is recoverable (kvp is used as backup)
+					warnLog('Failed to write "Config.serverId = '..data.roomId..'" to config.lua. Is the file read-only?')
+				end
 			end
 
+			SetResourceKvpInt('standalone_serverId', data.roomId) -- save the roomId to the resource KVP as a backup
 			Config.init = true
 			Config.serverId = data.roomId
 
 			-- create the client config
 			local clConfig = {}
 			for k, v in pairs(Config) do
-				if k ~= 'apiKey' and k ~= 'init' then
+				if k ~= 'apiKey' and k ~= 'init' then -- filter out sensitive data
 					clConfig[k] = v
 				end
 			end
