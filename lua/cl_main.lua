@@ -110,9 +110,9 @@ function initClient()
 		})
 	end)
 
-	CreateThread(function()
+	Citizen.CreateThread(function()
 		while true do
-			Wait(5000)
+			Citizen.Wait(5000)
 			TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
 		end
 	end)
@@ -158,11 +158,11 @@ function initClient()
 		end
 	end
 
-	CreateThread(function()
+	Citizen.CreateThread(function()
 		if Config.enforceRadioItem then
 			if frameworkEnum == 1 then
 				while QBCore.Functions.GetPlayerData() == nil do
-					Wait(10)
+					Citizen.Wait(10)
 				end
 			end
 		end
@@ -652,7 +652,7 @@ function initClient()
 				if self.Open then
 					RequestAnimDict('cellphone@')
 					while not HasAnimDictLoaded('cellphone@') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false, false)
 
@@ -665,7 +665,7 @@ function initClient()
 				else
 					RequestAnimDict('random@arrests')
 					while not HasAnimDictLoaded('random@arrests') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					TaskPlayAnim(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', 8.0, 0.0, -1, 49, 0, 0, 0, 0)
 					isTalking = true
@@ -683,7 +683,7 @@ function initClient()
 					-- Citizen.Wait(700)
 					RequestAnimDict('cellphone@')
 					while not HasAnimDictLoaded('cellphone@') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					-- TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
@@ -1084,7 +1084,7 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::RequestClientData', function()
 		TriggerEvent('SonoranRadio:CarRadioPower', Radio.On)
 		if Radio.On then
-			Wait(1000)
+			Citizen.Wait(1000)
 			SendNUIMessage({
 				type = "get_connected_users",
 			})
@@ -1248,8 +1248,11 @@ function initClient()
 		end
 
 		-- Main thread
-		CreateThread(function()
+		Citizen.CreateThread(function()
 			while true do
+				if not Radio.On then
+					goto ::continue::
+				end
 				local playerPed = PlayerPedId()
 				local playerCoords = GetEntityCoords(playerPed)
 
@@ -1304,13 +1307,16 @@ function initClient()
 					ToggleAudio(false, "helicopter_rotors")
 					currentLoopingSounds["helicopter_rotors"] = false
 				end
-
-				Wait(100) -- adjust as needed for performance/responsiveness
+				::continue::
+				Citizen.Wait(100) -- adjust as needed for performance/responsiveness
 			end
 		end)
 		-- Gunshot listener
 		Citizen.CreateThread(function()
 			while true do
+				if not Radio.On then
+					goto ::continue::
+				end
 				local playerPed   = PlayerPedId()
 				local playerCoords = GetEntityCoords(playerPed)
 
@@ -1322,7 +1328,7 @@ function initClient()
 						local suppressed = IsPedCurrentWeaponSilenced(playerPed)
 						local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
 						ToggleAudio(true, trackId)
-						Wait(150)
+						Citizen.Wait(150)
 						ToggleAudio(false, trackId)
 					end
 				end
@@ -1346,15 +1352,15 @@ function initClient()
 								local dist = #(playerCoords - pedCoords)
 								if dist <= 100.0 then
 									ToggleAudio(true, baseTrackId)
-									Wait(150)
+									Citizen.Wait(150)
 									ToggleAudio(false, baseTrackId)
 								end
 							end
 						end
 					end
 				end
-
-				Wait(50)
+				::continue::
+				Citizen.Wait(100)
 			end
 		end)
 	end
