@@ -452,6 +452,7 @@ export default {
                         type: 'set_display_name',
                         name: event.name
                     })
+                    break;
                 case 'toggle_background_audio':
                     this.postRadioFrame({
                         type: 'toggle_background_audio',
