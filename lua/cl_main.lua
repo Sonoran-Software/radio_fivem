@@ -645,7 +645,7 @@ function initClient()
 	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
 	function Radio:Talking(toggle)
-		local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+		local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
 		TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
 		if self.TalkAnim then
 			if toggle and not inVeh then
@@ -727,7 +727,7 @@ function initClient()
 		if self.Open == toggle then
 			return
 		end
-		if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(GetPlayerPed(-1)) then
+		if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(PlayerPedId()) then
 			return
 		end
 
