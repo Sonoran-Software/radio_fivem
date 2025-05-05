@@ -41,7 +41,18 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initClient()
 	initScanners()
 	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
-		initLbPhone()
+		if GetResourceState('lb-phone') == 'started' then
+			-- lb-phone is started, so we can initialize the phone integration
+			initLbPhone()
+		else
+			-- lb-phone is not started, so we need to wait for it to start
+			warnLog('The resource lb-phone is not started. Waiting for it to start to initialize phone integration.')
+			AddEventHandler('onResourceStart', function(resourceName)
+				if resourceName == 'lb-phone' then
+					initLbPhone()
+				end
+			end)
+		end
 	end
 end)
 

@@ -176,8 +176,8 @@ function initLbPhone()
 
         end
     }
-
-    local NumberCreated, reason = exports["lb-phone"]:CreateCustomNumber("911", data)
+    local number = Config.emergencyCallCommand or "911"
+    local NumberCreated, reason = exports["lb-phone"]:CreateCustomNumber(number, data)
 
     if not NumberCreated then
         DebugPrint("Error setting custom number!! Error: " .. reason)
