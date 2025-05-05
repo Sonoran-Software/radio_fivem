@@ -1264,7 +1264,7 @@ function initClient()
 					end
 
 					-- BOAT ENGINE DETECTION
-					if IsThisModelABoat(GetEntityModel(veh)) then
+					if GetVehicleClass(veh) == 14 then
 						if not currentLoopingSounds["boat_engine"] then
 							ToggleAudio(true, "boat_engine")
 							currentLoopingSounds["boat_engine"] = true
@@ -1277,7 +1277,7 @@ function initClient()
 					end
 
 					-- HELICOPTER ROTORS DETECTION
-					if IsThisModelAHeli(GetEntityModel(veh)) then
+					if GetVehicleClass(veh) == 15 then
 						if not currentLoopingSounds["helicopter_rotors"] then
 							ToggleAudio(true, "helicopter_rotors")
 							currentLoopingSounds["helicopter_rotors"] = true
