@@ -1250,58 +1250,64 @@ function initClient()
 		-- Main thread
 		CreateThread(function()
 			while true do
-				local ped = PlayerPedId()
-				local veh = GetVehiclePedIsIn(ped, false)
+				local playerPed = PlayerPedId()
+				local playerCoords = GetEntityCoords(playerPed)
 
-				-- SIREN DETECTION
-				if veh and veh ~= 0 then
-					if IsVehicleSirenOn(veh) and not currentLoopingSounds["siren"] then
-						ToggleAudio(true, "siren")
-						currentLoopingSounds["siren"] = true
-					elseif not IsVehicleSirenOn(veh) and currentLoopingSounds["siren"] then
-						ToggleAudio(false, "siren")
-						currentLoopingSounds["siren"] = false
-					end
+				-- Flags for “any nearby vehicle”
+				local anySiren, anyBoat, anyHeli = false, false, false
 
-					-- BOAT ENGINE DETECTION
-					if GetVehicleClass(veh) == 14 then
-						if not currentLoopingSounds["boat_engine"] then
-							ToggleAudio(true, "boat_engine")
-							currentLoopingSounds["boat_engine"] = true
-						end
-					else
-						if currentLoopingSounds["boat_engine"] then
-							ToggleAudio(false, "boat_engine")
-							currentLoopingSounds["boat_engine"] = false
-						end
-					end
-
-					-- HELICOPTER ROTORS DETECTION
-					if GetVehicleClass(veh) == 15 then
-						if not currentLoopingSounds["helicopter_rotors"] then
-							ToggleAudio(true, "helicopter_rotors")
-							currentLoopingSounds["helicopter_rotors"] = true
-						end
-					else
-						if currentLoopingSounds["helicopter_rotors"] then
-							ToggleAudio(false, "helicopter_rotors")
-							currentLoopingSounds["helicopter_rotors"] = false
-						end
-					end
-				else
-					-- Reset all if not in vehicle
-					for id, playing in pairs(currentLoopingSounds) do
-						if playing then
-							ToggleAudio(false, id)
-							currentLoopingSounds[id] = false
+				-- Scan every networked vehicle
+				for _, veh in ipairs(GetGamePool('CVehicle')) do
+					if DoesEntityExist(veh) and not IsEntityDead(veh) then
+						local vehCoords = GetEntityCoords(veh)
+						local dist = #(playerCoords - vehCoords)
+						if dist <= 100.0 then
+							-- Siren check
+							if IsVehicleSirenOn(veh) then
+								anySiren = true
+							end
+							-- Boat engine (class 14)
+							if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh)  then
+								anyBoat = true
+							end
+							-- Helicopter rotors (class 15)
+							if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh)  then
+								anyHeli = true
+							end
 						end
 					end
 				end
 
-				Wait(500) -- adjust for responsiveness/performance
+				-- Toggle “siren” sound
+				if anySiren and not currentLoopingSounds["siren"] then
+					ToggleAudio(true, "siren")
+					currentLoopingSounds["siren"] = true
+				elseif not anySiren and currentLoopingSounds["siren"] then
+					ToggleAudio(false, "siren")
+					currentLoopingSounds["siren"] = false
+				end
+
+				-- Toggle “boat_engine” sound
+				if anyBoat and not currentLoopingSounds["boat_engine"] then
+					ToggleAudio(true, "boat_engine")
+					currentLoopingSounds["boat_engine"] = true
+				elseif not anyBoat and currentLoopingSounds["boat_engine"] then
+					ToggleAudio(false, "boat_engine")
+					currentLoopingSounds["boat_engine"] = false
+				end
+
+				-- Toggle “helicopter_rotors” sound
+				if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
+					ToggleAudio(true, "helicopter_rotors")
+					currentLoopingSounds["helicopter_rotors"] = true
+				elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
+					ToggleAudio(false, "helicopter_rotors")
+					currentLoopingSounds["helicopter_rotors"] = false
+				end
+
+				Wait(100) -- adjust as needed for performance/responsiveness
 			end
 		end)
-
 		-- Gunshot listener
 		Citizen.CreateThread(function()
 			while true do
