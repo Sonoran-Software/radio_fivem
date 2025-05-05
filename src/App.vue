@@ -456,7 +456,7 @@ export default {
                 case 'toggle_background_audio':
                     this.postRadioFrame({
                         type: 'toggle_background_audio',
-                        start: event.start
+                        start: event.start,
                         trackId: event.trackId
                     });
                     break;
