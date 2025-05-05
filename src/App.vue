@@ -452,6 +452,13 @@ export default {
                         type: 'set_display_name',
                         name: event.name
                     })
+                case 'toggle_background_audio':
+                    this.postRadioFrame({
+                        type: 'toggle_background_audio',
+                        start: event.start
+                        trackId: event.trackId
+                    });
+                    break;
             }
         },
 
