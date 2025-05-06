@@ -1251,116 +1251,112 @@ function initClient()
 		-- Main thread
 		Citizen.CreateThread(function()
 			while true do
-				if not Radio.On then
-					goto continue
-				end
-				local playerPed = PlayerPedId()
-				local playerCoords = GetEntityCoords(playerPed)
+				if Radio.On then
+					local playerPed = PlayerPedId()
+					local playerCoords = GetEntityCoords(playerPed)
 
-				-- Flags for “any nearby vehicle”
-				local anySiren, anyBoat, anyHeli = false, false, false
+					-- Flags for “any nearby vehicle”
+					local anySiren, anyBoat, anyHeli = false, false, false
 
-				-- Scan every networked vehicle
-				for _, veh in ipairs(GetGamePool('CVehicle')) do
-					if DoesEntityExist(veh) and not IsEntityDead(veh) then
-						local vehCoords = GetEntityCoords(veh)
-						local dist = #(playerCoords - vehCoords)
-						if dist <= 100.0 then
-							-- Siren check
-							if IsVehicleSirenOn(veh) then
-								anySiren = true
-							end
-							-- Boat engine (class 14)
-							if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh)  then
-								anyBoat = true
-							end
-							-- Helicopter rotors (class 15)
-							if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh)  then
-								anyHeli = true
+					-- Scan every networked vehicle
+					for _, veh in ipairs(GetGamePool('CVehicle')) do
+						if DoesEntityExist(veh) and not IsEntityDead(veh) then
+							local vehCoords = GetEntityCoords(veh)
+							local dist = #(playerCoords - vehCoords)
+							if dist <= 100.0 then
+								-- Siren check
+								if IsVehicleSirenOn(veh) then
+									anySiren = true
+								end
+								-- Boat engine (class 14)
+								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh)  then
+									anyBoat = true
+								end
+								-- Helicopter rotors (class 15)
+								if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh)  then
+									anyHeli = true
+								end
 							end
 						end
 					end
-				end
 
-				-- Toggle “siren” sound
-				if anySiren and not currentLoopingSounds["siren"] then
-					ToggleAudio(true, "siren")
-					currentLoopingSounds["siren"] = true
-				elseif not anySiren and currentLoopingSounds["siren"] then
-					ToggleAudio(false, "siren")
-					currentLoopingSounds["siren"] = false
-				end
+					-- Toggle “siren” sound
+					if anySiren and not currentLoopingSounds["siren"] then
+						ToggleAudio(true, "siren")
+						currentLoopingSounds["siren"] = true
+					elseif not anySiren and currentLoopingSounds["siren"] then
+						ToggleAudio(false, "siren")
+						currentLoopingSounds["siren"] = false
+					end
 
-				-- Toggle “boat_engine” sound
-				if anyBoat and not currentLoopingSounds["boat_engine"] then
-					ToggleAudio(true, "boat_engine")
-					currentLoopingSounds["boat_engine"] = true
-				elseif not anyBoat and currentLoopingSounds["boat_engine"] then
-					ToggleAudio(false, "boat_engine")
-					currentLoopingSounds["boat_engine"] = false
-				end
+					-- Toggle “boat_engine” sound
+					if anyBoat and not currentLoopingSounds["boat_engine"] then
+						ToggleAudio(true, "boat_engine")
+						currentLoopingSounds["boat_engine"] = true
+					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
+						ToggleAudio(false, "boat_engine")
+						currentLoopingSounds["boat_engine"] = false
+					end
 
-				-- Toggle “helicopter_rotors” sound
-				if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
-					ToggleAudio(true, "helicopter_rotors")
-					currentLoopingSounds["helicopter_rotors"] = true
-				elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
-					ToggleAudio(false, "helicopter_rotors")
-					currentLoopingSounds["helicopter_rotors"] = false
+					-- Toggle “helicopter_rotors” sound
+					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(true, "helicopter_rotors")
+						currentLoopingSounds["helicopter_rotors"] = true
+					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(false, "helicopter_rotors")
+						currentLoopingSounds["helicopter_rotors"] = false
+					end
 				end
-				::continue::
 				Citizen.Wait(100) -- adjust as needed for performance/responsiveness
 			end
 		end)
 		-- Gunshot listener
 		Citizen.CreateThread(function()
 			while true do
-				if not Radio.On then
-					goto continue
-				end
-				local playerPed   = PlayerPedId()
-				local playerCoords = GetEntityCoords(playerPed)
+				if Radio.On then
+					local playerPed   = PlayerPedId()
+					local playerCoords = GetEntityCoords(playerPed)
 
-				-- 1) Check local player shooting
-				if IsPedShooting(playerPed) then
-					local weapon   = GetSelectedPedWeapon(playerPed)
-					local category = GetWeaponCategory(weapon)
-					if category then
-						local suppressed = IsPedCurrentWeaponSilenced(playerPed)
-						local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
-						ToggleAudio(true, trackId)
-						Citizen.Wait(150)
-						ToggleAudio(false, trackId)
+					-- 1) Check local player shooting
+					if IsPedShooting(playerPed) then
+						local weapon   = GetSelectedPedWeapon(playerPed)
+						local category = GetWeaponCategory(weapon)
+						if category then
+							local suppressed = IsPedCurrentWeaponSilenced(playerPed)
+							local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+							ToggleAudio(true, trackId)
+							Citizen.Wait(150)
+							ToggleAudio(false, trackId)
+						end
 					end
-				end
 
-				-- 2) Now check all _other_ networked players
-				for _, ped in ipairs(GetGamePool('CPed')) do
-					if ped ~= playerPed
-					and DoesEntityExist(ped)
-					and not IsPedDeadOrDying(ped)
-					and IsPedAPlayer(ped) then
+					-- 2) Now check all _other_ networked players
+					for _, ped in ipairs(GetGamePool('CPed')) do
+						if ped ~= playerPed
+						and DoesEntityExist(ped)
+						and not IsPedDeadOrDying(ped)
+						and IsPedAPlayer(ped) then
 
-						local pedId = NetworkGetPlayerIndexFromPed(ped)
-						if NetworkIsPlayerActive(pedId) and IsPedShooting(ped) then
-							local weapon   = GetSelectedPedWeapon(ped)
-							local category = GetWeaponCategory(weapon)
-							if category then
-								local suppressed = IsPedCurrentWeaponSilenced(ped)
-								local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed_other") or (TrackIDs[category] .. "_other")
+							local pedId = NetworkGetPlayerIndexFromPed(ped)
+							if NetworkIsPlayerActive(pedId) and IsPedShooting(ped) then
+								local weapon   = GetSelectedPedWeapon(ped)
+								local category = GetWeaponCategory(weapon)
+								if category then
+									local suppressed = IsPedCurrentWeaponSilenced(ped)
+									local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed_other") or (TrackIDs[category] .. "_other")
 
-								local pedCoords = GetEntityCoords(ped)
-								local dist = #(playerCoords - pedCoords)
-								if dist <= 100.0 then
-									ToggleAudio(true, baseTrackId)
-									Citizen.Wait(150)
-									ToggleAudio(false, baseTrackId)
+									local pedCoords = GetEntityCoords(ped)
+									local dist = #(playerCoords - pedCoords)
+									if dist <= 100.0 then
+										ToggleAudio(true, baseTrackId)
+										Citizen.Wait(150)
+										ToggleAudio(false, baseTrackId)
+									end
 								end
 							end
 						end
 					end
 				end
-				::continue::
 				Citizen.Wait(100)
 			end
 		end)
