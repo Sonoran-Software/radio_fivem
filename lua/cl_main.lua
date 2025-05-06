@@ -1252,7 +1252,7 @@ function initClient()
 		Citizen.CreateThread(function()
 			while true do
 				if not Radio.On then
-					goto ::continue::
+					goto continue
 				end
 				local playerPed = PlayerPedId()
 				local playerCoords = GetEntityCoords(playerPed)
@@ -1316,7 +1316,7 @@ function initClient()
 		Citizen.CreateThread(function()
 			while true do
 				if not Radio.On then
-					goto ::continue::
+					goto continue
 				end
 				local playerPed   = PlayerPedId()
 				local playerCoords = GetEntityCoords(playerPed)
