@@ -1244,11 +1244,12 @@ function initClient()
 		end
 
 		-- Emit NUI event
-		local function ToggleAudio(start, trackId)
+		local function ToggleAudio(start, trackId, volume)
 			SendNUIMessage({
 				type = "toggle_background_audio",
 				start = start,
 				trackId = trackId
+				volume:	volume
 			})
 		end
 
@@ -1256,7 +1257,7 @@ function initClient()
 			if start then
 				currentLoopingSounds[trackId] = true
 			else
-				currentLoopingSounds[trackId] = false
+				currentLoopingSounds[trackId] = nil
 			end
 		end)
 
@@ -1269,24 +1270,32 @@ function initClient()
 
 					-- Flags for “any nearby vehicle”
 					local anySiren, anyBoat, anyHeli = false, false, false
-
+					sirenDist = 0
+					boatDist = 0
+					heliDist = 0
 					-- Scan every networked vehicle
 					for _, veh in ipairs(GetGamePool('CVehicle')) do
 						if DoesEntityExist(veh) and not IsEntityDead(veh) then
 							local vehCoords = GetEntityCoords(veh)
 							local dist = #(playerCoords - vehCoords)
 							if dist <= 100.0 then
+								local fraction = dist / 100
+								-- invert: 1.0 (at you) → 0.0 (at maxDist)
+								local volume = math.max(0, 1 - fraction)
 								-- Siren check
 								if IsVehicleSirenOn(veh) then
 									anySiren = true
+									sirenDist = volume
 								end
 								-- Boat engine (class 14)
 								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh)  then
 									anyBoat = true
+									boatDist = volume
 								end
 								-- Helicopter rotors (class 15)
 								if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh)  then
 									anyHeli = true
+									heliDist = volume
 								end
 							end
 						end
@@ -1294,26 +1303,26 @@ function initClient()
 
 					-- Toggle “siren” sound
 					if anySiren and not currentLoopingSounds["siren"] then
-						ToggleAudio(true, "siren")
+						ToggleAudio(true, "siren", sirenDist)
 					elseif not anySiren and currentLoopingSounds["siren"] then
-						ToggleAudio(false, "siren")
+						ToggleAudio(false, "siren", sirenDist)
 					end
 
 					-- Toggle “boat_engine” sound
 					if anyBoat and not currentLoopingSounds["boat_engine"] then
-						ToggleAudio(true, "boat_engine")
+						ToggleAudio(true, "boat_engine", boatDist)
 					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
-						ToggleAudio(false, "boat_engine")
+						ToggleAudio(false, "boat_engine", boatDist)
 					end
 
 					-- Toggle “helicopter_rotors” sound
 					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
-						ToggleAudio(true, "helicopter_rotors")
+						ToggleAudio(true, "helicopter_rotors", heliDist)
 					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
-						ToggleAudio(false, "helicopter_rotors")
+						ToggleAudio(false, "helicopter_rotors", heliDist)
 					end
 				end
-				Citizen.Wait(100) -- adjust as needed for performance/responsiveness
+				Citizen.Wait(500) -- adjust as needed for performance/responsiveness
 			end
 		end)
 		-- Gunshot listener
@@ -1330,9 +1339,9 @@ function initClient()
 						if category then
 							local suppressed = IsPedCurrentWeaponSilenced(playerPed)
 							local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
-							ToggleAudio(true, trackId)
+							ToggleAudio(true, trackId, 1)
 							Citizen.Wait(150)
-							ToggleAudio(false, trackId)
+							ToggleAudio(false, trackId, 1)
 						end
 					end
 
@@ -1354,9 +1363,12 @@ function initClient()
 									local pedCoords = GetEntityCoords(ped)
 									local dist = #(playerCoords - pedCoords)
 									if dist <= 100.0 then
-										ToggleAudio(true, baseTrackId)
+										local fraction = dist / 100
+										-- invert: 1.0 (at you) → 0.0 (at maxDist)
+										local volume = math.max(0, 1 - fraction)
+										ToggleAudio(true, baseTrackId, volume)
 										Citizen.Wait(150)
-										ToggleAudio(false, baseTrackId)
+										ToggleAudio(false, baseTrackId, volume)
 									end
 								end
 							end

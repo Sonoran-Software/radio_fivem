@@ -457,7 +457,8 @@ export default {
                     this.postRadioFrame({
                         type: 'toggle_background_audio',
                         start: event.start,
-                        trackId: event.trackId
+                        trackId: event.trackId,
+                        volume: event.volume,
                     });
                     break;
             }
