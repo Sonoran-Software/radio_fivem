@@ -399,12 +399,17 @@ local function createClientConfig()
 	Citizen.CreateThreadNow(function()
 		local tries = 0
 		local webUrl = GetConvar('web_baseUrl', '')
-		while not webUrl and tries < 5 do
+		while (not webUrl or webUrl == '') and tries < 5 do
 			Citizen.Wait(15000)
 			tries = tries + 1
 			webUrl = GetConvar('web_baseUrl', '')
 		end
 
+		if not webUrl or webUrl == '' then
+			d:reject('failed to get web_baseUrl')
+			errorLog('Failed to get web_baseUrl after 5 attempts. Please check your server configuration.')
+			return
+		end
 		local roomId = Config.serverId or GetResourceKvpInt('standalone_serverId') or nil -- use the config value, or the KVP as a backup
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
