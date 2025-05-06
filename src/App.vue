@@ -508,6 +508,13 @@ export default {
                 case 'reposition':
                     this.dragMode = true;
                     break;
+                case 'toggle_background_audio_confirm':
+                    this.postClient({
+                        type: 'toggle_background_audio_confirm',
+                        start: event.start,
+                        trackId: event.trackId
+                    });
+                    break;
             }
         },
         postChatterFrame(data) {

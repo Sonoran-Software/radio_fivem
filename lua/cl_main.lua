@@ -892,6 +892,10 @@ function initClient()
 			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
 		end
 
+		if data.type == 'toggle_background_audio_confirm' then
+			TriggerEvent('SonoranRadio::API:BackgroundAudio', data.start, data.trackId)
+		end
+
 		cb('OK')
 	end)
 
@@ -1248,6 +1252,14 @@ function initClient()
 			})
 		end
 
+		RegisterNetEvent('SonoranRadio::API:BackgroundAudio', function(start, trackId)
+			if start then
+				currentLoopingSounds[trackId] = true
+			else
+				currentLoopingSounds[trackId] = false
+			end
+		end)
+
 		-- Main thread
 		Citizen.CreateThread(function()
 			while true do
@@ -1283,28 +1295,22 @@ function initClient()
 					-- Toggle “siren” sound
 					if anySiren and not currentLoopingSounds["siren"] then
 						ToggleAudio(true, "siren")
-						currentLoopingSounds["siren"] = true
 					elseif not anySiren and currentLoopingSounds["siren"] then
 						ToggleAudio(false, "siren")
-						currentLoopingSounds["siren"] = false
 					end
 
 					-- Toggle “boat_engine” sound
 					if anyBoat and not currentLoopingSounds["boat_engine"] then
 						ToggleAudio(true, "boat_engine")
-						currentLoopingSounds["boat_engine"] = true
 					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
 						ToggleAudio(false, "boat_engine")
-						currentLoopingSounds["boat_engine"] = false
 					end
 
 					-- Toggle “helicopter_rotors” sound
 					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(true, "helicopter_rotors")
-						currentLoopingSounds["helicopter_rotors"] = true
 					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(false, "helicopter_rotors")
-						currentLoopingSounds["helicopter_rotors"] = false
 					end
 				end
 				Citizen.Wait(100) -- adjust as needed for performance/responsiveness
