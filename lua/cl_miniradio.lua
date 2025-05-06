@@ -8,12 +8,6 @@ function initMiniRadio()
     isDebugging = true
     local activeChannels = {}
 
-    function DebugMessage(message, module)
-        if not isDebugging then return end
-        if module ~= nil then message = "[" .. module .. "] " .. message end
-        print(message .. "\n")
-    end
-
     -- Initialization Procedure
     Citizen.CreateThread(function()
         Wait(1000)
@@ -38,7 +32,7 @@ function initMiniRadio()
         local moduleWidth = GetResourceKvpString(module .. "width")
         local moduleHeight = GetResourceKvpString(module .. "height")
         if moduleWidth ~= nil and moduleHeight ~= nil then
-            DebugMessage("retrieving saved presets", module)
+            DebugPrint("retrieving saved presets", module)
             -- Send message to NUI to resize the specified module.
             SetModuleSize(module, moduleWidth, moduleHeight)
             SendNUIMessage({type = "refresh", module = module, miniradio = true})
@@ -48,7 +42,7 @@ function initMiniRadio()
     function InitModuleConfig(module)
         local moduleMaxRows = GetResourceKvpString(module .. "maxrows")
         if moduleMaxRows ~= nil then
-            DebugMessage("retrieving config presets", module)
+            DebugPrint("retrieving config presets", module)
             -- Send messsage to NUI to update config of specified module.
             SetModuleConfigValue(module, "maxrows", moduleMaxRows)
             SendNUIMessage({type = "refresh", module = module, miniradio = true})
@@ -56,7 +50,7 @@ function initMiniRadio()
     end
 
     function SetModuleConfigValue(module, key, value)
-        DebugMessage(("MODULE %s Setting %s to %s"):format(module, key, value))
+        DebugPrint(("MODULE %s Setting %s to %s"):format(module, key, value))
         SendNUIMessage({
             type = "config",
             module = module,
@@ -64,15 +58,15 @@ function initMiniRadio()
             value = value,
             miniradio = true
         })
-        DebugMessage("saving config value to kvp")
+        DebugPrint("saving config value to kvp")
         SetResourceKvp(module .. key, value)
     end
 
     -- Set a Module's Size
     function SetModuleSize(module, width, height)
-        DebugMessage(("MODULE %s SIZE %s - %s"):format(module, width, height))
+        DebugPrint(("MODULE %s SIZE %s - %s"):format(module, width, height))
         -- Send message to NUI to resize the specified module.
-        DebugMessage("sending resize message to nui", module)
+        DebugPrint("sending resize message to nui", module)
         SendNUIMessage({
             type = "resize",
             module = module,
@@ -81,14 +75,14 @@ function initMiniRadio()
             miniradio = true
         })
 
-        DebugMessage("saving module size to kvp")
+        DebugPrint("saving module size to kvp")
         SetResourceKvp(module .. "width", width)
         SetResourceKvp(module .. "height", height)
     end
 
     -- Refresh a Module
     function RefreshModule(module)
-        DebugMessage("sending refresh message to nui", module)
+        DebugPrint("sending refresh message to nui", module)
         SendNUIMessage({type = "refresh", module = module, miniradio = true})
     end
 
@@ -96,13 +90,13 @@ function initMiniRadio()
         local moduleX = GetResourceKvpString(module .. "x")
         local moduleY = GetResourceKvpString(module .. "y")
         if moduleX ~= nil and moduleY ~= nil then
-            DebugMessage("retrieving saved presets", module)
+            DebugPrint("retrieving saved presets", module)
             SetModulePos(module, moduleX, moduleY)
         end
     end
 
     function SetModulePos(module, x, y)
-        DebugMessage(("MODULE %s POS %s - %s"):format(module, x, y))
+        DebugPrint(("MODULE %s POS %s - %s"):format(module, x, y))
         SendNUIMessage({
             type = "setMiniRadioUIPosition",
             module = module,
@@ -110,14 +104,14 @@ function initMiniRadio()
             y = y,
             miniradio = true
         })
-        DebugMessage("saving module pos to kvp")
+        DebugPrint("saving module pos to kvp")
         SetResourceKvp(module .. "x", x)
         SetResourceKvp(module .. "y", y)
     end
 
     -- Display a Module
     function DisplayModule(module, show)
-        DebugMessage("sending display message to nui " .. tostring(show), module)
+        DebugPrint("sending display message to nui " .. tostring(show), module)
         SendNUIMessage({
             type = "display",
             module = module,

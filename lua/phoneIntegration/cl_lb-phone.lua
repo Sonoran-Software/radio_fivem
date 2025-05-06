@@ -19,7 +19,7 @@ function initLbPhone()
         inEmergencyCall = false,
         totalCallLength = 0,
     }
-
+    local number911 = Config.emergencyCallCommand or "911"
     function CanCallEmergencyNumber()
         local number = exports["lb-phone"]:GetEquippedPhoneNumber()
         local hasRequiredItem = exports["lb-phone"]:HasPhoneItem(number)
@@ -80,7 +80,7 @@ function initLbPhone()
             if CallData.callID == nil then
 
                 --Set Number to 911
-                incomingCall.setName("911")
+                incomingCall.setName(number911)
 
                 local settings = exports["lb-phone"]:GetSettings()
                 local callerId = json.encode(settings.name)
@@ -131,23 +131,23 @@ function initLbPhone()
 
                     incomingCall.accept()
 
-                else
+                -- else
                     --Call will be sent to voicemail automatically by lbphone after 11.3 seconds, ending call before LB sends to voicemail automatically
-                    if CallData.totalCallLength >= 10500 then
-                        DebugPrint("Call Timed Out before dispatcher answered.")
+                    -- if CallData.totalCallLength >= 10500 then
+                    --     DebugPrint("Call Timed Out before dispatcher answered.")
 
-                        CallData.status = "callTimedOut"
+                    --     CallData.status = "callTimedOut"
 
-                        --SONORAN TEAM you can add a UpdateCall function or trigger a server event here depending on your needs and how you want to handle the call data.
-                        --UpdateCall("callTimedOut", CallData)
+                    --     --SONORAN TEAM you can add a UpdateCall function or trigger a server event here depending on your needs and how you want to handle the call data.
+                    --     --UpdateCall("callTimedOut", CallData)
 
-                        --Save call data before wiping it with EndCall()
-                        local callData = CallData
+                    --     --Save call data before wiping it with EndCall()
+                    --     local callData = CallData
 
-                        EndCall()
+                    --     EndCall()
 
-                        --SONORAN TEAM Put additional features here, if you want it to go to voicemail then remove this check. LB phone will handle the automated voicemail message once the call length reaches 11.3 seconds. Otherwise you can request for user to input text prompt, etc. etc.
-                    end
+                    --     --SONORAN TEAM Put additional features here, if you want it to go to voicemail then remove this check. LB phone will handle the automated voicemail message once the call length reaches 11.3 seconds. Otherwise you can request for user to input text prompt, etc. etc.
+                    -- end
                 end
             end
         end,
@@ -176,8 +176,8 @@ function initLbPhone()
 
         end
     }
-    local number = Config.emergencyCallCommand or "911"
-    local NumberCreated, reason = exports["lb-phone"]:CreateCustomNumber(number, data)
+
+    local NumberCreated, reason = exports["lb-phone"]:CreateCustomNumber(number911, data)
 
     if not NumberCreated then
         DebugPrint("Error setting custom number!! Error: " .. reason)
@@ -222,7 +222,7 @@ function initLbPhone()
                     return
                 end
 
-                local options = { number = "911" }
+                local options = { number = number911 }
                 exports["lb-phone"]:CreateCall(options)
                 DebugPrint("Sonoran sent emergency call event started, checks passed .. sending emergency call to lbphone")
             else
