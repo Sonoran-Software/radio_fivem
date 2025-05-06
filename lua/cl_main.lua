@@ -40,6 +40,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initTowers()
 	initClient()
 	initScanners()
+	initMenu()
 	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
 		if GetResourceState('lb-phone') == 'started' then
 			-- lb-phone is started, so we can initialize the phone integration
