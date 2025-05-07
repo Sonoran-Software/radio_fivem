@@ -894,3 +894,10 @@ function serverNameChange(data)
 	end)
 end
 exports('serverNameChange', serverNameChange)
+
+RegisterNetEvent('sonoranradio:syncSirenState')
+AddEventHandler('sonoranradio:syncSirenState', function(isOn, coords)
+	local src = source
+	-- pass along who, on/off, volume, and where
+	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, coords)
+end)

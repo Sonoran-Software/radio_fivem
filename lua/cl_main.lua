@@ -1104,6 +1104,9 @@ function initClient()
 	end)
 
 	local lvcStarted = false
+	local state_lxsiren = 0
+	local state_pwrcall = 0
+	local state_airmanu = 0
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
@@ -1118,11 +1121,13 @@ function initClient()
 						type = 'siren_toggle',
 						state = true
 					})
+					TriggerServerEvent('sonoranradio:syncSirenState', true, GetEntityCoords(PlayerPedId()))
 				else
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = false
 					})
+					TriggerServerEvent('sonoranradio:syncSirenState', false, GetEntityCoords(PlayerPedId()))
 				end
 			end)
 		else
@@ -1187,6 +1192,17 @@ function initClient()
 			["RIFLE"] = "gunshot_rifle"
 		}
 
+		local dists = {
+			["VEHICLE_SIREN"] = 0.0,
+			["BOAT"] = 0.0,
+			["HELI"] = 0.0,
+		}
+
+		local DIST_THRESHOLD = 0.1  -- 10% change
+		local lastSentState, lastSentVol = false, nil
+		local remoteSirens = {}  -- [playerId] = {vol = number, coords = vector3}
+		local MAX_DIST = 100.0
+
 		-- Define weapon categories
 		local WeaponCategories = {
 			["PISTOL"] = {
@@ -1248,8 +1264,8 @@ function initClient()
 			SendNUIMessage({
 				type = "toggle_background_audio",
 				start = start,
-				trackId = trackId
-				volume:	volume
+				trackId = trackId,
+				volume = volume
 			})
 		end
 
@@ -1261,68 +1277,141 @@ function initClient()
 			end
 		end)
 
+		RegisterNetEvent('sonoranradio:receiveSirenState')
+		AddEventHandler('sonoranradio:receiveSirenState', function(srcPlayer, isOn, srcCoords)
+		local key = tostring(srcPlayer)
+		if isOn then
+			remoteSirens[key] = { coords = srcCoords }
+		else
+			-- stop immediately
+			ToggleAudio(false, 'siren', 0.0)
+			remoteSirens[key] = nil
+		end
+		end)
+
 		-- Main thread
 		Citizen.CreateThread(function()
+			-- wait for Luxart
+			while GetResourceState(Config.luxartResourceName) ~= 'started' do
+				Citizen.Wait(100)
+			end
+
 			while true do
+				Citizen.Wait(500)
 				if Radio.On then
-					local playerPed = PlayerPedId()
+					local playerPed    = PlayerPedId()
 					local playerCoords = GetEntityCoords(playerPed)
 
-					-- Flags for “any nearby vehicle”
+					-- Flags & dists
 					local anySiren, anyBoat, anyHeli = false, false, false
-					sirenDist = 0
-					boatDist = 0
-					heliDist = 0
+					local sirenDist, boatDist, heliDist = 0, 0, 0
+
 					-- Scan every networked vehicle
 					for _, veh in ipairs(GetGamePool('CVehicle')) do
 						if DoesEntityExist(veh) and not IsEntityDead(veh) then
 							local vehCoords = GetEntityCoords(veh)
 							local dist = #(playerCoords - vehCoords)
-							if dist <= 100.0 then
-								local fraction = dist / 100
-								-- invert: 1.0 (at you) → 0.0 (at maxDist)
-								local volume = math.max(0, 1 - fraction)
-								-- Siren check
-								if IsVehicleSirenOn(veh) then
+							if dist <= MAX_DIST then
+								local fraction = dist / MAX_DIST
+								local volume   = math.max(0, 1 - fraction)
+
+								-- Siren check (LVC states)
+								if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 									anySiren = true
-									sirenDist = volume
+									sirenDist = math.max(sirenDist, volume)
 								end
+
 								-- Boat engine (class 14)
-								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh)  then
-									anyBoat = true
-									boatDist = volume
+								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh) then
+									anyBoat   = true
+									boatDist  = volume
 								end
+
 								-- Helicopter rotors (class 15)
-								if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh)  then
-									anyHeli = true
-									heliDist = volume
+								if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh) then
+									anyHeli   = true
+									heliDist  = volume
 								end
 							end
 						end
 					end
 
-					-- Toggle “siren” sound
-					if anySiren and not currentLoopingSounds["siren"] then
-						ToggleAudio(true, "siren", sirenDist)
-					elseif not anySiren and currentLoopingSounds["siren"] then
-						ToggleAudio(false, "siren", sirenDist)
+					-- Merge in every remote player's siren volume
+					for key, info in pairs(remoteSirens) do
+						local dist = #(playerCoords - info.coords)
+						if dist <= MAX_DIST then
+							local vol = math.max(0, 1 - (dist / MAX_DIST))
+							sirenDist = math.max(sirenDist, vol)
+						else
+							remoteSirens[key] = nil
+						end
+					end
+
+
+					-- Toggle “siren” sound (only one channel)
+					if sirenDist > 0 and not currentLoopingSounds["siren"] then
+						ToggleAudio(true,  "siren", sirenDist)
+						currentLoopingSounds["siren"] = true
+						dists["VEHICLE_SIREN"] = sirenDist
+
+						-- broadcast local change
+						if not lastSentState then
+							lastSentState, lastSentVol = true, sirenDist
+						end
+					elseif sirenDist > 0 and currentLoopingSounds["siren"] then
+						local old = dists["VEHICLE_SIREN"] or 0
+						if math.abs(old - sirenDist) > DIST_THRESHOLD then
+							ToggleAudio(false, "siren", old)
+							ToggleAudio(true,  "siren", sirenDist)
+							dists["VEHICLE_SIREN"] = sirenDist
+							lastSentVol = sirenDist
+						end
+
+					elseif sirenDist == 0 and currentLoopingSounds["siren"] then
+						ToggleAudio(false, "siren", 0.0)
+						currentLoopingSounds["siren"] = nil
+						dists["VEHICLE_SIREN"] = 0
+						lastSentState, lastSentVol = false, nil
 					end
 
 					-- Toggle “boat_engine” sound
 					if anyBoat and not currentLoopingSounds["boat_engine"] then
 						ToggleAudio(true, "boat_engine", boatDist)
+						currentLoopingSounds["boat_engine"] = true
+						dists["BOAT"] = boatDist
+
+					elseif anyBoat and currentLoopingSounds["boat_engine"] then
+						local old = dists["BOAT"] or 0
+						if math.abs(old - boatDist) > DIST_THRESHOLD then
+							ToggleAudio(false, "boat_engine", old)
+							ToggleAudio(true,  "boat_engine", boatDist)
+							dists["BOAT"] = boatDist
+						end
+
 					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
 						ToggleAudio(false, "boat_engine", boatDist)
+						currentLoopingSounds["boat_engine"] = nil
 					end
 
 					-- Toggle “helicopter_rotors” sound
 					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(true, "helicopter_rotors", heliDist)
+						currentLoopingSounds["helicopter_rotors"] = true
+						dists["HELI"] = heliDist
+
+					elseif anyHeli and currentLoopingSounds["helicopter_rotors"] then
+						local old = dists["HELI"] or 0
+						if math.abs(old - heliDist) > DIST_THRESHOLD then
+							ToggleAudio(false, "helicopter_rotors", old)
+							ToggleAudio(true,  "helicopter_rotors", heliDist)
+							dists["HELI"] = heliDist
+						end
+
 					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(false, "helicopter_rotors", heliDist)
+						currentLoopingSounds["helicopter_rotors"] = nil
 					end
 				end
-				Citizen.Wait(500) -- adjust as needed for performance/responsiveness
 			end
 		end)
 		-- Gunshot listener
