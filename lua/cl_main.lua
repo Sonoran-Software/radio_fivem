@@ -1292,10 +1292,7 @@ function initClient()
 		-- Main thread
 		Citizen.CreateThread(function()
 			-- wait for Luxart
-			while GetResourceState(Config.luxartResourceName) ~= 'started' do
-				Citizen.Wait(100)
-			end
-
+			Citizen.Wait(3000)
 			while true do
 				Citizen.Wait(500)
 				if Radio.On then

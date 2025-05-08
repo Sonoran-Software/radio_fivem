@@ -131,23 +131,23 @@ function initLbPhone()
 
                     incomingCall.accept()
 
-                -- else
+                else
                     --Call will be sent to voicemail automatically by lbphone after 11.3 seconds, ending call before LB sends to voicemail automatically
-                    -- if CallData.totalCallLength >= 10500 then
-                    --     DebugPrint("Call Timed Out before dispatcher answered.")
+                    if CallData.totalCallLength >= 10500 then
+                        DebugPrint("Call Timed Out before dispatcher answered.")
 
-                    --     CallData.status = "callTimedOut"
+                        CallData.status = "dispatcherAnsweredCall"
 
-                    --     --SONORAN TEAM you can add a UpdateCall function or trigger a server event here depending on your needs and how you want to handle the call data.
-                    --     --UpdateCall("callTimedOut", CallData)
+                        --SONORAN TEAM you can add a UpdateCall function or trigger a server event here depending on your needs and how you want to handle the call data.
+                        --UpdateCall("callTimedOut", CallData)
 
-                    --     --Save call data before wiping it with EndCall()
-                    --     local callData = CallData
+                        --Save call data before wiping it with EndCall()
+                        local callData = CallData
 
-                    --     EndCall()
+                        incomingCall.accept()
 
-                    --     --SONORAN TEAM Put additional features here, if you want it to go to voicemail then remove this check. LB phone will handle the automated voicemail message once the call length reaches 11.3 seconds. Otherwise you can request for user to input text prompt, etc. etc.
-                    -- end
+                        --SONORAN TEAM Put additional features here, if you want it to go to voicemail then remove this check. LB phone will handle the automated voicemail message once the call length reaches 11.3 seconds. Otherwise you can request for user to input text prompt, etc. etc.
+                    end
                 end
             end
         end,
