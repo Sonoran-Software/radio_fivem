@@ -1198,7 +1198,7 @@ function initClient()
 			["HELI"] = 0.0,
 		}
 
-		local DIST_THRESHOLD = 0.1  -- 10% change
+		local DIST_THRESHOLD = 0.05  -- 5% change
 		local lastSentState, lastSentVol = false, nil
 		local remoteSirens = {}  -- [playerId] = {vol = number, coords = vector3}
 		local MAX_DIST = 100.0
@@ -1358,7 +1358,6 @@ function initClient()
 					elseif sirenDist > 0 and currentLoopingSounds["siren"] then
 						local old = dists["VEHICLE_SIREN"] or 0
 						if math.abs(old - sirenDist) > DIST_THRESHOLD then
-							ToggleAudio(false, "siren", old)
 							ToggleAudio(true,  "siren", sirenDist)
 							dists["VEHICLE_SIREN"] = sirenDist
 							lastSentVol = sirenDist
@@ -1380,7 +1379,6 @@ function initClient()
 					elseif anyBoat and currentLoopingSounds["boat_engine"] then
 						local old = dists["BOAT"] or 0
 						if math.abs(old - boatDist) > DIST_THRESHOLD then
-							ToggleAudio(false, "boat_engine", old)
 							ToggleAudio(true,  "boat_engine", boatDist)
 							dists["BOAT"] = boatDist
 						end
@@ -1399,7 +1397,6 @@ function initClient()
 					elseif anyHeli and currentLoopingSounds["helicopter_rotors"] then
 						local old = dists["HELI"] or 0
 						if math.abs(old - heliDist) > DIST_THRESHOLD then
-							ToggleAudio(false, "helicopter_rotors", old)
 							ToggleAudio(true,  "helicopter_rotors", heliDist)
 							dists["HELI"] = heliDist
 						end
