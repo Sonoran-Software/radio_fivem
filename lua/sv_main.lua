@@ -15,6 +15,7 @@ speakersFileName = 'speakers.DEFAULT.json'
 chatterFileName = 'earpieces.json'
 chatterConfig = {}
 local clientConfig
+local sirens = {}
 
 if type(Config) ~= 'table' then
 	critError = true
@@ -895,9 +896,22 @@ function serverNameChange(data)
 end
 exports('serverNameChange', serverNameChange)
 
+RegisterNetEvent('SonoranRadio::RequestSirens', function()
+	for k, v in pairs(sirens) do
+		if v.isOn then
+			TriggerClientEvent('sonoranradio:receiveSirenState', source, k, v.isOn, v.coords)
+		end
+	end
+end)
+
 RegisterNetEvent('sonoranradio:syncSirenState')
 AddEventHandler('sonoranradio:syncSirenState', function(isOn, coords)
+	print('SonoranRadio:syncSirenState', isOn, coords)
 	local src = source
 	-- pass along who, on/off, volume, and where
+	sirens[src] = {
+		isOn = isOn,
+		coords = coords
+	}
 	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, coords)
 end)

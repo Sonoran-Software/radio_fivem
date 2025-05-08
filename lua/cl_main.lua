@@ -55,6 +55,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 			end)
 		end
 	end
+	TriggerServerEvent('SonoranRadio::RequestSirens')
 end)
 
 function initClient()
@@ -1121,13 +1122,39 @@ function initClient()
 						type = 'siren_toggle',
 						state = true
 					})
-					TriggerServerEvent('sonoranradio:syncSirenState', true, GetEntityCoords(PlayerPedId()))
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
+							end
+						end
+					end
 				else
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = false
 					})
-					TriggerServerEvent('sonoranradio:syncSirenState', false, GetEntityCoords(PlayerPedId()))
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
+							end
+						end
+					end
 				end
 			end)
 		else
@@ -1137,11 +1164,38 @@ function initClient()
 						type = 'siren_toggle',
 						state = true
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
+							end
+						end
+					end
 				else
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = false
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
+							end
+						end
+					end
 				end
 				Citizen.Wait(500)
 			end
@@ -1239,7 +1293,16 @@ function initClient()
 				`weapon_compactrifle`,
 				`weapon_militaryrifle`,
 				`weapon_heavyrifle`,
-				`weapon_tacticalrifle`
+				`weapon_tacticalrifle`,
+				`weapon_marksmanrifle`,
+				`weapon_marksmanrifle_mk2`,
+				`weapon_precisionrifle`,
+				`weapon_dbshotgun`,
+				`weapon_autoshotgun`,
+				`weapon_bullpupshotgun`,
+				`weapon_heavyshotgun`,
+				`weapon_pumpshotgun`,
+				`weapon_pumpshotgun_mk2`,
 			}
 		}
 		-- Utility: check if weapon is suppressed
@@ -1278,25 +1341,22 @@ function initClient()
 		end)
 
 		RegisterNetEvent('sonoranradio:receiveSirenState')
-		AddEventHandler('sonoranradio:receiveSirenState', function(srcPlayer, isOn, srcCoords)
-		local key = tostring(srcPlayer)
-		if isOn then
-			remoteSirens[key] = { coords = srcCoords }
-		else
-			-- stop immediately
-			ToggleAudio(false, 'siren', 0.0)
-			remoteSirens[key] = nil
-		end
+		AddEventHandler('sonoranradio:receiveSirenState', function(srcPlayer, isOn, vehNetId)
+			if isOn and vehNetId then
+				-- store by vehicle network‐ID
+				remoteSirens[vehNetId] = true
+			else
+				-- remove by the same network‐ID
+				remoteSirens[vehNetId] = nil
+			end
 		end)
 
 		-- Main thread
 		Citizen.CreateThread(function()
-			-- wait for Luxart
-			Citizen.Wait(3000)
 			while true do
 				Citizen.Wait(500)
 				if Radio.On then
-					local playerPed    = PlayerPedId()
+					local playerPed = PlayerPedId()
 					local playerCoords = GetEntityCoords(playerPed)
 
 					-- Flags & dists
@@ -1312,11 +1372,11 @@ function initClient()
 								local fraction = dist / MAX_DIST
 								local volume   = math.max(0, 1 - fraction)
 
-								-- Siren check (LVC states)
-								if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
-									anySiren = true
-									sirenDist = math.max(sirenDist, volume)
-								end
+								-- -- Siren check (LVC states)
+								-- if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
+								-- 	anySiren = true
+								-- 	sirenDist = math.max(sirenDist, volume)
+								-- end
 
 								-- Boat engine (class 14)
 								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh) then
@@ -1334,21 +1394,35 @@ function initClient()
 					end
 
 					-- Merge in every remote player's siren volume
-					for key, info in pairs(remoteSirens) do
-						local dist = #(playerCoords - info.coords)
-						if dist <= MAX_DIST then
-							local vol = math.max(0, 1 - (dist / MAX_DIST))
-							sirenDist = math.max(sirenDist, vol)
-						else
+					local distances = {}
+
+					for key, netId in pairs(remoteSirens) do
+						if key ~= 0 then
+							local veh = NetworkGetEntityFromNetworkId(key)
+							if DoesEntityExist(veh) then
+								local pos  = GetEntityCoords(veh)
+								local dist = #(playerCoords - pos)
+								if dist <= MAX_DIST then
+									table.insert(distances, math.max(0, 1 - (dist / MAX_DIST)))
+								end
+							end
+							-- remove the entry if the vehicle is not valid anymore
 							remoteSirens[key] = nil
 						end
 					end
 
-
+					-- pick the highest remote volume, if any
+					if #distances > 0 then
+						-- math.max over the unpacked table
+						local maxRemoteVol = math.max(table.unpack(distances))
+						if maxRemoteVol > sirenDist then
+							sirenDist = maxRemoteVol
+							anySiren  = true
+						end
+					end
 					-- Toggle “siren” sound (only one channel)
 					if sirenDist > 0 and not currentLoopingSounds["siren"] then
 						ToggleAudio(true,  "siren", sirenDist)
-						currentLoopingSounds["siren"] = true
 						dists["VEHICLE_SIREN"] = sirenDist
 
 						-- broadcast local change
@@ -1365,7 +1439,6 @@ function initClient()
 
 					elseif sirenDist == 0 and currentLoopingSounds["siren"] then
 						ToggleAudio(false, "siren", 0.0)
-						currentLoopingSounds["siren"] = nil
 						dists["VEHICLE_SIREN"] = 0
 						lastSentState, lastSentVol = false, nil
 					end
@@ -1373,7 +1446,6 @@ function initClient()
 					-- Toggle “boat_engine” sound
 					if anyBoat and not currentLoopingSounds["boat_engine"] then
 						ToggleAudio(true, "boat_engine", boatDist)
-						currentLoopingSounds["boat_engine"] = true
 						dists["BOAT"] = boatDist
 
 					elseif anyBoat and currentLoopingSounds["boat_engine"] then
@@ -1385,13 +1457,11 @@ function initClient()
 
 					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
 						ToggleAudio(false, "boat_engine", boatDist)
-						currentLoopingSounds["boat_engine"] = nil
 					end
 
 					-- Toggle “helicopter_rotors” sound
 					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(true, "helicopter_rotors", heliDist)
-						currentLoopingSounds["helicopter_rotors"] = true
 						dists["HELI"] = heliDist
 
 					elseif anyHeli and currentLoopingSounds["helicopter_rotors"] then
@@ -1403,7 +1473,6 @@ function initClient()
 
 					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
 						ToggleAudio(false, "helicopter_rotors", heliDist)
-						currentLoopingSounds["helicopter_rotors"] = nil
 					end
 				end
 			end
@@ -1441,7 +1510,7 @@ function initClient()
 								local category = GetWeaponCategory(weapon)
 								if category then
 									local suppressed = IsPedCurrentWeaponSilenced(ped)
-									local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed_other") or (TrackIDs[category] .. "_other")
+									local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed") or (TrackIDs[category])
 
 									local pedCoords = GetEntityCoords(ped)
 									local dist = #(playerCoords - pedCoords)
@@ -1458,7 +1527,7 @@ function initClient()
 						end
 					end
 				end
-				Citizen.Wait(100)
+				Citizen.Wait(10)
 			end
 		end)
 	end
