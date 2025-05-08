@@ -41,7 +41,10 @@ Config.noPhysicalRacks = false -- Set to true to hide physical server racks
 Config.noPhysicalTowers = false -- Set to true to hide physical towers
 Config.talkSync = true -- Enable talking on the radio making you talk in game
 Config.emergencyCallCommand = '911' -- Command suffix to start or stop an emergency call (i.e. '911' == /radio 911)
+Config.showEmergencyCallHelp = true -- Show emergency call help text at top of screen when on an emergency call
 Config.luxartResourceName = 'lvc' -- Resource name for Luxart Vehicle Control (Required for siren control)
+Config.phoneResource = 'none' -- Which phone resource to utilize for 911 calls | OPTIONS: none (no phone resource) | lb-phone (https://lbscripts.com/)
+Config.enableBackgroundAudio = true -- Enable background audio for the radio when transmitting
 
 -- Notification Settings --
 Config.notifications = {

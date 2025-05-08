@@ -40,6 +40,22 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initTowers()
 	initClient()
 	initScanners()
+	initMenu()
+	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
+		if GetResourceState('lb-phone') == 'started' then
+			-- lb-phone is started, so we can initialize the phone integration
+			initLbPhone()
+		else
+			-- lb-phone is not started, so we need to wait for it to start
+			warnLog('The resource lb-phone is not started. Waiting for it to start to initialize phone integration.')
+			AddEventHandler('onResourceStart', function(resourceName)
+				if resourceName == 'lb-phone' then
+					initLbPhone()
+				end
+			end)
+		end
+	end
+	TriggerServerEvent('SonoranRadio::RequestSirens')
 end)
 
 function initClient()
@@ -96,9 +112,9 @@ function initClient()
 		})
 	end)
 
-	CreateThread(function()
+	Citizen.CreateThread(function()
 		while true do
-			Wait(5000)
+			Citizen.Wait(5000)
 			TriggerServerEvent('SonoranCAD::sonrad:GetCurrentCall')
 		end
 	end)
@@ -144,11 +160,11 @@ function initClient()
 		end
 	end
 
-	CreateThread(function()
+	Citizen.CreateThread(function()
 		if Config.enforceRadioItem then
 			if frameworkEnum == 1 then
 				while QBCore.Functions.GetPlayerData() == nil do
-					Wait(10)
+					Citizen.Wait(10)
 				end
 			end
 		end
@@ -373,6 +389,7 @@ function initClient()
 			enabled = enabled,
 			displayName = displayName,
 			callCommand = emergencyCallCommand(),
+			showHelpText = Config.showEmergencyCallHelp or true
 		})
 	end
 	exports('setEmergencyCall', setEmergencyCall)
@@ -630,14 +647,14 @@ function initClient()
 	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
 	function Radio:Talking(toggle)
-		local inVeh = IsPedInAnyVehicle(GetPlayerPed(-1), false)
+		local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
 		TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
 		if self.TalkAnim then
 			if toggle and not inVeh then
 				if self.Open then
 					RequestAnimDict('cellphone@')
 					while not HasAnimDictLoaded('cellphone@') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_text_to_call', 8.0, 0.0, -1, 50, 0, false, false, false)
 
@@ -650,7 +667,7 @@ function initClient()
 				else
 					RequestAnimDict('random@arrests')
 					while not HasAnimDictLoaded('random@arrests') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					TaskPlayAnim(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', 8.0, 0.0, -1, 49, 0, 0, 0, 0)
 					isTalking = true
@@ -668,7 +685,7 @@ function initClient()
 					-- Citizen.Wait(700)
 					RequestAnimDict('cellphone@')
 					while not HasAnimDictLoaded('cellphone@') do
-						Wait(5)
+						Citizen.Wait(5)
 					end
 					-- TaskPlayAnim(PlayerPedId(), "cellphone@", "cellphone_text_in", 4.0, -1, -1, 50, 0, false, false, false)
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
@@ -712,7 +729,7 @@ function initClient()
 		if self.Open == toggle then
 			return
 		end
-		if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(GetPlayerPed(-1)) then
+		if IsPlayerFreeAiming(PlayerId()) or IsPedInAnyVehicle(PlayerPedId()) then
 			return
 		end
 
@@ -773,6 +790,7 @@ function initClient()
 		SendNUIMessage({
 			type = 'setStandalone',
 			standaloneId = comId,
+			roomId = Config.serverId,
 			standaloneUrl = Config.radioUrl,
 			chatter = chatter,
 			debug = Config.debug,
@@ -873,6 +891,10 @@ function initClient()
 
 		if data.type == 'setChatterConfig' then
 			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
+		end
+
+		if data.type == 'toggle_background_audio_confirm' then
+			TriggerEvent('SonoranRadio::API:BackgroundAudio', data.start, data.trackId)
 		end
 
 		cb('OK')
@@ -1068,7 +1090,7 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::RequestClientData', function()
 		TriggerEvent('SonoranRadio:CarRadioPower', Radio.On)
 		if Radio.On then
-			Wait(1000)
+			Citizen.Wait(1000)
 			SendNUIMessage({
 				type = "get_connected_users",
 			})
@@ -1083,6 +1105,9 @@ function initClient()
 	end)
 
 	local lvcStarted = false
+	local state_lxsiren = 0
+	local state_pwrcall = 0
+	local state_airmanu = 0
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
@@ -1097,11 +1122,39 @@ function initClient()
 						type = 'siren_toggle',
 						state = true
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
+							end
+						end
+					end
 				else
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = false
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
+							end
+						end
+					end
 				end
 			end)
 		else
@@ -1111,11 +1164,38 @@ function initClient()
 						type = 'siren_toggle',
 						state = true
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
+							end
+						end
+					end
 				else
 					SendNUIMessage({
 						type = 'siren_toggle',
 						state = false
 					})
+					local ped = PlayerPedId()
+					local veh = GetVehiclePedIsIn(ped, false)
+					-- Only proceed if you're actually in a vehicle
+					if veh and veh ~= 0 then
+					-- Optionally check it really is networked
+						if NetworkGetEntityIsNetworked(veh) then
+							local netId = NetworkGetNetworkIdFromEntity(veh)
+							if netId and netId ~= 0 then
+							-- safe to send to server now
+							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
+							end
+						end
+					end
 				end
 				Citizen.Wait(500)
 			end
@@ -1154,180 +1234,305 @@ function initClient()
 		end
 	end)
 
-	-- local currentLoopingSounds = {}
-	-- -- Define categorized track IDs
-	-- local TrackIDs = {
-	-- 	["VEHICLE_SIREN"] = "siren",
-	-- 	["BOAT"] = "boat_engine",
-	-- 	["HELI"] = "helicopter_rotors",
-	-- 	["PISTOL"] = "gunshot_pistol",
-	-- 	["RIFLE"] = "gunshot_rifle"
-	-- }
+	if Config.enableBackgroundAudio then
+		-- Initialize background audio for vehicles and weapons
+		local currentLoopingSounds = {}
+		-- Define categorized track IDs
+		local TrackIDs = {
+			["VEHICLE_SIREN"] = "siren",
+			["BOAT"] = "boat_engine",
+			["HELI"] = "helicopter_rotors",
+			["PISTOL"] = "gunshot_pistol",
+			["RIFLE"] = "gunshot_rifle"
+		}
 
-	-- -- Define weapon categories
-	-- local WeaponCategories = {
-	-- 	["PISTOL"] = {
-	-- 		`weapon_pistol`,
-	-- 		`weapon_pistol_mk2`,
-	-- 		`weapon_combatpistol`,
-	-- 		`weapon_appistol`,
-	-- 		`weapon_stungun`,
-	-- 		`weapon_pistol50`,
-	-- 		`weapon_snspistol`,
-	-- 		`weapon_snspistol_mk2`,
-	-- 		`weapon_heavypistol`,
-	-- 		`weapon_vintagepistol`,
-	-- 		`weapon_flaregun`,
-	-- 		`weapon_marksmanpistol`,
-	-- 		`weapon_revolver`,
-	-- 		`weapon_revolver_mk2`,
-	-- 		`weapon_doubleaction`,
-	-- 		`weapon_ceramicpistol`,
-	-- 		`weapon_navyrevolver`,
-	-- 		`weapon_gadgetpistol`,
-	-- 		`weapon_stungun_mp`
-	-- 	},
-	-- 	["RIFLE"] = {
-	-- 		`weapon_assaultrifle`,
-	-- 		`weapon_assaultrifle_mk2`,
-	-- 		`weapon_carbinerifle`,
-	-- 		`weapon_carbinerifle_mk2`,
-	-- 		`weapon_advancedrifle`,
-	-- 		`weapon_specialcarbine`,
-	-- 		`weapon_specialcarbine_mk2`,
-	-- 		`weapon_bullpuprifle`,
-	-- 		`weapon_bullpuprifle_mk2`,
-	-- 		`weapon_compactrifle`,
-	-- 		`weapon_militaryrifle`,
-	-- 		`weapon_heavyrifle`,
-	-- 		`weapon_tacticalrifle`
-	-- 	}
-	-- }
-	-- -- Utility: check if weapon is suppressed
-	-- local function IsWeaponSuppressed(weapon)
-	-- 	return IsPedCurrentWeaponSilenced(PlayerPedId())
-	-- end
+		local dists = {
+			["VEHICLE_SIREN"] = 0.0,
+			["BOAT"] = 0.0,
+			["HELI"] = 0.0,
+		}
 
-	-- -- Utility: get weapon category
-	-- local function GetWeaponCategory(weapon)
-	-- 	for category, weapons in pairs(WeaponCategories) do
-	-- 		for _, w in ipairs(weapons) do
-	-- 			if weapon == w then
-	-- 				return category
-	-- 			end
-	-- 		end
-	-- 	end
-	-- 	return nil
-	-- end
+		local DIST_THRESHOLD = 0.05  -- 5% change
+		local lastSentState, lastSentVol = false, nil
+		local remoteSirens = {}  -- [playerId] = {vol = number, coords = vector3}
+		local MAX_DIST = 100.0
 
-	-- -- Emit NUI event
-	-- local function ToggleAudio(start, trackId)
-	-- 	SendNUIMessage({
-	-- 		type = "toggle_background_audio",
-	-- 		start = start,
-	-- 		trackId = trackId
-	-- 	})
-	-- end
+		-- Define weapon categories
+		local WeaponCategories = {
+			["PISTOL"] = {
+				`weapon_pistol`,
+				`weapon_pistol_mk2`,
+				`weapon_combatpistol`,
+				`weapon_appistol`,
+				`weapon_stungun`,
+				`weapon_pistol50`,
+				`weapon_snspistol`,
+				`weapon_snspistol_mk2`,
+				`weapon_heavypistol`,
+				`weapon_vintagepistol`,
+				`weapon_flaregun`,
+				`weapon_marksmanpistol`,
+				`weapon_revolver`,
+				`weapon_revolver_mk2`,
+				`weapon_doubleaction`,
+				`weapon_ceramicpistol`,
+				`weapon_navyrevolver`,
+				`weapon_gadgetpistol`,
+				`weapon_stungun_mp`
+			},
+			["RIFLE"] = {
+				`weapon_assaultrifle`,
+				`weapon_assaultrifle_mk2`,
+				`weapon_carbinerifle`,
+				`weapon_carbinerifle_mk2`,
+				`weapon_advancedrifle`,
+				`weapon_specialcarbine`,
+				`weapon_specialcarbine_mk2`,
+				`weapon_bullpuprifle`,
+				`weapon_bullpuprifle_mk2`,
+				`weapon_compactrifle`,
+				`weapon_militaryrifle`,
+				`weapon_heavyrifle`,
+				`weapon_tacticalrifle`,
+				`weapon_marksmanrifle`,
+				`weapon_marksmanrifle_mk2`,
+				`weapon_precisionrifle`,
+				`weapon_dbshotgun`,
+				`weapon_autoshotgun`,
+				`weapon_bullpupshotgun`,
+				`weapon_heavyshotgun`,
+				`weapon_pumpshotgun`,
+				`weapon_pumpshotgun_mk2`,
+			}
+		}
+		-- Utility: check if weapon is suppressed
+		local function IsWeaponSuppressed(weapon)
+			return IsPedCurrentWeaponSilenced(PlayerPedId())
+		end
 
-	-- -- Main thread
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		local ped = PlayerPedId()
-	-- 		local veh = GetVehiclePedIsIn(ped, false)
+		-- Utility: get weapon category
+		local function GetWeaponCategory(weapon)
+			for category, weapons in pairs(WeaponCategories) do
+				for _, w in ipairs(weapons) do
+					if weapon == w then
+						return category
+					end
+				end
+			end
+			return nil
+		end
 
-	-- 		-- SIREN DETECTION
-	-- 		if veh and veh ~= 0 then
-	-- 			if IsVehicleSirenOn(veh) and not currentLoopingSounds["siren"] then
-	-- 				ToggleAudio(true, "siren")
-	-- 				currentLoopingSounds["siren"] = true
-	-- 			elseif not IsVehicleSirenOn(veh) and currentLoopingSounds["siren"] then
-	-- 				ToggleAudio(false, "siren")
-	-- 				currentLoopingSounds["siren"] = false
-	-- 			end
+		-- Emit NUI event
+		local function ToggleAudio(start, trackId, volume)
+			SendNUIMessage({
+				type = "toggle_background_audio",
+				start = start,
+				trackId = trackId,
+				volume = volume
+			})
+		end
 
-	-- 			-- BOAT ENGINE DETECTION
-	-- 			if IsThisModelABoat(GetEntityModel(veh)) then
-	-- 				if not currentLoopingSounds["boat_engine"] then
-	-- 					ToggleAudio(true, "boat_engine")
-	-- 					currentLoopingSounds["boat_engine"] = true
-	-- 				end
-	-- 			else
-	-- 				if currentLoopingSounds["boat_engine"] then
-	-- 					ToggleAudio(false, "boat_engine")
-	-- 					currentLoopingSounds["boat_engine"] = false
-	-- 				end
-	-- 			end
+		RegisterNetEvent('SonoranRadio::API:BackgroundAudio', function(start, trackId)
+			if start then
+				currentLoopingSounds[trackId] = true
+			else
+				currentLoopingSounds[trackId] = nil
+			end
+		end)
 
-	-- 			-- HELICOPTER ROTORS DETECTION
-	-- 			if IsThisModelAHeli(GetEntityModel(veh)) then
-	-- 				if not currentLoopingSounds["helicopter_rotors"] then
-	-- 					ToggleAudio(true, "helicopter_rotors")
-	-- 					currentLoopingSounds["helicopter_rotors"] = true
-	-- 				end
-	-- 			else
-	-- 				if currentLoopingSounds["helicopter_rotors"] then
-	-- 					ToggleAudio(false, "helicopter_rotors")
-	-- 					currentLoopingSounds["helicopter_rotors"] = false
-	-- 				end
-	-- 			end
-	-- 		else
-	-- 			-- Reset all if not in vehicle
-	-- 			for id, playing in pairs(currentLoopingSounds) do
-	-- 				if playing then
-	-- 					ToggleAudio(false, id)
-	-- 					currentLoopingSounds[id] = false
-	-- 				end
-	-- 			end
-	-- 		end
+		RegisterNetEvent('sonoranradio:receiveSirenState')
+		AddEventHandler('sonoranradio:receiveSirenState', function(srcPlayer, isOn, vehNetId)
+			if isOn and vehNetId then
+				-- store by vehicle network‐ID
+				remoteSirens[vehNetId] = true
+			else
+				-- remove by the same network‐ID
+				remoteSirens[vehNetId] = nil
+			end
+		end)
 
-	-- 		Wait(500) -- adjust for responsiveness/performance
-	-- 	end
-	-- end)
+		-- Main thread
+		Citizen.CreateThread(function()
+			while true do
+				Citizen.Wait(500)
+				if Radio.On then
+					local playerPed = PlayerPedId()
+					local playerCoords = GetEntityCoords(playerPed)
 
-	-- -- Gunshot listener
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		local playerPed = PlayerPedId()
-	-- 		local playerCoords = GetEntityCoords(playerPed)
+					-- Flags & dists
+					local anySiren, anyBoat, anyHeli = false, false, false
+					local sirenDist, boatDist, heliDist = 0, 0, 0
 
-	-- 		for _, ped in ipairs(GetGamePool('CPed')) do
-	-- 			if DoesEntityExist(ped) and not IsPedDeadOrDying(ped) then
-	-- 				local isPlayer = IsPedAPlayer(ped)
-	-- 				local pedId = NetworkGetPlayerIndexFromPed(ped)
+					-- Scan every networked vehicle
+					for _, veh in ipairs(GetGamePool('CVehicle')) do
+						if DoesEntityExist(veh) and not IsEntityDead(veh) then
+							local vehCoords = GetEntityCoords(veh)
+							local dist = #(playerCoords - vehCoords)
+							if dist <= MAX_DIST then
+								local fraction = dist / MAX_DIST
+								local volume   = math.max(0, 1 - fraction)
 
-	-- 				if isPlayer and (ped ~= playerPed or NetworkIsPlayerActive(pedId)) then
-	-- 					if IsPedShooting(ped) then
-	-- 						local weapon = GetSelectedPedWeapon(ped)
-	-- 						local category = GetWeaponCategory(weapon)
+								-- -- Siren check (LVC states)
+								-- if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
+								-- 	anySiren = true
+								-- 	sirenDist = math.max(sirenDist, volume)
+								-- end
 
-	-- 						if category then
-	-- 							local suppressed = IsPedCurrentWeaponSilenced(ped)
-	-- 							local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+								-- Boat engine (class 14)
+								if GetVehicleClass(veh) == 14 and IsVehicleEngineOn(veh) then
+									anyBoat   = true
+									boatDist  = volume
+								end
 
-	-- 							-- Add "_other" if it's NOT the local player
-	-- 							if ped ~= playerPed then
-	-- 								baseTrackId = baseTrackId .. "_other"
-	-- 							end
+								-- Helicopter rotors (class 15)
+								if GetVehicleClass(veh) == 15 and IsVehicleEngineOn(veh) then
+									anyHeli   = true
+									heliDist  = volume
+								end
+							end
+						end
+					end
 
-	-- 							-- Optional: Distance check to limit sound range
-	-- 							local pedCoords = GetEntityCoords(ped)
-	-- 							local dist = #(playerCoords - pedCoords)
-	-- 							if dist <= 100.0 then
-	-- 								ToggleAudio(true, baseTrackId)
-	-- 								Wait(150)
-	-- 								ToggleAudio(false, baseTrackId)
-	-- 							end
-	-- 						end
-	-- 					end
-	-- 				end
-	-- 			end
-	-- 		end
+					-- Merge in every remote player's siren volume
+					local distances = {}
 
-	-- 		Wait(50)
-	-- 	end
-	-- end)
+					for key, netId in pairs(remoteSirens) do
+						if key ~= 0 then
+							local veh = NetworkGetEntityFromNetworkId(key)
+							if DoesEntityExist(veh) then
+								local pos  = GetEntityCoords(veh)
+								local dist = #(playerCoords - pos)
+								if dist <= MAX_DIST then
+									table.insert(distances, math.max(0, 1 - (dist / MAX_DIST)))
+								end
+							end
+						else
+							-- remove the entry if the vehicle is not valid anymore
+							remoteSirens[key] = nil
+						end
+					end
+
+					-- pick the highest remote volume, if any
+					if #distances > 0 then
+						-- math.max over the unpacked table
+						local maxRemoteVol = math.max(table.unpack(distances))
+						if maxRemoteVol > sirenDist then
+							sirenDist = maxRemoteVol
+							anySiren  = true
+						end
+					end
+					-- Toggle “siren” sound (only one channel)
+					if sirenDist > 0 and not currentLoopingSounds["siren"] then
+						ToggleAudio(true,  "siren", sirenDist)
+						dists["VEHICLE_SIREN"] = sirenDist
+
+						-- broadcast local change
+						if not lastSentState then
+							lastSentState, lastSentVol = true, sirenDist
+						end
+					elseif sirenDist > 0 and currentLoopingSounds["siren"] then
+						local old = dists["VEHICLE_SIREN"] or 0
+						if math.abs(old - sirenDist) > DIST_THRESHOLD then
+							ToggleAudio(true,  "siren", sirenDist)
+							dists["VEHICLE_SIREN"] = sirenDist
+							lastSentVol = sirenDist
+						end
+
+					elseif sirenDist == 0 and currentLoopingSounds["siren"] then
+						ToggleAudio(false, "siren", 0.0)
+						dists["VEHICLE_SIREN"] = 0
+						lastSentState, lastSentVol = false, nil
+					end
+
+					-- Toggle “boat_engine” sound
+					if anyBoat and not currentLoopingSounds["boat_engine"] then
+						ToggleAudio(true, "boat_engine", boatDist)
+						dists["BOAT"] = boatDist
+
+					elseif anyBoat and currentLoopingSounds["boat_engine"] then
+						local old = dists["BOAT"] or 0
+						if math.abs(old - boatDist) > DIST_THRESHOLD then
+							ToggleAudio(true,  "boat_engine", boatDist)
+							dists["BOAT"] = boatDist
+						end
+
+					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
+						ToggleAudio(false, "boat_engine", boatDist)
+					end
+
+					-- Toggle “helicopter_rotors” sound
+					if anyHeli and not currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(true, "helicopter_rotors", heliDist)
+						dists["HELI"] = heliDist
+
+					elseif anyHeli and currentLoopingSounds["helicopter_rotors"] then
+						local old = dists["HELI"] or 0
+						if math.abs(old - heliDist) > DIST_THRESHOLD then
+							ToggleAudio(true,  "helicopter_rotors", heliDist)
+							dists["HELI"] = heliDist
+						end
+
+					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then
+						ToggleAudio(false, "helicopter_rotors", heliDist)
+					end
+				end
+			end
+		end)
+		-- Gunshot listener
+		Citizen.CreateThread(function()
+			while true do
+				if Radio.On then
+					local playerPed   = PlayerPedId()
+					local playerCoords = GetEntityCoords(playerPed)
+
+					-- 1) Check local player shooting
+					if IsPedShooting(playerPed) then
+						local weapon   = GetSelectedPedWeapon(playerPed)
+						local category = GetWeaponCategory(weapon)
+						if category then
+							local suppressed = IsPedCurrentWeaponSilenced(playerPed)
+							local trackId = suppressed and (TrackIDs[category] .. "_suppressed") or TrackIDs[category]
+							ToggleAudio(true, trackId, 1)
+							Citizen.Wait(150)
+							ToggleAudio(false, trackId, 1)
+						end
+					end
+
+					-- 2) Now check all _other_ networked players
+					for _, ped in ipairs(GetGamePool('CPed')) do
+						if ped ~= playerPed
+						and DoesEntityExist(ped)
+						and not IsPedDeadOrDying(ped)
+						and IsPedAPlayer(ped) then
+
+							local pedId = NetworkGetPlayerIndexFromPed(ped)
+							if NetworkIsPlayerActive(pedId) and IsPedShooting(ped) then
+								local weapon   = GetSelectedPedWeapon(ped)
+								local category = GetWeaponCategory(weapon)
+								if category then
+									local suppressed = IsPedCurrentWeaponSilenced(ped)
+									local baseTrackId = suppressed and (TrackIDs[category] .. "_suppressed") or (TrackIDs[category])
+
+									local pedCoords = GetEntityCoords(ped)
+									local dist = #(playerCoords - pedCoords)
+									if dist <= 100.0 then
+										local fraction = dist / 100
+										-- invert: 1.0 (at you) → 0.0 (at maxDist)
+										local volume = math.max(0, 1 - fraction)
+										ToggleAudio(true, baseTrackId, volume)
+										Citizen.Wait(150)
+										ToggleAudio(false, baseTrackId, volume)
+									end
+								end
+							end
+						end
+					end
+				end
+				Citizen.Wait(10)
+			end
+		end)
+	end
 end
-
 function handleNameChange(name)
 	SendNUIMessage({
 		type = 'set_display_name',

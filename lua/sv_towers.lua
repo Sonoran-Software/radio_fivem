@@ -186,6 +186,26 @@ AddEventHandler('RadioTower:RepairTower', function(towerId)
 	TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
 end)
 
+RegisterNetEvent('RadioTower:RepairAllTowers')
+AddEventHandler('RadioTower:RepairAllTowers', function()
+	DebugPrint('RadioTower:RepairAllTowers')
+
+	-- any reasonable community should have <100
+	for _, tower in ipairs(Towers) do
+		local needsRepair = false
+		for i = 1, #tower.DishStatus do
+			needsRepair = needsRepair or tower.DishStatus[i] ~= 'alive'
+			tower.DishStatus[i] = 'alive'
+		end
+
+		if needsRepair then
+			TriggerClientEvent('RadioTower:SetDishStatus', -1, tower.Id, tower.DishStatus)
+			TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
+			TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
+		end
+	end
+end)
+
 -- API
 exports('createTower', function(config)
 	local obj = shallowcopy(RadioTower)

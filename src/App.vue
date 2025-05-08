@@ -6,7 +6,7 @@
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
             </div>
-            <div v-else-if="emergencyCall.open" style="display: flex; flex-direction: column; align-items: center">
+            <div v-else-if="emergencyCall.open && emergencyCall.showHelpText" style="display: flex; flex-direction: column; align-items: center">
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
@@ -33,7 +33,7 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :query="{ displayName: emergencyCall.name }"
+            :query="{ roomId: standaloneRoomId, displayName: emergencyCall.name }"
             feature="911"
         />
         <!-- radio iframe for nearby chatter -->
@@ -42,6 +42,7 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
+            :query="{ roomId: standaloneRoomId }"
             feature="chatter"
         />
 
@@ -58,7 +59,7 @@
                             ref="standaloneFrame"
                             :server-id="standaloneServerId"
                             :url="standaloneUrl"
-                            :query="{screen: frame.screen.style}"
+                            :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
                             iframe-persistent
                         />
                     </primary-screen>
@@ -104,6 +105,7 @@ export default {
             debug: false,
             help: false,
             standaloneServerId: null,
+            standaloneRoomId: null,
             standaloneUrl: null,
             pttKeyName: null,
 
@@ -130,6 +132,7 @@ export default {
                 peers: [],
                 state: null,
                 cmd: '911',
+                showHelpText: true,
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -301,6 +304,7 @@ export default {
             switch (event.type) {
                 case 'setStandalone':
                     this.standaloneServerId = event.standaloneId;
+                    this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug = event.debug;
@@ -324,7 +328,7 @@ export default {
                     this.refreshScreen();
                     break;
                 case 'setEmergencyCall':
-                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand);
+                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
@@ -448,6 +452,15 @@ export default {
                         type: 'set_display_name',
                         name: event.name
                     })
+                    break;
+                case 'toggle_background_audio':
+                    this.postRadioFrame({
+                        type: 'toggle_background_audio',
+                        start: event.start,
+                        trackId: event.trackId,
+                        volume: event.volume,
+                    });
+                    break;
             }
         },
 
@@ -495,6 +508,13 @@ export default {
                     break;
                 case 'reposition':
                     this.dragMode = true;
+                    break;
+                case 'toggle_background_audio_confirm':
+                    this.postClient({
+                        type: 'toggle_background_audio_confirm',
+                        start: event.start,
+                        trackId: event.trackId
+                    });
                     break;
             }
         },
@@ -768,11 +788,12 @@ export default {
                 removeRadioFrame('radio');
             });
         },
-        setEmergencyCall(enabled, displayName, cmd) {
+        setEmergencyCall(enabled, displayName, cmd, showHelpText) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
             this.emergencyCall.open = enable;
             if (displayName) this.emergencyCall.name = displayName;
             if (cmd) this.emergencyCall.cmd = cmd;
+            if (showHelpText != null) this.emergencyCall.showHelpText = showHelpText;
             if (!enable) {
                 // reset the emergency call state
                 this.emergencyCall.peers = [];
