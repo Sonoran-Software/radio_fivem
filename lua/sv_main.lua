@@ -906,7 +906,6 @@ end)
 
 RegisterNetEvent('sonoranradio:syncSirenState')
 AddEventHandler('sonoranradio:syncSirenState', function(isOn, coords)
-	print('SonoranRadio:syncSirenState', isOn, coords)
 	local src = source
 	-- pass along who, on/off, volume, and where
 	sirens[src] = {
