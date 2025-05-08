@@ -1406,6 +1406,7 @@ function initClient()
 									table.insert(distances, math.max(0, 1 - (dist / MAX_DIST)))
 								end
 							end
+						else
 							-- remove the entry if the vehicle is not valid anymore
 							remoteSirens[key] = nil
 						end
