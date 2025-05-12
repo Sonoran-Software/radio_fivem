@@ -435,9 +435,12 @@ function initClient()
 			})
 		elseif action == 'reset' then
 			-- debug print ui info to console
-			print('SONORAN RADIO UI POSITION DATA')
-			print(json.encode(GetResourceKvpString('ui_pos_dic')))
+			print('SONORANRADIO UI DATA')
+			print('skin', GetResourceKvpString('sonoranradio_skin'))
+			print('pos', GetResourceKvpString('ui_pos_dic'))
 
+			frame = 'default'
+			DeleteResourceKvp('sonoranradio_skin')
 			SetResourceKvp('ui_pos_dic', '{}')
 			SendNUIMessage({ type = 'reset' })
 		elseif action == 'scanner' and not Config.enforceRadioItem then
@@ -886,6 +889,7 @@ function initClient()
 		if data.type == 'currentSkinUpdated' then
 			frame = data.skin
 			SetResourceKvp('sonoranradio_skin', frame)
+			print('setting current frame', frame)
 		end
 
 		if data.type == 'chatterInit' then

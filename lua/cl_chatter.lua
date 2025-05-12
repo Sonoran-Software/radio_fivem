@@ -19,8 +19,8 @@ function initChatter()
 			DebugPrint('Component ID is not a prop (under 14)')
 			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId) == drawableId))
 			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId) == textureId))
-			return GetPedPropIndex(ped, componentId) == drawableId and
-				(not textureId or GetPedPropTextureIndex(ped, componentId) == textureId)
+			return GetPedDrawableVariation(ped, componentId) == drawableId and
+				(not textureId or GetPedTextureVariation(ped, componentId) == textureId)
 		end
 	end
 
