@@ -56,6 +56,10 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		end
 	end
 	TriggerServerEvent('SonoranRadio::RequestSirens')
+	TriggerServerEvent('SonoranRadio::CheckPermissions')
+	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
+		Config.luxartResourceName = 'lvc'
+	end
 end)
 
 function initClient()
@@ -327,13 +331,11 @@ function initClient()
 	end
 
 	function radioToggle(frame)
+		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
 			SendNotification('Radio: ~r~No Permission~r~')
 			return
 		end
-
-		TriggerServerEvent('SonoranRadio::CheckPermissions')
-
 		local hasItem = not Config.enforceRadioItem or Radio.HasItem
 		if not hasItem then
 			TriggerEvent('chat:addMessage', {
@@ -1098,9 +1100,6 @@ function initClient()
 			SendNUIMessage({
 				type = "get_connected_users",
 			})
-		end
-		if Config.luxartResourceName == nil then
-			Config.luxartResourceName = 'lvc'
 		end
 	end)
 
