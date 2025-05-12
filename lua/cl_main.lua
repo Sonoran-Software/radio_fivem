@@ -56,6 +56,9 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		end
 	end
 	TriggerServerEvent('SonoranRadio::RequestSirens')
+	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
+		Config.luxartResourceName = 'lvc'
+	end
 end)
 
 function initClient()
@@ -1094,9 +1097,6 @@ function initClient()
 			SendNUIMessage({
 				type = "get_connected_users",
 			})
-		end
-		if Config.luxartResourceName == nil then
-			Config.luxartResourceName = 'lvc'
 		end
 	end)
 
