@@ -324,6 +324,7 @@ export default {
                     localStorage.clear();
                     this.positions = {};
                     this.escapeMode = 'keep';
+                    this.selectSkin('default');
                 case 'refresh':
                     this.refreshScreen();
                     break;
