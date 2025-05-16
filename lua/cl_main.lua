@@ -386,12 +386,15 @@ function initClient()
 		if type(displayName) ~= 'string' then
 			displayName = GetPlayerName(PlayerId())
 		end
+		if Config.showEmergencyCallHelp == nil then
+			Config.showEmergencyCallHelp = true
+		end
 		SendNUIMessage({
 			type = 'setEmergencyCall',
 			enabled = enabled,
 			displayName = displayName,
 			callCommand = emergencyCallCommand(),
-			showHelpText = Config.showEmergencyCallHelp or true
+			showHelpText = Config.showEmergencyCallHelp
 		})
 	end
 	exports('setEmergencyCall', setEmergencyCall)
