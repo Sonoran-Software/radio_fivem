@@ -71,11 +71,26 @@ RegisterNetEvent('Chatter:saveChatterConfig', function(config)
 end)
 
 -- scanners across the entire server
+local staticScanners
 local globalScanners = {}
 RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
 	globalScanners[id] = data
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
 end)
+RegisterNetEvent('SonoranRadio::requestScanners', function()
+	TriggerClientEvent('SonoranRadio::receiveScanners', source, globalScanners, staticScanners)
+end)
+
+function initStaticScanners(s)
+	staticScanners = s
+	for _, ss in ipairs(staticScanners) do
+		globalScanners[ss.Id] = {
+			powered = ss.Powered ~= false,
+			channelId = ss.ChannelId,
+			pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
+		}
+	end
+end
 
 -- check for radio scanners and add metadata if needed
 Citizen.CreateThread(function()

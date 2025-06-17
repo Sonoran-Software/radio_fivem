@@ -7,6 +7,7 @@
 /speakers.json
 /tunnels.json
 /earpieces.json
+/scanners.json
 
 yarn-error.log
 .yarn.installed

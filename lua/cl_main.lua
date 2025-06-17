@@ -1119,6 +1119,7 @@ function initClient()
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
+				print('lvc payload', data)
 				data = json.decode(data)
 				state_lxsiren = data.state_lxsiren
 				state_pwrcall = data.state_pwrcall

@@ -1,6 +1,6 @@
 function initScanners()
 	if Config.chatter == false then return end
-	local inMenu = false
+
 	-- SCANNER PERMS
 	local allowed = false
 	RegisterNetEvent('SonoranRadio::AuthorizeScanners', function()
@@ -82,6 +82,44 @@ function initScanners()
 		sProfiles = orderProfiles(sProfiles)
 	end)
 
+	-- STATIC SCANNER LOGIC
+	local staticScanners = {}
+	Citizen.CreateThread(function()
+		local OBJ_RANGE = 100.0
+		local OBJ_MODEL = `prop_cs_hand_radio`
+		local ssObjects = {}
+
+		while true do
+			local myPos = GetEntityCoords(PlayerPedId())
+			for _, ss in ipairs(staticScanners) do
+				local pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
+				local dist = #(pos - myPos)
+
+				if dist < OBJ_RANGE and ssObjects[ss.Id] == nil then
+					-- we are in range, but the obj is not spawned
+					while not HasModelLoaded(OBJ_MODEL) do
+						RequestModel(OBJ_MODEL)
+						Citizen.Wait(0)
+					end
+					-- create the object in the world
+					local obj = CreateObject(OBJ_MODEL, pos.x, pos.y, pos.z, false, true, false)
+					SetEntityHeading(obj, ss.PropPosition.heading)
+					SetEntityCollision(obj, false, false)
+					if not ss.PropPosition.exact then
+						PlaceObjectOnGroundOrObjectProperly(obj)
+					end
+					SetModelAsNoLongerNeeded(OBJ_MODEL)
+					ssObjects[ss.Id] = obj
+				elseif dist >= OBJ_RANGE and ssObjects[ss.Id] ~= nil then
+					-- we are out of range, but the object still exists
+					DeleteObject(ssObjects[ss.Id])
+					ssObjects[ss.Id] = nil
+				end
+			end
+			Citizen.Wait(500)
+		end
+	end)
+	
 	-- SCANNER MENU LOGIC
 	local scanners = {}
 	local inventoryScannerId = 0
@@ -95,20 +133,12 @@ function initScanners()
 		scanners[id].powered = powered
 		scanners[id].channelId = sDefaultProfileId
 	end
-	local function advScanner(id, n)
+	local function setScannerChannel(id, idx)
 		local scanner = scanners[id]
-		local curIndex = -n + 1
-		for i = 1, #sProfiles do
-			if sProfiles[i].id == scanner.channelId then
-				curIndex = i
-			end
-		end
-
-		local nextIndex = (curIndex + n - 1) % #sProfiles + 1
-		scanner.channelId = sProfiles[nextIndex].id
+		scanner.channelId = sProfiles[idx].id
 
 		BeginTextCommandThefeedPost('STRING')
-		AddTextComponentSubstringPlayerName('Channel: ~b~' .. sProfiles[nextIndex].displayName)
+		AddTextComponentSubstringPlayerName('Channel: ~b~' .. sProfiles[idx].displayName)
 		EndTextCommandThefeedPostTicker(false, false)
 	end
 	local function pushScanner(id)
@@ -116,27 +146,36 @@ function initScanners()
 			TriggerServerEvent('SonoranRadio::pushScanner', id, scanners[id])
 		end
 	end
-	RegisterNetEvent('SonoranRadio::receiveScanners', function(s)
+	RegisterNetEvent('SonoranRadio::receiveScanners', function(state, static)
 		local localScanner = scanners[0]
-		scanners = s
+		scanners = state
 		scanners[0] = localScanner
-	end)
 
-	RegisterNetEvent('menu:close', function(menu)
-		if menu.id == 'scannerControls' then
-			inMenu = false
+		if static then
+			staticScanners = static
 		end
 	end)
+
 	-- SCANNER MENUS
 	WarMenu.CreateMenu('scannerControls', 'Scanner Controls', 'Sonoran Software')
 	WarMenu.SetTitleColor('scannerControls', 0, 0, 0, 255)
 	WarMenu.SetMenuTitleBackgroundSprite('scannerControls', 'radio_menu_header', 'option_1')
-	function openScanner(scannerId, startCoords)
+	local function openScannerMenu(scannerId, scannerCoords)
 		if not allowed then return end
 		if WarMenu.IsMenuOpened('scannerControls') then return end
-		Citizen.CreateThread(function()
-			WarMenu.OpenMenu('scannerControls')
-			inMenu = true
+		WarMenu.OpenMenu('scannerControls')
+
+		local curChId = (scanners[scannerId] and scanners[scannerId].channelId) or sDefaultProfileId
+		local chIdx = 1
+		local chNames = {}
+		for i = 1, #sProfiles do
+			chNames[i] = sProfiles[i].displayName
+			if sProfiles[i].id == curChId then
+				chIdx = i
+			end
+		end
+
+		Citizen.CreateThreadNow(function()
 			while WarMenu.IsMenuOpened('scannerControls') do
 				local isPowered = isScannerPowered(scannerId)
 
@@ -144,17 +183,17 @@ function initScanners()
 					powerScanner(scannerId, not isPowered)
 				end
 				if isPowered then
-					if WarMenu.Button('Next Channel') then
-						advScanner(scannerId, 1)
-					end
-					if WarMenu.Button('Previous Channel') then
-						advScanner(scannerId, -1)
+					local selected, newIdx = WarMenu.ComboBox('Select Channel', chNames, chIdx)
+					chIdx = newIdx
+
+					if selected then
+						setScannerChannel(scannerId, chIdx)
 					end
 				end
 
-				if startCoords == nil and inventoryScannerId ~= scannerId then
+				if scannerCoords == nil and inventoryScannerId ~= scannerId then
 					WarMenu.CloseMenu()
-				elseif startCoords ~= nil and #(GetEntityCoords(PlayerPedId()) - startCoords) > 5.0 then
+				elseif scannerCoords ~= nil and #(GetEntityCoords(PlayerPedId()) - scannerCoords) > 5.0 then
 					WarMenu.CloseMenu()
 				end
 
@@ -166,9 +205,10 @@ function initScanners()
 	end
 	function openLocalScanner()
 		if inventoryScannerId ~= nil then
-			openScanner(inventoryScannerId)
+			openScannerMenu(inventoryScannerId)
 		end
 	end
+
 	local scannerDrops = {}
 	if frameworkEnum == 1 and inventoryEnum == 1 then
 		-- qb-inventory INTEGRATION
@@ -254,28 +294,54 @@ function initScanners()
 			end)
 		end
 	end
-	Citizen.CreateThread(function()
-		AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
 
-		while true do
-			local myPos = GetEntityCoords(PlayerPedId())
-			local nearDropId = nil
-			local nearDropDist = 5.0
-			for dropId, drop in pairs(scannerDrops) do
-				local coords = vec3(drop.coords.x, drop.coords.y, drop.coords.z)
-				local dist = #(coords - myPos)
-				if dist < nearDropDist then
-					nearDropId = dropId
-					nearDropDist = dist
+	local function getClosestWorldScanner(maxDistance)
+		local AXIS_WEIGHT = vec3(1.0, 1.0, 0.5) -- treat vertical component as less important
+		local myPos = GetEntityCoords(PlayerPedId())
+		local nearScannerId = nil
+		local nearScannerCoords = vec(0.0, 0.0, 0.0)
+		local nearScannerDist = maxDistance or math.huge
+
+		-- find the nearest scanner as a drop
+		for dropId, drop in pairs(scannerDrops) do
+			local coords = vec3(drop.coords.x, drop.coords.y, drop.coords.z)
+			local dist = #((coords - myPos) * AXIS_WEIGHT)
+			if dist < nearScannerDist then
+				nearScannerId = dropId
+				nearScannerDist = dist
+				nearScannerCoords = coords
+			end
+		end
+		-- find the nearest static scanner
+		for id, scanner in pairs(scanners) do
+			if type(scanner.pos) == 'vector3' then
+				local dist = #((scanner.pos - myPos) * AXIS_WEIGHT)
+				if dist < nearScannerDist then
+					nearScannerId = id
+					nearScannerDist = dist
+					nearScannerCoords = scanner.pos
 				end
 			end
+		end
 
-			if allowed and nearDropId and not WarMenu.IsAnyMenuOpened() then
+		return nearScannerId, nearScannerCoords
+	end
+	Citizen.CreateThread(function()
+		TriggerServerEvent('SonoranRadio::requestScanners')
+		AddTextEntry('SONRAD_SCANNER_USE', 'Press ~INPUT_CONTEXT~ to use the scanner')
+
+		while #sProfiles == 0 do
+			Citizen.Wait(250) -- wait for profiles to load
+		end
+		while true do
+			local scannerId, scannerCoords = getClosestWorldScanner(2.5)
+
+			if allowed and scannerId and not WarMenu.IsAnyMenuOpened() then
 				BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
 				EndTextCommandDisplayHelp(0, false, true, 100)
 
 				if IsControlJustReleased(0, 38) then
-					openScanner(nearDropId, myPos)
+					openScannerMenu(scannerId, scannerCoords)
 				end
 
 				Citizen.Wait(0)
@@ -285,30 +351,42 @@ function initScanners()
 		end
 	end)
 
-	-- SCANNER CHATTER API
-	function getScannerChatterSources()
-		local sources = {}
-
-		for id, scanner in pairs(scanners) do
-			if scanner.powered then
-				local sourcePos
-				if id == inventoryScannerId then -- local scanner
-					sourcePos = GetEntityCoords(PlayerPedId())
-				elseif scannerDrops[id] then -- dropped scanner
-					sourcePos = vec3(scannerDrops[id].coords.x, scannerDrops[id].coords.y, scannerDrops[id].coords.z)
+	-- an iterator over powered scanners and their coordinates
+	-- see getScannerChatterSources for use
+	local function poweredScanners()
+		local next, tbl, key = pairs(scanners)
+		return function()
+			while true do
+				local id, scanner = next(tbl, key)
+				key = id
+				if id == nil then
+					return nil, nil, nil -- end of iterator
 				end
 
-				local myPos = GetFinalRenderedCamCoord()
-				if sourcePos and #(sourcePos - myPos) < 15.0 then
-					table.insert(sources, {
-						sourceEntity = id == inventoryScannerId and PlayerPedId() or nil,
-						pos = sourcePos,
-						scanList = {scanner.channelId},
-					})
+				if not scanner.powered then
+					-- pass
+				elseif id == inventoryScannerId then
+					return id, scanner, nil -- scanner is on player
+				elseif scannerDrops[id] then
+					local dropCoords = scannerDrops[id].coords
+					return id, scanner, vec3(dropCoords.x, dropCoords.y, dropCoords.z)
+				elseif type(scanner.pos) == 'vector3' then
+					-- this is a static scanner (i.e. its position cannot change)
+					return id, scanner, scanner.pos
 				end
 			end
 		end
-
+	end
+	-- SCANNER CHATTER API
+	function getScannerChatterSources()
+		local sources = {}
+		for id, scanner, coords in poweredScanners() do
+			table.insert(sources, {
+				sourceEntity = coords == nil and PlayerPedId() or nil, -- coords == nil when the scanner is on the player
+				pos = coords,
+				scanList = {scanner.channelId or sDefaultProfileId},
+			})
+		end
 		return sources
 	end
 	AddEventHandler('ox_inventory:updateInventory', function(changes)

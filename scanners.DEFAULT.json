@@ -1,0 +1,67 @@
+[
+    {
+        "Id": "4980a4e4-1509-4bd1-81bd-24466d76a3a9",
+        "Note": "Sandy Sheriff Station",
+        "Powered": true,
+        "ChannelId": 0,
+        "PropPosition": {
+            "x": 1853.98,
+            "y": 3688.92,
+            "z": 34.38054,
+            "heading": 32.76,
+            "exact": false
+        }
+    },
+    {
+        "Id": "17c03514-2093-4038-b7fb-90bfa20035d8",
+        "Note": "Sandy Fire Station",
+        "Powered": true,
+        "ChannelId": 0,
+        "PropPosition": {
+            "x": 1690.17,
+            "y": 3588.58,
+            "z": 35.7267,
+            "heading": 118.03,
+            "exact": false
+        }
+    },
+    {
+        "Id": "024af307-bed7-4a93-8ca5-3783f4ed3030",
+        "Note": "Mission Row PD",
+        "Powered": true,
+        "ChannelId": 0,
+        "PropPosition": {
+            "x": 438.54,
+            "y": -978.92,
+            "z": 31.02462,
+            "heading": 270.73,
+            "exact": false
+        }
+    },
+    {
+        "Id": "c7cc6e13-e3e1-4d1c-8f29-bed65a3bac1d",
+        "Note": "Davis Fire Station",
+        "Powered": true,
+        "ChannelId": 0,
+        "PropPosition": {
+            "x": 204.57,
+            "y": -1663.83,
+            "z": 29.91371,
+            "heading": 224.93,
+            "exact": false
+        }
+    },
+    {
+        "Id": "bbcba18d-b03b-4187-a3e0-14ce6bb7f159",
+        "Note": "St Fiacre Hospital Fire Station",
+        "Powered": true,
+        "ChannelId": 0,
+        "PropPosition": {
+            "x": 1207.92,
+            "y": -1483.59,
+            "z": 34.97002,
+            "heading": 264.91,
+            "exact": false
+        }
+    }
+]

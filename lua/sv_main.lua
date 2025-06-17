@@ -359,11 +359,11 @@ end)
 
 local function CopyFile(old_path, new_path)
 	local old_file = io.open(old_path, 'rb')
-	local new_file = io.open(new_path, 'wb')
 	if not old_file then
 		print('Failed to open source file: ' .. old_path .. ' - please check your folder permissions or rename file manually.')
 		return false
 	end
+	local new_file = io.open(new_path, 'wb')
 	if not new_file then
 		print('Failed to create target file: ' .. new_path .. ' - please check your folder permissions or rename file manually.')
 		old_file:close()
@@ -372,7 +372,7 @@ local function CopyFile(old_path, new_path)
 
 	local old_file_sz, new_file_sz
 	while true do
-		local block = old_file:read(2 ^ 13)
+		local block = old_file:read(2 ^ 13) -- 8KiB
 		if not block then
 			old_file_sz = old_file:seek('end')
 			break
@@ -387,6 +387,24 @@ local function CopyFile(old_path, new_path)
 		return false
 	end
 	return true
+end
+local function LoadJsonConfig(file, defaultFile)
+	local resourceName = GetCurrentResourceName()
+	local fileData = LoadResourceFile(resourceName, file)
+	if not fileData then
+		-- Rename default to proper config file for user
+		fileData = LoadResourceFile(resourceName, 'towers.DEFAULT.json')
+		infoLog(('%s is not found, attempting to rename %s to %s'):format(file, defaultFile, file))
+		local success = CopyFile(GetResourcePath(resourceName)..'/'..defaultFile, GetResourcePath(resourceName)..'/'..file)
+		if success then
+			infoLog(('Successfully renamed %s to %s'):format(defaultFile, file))
+		else
+			warnLog(('Failed to rename %s to %s'):format(defaultFile, file))
+			file = defaultFile -- when loading below, use the default file
+		end
+	end
+	fileData = LoadResourceFile(resourceName, file)
+	return json.decode(fileData) or {}
 end
 
 -- this function creates/initializes the sanitized clientConfig
@@ -485,24 +503,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	getFramework()
 	local initConfigPromise = createClientConfig()
 
-	-- create a towers.json if it doesn't exist already
-	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
-	if not jsonFile then -- Request default if there was an issue getting the regular
-		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
-		print('[SonoranRadio] - Using default tower locations - Please update your towers.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename towers.DEFAULT.json to towers.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/towers.DEFAULT.json', GetResourcePath(resourceName) .. '/towers.json') then
-			print('[SonoranRadio] - Failed to rename towers.DEFAULT.json to towers.json')
-			jsonFileName = 'towers.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed towers.DEFAULT.json to towers.json')
-			jsonFileName = 'towers.json'
-		end
-	else
-		jsonFileName = 'towers.json'
-	end
-	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
-	local towers = json.decode(t)
+	-- initialize towers
+	local towers = LoadJsonConfig('towers.json', 'towers.DEFAULT.json')
 	for i = 1, #towers do
 		if towers[i].type == 'radioTower' then
 			local obj = shallowcopy(RadioTower)
@@ -556,24 +558,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end
 
-	-- create a tunnels.json if it doesn't exist already
-	local polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.json')
-	if not polyZoneFile then -- Request default if there was an issue getting the regular
-		polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.DEFAULT.json')
-		print('[SonoranRadio] - Using default tunnel locations - Please update your tunnels.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename tunnels.DEFAULT.json to tunnels.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/tunnels.json') then
-			print('[SonoranRadio] - Failed to rename tunnels.DEFAULT.json to tunnels.json')
-			polyZoneFileName = 'tunnels.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed tunnels.DEFAULT.json to tunnels.json')
-			polyZoneFileName = 'tunnels.json'
-		end
-	else
-		polyZoneFileName = 'tunnels.json'
-	end
-	local polyZones = LoadResourceFile(GetCurrentResourceName(), polyZoneFileName)
-	local tnl = json.decode(polyZones)
+	-- initialize polyzone tunnels
+	local tnl = LoadJsonConfig('tunnels.json', 'tunnels.DEFAULT.json')
 	for i = 1, #tnl do
 		local obj = {}
 		obj.points = tnl[i].points
@@ -586,24 +572,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		table.insert(tunnels, obj)
 	end
 
-	-- create a speakers.json if it doesn't exist already
-	local speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.json')
-	if not speakersFile then
-		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
-		print('[SonoranRadio] - Using default tunnel locations - Please update your speakers.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename speakers.DEFAULT.json to speakers.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/speakers.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
-			print('[SonoranRadio] - Failed to rename speakers.DEFAULT.json to speakers.json')
-			speakersFileName = 'speakers.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed speakers.DEFAULT.json to speakers.json')
-			speakersFileName = 'speakers.json'
-		end
-	else
-		speakersFileName = 'speakers.json'
-	end
-	local spk = LoadResourceFile(GetCurrentResourceName(), speakersFileName)
-	local spkrs = json.decode(spk)
+	-- initialize speakers
+	local spkrs = LoadJsonConfig('speakers.json', 'speakers.DEFAULT.json')
 	for i = 1, #spkrs do
 		local obj = {}
 		if spkrs[i].Id == nil then
@@ -620,25 +590,11 @@ AddEventHandler('onResourceStart', function(resourceName)
 		table.insert(Speakers, obj)
 	end
 
-	-- create a earpieces.json if it doesn't exist already
-	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
-	if not chatterFile then
-		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
-		infoLog('Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
-		infoLog('Attempting to rename earpieces.DEFAULT.json to earpieces.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/earpieces.DEFAULT.json', GetResourcePath(resourceName) .. '/earpieces.json') then
-			errorLog('Failed to rename earpieces.DEFAULT.json to earpieces.json. Please manually rename')
-			chatterFileName = 'earpieces.DEFAULT.json'
-		else
-			infoLog('Successfully renamed earpieces.DEFAULT.json to earpieces.json')
-			chatterFileName = 'earpieces.json'
-		end
-	else
-		chatterFileName = 'earpieces.json'
-	end
-	-- Load JSON
-	local chat = LoadResourceFile(resourceName, chatterFileName)
-	local chatter = json.decode(chat) or {}
+	local staticScanners = LoadJsonConfig('scanners.json', 'scanners.DEFAULT.json')
+	initStaticScanners(staticScanners)
+
+	-- initialize chatter earpieces
+	local chatter = LoadJsonConfig('earpieces.json', 'earpieces.DEFAULT.json')
 	local luaConfig = {}
 	-- Function to check if a config item exists in the JSON
 	local function isConfigInJson(jsonTable, configItem)
@@ -662,8 +618,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 	-- Save updated earpieces.json if changes were made
 	if updated then
 		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
-		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
-		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
 		chatterConfig = luaConfig
 	end
