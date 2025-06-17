@@ -17,6 +17,8 @@ export default new Vuex.Store({
         radioState: null,
         talking: false,
         peersTalking: [],
+
+        chatterConfig: null,
     },
     // TODO: getter for frequency label & sub level
     getters: {
@@ -56,6 +58,21 @@ export default new Vuex.Store({
         xmitFreqStr(_state, getters) {
             return getters.freqXmit && freqToString(getters.freqXmit);
         },
+        chatterProfilesSorted(state) {
+            const profiles = state.chatterConfig?.profiles || [];
+            return [...profiles].sort((a, b) => {
+                const an = typeof a.orderIndex === 'number' ? a.orderIndex : Infinity;
+                const bn = typeof b.orderIndex === 'number' ? b.orderIndex : Infinity;
+                return an - bn;
+            });
+        },
+        chatterDefaultProfileId(state) {
+            if (typeof state.chatterConfig?.defaultProfileId === 'number')
+                return state.chatterConfig.defaultProfileId;
+            else if (state.chatterConfig?.profiles.length)
+                return state.chatterConfig?.profiles[0].id;
+            return 0; // either no channels exists, or the chatterConfig has not loaded yet
+        },
     },
     mutations: {
         setConnected(state, {connected, identity}) {
@@ -88,6 +105,9 @@ export default new Vuex.Store({
         setUnitStatus(state, status) {
             state.unitStatus = status;
         },
+        setChatterConfig(state, config) {
+            state.chatterConfig = config;
+        }
     },
     actions: {}
 })
