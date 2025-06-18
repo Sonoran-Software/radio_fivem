@@ -899,10 +899,6 @@ function initClient()
 			chatterForceUpdate() -- force a resend of important chatter info
 		end
 
-		if data.type == 'setChatterConfig' then
-			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
-		end
-
 		if data.type == 'toggle_background_audio_confirm' then
 			TriggerEvent('SonoranRadio::API:BackgroundAudio', data.start, data.trackId)
 		end
@@ -1120,6 +1116,7 @@ function initClient()
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
+				print('lvc payload', data)
 				data = json.decode(data)
 				state_lxsiren = data.state_lxsiren or 0
 				state_pwrcall = data.state_pwrcall or 0

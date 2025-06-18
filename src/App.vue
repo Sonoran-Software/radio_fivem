@@ -46,36 +46,46 @@
             feature="chatter"
         />
 
-        <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
-            :value="positions[frame.key] || defaultPositions[frame.type]" @input="$set(positions, frame.key, $event)">
-            <div class="radio-body">
-                <skin-body-img v-if="frame.body" :body-skin="frame.body" />
+        <draggable-box
+            v-for="frame in activeFrames"
+            :key="frame.type"
+            class="radio-frame"
+            :drag-enabled="dragMode"
+            :value="positions[frame.key] || defaultPositions[frame.type]"
+            @input="$set(positions, frame.key, $event)"
+        >
+            <skin-body-img v-if="frame.body" :body-skin="frame.body" />
 
-                <skin-body-component v-if="frame.screen" :bounds="frame.screen"
-                    @click.middle="(nudgePath = [frame.type, 'screen'])">
-                    <primary-screen :on="radioPower">
-                        <standalone-frame
-                            v-if="radioPower && standaloneServerId && !dragMode"
-                            ref="standaloneFrame"
-                            :server-id="standaloneServerId"
-                            :url="standaloneUrl"
-                            :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
-                            iframe-persistent
-                        />
-                    </primary-screen>
-                </skin-body-component>
+            <skin-body-component v-if="frame.screen" :bounds="frame.screen"
+                @click.middle="(nudgePath = [frame.type, 'screen'])">
+                <primary-screen :on="radioPower">
+                    <standalone-frame
+                        v-if="radioPower && standaloneServerId && !dragMode"
+                        ref="standaloneFrame"
+                        :server-id="standaloneServerId"
+                        :url="standaloneUrl"
+                        :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
+                        iframe-persistent
+                    />
+                </primary-screen>
+            </skin-body-component>
 
-                <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
-                    <mini-screen v-if="radioPower" />
-                </skin-body-component>
+            <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
+                <mini-screen v-if="radioPower" />
+            </skin-body-component>
+            <skin-body-component v-if="frame.scannerScreen" :bounds="frame.scannerScreen">
+                <scanner-screen v-if="scannerMenu.state && scannerMenu.state.powered" :state="scannerMenu.state" />
+            </skin-body-component>
 
-                <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
-                    <button class="radio-control" v-on="ctrl.events"
-                        @click.middle="nudgePath = [frame.type, 'controls', i]"></button>
-                    <code v-if="debug || help" class="label-on-top"
-                        :class="{ 'hack': ctrl.action === 'next_preset' }">{{ ctrl.action }}</code>
-                </skin-body-component>
-            </div>
+            <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
+                <button class="radio-control" v-on="ctrl.events"
+                    @click.middle="nudgePath = [frame.type, 'controls', i]"></button>
+                <code
+                    v-if="debug || help"
+                    class="label-on-top"
+                    :class="{ 'hack': ['next', 'next_preset', 'scanner_next'].includes(ctrl.action) }"
+                >{{ ctrl.action }}</code>
+            </skin-body-component>
         </draggable-box>
     </div>
 </template>
@@ -85,11 +95,13 @@ import SkinBodyImg from './components/skin/BodyImage.vue'
 import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
 import MiniScreen from './components/MiniScreen.vue'
+import ScannerScreen from './components/ScannerScreen.vue'
 import Screen from './components/Screen.vue'
 import StandaloneFrame, {
     getFrameEl as getRadioFrameEl,
     removePersistentFrame as removeRadioFrame
 } from './components/StandaloneFrame.vue'
+import scannerPng from './assets/scanner.png'
 
 export default {
     components: {
@@ -97,6 +109,7 @@ export default {
         SkinBodyComponent,
         DraggableBox,
         MiniScreen,
+        ScannerScreen,
         PrimaryScreen: Screen,
         StandaloneFrame,
     },
@@ -121,7 +134,8 @@ export default {
             defaultPositions: {
                 portable: [0, 0, 16],
                 vehicle: [0, 0, 16],
-                hud: [400, 0, 16]
+                hud: [400, 0, 16],
+                scanner: [0, 0, 16],
             },
             positions: {},
 
@@ -133,6 +147,11 @@ export default {
                 state: null,
                 cmd: '911',
                 showHelpText: true,
+            },
+            scannerMenu: {
+                open: false,
+                id: null,
+                state: null,
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -193,6 +212,7 @@ export default {
             };
 
             let frames = [];
+            if (this.scannerFrame) frames.push(this.scannerFrame);
             if (this.mobileRadioVisible) frames.push(getFrame('vehicle'));
             else if (this.radioVisible) frames.push(getFrame('portable'));
             if (this.showTopRadio) frames.push(getFrame('hud'));
@@ -210,6 +230,10 @@ export default {
                 'panic': this.buttonPanic,
                 'home': this.refreshScreen,
                 'hide': () => this.escapeRadio(true),
+
+                'scanner_power': this.scannerPower,
+                'scanner_next': () => this.scannerAdvChannel(1),
+                'scanner_prev': () => this.scannerAdvChannel(-1),
             };
             return frames.map((frame) => ({
                 ...frame,
@@ -263,6 +287,44 @@ export default {
         internalEmergencyCallDispatchers() {
             return this.emergencyCall.peers.map(x => x.name);
         },
+        scannerFrame() {
+            const frame = {
+                type: 'scanner',
+                key: 'scanner',
+                body: { image: scannerPng, width: 25 },
+                controls: [
+                    {
+                        action: 'scanner_power',
+                        bottom: 5.25,
+                        right: 2.75,
+                        width: 1.5,
+                        height: 1.5,
+                    },
+                    {
+                        action: 'scanner_prev',
+                        bottom: 7.5,
+                        right: 6.5,
+                        width: 2.5,
+                        height: 5.5,
+                    },
+                    {
+                        action: 'scanner_next',
+                        bottom: 7.5,
+                        right: 4,
+                        width: 2.5,
+                        height: 5.5,
+                    },
+                ],
+                scannerScreen: {
+                    top: 6.25,
+                    height: 4.5,
+                    left: 4.5,
+                    right: 4.5,
+                    zIndex: 25,
+                },
+            };
+            if (this.scannerMenu.open) return frame;
+        }
     },
     watch: {
         skinNames() {
@@ -327,6 +389,11 @@ export default {
                     this.selectSkin('default');
                 case 'refresh':
                     this.refreshScreen();
+                    break;
+                case 'openScanner':
+                    this.scannerMenu.open = true;
+                    this.scannerMenu.id = event.id;
+                    this.scannerMenu.state = event.state;
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
@@ -527,7 +594,8 @@ export default {
                 case 'radio_connected':
                     this.postClient({ type: 'chatterInit' });
                 case 'config_updated':
-                    this.postClient({ type: 'setChatterConfig', config: event.config });
+                    this.$store.commit('setChatterConfig', event.config);
+                    this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
                     break;
             }
         },
@@ -576,7 +644,7 @@ export default {
                 }
             }
 
-            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
+            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.postRadioFrame({ type: 'ptt', state: type === 'keydown' });
@@ -678,6 +746,10 @@ export default {
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
             if (hide || this.escapeMode !== 'keep') this.showRadio = false;
+            if (this.scannerMenu.open) {
+                this.scannerMenu.open = false;
+                this.postClient({ type: 'saveScanner', id: this.scannerMenu.id }, 'scanners');
+            }
 
             // notify player on how to hide radio if this is the first time
             const LS_KEY = 'hide_portable_hint_seen';
@@ -789,6 +861,21 @@ export default {
                 removeRadioFrame('radio');
             });
         },
+        scannerPower() {
+            if (!this.scannerMenu.state) this.scannerMenu.state = {};
+            this.scannerMenu.state.powered = !this.scannerMenu.state.powered;
+            this.scannerMenu.state.channelId = this.$store.getters.chatterDefaultProfileId;
+            this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
+        },
+        scannerAdvChannel(offset) {
+            const profiles = this.$store.getters.chatterProfilesSorted.filter(x => x.visibility === 'public');
+            const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
+            const idx = profiles.findIndex(x => x.id === chId) || 0;
+
+            const nextIdx = (idx + offset + profiles.length) % profiles.length;
+            this.scannerMenu.state.channelId = profiles[nextIdx].id;
+            this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
+        },
         setEmergencyCall(enabled, displayName, cmd, showHelpText) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
             this.emergencyCall.open = enable;
@@ -849,10 +936,6 @@ export default {
     color: white;
 }
 
-.radio-body {
-    position: relative;
-}
-
 .radio-control {
     outline: none;
     border: none;
@@ -874,7 +957,7 @@ export default {
     /* label-on-top uses pixel values */
 }
 
-.debug .radio-body {
+.debug .radio-frame {
     outline: 3px solid red;
 }
 
