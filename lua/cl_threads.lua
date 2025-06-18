@@ -275,7 +275,7 @@ function initThreads()
             end
 
             if Config.deathDetectionMethod == 'auto' or
-                Config.deathDetectionMethod == 'qbcore' then
+                (Config.deathDetectionMethod == 'qbcore' or Config.deathDetectionMethod == 'qbox') then
                 local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
                 if IsPlayerDead then
                     TriggerEvent('SonoranRadio::PlayerDeath')
