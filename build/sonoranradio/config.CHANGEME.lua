@@ -34,7 +34,7 @@ Config.ScannerItem = {
 }
 Config.disableRadioOnDeath = true -- Disables radio when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
-Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
+Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore | qbox
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
 Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to hide physical server racks
