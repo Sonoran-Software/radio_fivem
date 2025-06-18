@@ -257,7 +257,7 @@ function initThreads()
     -- 1000 MS Thread
     CreateThread(function()
         local QBCore = nil
-        if Config.deathDetectionMethod == 'qbcore' and frameworkEnum == 1 then
+        if (Config.deathDetectionMethod == 'qbcore' and frameworkEnum == 1) or (Config.deathDetectionMethod == 'qbox' and frameworkEnum == 2) then
             QBCore = exports['qb-core']:GetCoreObject()
         end
         TriggerServerEvent('SonoranRadio:GetTunnels')
