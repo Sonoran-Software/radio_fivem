@@ -58,6 +58,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	TriggerServerEvent('SonoranRadio::RequestSirens')
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
 	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
+		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
 		Config.luxartResourceName = 'lvc'
 	end
 end)
@@ -1120,9 +1121,9 @@ function initClient()
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
 				data = json.decode(data)
-				state_lxsiren = data.state_lxsiren
-				state_pwrcall = data.state_pwrcall
-				state_airmanu = data.state_airmanu
+				state_lxsiren = data.state_lxsiren or 0
+				state_pwrcall = data.state_pwrcall or 0
+				state_airmanu = data.state_airmanu or 0
 				if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 					SendNUIMessage({
 						type = 'siren_toggle',
@@ -1164,7 +1165,7 @@ function initClient()
 				end
 			end)
 		else
-			while true and not lvcStarted do
+			while not lvcStarted do
 				if IsVehicleSirenOn(GetVehiclePedIsIn(PlayerPedId(), false)) then
 					SendNUIMessage({
 						type = 'siren_toggle',
@@ -1215,9 +1216,9 @@ function initClient()
 				AddEventHandler('lvc:UpdateThirdParty', function(data)
 					data = json.encode(data)
 					data = json.decode(data)
-					state_lxsiren = data.state_lxsiren
-					state_pwrcall = data.state_pwrcall
-					state_airmanu = data.state_airmanu
+					state_lxsiren = data.state_lxsiren or 0
+					state_pwrcall = data.state_pwrcall or 0
+					state_airmanu = data.state_airmanu or 0
 					if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 						SendNUIMessage({
 							type = 'siren_toggle',
@@ -1563,24 +1564,12 @@ local function sendConsole(level, color, message)
 	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
 		print(msg)
 	end
-	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
-		table.insert(ErrorBuffer, 1, msg)
-	end
-	if level == 'DEBUG' and IsDuplicityVersion() then
-		if #DebugBuffer > 50 then
-			table.remove(DebugBuffer)
-		end
-		table.insert(DebugBuffer, 1, msg)
-	else
-		if not IsDuplicityVersion() then
-			if #MessageBuffer > 10 then
-				table.remove(MessageBuffer)
-			end
-			table.insert(MessageBuffer, 1, msg)
-		end
-	end
 end
 
 function errorLog(message)
 	sendConsole('ERROR', '^1', message)
+end
+
+function warnLog(message)
+	sendConsole('WARNING', '^3', message)
 end
