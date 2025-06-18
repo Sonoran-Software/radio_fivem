@@ -9,10 +9,6 @@ local ErrorBuffer = {}
 local tunnels = {}
 scanners = {}
 local critError = false
-jsonFileName = 'towers.DEFAULT.json'
-polyZoneFileName = 'tunnels.DEFAULT.json'
-speakersFileName = 'speakers.DEFAULT.json'
-chatterFileName = 'earpieces.json'
 chatterConfig = {}
 local clientConfig
 local sirens = {}
@@ -388,12 +384,22 @@ local function CopyFile(old_path, new_path)
 	end
 	return true
 end
-local function LoadJsonConfig(file, defaultFile)
+local defaultJsonConfigFiles = {
+	['earpieces.json'] = 'earpieces.DEFAULT.json',
+	['scanners.json']  = 'scanners.DEFAULT.json',
+	['speakers.json']  = 'speakers.DEFAULT.json',
+	['towers.json']    = 'towers.DEFAULT.json',
+	['tunnels.json']   = 'tunnels.DEFAULT.json',
+}
+function LoadJsonConfig(file)
 	local resourceName = GetCurrentResourceName()
 	local fileData = LoadResourceFile(resourceName, file)
 	if not fileData then
+		local defaultFile = defaultJsonConfigFiles[file]
+		if not defaultFile then error('no default json config found for '..file) end
+
 		-- Rename default to proper config file for user
-		fileData = LoadResourceFile(resourceName, 'towers.DEFAULT.json')
+		fileData = LoadResourceFile(resourceName, defaultFile)
 		infoLog(('%s is not found, attempting to rename %s to %s'):format(file, defaultFile, file))
 		local success = CopyFile(GetResourcePath(resourceName)..'/'..defaultFile, GetResourcePath(resourceName)..'/'..file)
 		if success then
@@ -405,6 +411,24 @@ local function LoadJsonConfig(file, defaultFile)
 	end
 	fileData = LoadResourceFile(resourceName, file)
 	return json.decode(fileData) or {}
+end
+function SaveJsonConfig(file, obj)
+	local resourceName = GetCurrentResourceName()
+	local contents = json.encode(obj, { indent = true })
+	local success = SaveResourceFile(resourceName, file, contents, -1)
+	if not success then
+		-- file could not be saved (permission issues probably)
+		-- try to write to default file with warning
+		local defaultFile = defaultJsonConfigFiles[file]
+		if not defaultFile then error('no default json config found for '..file) end
+		warnLog(('Could not save updated %s, trying to write changes to %s (NOTE: If auto-update is enabled, this file will be replaced during an update)'):format(file, defaultFile))
+		success = SaveResourceFile(resourceName, defaultFile, contents, -1)
+	end
+	if not success then
+		-- could not write to default file, write error
+		errorLog(('Could not save updated %s. Changes are not saved'):format(defaultJsonConfigFiles[file]))
+	end
+	return success
 end
 
 -- this function creates/initializes the sanitized clientConfig
@@ -504,7 +528,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	local initConfigPromise = createClientConfig()
 
 	-- initialize towers
-	local towers = LoadJsonConfig('towers.json', 'towers.DEFAULT.json')
+	local towers = LoadJsonConfig('towers.json')
 	for i = 1, #towers do
 		if towers[i].type == 'radioTower' then
 			local obj = shallowcopy(RadioTower)
@@ -559,7 +583,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 
 	-- initialize polyzone tunnels
-	local tnl = LoadJsonConfig('tunnels.json', 'tunnels.DEFAULT.json')
+	local tnl = LoadJsonConfig('tunnels.json')
 	for i = 1, #tnl do
 		local obj = {}
 		obj.points = tnl[i].points
@@ -573,7 +597,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 
 	-- initialize speakers
-	local spkrs = LoadJsonConfig('speakers.json', 'speakers.DEFAULT.json')
+	local spkrs = LoadJsonConfig('speakers.json')
 	for i = 1, #spkrs do
 		local obj = {}
 		if spkrs[i].Id == nil then
@@ -590,11 +614,11 @@ AddEventHandler('onResourceStart', function(resourceName)
 		table.insert(Speakers, obj)
 	end
 
-	local staticScanners = LoadJsonConfig('scanners.json', 'scanners.DEFAULT.json')
+	local staticScanners = LoadJsonConfig('scanners.json')
 	initStaticScanners(staticScanners)
 
 	-- initialize chatter earpieces
-	local chatter = LoadJsonConfig('earpieces.json', 'earpieces.DEFAULT.json')
+	local chatter = LoadJsonConfig('earpieces.json')
 	local luaConfig = {}
 	-- Function to check if a config item exists in the JSON
 	local function isConfigInJson(jsonTable, configItem)
@@ -617,8 +641,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	chatterConfig = chatter
 	-- Save updated earpieces.json if changes were made
 	if updated then
-		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
+		SaveJsonConfig('earpieces.json', luaConfig)
 		chatterConfig = luaConfig
 	end
 
@@ -672,7 +696,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 			table.insert(saveData, t)
 		end
 	end
-	SaveResourceFile(GetCurrentResourceName(), jsonFileName, json.encode(saveData, { indent = true }), -1)
+	SaveJsonConfig('towers.json', saveData)
 	DebugPrint('Saved towers to file ' .. json.encode(saveData))
 	Towers = towers
 	Servers = racks
@@ -690,7 +714,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 		t.Spawned = nil -- Remove the key 'spawned'
 		table.insert(saveData, t)
 	end
-	SaveResourceFile(GetCurrentResourceName(), speakersFileName, json.encode(saveData, { indent = true }), -1)
+	SaveJsonConfig('speakers.json', saveData)
 	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
 	Speakers = speakers
 	local locations = {}
@@ -738,7 +762,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		name = name
 	}
 	table.insert(tunnels, obj)
-	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
@@ -749,7 +773,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 			break
 		end
 	end
-	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 

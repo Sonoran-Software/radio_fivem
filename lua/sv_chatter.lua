@@ -66,7 +66,7 @@ end)
 
 RegisterNetEvent('Chatter:saveChatterConfig', function(config)
 	chatterConfig = config
-	SaveResourceFile(GetCurrentResourceName(), 'earpieces.json', json.encode(chatterConfig, { indent = true }), -1)
+	SaveJsonConfig('earpieces.json', chatterConfig)
 	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
 end)
 
@@ -91,6 +91,32 @@ function initStaticScanners(s)
 		}
 	end
 end
+function addAndSaveStaticScanner(ss)
+	globalScanners[ss.Id] = {
+		powered = ss.Powered ~= false,
+		channelId = ss.ChannelId,
+		pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
+	}
+	staticScanners[#staticScanners] = ss
+	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
+	SaveJsonConfig('scanners.json', staticScanners)
+end
+
+RegisterNetEvent('SonoranRadio::SpawnAndSaveScanner', function(coord, heading)
+	local scannerInfo = {
+		Id = uuid(),
+		Powered = true,
+		ChannelId = 0, -- use the default channel
+		PropPosition = {
+			x = coord.x,
+			y = coord.y,
+			z = coord.z,
+			heading = heading,
+			exact = false,
+		}
+	}
+	addAndSaveStaticScanner(scannerInfo)
+end)
 
 -- check for radio scanners and add metadata if needed
 Citizen.CreateThread(function()
