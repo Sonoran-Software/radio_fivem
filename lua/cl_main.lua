@@ -895,6 +895,10 @@ function initClient()
 			print('setting current frame', frame)
 		end
 
+		if data.type == 'saveSkinConfig' then
+			TriggerServerEvent('SonoranRadio::SaveSkinConfig', data.configPath, data.config)
+		end
+
 		if data.type == 'chatterInit' then
 			chatterForceUpdate() -- force a resend of important chatter info
 		end

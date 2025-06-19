@@ -352,6 +352,19 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 		end
 	end
 end)
+RegisterNetEvent('SonoranRadio::SaveSkinConfig', function(configPath, config)
+	if not Config.debug then
+		warnLog(('Player id:%s is attempting to save a radio skin config, even though debug is not enabled (possible security issue)'):format(source))
+		return
+	end
+
+	local success = SaveResourceFile(GetCurrentResourceName(), configPath, config, -1)
+	if success then
+		infoLog(('Successfully saved %s'):format(configPath))
+	else
+		errorLog(('Could not save %s, skin settings will not be saved'):format(configPath))
+	end
+end)
 
 local function CopyFile(old_path, new_path)
 	local old_file = io.open(old_path, 'rb')
