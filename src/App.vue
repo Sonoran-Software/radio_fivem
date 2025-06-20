@@ -95,11 +95,11 @@
 
         <draggable-box
             v-for="frame in activeFrames"
-            :key="frame.type"
+            :key="frameKey(frame)"
             class="radio-frame"
             :drag-enabled="dragMode"
-            :value="positions[frameKey(frame)] || defaultPositions[frameKey(frame)]"
-            @input="$set(positions, frame.key, $event)"
+            :value="positions[frameKey(frame)] || defaultPositions[frame.key]"
+            @input="$set(positions, frameKey(frame), $event)"
         >
             <skin-body-img v-if="frame.body" :skin-id="curSkin.id" :body-skin="frame.body" />
 
@@ -179,7 +179,7 @@ export default {
             radioPower: false,
             escapeMode: localStorage.getItem("escape_mode") || "keep",
             nextPrevMode: 'preset',
-            inVehicle: false,
+            inVehicleClass: -1,
             towerQuality: 1.0,
 
             dragMode: false,
@@ -249,8 +249,28 @@ export default {
         radioVisible() {
             return this.showRadio || (this.escapeMode === 'transmit_only' && this.$store.state.talking);
         },
-        mobileRadioVisible() {
-            return this.radioVisible && this.inVehicle;
+        activeRadioFrame() {
+            if (!this.curSkin || !this.radioVisible) return null;
+            const first = this.curSkin.frames[0];
+
+            // find portable frame, or return first frame if not found
+            if (this.inVehicleClass === -1)
+                return this.curSkin.frames.find(x => x.type === 'portable') ?? first;
+
+            // since inVehicleClass !== -1, we are in a vehicle and need to find the appropriate frame
+            return (
+              // find vehicle frame with class whitelisted
+              this.curSkin.frames.find(
+                (x) =>
+                  x.type === "vehicle" &&
+                  Array.isArray(x.vehicleClasses) &&
+                  x.vehicleClasses.includes(this.inVehicleClass),
+              ) ??
+              // find regular vehicle frame
+              this.curSkin.frames.find((x) => x.type === "vehicle") ??
+              // use first frame because none were found
+              first
+            );
         },
         activeFrames() {
             if (!this.curSkin) return; // no skin for the frames
@@ -270,8 +290,7 @@ export default {
             }
 
             if (this.scannerFrame) frames.push(this.scannerFrame);
-            if (this.mobileRadioVisible) frames.push(getFrame('vehicle'));
-            else if (this.radioVisible) frames.push(getFrame('portable'));
+            if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
             if (this.showTopRadio) frames.push(getFrame('hud'));
 
             // dedupe frames by type
@@ -535,7 +554,7 @@ export default {
                     this.$store.commit('setUnitStatus', event.status);
                     break;
                 case 'inVehicle':
-                    this.inVehicle = event.vehState;
+                    this.inVehicleClass = event.vehClass;
                     break;
                 case 'noRadioItem':
                     if (this.radioPower) this.buttonPower();
@@ -782,7 +801,7 @@ export default {
             return skinOptions;
         },
         frameKey(frame) {
-            return `${this.curSkin.id}-${frame.type}`;
+            return [this.curSkin.id, frame.type, ...(frame.vehicleClasses ?? [])].join('-');
         },
         debugGetNudge(dir) {
             const NUDGE = 1 / 8;

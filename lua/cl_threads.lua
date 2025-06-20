@@ -154,17 +154,11 @@ function initThreads()
     -- 100 MS Thread
     CreateThread(function()
         while true do
-            local veh = GetVehiclePedIsIn(GetPlayerPed(), false)
-            local prevState = inVehicle
-            -- DebugPrint("Getting Players Vehicle")
-            if not IsPedInAnyVehicle(PlayerPedId(), false) then
-                -- player is in vehicle
-                inVehicle = false
-            else
-                inVehicle = true
+            local vehClass = -1
+            if IsPedInAnyVehicle(PlayerPedId(), false) then
+                vehClass = GetVehicleClass(GetVehiclePedIsIn(PlayerPedId(), false))
             end
-            -- DebugPrint("Updating Radio State")
-            SendNUIMessage({type = 'inVehicle', vehState = inVehicle})
+            SendNUIMessage({type = 'inVehicle', vehClass = vehClass})
             for i = 1, #Towers do
                 local tower = Towers[i]
                 if tower then
