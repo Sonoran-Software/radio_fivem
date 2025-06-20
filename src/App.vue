@@ -21,8 +21,16 @@
         </div>
 
         <!-- SKIN DEBUG MENU -->
-        <div v-if="debug.enabled" class="label-on-top skin-debug-menu" @keydown.prevent @keyup.prevent>
-            <h1>Sonoran Radio Skin Debug Menu</h1>
+        <div
+            v-if="activeFrames.length > 0 && debug.enabled && debug.skinMenuExpanded"
+            class="label-on-top skin-debug-menu"
+            @keydown.prevent
+            @keyup.prevent
+        >
+            <div style="display:flex;align-items:center;gap:8px">
+                <h1>Sonoran Radio Skin Debug Menu</h1>
+                <button @click="debug.skinMenuExpanded = false">X</button>
+            </div>
             <!-- Options for changing/selecting the frame to modify -->
             <div>
                 <h2>Choose Skin/Frame</h2>
@@ -32,9 +40,9 @@
                         {{ skinId }}
                     </option>
                 </select>
-                <select v-model="debug.frame">
+                <select v-model="debug.frameIndex">
                     <option disabled value="">Select Frame</option>
-                    <option v-for="frame in (curSkin?.frames ?? [])" :key="frame.type" :value="frame.type">
+                    <option v-for="(frame, i) in (curSkin?.frames ?? [])" :key="frameKey(frame)" :value="i">
                         {{ frame.type }}
                     </option>
                 </select>
@@ -73,6 +81,9 @@
                 <button style="margin-top:10px" @click="debugSaveSkin">Save skin.json</button>
             </div>
         </div>
+        <div v-else-if="activeFrames.length > 0 && debug.enabled" class="skin-debug-menu">
+            <button @click="debug.skinMenuExpanded = true" style="opacity:0.25">&#x2C5;</button>
+        </div>
 
         <!-- radio iframe for emergency calls -->
         <standalone-frame
@@ -98,7 +109,7 @@
             :key="frameKey(frame)"
             class="radio-frame"
             :drag-enabled="dragMode"
-            :value="positions[frameKey(frame)] || defaultPositions[frame.key]"
+            :value="positions[frameKey(frame)] || defaultPositions[frame.type]"
             @input="$set(positions, frameKey(frame), $event)"
         >
             <skin-body-img v-if="frame.body" :skin-id="curSkin.id" :body-skin="frame.body" />
@@ -164,7 +175,8 @@ export default {
         return {
             debug: {
                 enabled: false,
-                frame: 'portable',
+                skinMenuExpanded: false,
+                frameIndex: 0,
                 frameShown: false,
                 frameComponentPath: ['screen']
             },
@@ -285,7 +297,7 @@ export default {
             let frames = [];
             // if a frame is forcefully shown, then make it the first active frame
             if (this.debug.frameShown) {
-                const frame = this.curSkin.frames.find(x => x.type === this.debug.frame);
+                const frame = this.curSkin.frames[this.debug.frameIndex];
                 if (frame) frames.push(frame);
             }
 
@@ -323,7 +335,7 @@ export default {
             }));
         },
         debugFrameComponentOptions() {
-            const frame = this.curSkin?.frames.find(x => x.type === this.debug.frame);
+            const frame = this.curSkin?.frames[this.debug.frameIndex];
             if (!frame) return [];
 
             const components = [];
@@ -335,7 +347,7 @@ export default {
             return components;
         },
         debugFrameComponent() {
-            let prop = this.curSkin?.frames.find(x => x.type === this.debug.frame);
+            let prop = this.curSkin?.frames[this.debug.frameIndex];
             if (!prop) return null;
             for (const key of this.debug.frameComponentPath) prop = prop[key];
             return prop;
