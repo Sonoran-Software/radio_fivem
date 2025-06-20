@@ -1,5 +1,5 @@
 <template>
-    <div class="appcontainer" :class="{ debug, help }">
+    <div class="appcontainer" :class="{ debug: debug.enabled, help }">
         <div class="top-instructions">
             <div v-if="dragMode">
                 Click and drag to move the components.
