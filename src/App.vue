@@ -29,7 +29,7 @@
         >
             <div style="display:flex;align-items:center;gap:8px">
                 <h1>Sonoran Radio Skin Debug Menu</h1>
-                <button @click="debug.skinMenuExpanded = false">X</button>
+                <button @click="debug.skinMenuExpanded = false">&times;</button>
             </div>
             <!-- Options for changing/selecting the frame to modify -->
             <div>
@@ -285,7 +285,7 @@ export default {
             );
         },
         activeFrames() {
-            if (!this.curSkin) return; // no skin for the frames
+            if (!this.curSkin) return []; // no skin for the frames
 
             const getFrame = (type) => {
                 const find = this.curSkin.frames.find(x => x.type === type)
@@ -385,10 +385,12 @@ export default {
             return this.emergencyCall.peers.map(x => x.name);
         },
         scannerFrame() {
+            if (!this.scannerMenu.open) return null;
+            const imageUrl = new URL(scannerPng, window.location.href);
             const frame = {
                 type: 'scanner',
                 key: 'scanner',
-                body: { image: scannerPng, width: 25 },
+                body: { image: imageUrl.toString(),  width: 25 },
                 controls: [
                     {
                         action: 'scanner_power',
@@ -420,7 +422,7 @@ export default {
                     zIndex: 25,
                 },
             };
-            if (this.scannerMenu.open) return frame;
+            return frame;
         }
     },
     watch: {

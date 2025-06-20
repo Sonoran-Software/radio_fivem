@@ -18,6 +18,7 @@ export default {
       return { width, height };
     },
     imgUrl() {
+      if (/^https?:\/\//.test(this.bodySkin.image)) return this.bodySkin.image;
       const url = new URL(
         `/skins/${this.skinId}/${this.bodySkin.image}`,
         `https://cfx-nui-${GetParentResourceName()}`
