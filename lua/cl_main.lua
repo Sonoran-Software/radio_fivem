@@ -11,7 +11,7 @@ local authorized = false
 local allowedFrames = {}
 local critError = false
 local calledSyncAcePerms = false
-local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
+local frame
 polyZonesTable = {}
 Config = {}
 
@@ -28,6 +28,7 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
 	getFramework()
 	getInventory()
 	initCell()
@@ -433,19 +434,17 @@ function initClient()
 				visibility = false
 			})
 		elseif action == 'refresh' then
-			SendNUIMessage({
-				type = 'refresh'
-			})
+			SendNUIMessage({ type = 'refresh' })
 		elseif action == 'reset' then
 			-- debug print ui info to console
 			print('SONORANRADIO UI DATA')
 			print('skin', GetResourceKvpString('sonoranradio_skin'))
 			print('pos', GetResourceKvpString('ui_pos_dic'))
 
-			frame = 'default'
+			frame = Config.defaultSkinId or 'default'
 			DeleteResourceKvp('sonoranradio_skin')
 			SetResourceKvp('ui_pos_dic', '{}')
-			SendNUIMessage({ type = 'reset' })
+			SendNUIMessage({ type = 'reset', skin = frame })
 		elseif action == 'scanner' and not Config.enforceRadioItem then
 			openLocalScanner()
 		elseif action == 'displayname' then
@@ -1017,7 +1016,7 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
-		frame = frame or 'default'
+		frame = frame or Config.defaultSkinId or 'default'
 
 		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
 			TriggerEvent('chat:addMessage', {

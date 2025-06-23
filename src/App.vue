@@ -47,10 +47,6 @@
                     </option>
                 </select>
                 <label>
-                    <input v-model="debug.frameShown" type="checkbox" />
-                    <span>Show Frame</span>
-                </label>
-                <label>
                     <input v-model="dragMode" type="checkbox" />
                     <span>Move/Resize</span>
                 </label>
@@ -177,7 +173,6 @@ export default {
                 enabled: false,
                 skinMenuExpanded: false,
                 frameIndex: 0,
-                frameShown: false,
                 frameComponentPath: ['screen']
             },
             help: false,
@@ -263,26 +258,19 @@ export default {
         },
         activeRadioFrame() {
             if (!this.curSkin || !this.radioVisible) return null;
-            const first = this.curSkin.frames[0];
+
+            if (this.inVehicleClass !== -1) {
+                // we are in a vehicle, find the appropriate vehicle frame for this veh class
+                const vehFrame = this.curSkin.frames.find(frame =>
+                    frame.type === 'vehicle' &&
+                    (!Array.isArray(frame.vehicleClasses) || frame.vehicleClasses.includes(this.inVehicleClass))
+                );
+                if (vehFrame) return vehFrame;
+                // fallback to portable frame if vehFrame does not exist
+            }
 
             // find portable frame, or return first frame if not found
-            if (this.inVehicleClass === -1)
-                return this.curSkin.frames.find(x => x.type === 'portable') ?? first;
-
-            // since inVehicleClass !== -1, we are in a vehicle and need to find the appropriate frame
-            return (
-              // find vehicle frame with class whitelisted
-              this.curSkin.frames.find(
-                (x) =>
-                  x.type === "vehicle" &&
-                  Array.isArray(x.vehicleClasses) &&
-                  x.vehicleClasses.includes(this.inVehicleClass),
-              ) ??
-              // find regular vehicle frame
-              this.curSkin.frames.find((x) => x.type === "vehicle") ??
-              // use first frame because none were found
-              first
-            );
+            return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
         activeFrames() {
             if (!this.curSkin) return []; // no skin for the frames
@@ -295,15 +283,16 @@ export default {
             };
 
             let frames = [];
-            // if a frame is forcefully shown, then make it the first active frame
-            if (this.debug.frameShown) {
+            if (this.debug.skinMenuExpanded) {
+                // debug menu on, only show the currently debugged frame
                 const frame = this.curSkin.frames[this.debug.frameIndex];
                 if (frame) frames.push(frame);
+            } else {
+                // normal operation frame checks
+                if (this.scannerFrame) frames.push(this.scannerFrame);
+                if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
+                if (this.showTopRadio) frames.push(getFrame('hud'));
             }
-
-            if (this.scannerFrame) frames.push(this.scannerFrame);
-            if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
-            if (this.showTopRadio) frames.push(getFrame('hud'));
 
             // dedupe frames by type
             frames = frames.filter((frame, i) => frames.findIndex((x) => x.type === frame.type) === i);
@@ -492,7 +481,7 @@ export default {
                     localStorage.clear();
                     this.positions = {};
                     this.escapeMode = 'keep';
-                    this.selectSkin('default');
+                    this.selectSkin(event.skin || 'default');
                 case 'refresh':
                     this.refreshScreen();
                     break;
@@ -876,6 +865,7 @@ export default {
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
             if (hide || this.escapeMode !== 'keep') this.showRadio = false;
+            if (hide && this.debug.skinMenuExpanded) this.debug.skinMenuExpanded = false;
             if (this.scannerMenu.open) {
                 this.scannerMenu.open = false;
                 this.postClient({ type: 'saveScanner', id: this.scannerMenu.id }, 'scanners');

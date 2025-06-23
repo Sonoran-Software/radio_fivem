@@ -8,6 +8,7 @@ Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = true
+Config.defaultSkinId = nil -- Configure the default skin for the radio (e.g. 'default', 'hi-vis')
 Config.chatter = true -- Hear chatter from other players if their radio is on
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
