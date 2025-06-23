@@ -34,7 +34,7 @@
             <!-- Options for changing/selecting the frame to modify -->
             <div>
                 <h2>Choose Skin/Frame</h2>
-                <select :value="curSkin?.id" @change="selectSkin($event.target.value, true)">
+                <select :value="curSkin?.id" @change="selectSkin($event.target.value)">
                     <option disabled value="">Select Skin</option>
                     <option v-for="skinId in selectSkinIds" :key="skinId" :value="skinId">
                         {{ skinId }}
@@ -301,12 +301,17 @@ export default {
                 'power': this.buttonPower,
                 'next': this.buttonNext,
                 'prev': this.buttonPrev,
-                // below two are only included for legacy support
-                'next_preset': this.buttonNext,
-                'prev_preset': this.buttonPrev,
+                'next_group': this.nextGroup,
+                'prev_group': this.prevGroup,
+                'vol_up': this.buttonVolUp,
+                'vol_down': this.buttonVolDown,
                 'panic': this.buttonPanic,
                 'home': this.refreshScreen,
                 'hide': () => this.escapeRadio(true),
+
+                // below two are only included for legacy support
+                'next_preset': this.buttonNext,
+                'prev_preset': this.buttonPrev,
 
                 'scanner_power': this.scannerPower,
                 'scanner_next': () => this.scannerAdvChannel(1),
@@ -533,10 +538,10 @@ export default {
                             this.prevGroup();
                             break;
                         case 'vol_up':
-                            this.postRadioFrame({ type: 'notch_vol_up' });
+                            this.buttonVolUp();
                             break;
                         case 'vol_down':
-                            this.postRadioFrame({ type: 'notch_vol_down' });
+                            this.buttonVolDown();
                             break;
                         case 'power':
                             this.buttonPower();
@@ -717,36 +722,24 @@ export default {
         },
 
         onKeyPressed(e, type) {
-            if (type === 'keyup') {
-                switch (e.code) {
-                    case "Escape":
-                        if (this.dragMode)
-                            this.dragMode = false;
-                        else
-                            this.escapeRadio(false);
-                        if (this.dragMode) {
-                        } else {
-                            this.escapeRadio(false);
-                        }
-                        break;
-                    case 'ArrowUp':
-                    case 'ArrowDown':
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        if (!this.debug.enabled) break;
-                        const dirs = {
-                            'ArrowUp': 'up',
-                            'ArrowDown': 'down',
-                            'ArrowLeft': 'left',
-                            'ArrowRight': 'right'
-                        };
-                        const dir = dirs[e.code];
-                        if (!e.ctrlKey)
-                            this.debugMoveFrameComponent(dir);
-                        else
-                            this.debugResizeFrameComponent(dir);
-                        break;
-                }
+            if (type === 'keyup' && e.code === 'Escape') {
+                if (this.dragMode)
+                    this.dragMode = false;
+                else
+                    this.escapeRadio(false);
+            } else if (type === 'keydown' && this.debug.enabled) {
+                const dirs = {
+                    'ArrowUp': 'up',
+                    'ArrowDown': 'down',
+                    'ArrowLeft': 'left',
+                    'ArrowRight': 'right'
+                };
+                const dir = dirs[e.code];
+                if (!dir) { /* pass */ }
+                else if (!e.ctrlKey)
+                    this.debugMoveFrameComponent(dir);
+                else
+                    this.debugResizeFrameComponent(dir);
             }
 
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
@@ -906,6 +899,12 @@ export default {
         },
         prevGroup() {
             this.postRadioFrame({type: 'group_prev'});
+        },
+        buttonVolUp() {
+            this.postRadioFrame({ type: 'notch_vol_up' });
+        },
+        buttonVolDown() {
+            this.postRadioFrame({ type: 'notch_vol_down' });
         },
         updateAvailableSkins() {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
