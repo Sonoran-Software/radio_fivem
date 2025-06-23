@@ -22,7 +22,7 @@
 
         <!-- SKIN DEBUG MENU -->
         <div
-            v-if="activeFrames.length > 0 && debug.enabled && debug.skinMenuExpanded"
+            v-if="debug.enabled && debug.skinMenuExpanded"
             class="label-on-top skin-debug-menu"
             @keydown.prevent
             @keyup.prevent
@@ -81,7 +81,7 @@
                 <button style="margin-top:10px" @click="debugSaveSkin">Save skin.json</button>
             </div>
         </div>
-        <div v-else-if="activeFrames.length > 0 && debug.enabled" class="skin-debug-menu">
+        <div v-else-if="debug.enabled && activeFrames.length > 0" class="skin-debug-menu">
             <button @click="debug.skinMenuExpanded = true" style="opacity:0.25">&#x2C5;</button>
         </div>
 
