@@ -444,6 +444,116 @@ function SaveJsonConfig(file, obj)
 	return success
 end
 
+local function checkPushUrl(url, tries)
+	local d = promise.new()
+	if not url then return d:resolve(false) end
+	tries = tries or 1
+	if tries <= 0 then return d:resolve(false) end
+
+	exports['sonoranradio']:HandleHttpRequest(url..'/ping', function(code, data, headers)
+		if code == 200 then return d:resolve(true) end
+
+		-- invalid request
+		warnLog(('pushUrl check failed for %s, tries left: %d'):format(url, tries - 1))
+		checkPushUrl(url, tries - 1):next(function(success)
+			d:resolve(success)
+		end)
+	end, 'GET')
+	return d
+end
+local function getWebPushUrl(checkTries)
+	local d = promise.new()
+	Citizen.CreateThreadNow(function()
+		-- wait for web_baseUrl to be populated
+		local webUrl = GetConvar('web_baseUrl', '')
+		local tries = 0
+		while (not webUrl or webUrl == '') and tries < 5 do
+			warnLog('Waiting for web_baseUrl convar...')
+			Citizen.Wait(15000)
+			tries = tries + 1
+			webUrl = GetConvar('web_baseUrl', '')
+		end
+		if webUrl and webUrl ~= '' then
+			local pushUrl = 'https://'..webUrl..'/'..GetCurrentResourceName()..'/events'
+			checkPushUrl(pushUrl, checkTries or 5):next(function(success)
+				if success then
+					d:resolve(pushUrl)
+				else
+					warnLog(('Tried using %s as pushUrl, but could not send events'):format(pushUrl))
+					d:resolve(nil)
+				end
+			end)
+		else
+			warnLog('Could not find web_baseUrl convar')
+			d:resolve(nil)
+		end
+	end)
+	return d
+end
+local function getIpPushUrl(checkTries)
+	local d = promise.new()
+	local port = GetConvar('netPort', '30120')
+	exports['sonoranradio']:HandleHttpRequest('https://api.ipify.org', function(code, data)
+		if code == 200 then
+			local pushUrl = 'http://'..data..':'..port..'/'..GetCurrentResourceName()..'/events'
+			checkPushUrl(pushUrl, checkTries or 5):next(function(success)
+				if success then
+					d:resolve(pushUrl)
+				else
+					warnLog(('Tried using %s as pushUrl, but could not send events'):format(pushUrl))
+					d:resolve(nil)
+				end
+			end)
+		else
+			errorLog('Could not obtain public IP address, no internet connection?')
+			d:resolve(nil)
+		end
+	end, 'GET')
+	return d
+end
+local function getPushUrl(tries)
+	local d = promise.new()
+	if type(Config.overridePushUrl) == 'string' and Config.overridePushUrl ~= '' then
+		infoLog(('Using %s as override pushUrl'):format(Config.overridePushUrl))
+		return d:resolve(Config.overridePushUrl)
+	end
+	getWebPushUrl(tries):next(function(webPushUrl)
+		if webPushUrl then
+			d:resolve(webPushUrl)
+		else
+			getIpPushUrl(tries):next(function(ipPushUrl)
+				d:resolve(ipPushUrl)
+			end)
+		end
+	end)
+	return d
+end
+
+-- thread function for keeping the pushUrl up-to-date
+local function updatePushUrlThread()
+	local lastPushUrl = Config.pushUrl
+	while true do
+		Citizen.Wait(5 * 60 * 1000)
+
+		local pushUrl = Citizen.Await(getPushUrl(2))
+		if pushUrl ~= lastPushUrl then
+			infoLog(('Last pushUrl %s is invalid, setting to new pushUrl %s'):format(lastPushUrl, pushUrl))
+			lastPushUrl = pushUrl
+			exports['sonoranradio']:performApiRequest({
+				['id'] = Config.comId,
+				['key'] = Config.apiKey,
+				['roomId'] = Config.serverId,
+				['pushUrl'] = pushUrl,
+				-- no need to set nickname since roomId exists
+			}, 'SET-SERVER-IP', function(data, success)
+				if not success then
+					warnLog('Failed to set updated pushUrl for radio service.')
+				end
+			end)
+		end
+	end
+end
+
 -- this function creates/initializes the sanitized clientConfig
 -- it returns a promise that can be waited with Citizen.Await
 --
@@ -453,24 +563,18 @@ local function createClientConfig()
 	local d = promise.new()
 	Config.init = false
 	Citizen.CreateThreadNow(function()
-		local tries = 0
-		local webUrl = GetConvar('web_baseUrl', '')
-		while (not webUrl or webUrl == '') and tries < 5 do
-			Citizen.Wait(15000)
-			tries = tries + 1
-			webUrl = GetConvar('web_baseUrl', '')
+		local pushUrl = Citizen.Await(getPushUrl())
+		if not pushUrl then
+			errorLog('[ERR-101] Could not obtain a valid pushUrl. This could be because of no internet connection, strict firewall settings, or an advanced internet setup')
+			errorLog('[ERR-101] Consider setting overridePushUrl in the config.lua to http://ip:port/sonoranradio/events')
+			errorLog('[ERR-101] See https://sonoran.link/radiocodes for more info')
+			return d:reject('failed to get pushUrl')
 		end
 
-		if not webUrl or webUrl == '' then
-			d:reject('failed to get web_baseUrl')
-			errorLog('Failed to get web_baseUrl after 5 attempts. Please check your server configuration.')
-			return
-		end
 		local roomId = Config.serverId or GetResourceKvpInt('standalone_serverId') or nil -- use the config value, or the KVP as a backup
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
 		-- roomId will be created by the backend
-		local pushUrl = 'https://'..webUrl..'/sonoranradio/events'
 		print('[SonoranRadio] - Attempting to set server IP for radio service... '..pushUrl)
 		exports['sonoranradio']:performApiRequest({
 			['id'] = Config.comId,
@@ -480,9 +584,8 @@ local function createClientConfig()
 			['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
 		}, 'SET-SERVER-IP', function(data, success)
 			if not success then
-				d:reject('failed to update server IP')
 				errorLog('Failed to set server IP for radio service. Please check the comId and apiKey in your config file.')
-				return
+				return d:reject('failed to update server IP')
 			end
 
 			data = json.decode(data)
@@ -506,11 +609,12 @@ local function createClientConfig()
 			SetResourceKvpInt('standalone_serverId', data.roomId) -- save the roomId to the resource KVP as a backup
 			Config.init = true
 			Config.serverId = data.roomId
+			Config.pushUrl = pushUrl
 
 			-- create the client config
 			local clConfig = {}
 			for k, v in pairs(Config) do
-				if k ~= 'apiKey' and k ~= 'init' then -- filter out sensitive data
+				if k ~= 'apiKey' and k ~= 'pushUrl' and k ~= 'init' then -- filter out sensitive data
 					clConfig[k] = v
 				end
 			end
@@ -685,6 +789,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
+	Citizen.CreateThread(updatePushUrlThread)
 end)
 
 exports('performApiRequest', performApiRequest)
