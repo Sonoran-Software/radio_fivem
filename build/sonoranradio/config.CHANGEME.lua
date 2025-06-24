@@ -47,7 +47,10 @@ Config.showEmergencyCallHelp = true -- Show emergency call help text at top of s
 Config.luxartResourceName = 'lvc' -- Resource name for Luxart Vehicle Control (Required for siren control)
 Config.phoneResource = 'none' -- Which phone resource to utilize for 911 calls | OPTIONS: none (no phone resource) | lb-phone (https://lbscripts.com/)
 Config.enableBackgroundAudio = true -- Enable background audio for the radio when transmitting
-
+Config.autoPttOnPanic = {
+	enabled = true, -- Enable automatic PTT when panic button is pressed
+	duration = 15 -- Duration in seconds to hold PTT when panic button is pressed
+}
 -- Notification Settings --
 Config.notifications = {
 	type = 'native', -- Available options: native, pNotify, okokNotify, or custom

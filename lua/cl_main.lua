@@ -834,8 +834,36 @@ function initClient()
 			SendNotification(data.message)
 		end
 
-		if data.type == 'panic' and data.status then
-			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		if data.type == 'panic' then
+			if data.status then
+				if Config.autoPttOnPanic then
+					if Config.autoPttOnPanic.enabled then
+						Radio:Talking(true)
+						SendNUIMessage({
+							type = 'ptt',
+							state = true
+						})
+						Citizen.SetTimeout(Config.autoPttOnPanic.duration * 1000, function()
+							SendNUIMessage({
+								type = 'ptt',
+								state = false
+							})
+							Radio:Talking(false)
+						end)
+					end
+				end
+				TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+			else
+				if Config.autoPttOnPanic then
+					if Config.autoPttOnPanic.enabled then
+						SendNUIMessage({
+							type = 'ptt',
+							state = false
+						})
+						Radio:Talking(false)
+					end
+				end
+			end
 		end
 
 		if data.type == 'emergencyCallStatus' then
