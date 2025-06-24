@@ -6,7 +6,7 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         path: destInfo.pathname,
         port: destInfo.port,
         method: method,
-        headers: headers != null && typeof headers == 'object' && !Array.isArray(headers) ? headers : {}
+        headers: headers != null && typeof headers == 'object' && !Array.isArray(headers) ? headers : {},
     };
     options.headers['X-SonoranRadio-Version'] = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
@@ -18,16 +18,16 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     }
 
     const client = destInfo.protocol === 'http:' ? require('http') : require('https');
-    const req = client.request(options);
-    req.on('response', (res) => {
+    const req = client.request(options, (res) => {
         res.setEncoding('utf-8');
 
         let output = "";
-        res.on('data', (d) => {
-            output += d.toString()
+        res.on('data', (chunk) => {
+            output += chunk.toString()
         });
         res.on('end', () => {
             callback(res.statusCode, output, res.headers);
+            callback = undefined;
         });
     });
     req.on('error', (error) => {
@@ -35,9 +35,17 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         if (!ignore_ids.includes(error.code))
             console.debug("HTTP error caught: " + JSON.stringify(error));
         callback(error.errono, {}, {});
+        callback = undefined;
     })
     if (method == "POST") {
         req.write(data);
     }
     req.end();
+
+    setTimeout(() => {
+        if (!callback) return;
+        console.debug('HTTP request incomplete after 30s, weirdly');
+        callback(-1, {}, {});
+        callback = undefined;
+    }, 30000);
 });

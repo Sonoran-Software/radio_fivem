@@ -6,6 +6,13 @@ RegisterNetEvent('sonoranradio::RegisterPushEvent',
 SetHttpHandler(function(req, res)
     local path = req.path
     local method = req.method
+
+    if method == 'GET' and path == '/events/ping' then
+        res.writeHead(200, {['Content-Type'] = 'text/plain'})
+        res.send('pong')
+        return
+    end
+
     if method == 'POST' and path == '/events' then
         req.setDataHandler(function(data)
             if not data then

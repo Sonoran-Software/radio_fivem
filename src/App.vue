@@ -22,7 +22,7 @@
 
         <!-- SKIN DEBUG MENU -->
         <div
-            v-if="activeFrames.length > 0 && debug.enabled && debug.skinMenuExpanded"
+            v-if="debug.enabled && debug.skinMenuExpanded"
             class="label-on-top skin-debug-menu"
             @keydown.prevent
             @keyup.prevent
@@ -34,7 +34,7 @@
             <!-- Options for changing/selecting the frame to modify -->
             <div>
                 <h2>Choose Skin/Frame</h2>
-                <select :value="curSkin?.id" @change="selectSkin($event.target.value, true)">
+                <select :value="curSkin?.id" @change="selectSkin($event.target.value)">
                     <option disabled value="">Select Skin</option>
                     <option v-for="skinId in selectSkinIds" :key="skinId" :value="skinId">
                         {{ skinId }}
@@ -46,10 +46,6 @@
                         {{ frame.type }}
                     </option>
                 </select>
-                <label>
-                    <input v-model="debug.frameShown" type="checkbox" />
-                    <span>Show Frame</span>
-                </label>
                 <label>
                     <input v-model="dragMode" type="checkbox" />
                     <span>Move/Resize</span>
@@ -81,7 +77,7 @@
                 <button style="margin-top:10px" @click="debugSaveSkin">Save skin.json</button>
             </div>
         </div>
-        <div v-else-if="activeFrames.length > 0 && debug.enabled" class="skin-debug-menu">
+        <div v-else-if="debug.enabled && activeFrames.length > 0" class="skin-debug-menu">
             <button @click="debug.skinMenuExpanded = true" style="opacity:0.25">&#x2C5;</button>
         </div>
 
@@ -177,7 +173,6 @@ export default {
                 enabled: false,
                 skinMenuExpanded: false,
                 frameIndex: 0,
-                frameShown: false,
                 frameComponentPath: ['screen']
             },
             help: false,
@@ -263,26 +258,19 @@ export default {
         },
         activeRadioFrame() {
             if (!this.curSkin || !this.radioVisible) return null;
-            const first = this.curSkin.frames[0];
+
+            if (this.inVehicleClass !== -1) {
+                // we are in a vehicle, find the appropriate vehicle frame for this veh class
+                const vehFrame = this.curSkin.frames.find(frame =>
+                    frame.type === 'vehicle' &&
+                    (!Array.isArray(frame.vehicleClasses) || frame.vehicleClasses.includes(this.inVehicleClass))
+                );
+                if (vehFrame) return vehFrame;
+                // fallback to portable frame if vehFrame does not exist
+            }
 
             // find portable frame, or return first frame if not found
-            if (this.inVehicleClass === -1)
-                return this.curSkin.frames.find(x => x.type === 'portable') ?? first;
-
-            // since inVehicleClass !== -1, we are in a vehicle and need to find the appropriate frame
-            return (
-              // find vehicle frame with class whitelisted
-              this.curSkin.frames.find(
-                (x) =>
-                  x.type === "vehicle" &&
-                  Array.isArray(x.vehicleClasses) &&
-                  x.vehicleClasses.includes(this.inVehicleClass),
-              ) ??
-              // find regular vehicle frame
-              this.curSkin.frames.find((x) => x.type === "vehicle") ??
-              // use first frame because none were found
-              first
-            );
+            return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
         activeFrames() {
             if (!this.curSkin) return []; // no skin for the frames
@@ -295,15 +283,16 @@ export default {
             };
 
             let frames = [];
-            // if a frame is forcefully shown, then make it the first active frame
-            if (this.debug.frameShown) {
+            if (this.debug.skinMenuExpanded) {
+                // debug menu on, only show the currently debugged frame
                 const frame = this.curSkin.frames[this.debug.frameIndex];
                 if (frame) frames.push(frame);
+            } else {
+                // normal operation frame checks
+                if (this.scannerFrame) frames.push(this.scannerFrame);
+                if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
+                if (this.showTopRadio) frames.push(getFrame('hud'));
             }
-
-            if (this.scannerFrame) frames.push(this.scannerFrame);
-            if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
-            if (this.showTopRadio) frames.push(getFrame('hud'));
 
             // dedupe frames by type
             frames = frames.filter((frame, i) => frames.findIndex((x) => x.type === frame.type) === i);
@@ -312,12 +301,17 @@ export default {
                 'power': this.buttonPower,
                 'next': this.buttonNext,
                 'prev': this.buttonPrev,
-                // below two are only included for legacy support
-                'next_preset': this.buttonNext,
-                'prev_preset': this.buttonPrev,
+                'next_group': this.nextGroup,
+                'prev_group': this.prevGroup,
+                'vol_up': this.buttonVolUp,
+                'vol_down': this.buttonVolDown,
                 'panic': this.buttonPanic,
                 'home': this.refreshScreen,
                 'hide': () => this.escapeRadio(true),
+
+                // below two are only included for legacy support
+                'next_preset': this.buttonNext,
+                'prev_preset': this.buttonPrev,
 
                 'scanner_power': this.scannerPower,
                 'scanner_next': () => this.scannerAdvChannel(1),
@@ -492,7 +486,7 @@ export default {
                     localStorage.clear();
                     this.positions = {};
                     this.escapeMode = 'keep';
-                    this.selectSkin('default');
+                    this.selectSkin(event.skin || 'default');
                 case 'refresh':
                     this.refreshScreen();
                     break;
@@ -544,10 +538,10 @@ export default {
                             this.prevGroup();
                             break;
                         case 'vol_up':
-                            this.postRadioFrame({ type: 'notch_vol_up' });
+                            this.buttonVolUp();
                             break;
                         case 'vol_down':
-                            this.postRadioFrame({ type: 'notch_vol_down' });
+                            this.buttonVolDown();
                             break;
                         case 'power':
                             this.buttonPower();
@@ -728,36 +722,24 @@ export default {
         },
 
         onKeyPressed(e, type) {
-            if (type === 'keyup') {
-                switch (e.code) {
-                    case "Escape":
-                        if (this.dragMode)
-                            this.dragMode = false;
-                        else
-                            this.escapeRadio(false);
-                        if (this.dragMode) {
-                        } else {
-                            this.escapeRadio(false);
-                        }
-                        break;
-                    case 'ArrowUp':
-                    case 'ArrowDown':
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        if (!this.debug.enabled) break;
-                        const dirs = {
-                            'ArrowUp': 'up',
-                            'ArrowDown': 'down',
-                            'ArrowLeft': 'left',
-                            'ArrowRight': 'right'
-                        };
-                        const dir = dirs[e.code];
-                        if (!e.ctrlKey)
-                            this.debugMoveFrameComponent(dir);
-                        else
-                            this.debugResizeFrameComponent(dir);
-                        break;
-                }
+            if (type === 'keyup' && e.code === 'Escape') {
+                if (this.dragMode)
+                    this.dragMode = false;
+                else
+                    this.escapeRadio(false);
+            } else if (type === 'keydown' && this.debug.enabled) {
+                const dirs = {
+                    'ArrowUp': 'up',
+                    'ArrowDown': 'down',
+                    'ArrowLeft': 'left',
+                    'ArrowRight': 'right'
+                };
+                const dir = dirs[e.code];
+                if (!dir) { /* pass */ }
+                else if (!e.ctrlKey)
+                    this.debugMoveFrameComponent(dir);
+                else
+                    this.debugResizeFrameComponent(dir);
             }
 
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
@@ -876,6 +858,7 @@ export default {
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
             if (hide || this.escapeMode !== 'keep') this.showRadio = false;
+            if (hide && this.debug.skinMenuExpanded) this.debug.skinMenuExpanded = false;
             if (this.scannerMenu.open) {
                 this.scannerMenu.open = false;
                 this.postClient({ type: 'saveScanner', id: this.scannerMenu.id }, 'scanners');
@@ -916,6 +899,12 @@ export default {
         },
         prevGroup() {
             this.postRadioFrame({type: 'group_prev'});
+        },
+        buttonVolUp() {
+            this.postRadioFrame({ type: 'notch_vol_up' });
+        },
+        buttonVolDown() {
+            this.postRadioFrame({ type: 'notch_vol_down' });
         },
         updateAvailableSkins() {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })

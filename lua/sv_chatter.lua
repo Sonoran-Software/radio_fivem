@@ -97,7 +97,7 @@ function addAndSaveStaticScanner(ss)
 		channelId = ss.ChannelId,
 		pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
 	}
-	staticScanners[#staticScanners] = ss
+	staticScanners[#staticScanners + 1] = ss
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
 	SaveJsonConfig('scanners.json', staticScanners)
 end
