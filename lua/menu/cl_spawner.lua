@@ -1274,14 +1274,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerSmallWall',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1346,14 +1366,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerMedium',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1418,14 +1458,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerMediumWall',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1490,14 +1550,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerLarge',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)

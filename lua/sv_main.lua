@@ -624,6 +624,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		obj.Id = spkrs[i].Id
 		obj.type = spkrs[i].type
 		obj.Label = spkrs[i].Label
+		obj.group = spkrs[i].group or ''
 		table.insert(Speakers, obj)
 	end
 
