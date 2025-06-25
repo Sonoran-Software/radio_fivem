@@ -213,7 +213,7 @@ function initRacks()
 		end
 		SetDisableVehicleEngineFires(rack.Handle, true)
 		SetDisableVehiclePetrolTankFires(rack.Handle, true)
-		SetEntityCoordsNoOffset(rack.Handle, coords.x, coords.y, coords.z - 1.1, false, false, false, false)
+		SetEntityCoordsNoOffset(rack.Handle, coords.x, coords.y, coords.z, false, false, false, false)
 		FreezeEntityPosition(rack.Handle, true)
 		local calculatedHeading = rack.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
 		if calculatedHeading > 360.0 then

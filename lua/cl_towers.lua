@@ -160,7 +160,7 @@ function initTowers()
 			Wait(0)
 		end
 		FreezeEntityPosition(tower.Handle, true)
-		SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
+		SetEntityCoords(tower.Handle, coords.x, coords.y, coords.z, true, true, true, false)
 		PlaceObjectOnGroundProperly(tower.Handle)
 		SetEntityHeading(tower.Handle, tower.heading)
 		SetModelAsNoLongerNeeded(towerModel)

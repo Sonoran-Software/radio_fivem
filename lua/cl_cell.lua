@@ -68,7 +68,7 @@ function initCell()
 		end
 		DecorSetInt(cellRepeater.Handle, 'sonrad_cellRepeater', 1)
 		FreezeEntityPosition(cellRepeater.Handle, true)
-		SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
+		SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z, true, true, true, false)
 		SetEntityHeading(cellRepeater.Handle, cellRepeater.heading)
 		SetModelAsNoLongerNeeded(CellRepeaterModel)
 		cellRepeater.Spawned = true
