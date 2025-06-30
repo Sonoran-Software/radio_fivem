@@ -1142,6 +1142,8 @@ function initClient()
 	local state_lxsiren = 0
 	local state_pwrcall = 0
 	local state_airmanu = 0
+	local lastVeh = 0
+	local lastNetId = nil
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
@@ -1194,45 +1196,39 @@ function initClient()
 			end)
 		else
 			while not lvcStarted do
-				if IsVehicleSirenOn(GetVehiclePedIsIn(PlayerPedId(), false)) then
-					SendNUIMessage({
-						type = 'siren_toggle',
-						state = true
-					})
-					local ped = PlayerPedId()
-					local veh = GetVehiclePedIsIn(ped, false)
+				local ped = PlayerPedId()
+				local veh = GetVehiclePedIsIn(ped, false)
+				local isDriver = (veh and veh ~= 0) and (GetPedInVehicleSeat(veh, -1) == ped)
 
-					-- Only proceed if you're actually in a vehicle
-					if veh and veh ~= 0 then
-					-- Optionally check it really is networked
-						if NetworkGetEntityIsNetworked(veh) then
-							local netId = NetworkGetNetworkIdFromEntity(veh)
-							if netId and netId ~= 0 then
-							-- safe to send to server now
-							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
-							end
-						end
+				-- VEHICLE CHANGE / EXIT DETECTION (driver only)
+				if veh ~= lastVeh then
+					-- if we just left being the driver, send siren-off for old vehicle
+					if lastVeh and lastVeh ~= 0 and lastNetId then
+						TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
 					end
-				else
-					SendNUIMessage({
-						type = 'siren_toggle',
-						state = false
-					})
-					local ped = PlayerPedId()
-					local veh = GetVehiclePedIsIn(ped, false)
-					-- Only proceed if you're actually in a vehicle
-					if veh and veh ~= 0 then
-					-- Optionally check it really is networked
-						if NetworkGetEntityIsNetworked(veh) then
-							local netId = NetworkGetNetworkIdFromEntity(veh)
-							if netId and netId ~= 0 then
-							-- safe to send to server now
-							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
-							end
-						end
+
+					-- update to new vehicle (or none)
+					lastVeh = veh
+
+					if isDriver and NetworkGetEntityIsNetworked(veh) then
+						lastNetId = NetworkGetNetworkIdFromEntity(veh)
+					else
+						lastNetId = nil
 					end
 				end
-				Citizen.Wait(500)
+
+				-- ONLY WHEN YOU’RE DRIVER, SYNC SIREN
+				if isDriver and lastNetId then
+					local sirenOn = IsVehicleSirenOn(veh)
+					SendNUIMessage({ type = 'siren_toggle', state = sirenOn })
+					TriggerServerEvent('sonoranradio:syncSirenState', sirenOn, lastNetId)
+				else
+					-- not driver or not in vehicle → force NUI off
+					SendNUIMessage({ type = 'siren_toggle', state = false })
+					TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
+				end
+
+				Citizen.Wait(100)
 			end
 		end
 	end)
