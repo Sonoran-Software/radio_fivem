@@ -629,6 +629,12 @@ export default {
                         volume: event.volume,
                     });
                     break;
+                case 'broadcastLocation':
+                    this.postRadioFrame({
+                        type: 'broadcast_location',
+                        ...event.loc,
+                    })
+                    break;
             }
         },
 

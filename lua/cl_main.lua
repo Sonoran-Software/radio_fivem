@@ -65,23 +65,6 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 end)
 
 function initClient()
-	if Config.comId == nil or Config.comId == '' then
-		TriggerEvent('chat:addMessage', {
-			color = {
-				255,
-				0,
-				0
-			},
-			multiline = true,
-			args = {
-				'Sonoran Radio',
-				'There is no community ID set for SonoranRadio. Please contact the server owner.'
-			}
-		})
-		critError = true
-		return
-	end
-
 	local comId = Config.comId or Config.communityId or Config.standaloneId
 	TriggerEvent('SonoranRadio::ClientReady')
 	RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
@@ -654,6 +637,158 @@ function initClient()
 	end)
 	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
+	local function headingToDirectionCallout(heading)
+		if heading >= 45 and heading < 135 then
+			return 'westbound'
+		elseif heading >= 135 and heading < 225 then
+			return 'southbound'
+		elseif heading >= 225 and heading < 315 then
+			return 'eastbound'
+		else
+			return 'northbound'
+		end
+	end
+	local function isOppositeDirection(a, b)
+		if not a or not b then
+			return true
+		end
+		if a == 'southbound' or a == 'westbound' then
+			-- swap values so a is always north/east and b is always south/west if opposite
+			local tmp = a
+			a = b
+			b = tmp
+		end
+		return (a == 'northbound' and b == 'southbound') or (a == 'eastbound' and b == 'westbound')
+	end
+	local function getCurrentCallout(streetNameCache)
+		local ped = PlayerPedId()
+		local dir = headingToDirectionCallout(GetEntityHeading(ped))
+
+		-- get the coord of the closest vehicle node (favoring the direction the player is facing)
+		local playerCoord = GetEntityCoords(ped)
+		local playerForwardCoord = GetOffsetFromEntityInWorldCoords(ped, 0.0, 1.0, 0.0)
+		local found, coord, heading = GetNthClosestVehicleNodeFavourDirection(
+			playerCoord.x, playerCoord.y, playerCoord.z,
+			playerForwardCoord.x, playerForwardCoord.y, playerForwardCoord.z,
+			0, 0, 0, 0
+		)
+		if not found or #(playerCoord - coord) > 40 then
+			return dir -- not near a street
+		end
+
+		-- get the street names at the vehicle node coordinate
+		local streetHash, crossStreetHash = GetStreetNameAtCoord(coord.x, coord.y, coord.z)
+		local street = streetNameCache[streetHash]
+		if streetHash ~= 0 and not street then
+			street = GetStreetNameFromHashKey(streetHash)
+			streetNameCache[streetHash] = street
+		end
+		local crossStreet = streetNameCache[crossStreetHash]
+		if crossStreetHash ~= 0 and not crossStreet then
+			crossStreet = GetStreetNameFromHashKey(crossStreetHash)
+			streetNameCache[crossStreetHash] = crossStreet
+		end
+
+		return dir, street, crossStreet
+	end
+	local calloutThreadStatus = 'killed'
+	local function autoCalloutsThread()
+		local streetNameCache = {}
+
+		local speedAverage = 0.0
+		local speedAlpha = 0.1104
+
+		local loc = {}
+		local establishedLoc = {}
+
+		while calloutThreadStatus == 'run' do
+			local ped = PlayerPedId()
+			if IsPedInAnyVehicle(ped, false) then
+				local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+
+				-- find the vehicle's current speed (based on the config opt)
+				local speed
+				if Config.autoCallouts.speedUnit == 'mph' then
+					speed = GetEntitySpeed(veh) * 2.23694
+				elseif Config.autoCallouts.speedUnit == 'kmh' then
+					speed = GetEntitySpeed(veh) * 3.6
+				else
+					speed = -1
+				end
+				-- compute the EMA of the vehicle speed
+				if speedAverage < 10.0 then
+					speedAverage = speed
+				else
+					speedAverage = (speedAlpha * speed) + (1 - speedAlpha) * speedAverage
+				end
+
+				local direction, street, crossStreet = getCurrentCallout(streetNameCache)
+				if direction ~= loc.direction then
+					loc.direction = direction
+					loc.speed = speedAverage
+					loc.time = GetGameTimer()
+				end
+				if street ~= loc.street then
+					loc.street = street
+					loc.speed = speedAverage
+					loc.time = GetGameTimer()
+				end
+
+				if (GetGameTimer() - loc.time) > 999 and loc.street and (loc.street ~= establishedLoc.street or isOppositeDirection(loc.direction, establishedLoc.direction)) then
+					establishedLoc.street = loc.street
+					establishedLoc.direction = loc.direction
+					establishedLoc.speed = loc.speed
+					SendNUIMessage({
+						type = 'broadcastLocation',
+						loc = {
+							heading = establishedLoc.direction,
+							street = establishedLoc.street,
+							speed = math.floor(establishedLoc.speed),
+							speeds = 'speeds',
+						}
+					})
+				end
+			else
+				speedAverage = 0.0
+				loc = {}
+				establishedLoc = {}
+			end
+
+			Citizen.Wait(250)
+		end
+		calloutThreadStatus = 'killed'
+	end
+
+	-- add default for auto callouts
+	if Config.autoCallouts == nil then
+		Config.autoCallouts = {
+			enabled = true,
+			speedUnit = 'mph',
+		}
+	end
+	-- if auto callouts are enabled, add the command and keybind
+	if Config.autoCallouts.enabled then
+		RegisterCommand('sonradtogglecallouts', function()
+			if calloutThreadStatus == 'killed' then
+				calloutThreadStatus = 'run'
+				Citizen.CreateThreadNow(autoCalloutsThread)
+				TriggerEvent('chat:addMessage', {
+					args = {'Sonoran Radio', 'Auto-Callouts Enabled'},
+					color = {255, 0, 0}
+				})
+			else
+				-- ! kill, not killed
+				-- ! this prevents multiple auto callout threads if spamming the keybind/command
+				calloutThreadStatus = 'kill'
+				TriggerEvent('chat:addMessage', {
+					args = {'Sonoran Radio', 'Auto-Callouts Disabled'},
+					color = {255, 0, 0}
+				})
+			end
+		end)
+		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
+	end
+
 	function Radio:Talking(toggle)
 		local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
 		TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
@@ -711,15 +846,6 @@ function initClient()
 			end
 		end
 	end
-
-	-- Citizen.CreateThread(function()
-	-- 	while true do
-	-- 		Wait(1)
-	-- 		if isTalking and Config.talkSync then
-	-- 			SetControlNormal(0, 249, 1.0);
-	-- 		end
-	-- 	end
-	-- end)
 
 	function Radio:Toggle(toggle)
 		local playerPed = PlayerPedId()

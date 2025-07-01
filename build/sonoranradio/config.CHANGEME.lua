@@ -80,7 +80,15 @@ Config.keybinds = {
 	['nextGroup'] = '',
 	['prevGroup'] = '',
 	['volUp'] = '',
-	['volDown'] = ''
+	['volDown'] = '',
+
+	['toggleAutoCallouts'] = '',
+}
+
+-- Have the radio automatically callout pursuit locations (when toggled with the keybind)
+Config.autoCallouts = {
+	enabled = true, -- Whether or not this feature is enabled
+	speedUnit = 'mph', -- mph | kmh | none -- The unit of speed provided with the callout
 }
 
 -- Radio Item Settings --
