@@ -1254,6 +1254,15 @@ function initClient()
 			}
 		})
 	end)
+	RegisterNetEvent('SonoranRadio::DisplayInfo', function(msg)
+		TriggerEvent('chat:addMessage', {
+			color = {255, 0, 0},
+			args = {
+				'Sonoran Radio',
+				'Info: '..(msg or 'no message?')
+			}
+		})
+	end)
 
 	RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')

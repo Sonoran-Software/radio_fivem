@@ -133,7 +133,7 @@
             <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
                 <button class="radio-control" v-on="ctrl.events"></button>
                 <code
-                    v-if="debug || help"
+                    v-if="debug.enabled || help"
                     class="label-on-top"
                     :class="{ 'hack': ['next', 'next_preset', 'scanner_next'].includes(ctrl.action) }"
                 >{{ ctrl.action }}</code>
