@@ -1245,6 +1245,15 @@ function initClient()
 			critError = false
 		end
 	end)
+	RegisterNetEvent('SonoranRadio::DisplayError', function(msg)
+		TriggerEvent('chat:addMessage', {
+			color = {255, 0, 0},
+			args = {
+				'Sonoran Radio',
+				'Error: '..(msg or 'unknown error')
+			}
+		})
+	end)
 
 	RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')

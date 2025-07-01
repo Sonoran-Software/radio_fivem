@@ -65,6 +65,8 @@ function initMenu()
 		WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
 		WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
+		WarMenu.CreateSubMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
+		WarMenu.SetMenuTitleBackgroundSprite('staticScannerMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
 		WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('degradeEditMenu', 'degradeMenu', 'Modify Degradation Zones')
@@ -109,11 +111,7 @@ function initMenu()
 				if WarMenu.Button('Repair All Repeaters') then
 					TriggerServerEvent('RadioTower:RepairAllTowers')
 				end
-				if WarMenu.Button('Spawn Permanent Scanner') then
-					local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
-					local heading = GetEntityHeading(PlayerPedId())
-					TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
-				end
+				WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
 				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
 				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
 				if Config.chatter then
@@ -128,6 +126,24 @@ function initMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('deleteRadioMenu') then
 				deletingRadioRepeater()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
+				if WarMenu.Button('Spawn Permanent Scanner') then
+					local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
+					local heading = GetEntityHeading(PlayerPedId())
+					TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
+				end
+				if WarMenu.Button('Delete Nearest Permanent Scanner') then
+					local staticScanner = getNearestStaticScanner(GetEntityCoords(PlayerPedId()), 5.0)
+					if staticScanner then
+						TriggerServerEvent('SonoranRadio::DeleteAndSaveScanner', staticScanner.Id)
+					else
+						TriggerEvent('chat:addMessage', {
+							color = {255, 0, 0},
+							args = {'Sonoran Radio', 'Error: No nearby permanent scanner found'}
+						})
+					end
+				end
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('degradeMenu') then
 				degradeMenu()

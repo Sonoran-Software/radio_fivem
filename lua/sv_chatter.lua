@@ -91,7 +91,8 @@ function initStaticScanners(s)
 		}
 	end
 end
-function addAndSaveStaticScanner(ss)
+
+local function addAndSaveStaticScanner(ss)
 	globalScanners[ss.Id] = {
 		powered = ss.Powered ~= false,
 		channelId = ss.ChannelId,
@@ -99,10 +100,10 @@ function addAndSaveStaticScanner(ss)
 	}
 	staticScanners[#staticScanners + 1] = ss
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
-	SaveJsonConfig('scanners.json', staticScanners)
+	return SaveJsonConfig('scanners.json', staticScanners)
 end
-
 RegisterNetEvent('SonoranRadio::SpawnAndSaveScanner', function(coord, heading)
+	local src = source
 	local scannerInfo = {
 		Id = uuid(),
 		Powered = true,
@@ -115,7 +116,36 @@ RegisterNetEvent('SonoranRadio::SpawnAndSaveScanner', function(coord, heading)
 			exact = false,
 		}
 	}
-	addAndSaveStaticScanner(scannerInfo)
+	local success = addAndSaveStaticScanner(scannerInfo)
+	if not success then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
+	end
+end)
+
+local function deleteAndSaveStaticScanner(scannerId)
+	local idx
+	for i = 1, #staticScanners do
+		if staticScanners[i].Id == scannerId then
+			idx = i
+			break
+		end
+	end
+	if idx == nil then
+		warnLog('Tried to delete static scanner '..scannerId..', but it does not exist')
+		return false
+	end
+
+	globalScanners[scannerId] = nil
+	table.remove(staticScanners, idx)
+	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
+	return SaveJsonConfig('scanners.json', staticScanners)
+end
+RegisterNetEvent('SonoranRadio::DeleteAndSaveScanner', function(scannerId)
+	local src = source
+	local success = deleteAndSaveStaticScanner(scannerId)
+	if not success then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
+	end
 end)
 
 -- check for radio scanners and add metadata if needed

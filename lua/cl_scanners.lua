@@ -9,14 +9,17 @@ function initScanners()
 
 	-- STATIC SCANNER LOGIC
 	local staticScanners = {}
+	local ssObjects = {}
 	Citizen.CreateThread(function()
 		local OBJ_RANGE = 100.0
 		local OBJ_MODEL = `prop_cs_hand_radio`
-		local ssObjects = {}
 
 		while true do
 			local myPos = GetEntityCoords(PlayerPedId())
+			local ssIdSet = {}
 			for _, ss in ipairs(staticScanners) do
+				ssIdSet[ss.Id] = true
+
 				local pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
 				local dist = #(pos - myPos)
 
@@ -41,7 +44,36 @@ function initScanners()
 					ssObjects[ss.Id] = nil
 				end
 			end
+
+			-- cleanup objects for scanners that were deleted / don't exist
+			for id, obj in pairs(ssObjects) do
+				if not ssIdSet[id] then
+					DeleteObject(ssObjects[id])
+					ssObjects[id] = nil
+				end
+			end
+
 			Citizen.Wait(500)
+		end
+	end)
+	function getNearestStaticScanner(coord, nearDist)
+		nearDist = nearDist or math.huge
+		local nearScanner
+		for _, ss in ipairs(staticScanners) do
+			local ssCoord = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
+			local d = #(coord - ssCoord)
+			if d < nearDist then
+				nearDist = d
+				nearScanner = ss
+			end
+		end
+		return nearScanner
+	end
+	AddEventHandler('onResourceStop', function(res)
+		if res ~= GetCurrentResourceName() then return end
+		-- this resource is stopping, cleanup
+		for _, obj in pairs(ssObjects) do
+			DeleteObject(obj)
 		end
 	end)
 	
