@@ -1102,6 +1102,7 @@ function initClient()
 			if Radio.On then
 				Radio.Enabled = false
 				Radio:Toggle(false)
+				isTalking = false
 				SendNUIMessage({
 					type = 'setVisible',
 					visibility = false
