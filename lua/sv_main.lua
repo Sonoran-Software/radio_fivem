@@ -777,7 +777,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
@@ -843,7 +844,8 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
