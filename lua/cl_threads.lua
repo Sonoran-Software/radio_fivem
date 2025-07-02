@@ -1,7 +1,7 @@
 function initThreads()
     local spawnedTalkingLoop = false
     function shouldTalkInGame()
-        return (isTalking and Config.talkSync) or isEmergCallActive
+        return (isTalking and Config.talkSync and not PlayerDead) or isEmergCallActive
     end
     function spawnTalkingLoop()
         Citizen.CreateThread(function()

@@ -44,7 +44,6 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
 
     setTimeout(() => {
         if (!callback) return;
-        console.debug('HTTP request incomplete after 30s, weirdly');
         callback(-1, {}, {});
         callback = undefined;
     }, 30000);

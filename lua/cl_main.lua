@@ -1093,7 +1093,7 @@ function initClient()
 		Radio:Destroy()
 	end)
 
-	local PlayerDead = false
+	PlayerDead = false
 	local RadioLastState = nil
 
 	RegisterNetEvent('SonoranRadio::PlayerDeath', function()
