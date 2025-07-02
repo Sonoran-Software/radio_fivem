@@ -472,11 +472,7 @@ export default {
                     this.debug.enabled = event.debug;
                     break;
                 case 'power':
-                    this.radioPower = event.power !== undefined ? !!event.power : !this.radioPower;
-                    this.postClient({
-                        type: 'power',
-                        power: this.radioPower
-                    });
+                    if (event.power !== this.radioPower) this.buttonPower();
                     break;
                 case 'setVisible':
                     this.showRadio = event.visibility;
