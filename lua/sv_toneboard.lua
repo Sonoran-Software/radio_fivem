@@ -28,7 +28,8 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint('Sending speaker locations to radio service based upon call to SonoranRadio::SyncSpeakers' ..  json.encode(locations))
