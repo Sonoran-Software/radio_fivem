@@ -734,7 +734,7 @@ function initClient()
 					loc.time = GetGameTimer()
 				end
 
-				if (GetGameTimer() - loc.time) > 999 and loc.street and (loc.street ~= establishedLoc.street or isOppositeDirection(loc.direction, establishedLoc.direction)) then
+				if (GetGameTimer() - loc.time) > 1525 and loc.street and (loc.street ~= establishedLoc.street or isOppositeDirection(loc.direction, establishedLoc.direction)) then
 					establishedLoc.street = loc.street
 					establishedLoc.direction = loc.direction
 					establishedLoc.speed = loc.speed
@@ -743,7 +743,7 @@ function initClient()
 						loc = {
 							heading = establishedLoc.direction,
 							street = establishedLoc.street,
-							speed = math.floor(establishedLoc.speed),
+							speed = math.floor(establishedLoc.speed / 5.0 + 2.5) * 5.0, -- round to nearest 5
 							speeds = 'speeds',
 						}
 					})
