@@ -29,17 +29,20 @@ function initThreads()
                 DisableControlAction(0, 142, true) -- Attack
                 DisableControlAction(0, 200, true) -- Escape
             end
+
             Wait(0)
+
             local coords = GetEntityCoords(GetPlayerPed(-1))
             local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z,
                                                   2.0, GetHashKey('serverrack'),
                                                   70)
-            if closestRack ~= 0 then
-                if GetVehicleBodyHealth(closestRack) < 950 or
-                    IsVehicleDoorDamaged(closestRack, 1) or
-                    GetVehicleEngineHealth(closestRack) < 950 then
-                    goto continueRacks
-                end
+            local closestRackOk =
+                closestRack ~= 0 and
+                GetVehicleBodyHealth(closestRack) >= 0 and
+                GetVehicleEngineHealth(closestRack) >= 950 and
+                not IsVehicleDoorDamaged(closestRack, 1)
+            if closestRackOk and not displayHelpLock then
+                displayHelpLock = true
                 local doorOpen = false;
                 if IsVehicleDoorFullyOpen(closestRack, 1) then
                     doorOpen = true
@@ -62,6 +65,10 @@ function initThreads()
                         SetVehicleDoorOpen(Vehicle, 1, false, false)
                     end
                 end
+                Wait(0)
+                displayHelpLock = false
+            else
+                Wait(0)
             end
             ::continueRacks::
         end

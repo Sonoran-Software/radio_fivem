@@ -232,7 +232,8 @@ function initScanners()
 		while true do
 			local scannerId, scannerCoords = getClosestWorldScanner(2.5)
 
-			if allowed and scannerId and not WarMenu.IsAnyMenuOpened() then
+			if allowed and scannerId and not displayHelpLock then
+				displayHelpLock = true
 				BeginTextCommandDisplayHelp('SONRAD_SCANNER_USE')
 				EndTextCommandDisplayHelp(0, false, true, 100)
 
@@ -241,6 +242,7 @@ function initScanners()
 				end
 
 				Citizen.Wait(0)
+				displayHelpLock = false
 			else
 				Citizen.Wait(500)
 			end

@@ -217,7 +217,8 @@ function initCell()
 				end
 			end
 
-			if cellRepeater ~= nil and d < 2.0 and GetCellRepeaterCapacity(cellRepeater) < 1.0 then
+			if cellRepeater ~= nil and d < 2.0 and GetCellRepeaterCapacity(cellRepeater) < 1.0 and not displayHelpLock then
+				displayHelpLock = true
 				BeginTextCommandDisplayHelp('STRING')
 				AddTextComponentSubstringPlayerName('Press ~INPUT_DETONATE~ to repair this cell repeater.')
 				EndTextCommandDisplayHelp(0, false, true, -1)
@@ -228,6 +229,7 @@ function initCell()
 				end
 
 				Wait(0)
+				displayHelpLock = false
 			else
 				Wait(500)
 			end

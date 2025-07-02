@@ -421,7 +421,8 @@ function initRacks()
 					end
 				end
 			end
-			if rack ~= nil and d < 2.0 and GetrackCapacity(rack) < 1.0 then
+			if rack ~= nil and d < 2.0 and GetrackCapacity(rack) < 1.0 and not displayHelpLock then
+				displayHelpLock = true
 				BeginTextCommandDisplayHelp('STRING')
 				AddTextComponentSubstringPlayerName('Press ~INPUT_DETONATE~ to repair this rack.')
 				EndTextCommandDisplayHelp(0, false, true, -1)
@@ -432,6 +433,7 @@ function initRacks()
 				end
 
 				Wait(0)
+				displayHelpLock = false
 			else
 				Wait(500)
 			end
