@@ -1521,7 +1521,11 @@ function initClient()
 			if isOn and vehNetId then
 				-- store by vehicle network‐ID
 				remoteSirens[vehNetId] = true
-			else
+			elseif vehNetId then
+				if not remoteSirens[vehNetId] then
+					-- if the vehicle is not in the table, we don't need to do anything
+					return
+				end
 				-- remove by the same network‐ID
 				remoteSirens[vehNetId] = nil
 			end

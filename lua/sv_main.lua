@@ -1001,18 +1001,18 @@ exports('serverNameChange', serverNameChange)
 RegisterNetEvent('SonoranRadio::RequestSirens', function()
 	for k, v in pairs(sirens) do
 		if v.isOn then
-			TriggerClientEvent('sonoranradio:receiveSirenState', source, k, v.isOn, v.coords)
+			TriggerClientEvent('sonoranradio:receiveSirenState', source, k, v.isOn, v.netId)
 		end
 	end
 end)
 
 RegisterNetEvent('sonoranradio:syncSirenState')
-AddEventHandler('sonoranradio:syncSirenState', function(isOn, coords)
+AddEventHandler('sonoranradio:syncSirenState', function(isOn, netId)
 	local src = source
 	-- pass along who, on/off, volume, and where
 	sirens[src] = {
 		isOn = isOn,
-		coords = coords
+		netId = netId
 	}
-	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, coords)
+	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, netId)
 end)
