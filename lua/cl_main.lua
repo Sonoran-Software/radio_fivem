@@ -1100,6 +1100,8 @@ function initClient()
 		PlayerDead = true
 		if Config.disableRadioOnDeath then
 			if Radio.On then
+				local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
+				TriggerEvent('SonoranRadio::API:Talking', false, inVeh)
 				Radio.Enabled = false
 				Radio:Toggle(false)
 				isTalking = false
