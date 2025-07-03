@@ -256,6 +256,7 @@ function initThreads()
     exports('getSignalQuality', getSignalQuality)
 
     -- 1000 MS Thread
+    local isDead = false
     CreateThread(function()
         local QBCore = nil
         if (Config.deathDetectionMethod == 'qbcore' and frameworkEnum == 1) or (Config.deathDetectionMethod == 'qbox' and frameworkEnum == 2) then
@@ -265,6 +266,7 @@ function initThreads()
 
         local lastTowerQuality = 0.0
         while true do
+            local QBDeath = false
             if QBCore ~= nil then
                 local PlayerData = QBCore.Functions.GetPlayerData()
                 if PlayerData ~= nil and PlayerData.metadata ~= nil then
@@ -274,14 +276,14 @@ function initThreads()
                                   PlayerData.metadata['inlaststand']
                 end
             end
-
-            if Config.deathDetectionMethod == 'auto' or
-                (Config.deathDetectionMethod == 'qbcore' or Config.deathDetectionMethod == 'qbox') then
+            if Config.deathDetectionMethod ~= 'manual' then
                 local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
                 if IsPlayerDead then
                     TriggerEvent('SonoranRadio::PlayerDeath')
-                else
+                    isDead = true
+                elseif isDead then
                     TriggerEvent('SonoranRadio::PlayerRevive')
+                    isDead = false
                 end
             end
             -- Tunnel degradation logic
