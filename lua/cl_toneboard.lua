@@ -23,9 +23,12 @@ function initToneboard()
     function GetSpeakerCoords(speaker)
         if DoesEntityExist(speaker.Handle) then
             return GetOffsetFromEntityInWorldCoords(speaker.Handle, 0.0, 0.0, 1.0)
-        else
+        elseif speaker.PropPosition then
             return vec3(speaker.PropPosition.x, speaker.PropPosition.y,
                         speaker.PropPosition.z)
+        else
+            DebugPrint(('speaker %s has no coords, returning nil'):format(speaker.Id))
+            return nil
         end
     end
 
@@ -148,10 +151,15 @@ Citizen.CreateThread(function()
                 if not entry then goto continue end
                 local speaker = entry.speaker
                 local tone = entry.sound
+                local speakerCoords = GetSpeakerCoords(speaker)
+                if not speakerCoords then
+                    DebugPrint(('speaker %s has no coords, skipping'):format(speaker.Id))
+                    goto continue
+                end
                 Wait(1) -- consider reducing this to tune performance
                 if not playingSpeakers[speaker.Id] then
                     DebugPrint(('playing tone %s on speaker %s'):format(tone, speaker.Id))
-                    PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
+                    PlayUrlPos(speaker.Id, tone, 1.0, speakerCoords, false)
                     Distance(speaker.Id, speaker.Range)
                     playingSpeakers[speaker.Id] = tone
                 end
