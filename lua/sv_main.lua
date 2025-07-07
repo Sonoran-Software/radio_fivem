@@ -584,6 +584,7 @@ local function createClientConfig()
 			['key'] = Config.apiKey,
 			['roomId'] = roomId,
 			['pushUrl'] = pushUrl,
+			['serverPort'] = GetConvarInt('netPort', 30120),
 			['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
 		}, 'SET-SERVER-IP', function(data, success)
 			if not success then
