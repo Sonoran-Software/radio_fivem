@@ -121,34 +121,47 @@ function initToneboard()
         speakers = {}
     end)
 
-    RegisterNetEvent('SonoranRadio:PlayTone', function(speakers, tone)
-        for _, tonePlay in pairs(tone) do
-            DebugPrint(('adding tone %s to speaker %s\'s queue'):format(tonePlay, speakers.Id))
-            table.insert(queue, {speaker = speakers, sound = tonePlay})
-        end
-    end)
+RegisterNetEvent('SonoranRadio:PlayTone', function(speakers)
+    local newQueue = {}
 
-    Citizen.CreateThread(function()
-        while true do
-            Citizen.Wait(500);
-            if #queue > 0 then
-                for i = 1, #queue do
-                    if not queue[i] then goto continue end
-                    local speaker = queue[i].speaker
-                    local tone = queue[i].sound
-                    Wait(100)
-                    if not playingSpeakers[speaker.Id] then
-                        DebugPrint(('playing tone %s on speaker %s'):format(tone,
-                                                                          speaker.Id))
-                        PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
-                        Distance(speaker.Id, speaker.Range)
-                        playingSpeakers[speaker.Id] = tone
-                    end
-                    ::continue::
-                end
+    for _, speaker in pairs(speakers) do
+        if speaker.tone then
+            for _, tonePlay in pairs(speaker.tone) do
+                DebugPrint(('adding tone %s to speaker %s\'s queue'):format(tonePlay, speaker.Id))
+                table.insert(newQueue, {speaker = speaker, sound = tonePlay})
             end
         end
-    end)
+    end
+
+    -- Batch insert into the actual queue after it's fully built
+    for _, entry in ipairs(newQueue) do
+        table.insert(queue, entry)
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(500)
+        if #queue > 0 then
+            for i = 1, #queue do
+                local entry = queue[i]
+                if not entry then goto continue end
+                local speaker = entry.speaker
+                local tone = entry.sound
+                Wait(1) -- consider reducing this to tune performance
+                if not playingSpeakers[speaker.Id] then
+                    DebugPrint(('playing tone %s on speaker %s'):format(tone, speaker.Id))
+                    PlayUrlPos(speaker.Id, tone, 1.0, GetSpeakerCoords(speaker), false)
+                    Distance(speaker.Id, speaker.Range)
+                    playingSpeakers[speaker.Id] = tone
+                end
+                ::continue::
+            end
+            -- Clear queue after playing all entries
+            queue = {}
+        end
+    end
+end)
 
     RegisterNetEvent('xSound:songStopPlaying', function(id)
         for k, v in pairs(playingSpeakers) do
