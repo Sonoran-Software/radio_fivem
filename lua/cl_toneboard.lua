@@ -21,14 +21,14 @@ function initToneboard()
     end
 
     function GetSpeakerCoords(speaker)
+        if speaker.speaker then
+            speaker = speaker.speaker
+        end
         if DoesEntityExist(speaker.Handle) then
             return GetOffsetFromEntityInWorldCoords(speaker.Handle, 0.0, 0.0, 1.0)
-        elseif speaker.PropPosition then
+        else
             return vec3(speaker.PropPosition.x, speaker.PropPosition.y,
                         speaker.PropPosition.z)
-        else
-            DebugPrint(('speaker %s has no coords, returning nil'):format(speaker.Id))
-            return nil
         end
     end
 
@@ -126,7 +126,6 @@ function initToneboard()
 
 RegisterNetEvent('SonoranRadio:PlayTone', function(speakers)
     local newQueue = {}
-
     for _, speaker in pairs(speakers) do
         if speaker.tone then
             for _, tonePlay in pairs(speaker.tone) do
@@ -149,7 +148,8 @@ Citizen.CreateThread(function()
             for i = 1, #queue do
                 local entry = queue[i]
                 if not entry then goto continue end
-                local speaker = entry.speaker
+                local speaker = entry.speaker.speaker
+                print(('processing entry for speaker %s'):format(json.encode(speaker)))
                 local tone = entry.sound
                 local speakerCoords = GetSpeakerCoords(speaker)
                 if not speakerCoords then
