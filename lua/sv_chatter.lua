@@ -10,7 +10,7 @@ local function pushRadioStatesNow()
 	end
 
 	TriggerClientEvent('SonoranRadio::ReceiveRadioStates', -1, states)
-	lastRadioPush = GetGameTimer()
+	lastRadioStatesPush = GetGameTimer()
 end
 local function pushRadioStates()
 	local toWait = 2500 - (GetGameTimer() - lastRadioStatesPush)
