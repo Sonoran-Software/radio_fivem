@@ -128,22 +128,7 @@ function initMenu()
 				deletingRadioRepeater()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
-				if WarMenu.Button('Spawn Permanent Scanner') then
-					local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
-					local heading = GetEntityHeading(PlayerPedId())
-					TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
-				end
-				if WarMenu.Button('Delete Nearest Permanent Scanner') then
-					local staticScanner = getNearestStaticScanner(GetEntityCoords(PlayerPedId()), 5.0)
-					if staticScanner then
-						TriggerServerEvent('SonoranRadio::DeleteAndSaveScanner', staticScanner.Id)
-					else
-						TriggerEvent('chat:addMessage', {
-							color = {255, 0, 0},
-							args = {'Sonoran Radio', 'Error: No nearby permanent scanner found'}
-						})
-					end
-				end
+				staticScannerMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('degradeMenu') then
 				degradeMenu()
@@ -967,6 +952,153 @@ function initMenu()
 				confirmRadioPlacement()
 				WarMenu.OpenMenu('sonoranRadioMenu')
 			end
+		end
+	end
+
+	function staticScannerMenu()
+		local foundHandle
+		if WarMenu.Button('Spawn Permanent Scanner') then
+			local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
+			local heading = GetEntityHeading(PlayerPedId())
+			TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
+		end
+		if WarMenu.Button('Delete Nearest Permanent Scanner') then
+			local staticScanner = getNearestStaticScanner(GetEntityCoords(PlayerPedId()), 5.0)
+			if staticScanner then
+				TriggerServerEvent('SonoranRadio::DeleteAndSaveScanner', staticScanner.Id)
+			else
+				TriggerEvent('chat:addMessage', {
+					color = {255, 0, 0},
+					args = {'Sonoran Radio', 'Error: No nearby permanent scanner found'}
+				})
+			end
+		end
+		if foundHandle then
+			DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
+					false)
+			if IsControlPressed(0, 108) and GetLastInputMethod(0) then -- Movement Keys
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.x = array.x + state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.x = array.x - state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.y = array.y + state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.y = array.y - state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.z = array.z + state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
+				local array = {
+					x = foundHandle.PropPosition.x,
+					y = foundHandle.PropPosition.y,
+					z = foundHandle.PropPosition.z
+				}
+				array.z = array.z - state.moveSpeed
+				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
+				foundHandle.heading = (foundHandle.heading or 0) + state.moveSpeed
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
+				foundHandle.heading = (foundHandle.heading or 0) - state.moveSpeed
+				SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
+				SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
+			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
+				if state.moveSpeed < 2.0 then
+					state.moveSpeed = state.moveSpeed + 0.001
+				else
+					ShowNotification('Cannot Move Faster')
+				end
+			elseif IsControlJustReleased(0, 132) and GetLastInputMethod(0) then
+				if state.moveSpeed > 0.001 then
+					state.moveSpeed = state.moveSpeed - 0.001
+				else
+					ShowNotification('Cannot move slower')
+				end
+			end
+			BeginScaleformMovieMethod(radioScaleform, 'CLEAR_ALL')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+			ScaleformMovieMethodAddParamInt(0)
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 108))
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 107))
+			PushScaleformMovieMethodParameterString('Move X')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+			ScaleformMovieMethodAddParamInt(1)
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 112))
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
+			PushScaleformMovieMethodParameterString('Move Y')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+			ScaleformMovieMethodAddParamInt(2)
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
+			PushScaleformMovieMethodParameterString('Move Z')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+			ScaleformMovieMethodAddParamInt(3)
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 118))
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 117))
+			PushScaleformMovieMethodParameterString('Rotate')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+			ScaleformMovieMethodAddParamInt(6)
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 21))
+			PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
+			PushScaleformMovieMethodParameterString('Change Speed')
+			EndScaleformMovieMethod()
+
+			BeginScaleformMovieMethod(radioScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
+			ScaleformMovieMethodAddParamInt(0)
+			EndScaleformMovieMethod()
+			DrawScaleformMovieFullscreen(radioScaleform, 255, 255, 255, 255, 0)
 		end
 	end
 
