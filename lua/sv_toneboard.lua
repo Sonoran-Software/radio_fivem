@@ -4,17 +4,19 @@ TriggerEvent('sonoranradio::RegisterPushEvent', 'play_tone', function(data)
 	DebugPrint('Received play_tone event from radio service.', json.encode(data))
     local tone = data.payload.src;
     local stationIds = data.payload.ids;
-	for i = 1, #Speakers do
-		local speaker = Speakers[i]
-		if speaker then
-			for j = 1, #stationIds do
-				local stationId = stationIds[j]
+	local tones = {}
+	for j = 1, #stationIds do
+		for i = 1, #Speakers do
+			local speaker = Speakers[i]
+			local stationId = stationIds[j]
+			if speaker then
 				if speaker.Id == stationId then
-					TriggerClientEvent('SonoranRadio:PlayTone', -1, speaker, tone)
+					table.insert(tones, {speaker = speaker, tone = tone})
 				end
 			end
 		end
 	end
+	TriggerClientEvent('SonoranRadio:PlayTone', -1, tones)
 end)
 
 RegisterNetEvent('SonoranRadio::SyncSpeakers')
@@ -28,7 +30,8 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint('Sending speaker locations to radio service based upon call to SonoranRadio::SyncSpeakers' ..  json.encode(locations))

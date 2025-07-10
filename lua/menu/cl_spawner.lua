@@ -65,6 +65,8 @@ function initMenu()
 		WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
 		WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
+		WarMenu.CreateSubMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
+		WarMenu.SetMenuTitleBackgroundSprite('staticScannerMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
 		WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
 		WarMenu.CreateSubMenu('degradeEditMenu', 'degradeMenu', 'Modify Degradation Zones')
@@ -109,6 +111,7 @@ function initMenu()
 				if WarMenu.Button('Repair All Repeaters') then
 					TriggerServerEvent('RadioTower:RepairAllTowers')
 				end
+				WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
 				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
 				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
 				if Config.chatter then
@@ -123,6 +126,24 @@ function initMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('deleteRadioMenu') then
 				deletingRadioRepeater()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
+				if WarMenu.Button('Spawn Permanent Scanner') then
+					local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
+					local heading = GetEntityHeading(PlayerPedId())
+					TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
+				end
+				if WarMenu.Button('Delete Nearest Permanent Scanner') then
+					local staticScanner = getNearestStaticScanner(GetEntityCoords(PlayerPedId()), 5.0)
+					if staticScanner then
+						TriggerServerEvent('SonoranRadio::DeleteAndSaveScanner', staticScanner.Id)
+					else
+						TriggerEvent('chat:addMessage', {
+							color = {255, 0, 0},
+							args = {'Sonoran Radio', 'Error: No nearby permanent scanner found'}
+						})
+					end
+				end
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('degradeMenu') then
 				degradeMenu()
@@ -629,7 +650,7 @@ function initMenu()
 					}
 					array.x = array.x + state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 					local array = {
@@ -639,7 +660,7 @@ function initMenu()
 					}
 					array.x = array.x - state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 					local array = {
@@ -649,7 +670,7 @@ function initMenu()
 					}
 					array.y = array.y + state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 					local array = {
@@ -659,7 +680,7 @@ function initMenu()
 					}
 					array.y = array.y - state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 					local array = {
@@ -683,11 +704,11 @@ function initMenu()
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 					foundHandle.heading = (foundHandle.heading or 0) + state.moveSpeed
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 					foundHandle.heading = (foundHandle.heading or 0) - state.moveSpeed
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading or 0)
 				elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 					if state.moveSpeed < 2.0 then
@@ -711,7 +732,7 @@ function initMenu()
 					}
 					array.x = array.x + state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 				elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 					local array = {
@@ -721,7 +742,7 @@ function initMenu()
 					}
 					array.x = array.x - state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 				elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 					local array = {
@@ -731,7 +752,7 @@ function initMenu()
 					}
 					array.y = array.y + state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 				elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 					local array = {
@@ -741,7 +762,7 @@ function initMenu()
 					}
 					array.y = array.y - state.moveSpeed
 					foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 				elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 					local array = {
@@ -773,7 +794,7 @@ function initMenu()
 						foundHandle.heading = calculatedHeading
 						state.calculatedHeading = true
 					end
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 				elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 					foundHandle.heading = foundHandle.heading - state.moveSpeed
@@ -785,7 +806,7 @@ function initMenu()
 						foundHandle.heading = calculatedHeading
 						state.calculatedHeading = true
 					end
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 					SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 				elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 					if state.moveSpeed < 2.0 then
@@ -973,9 +994,9 @@ function initMenu()
 			if foundHandle then
 				foundHandle.PropPosition = state.ogCoords
 				if foundHandle.type ~= 'serverRack' then
-					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoords(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				else
-					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+					SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				end
 				SetEntityHeading(foundHandle.Handle, state.ogHeading)
 				state.repeaterId = nil
@@ -1269,14 +1290,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerSmallWall',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1341,14 +1382,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerMedium',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1413,14 +1474,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerMediumWall',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1485,14 +1566,34 @@ function initMenu()
 						speakerLabel = input
 					end
 				end
-				if range and speakerLabel then
+				-- Speaker Grouping
+				AddTextEntry('FMMC_MPM_NAA', 'Group Name - Leave blank for no group')
+				DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Group Name - Leave blank for no group', '', '', '', '', 40)
+				while (UpdateOnscreenKeyboard() == 0) do
+					DisableAllControlActions(0);
+					Wait(0)
+				end
+				local groupName = ""
+				if UpdateOnscreenKeyboard() == 2 then
+					groupName = ""
+				end
+				if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+					local input = GetOnscreenKeyboardResult()
+					if input == '' then
+						groupName = ""
+					else
+						groupName = input
+					end
+				end
+				if range and speakerLabel and groupName then
 					local speakerData = {
 						Id = uuid(),
 						PropPosition = GetEntityCoords(PlayerPedId()),
 						heading = GetEntityHeading(PlayerPedId()),
 						type = 'speakerLarge',
 						Range = range,
-						Label = speakerLabel
+						Label = speakerLabel,
+						group = groupName
 					}
 					toneboardState.speakerId = speakerData.Id
 					TriggerEvent('RadioSpeaker:SpawnSpeaker', speakerData)
@@ -1574,7 +1675,7 @@ function initMenu()
 				}
 				array.x = array.x + toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 			elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
 				local array = {
 					x = foundHandle.PropPosition.x,
@@ -1583,7 +1684,7 @@ function initMenu()
 				}
 				array.x = array.x - toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 			elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
 				local array = {
@@ -1593,7 +1694,7 @@ function initMenu()
 				}
 				array.y = array.y + toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 			elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
 				local array = {
@@ -1603,7 +1704,7 @@ function initMenu()
 				}
 				array.y = array.y - toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 			elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
 				local array = {
@@ -1613,7 +1714,7 @@ function initMenu()
 				}
 				array.z = array.z + toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 			elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
 				local array = {
@@ -1623,7 +1724,7 @@ function initMenu()
 				}
 				array.z = array.z - toneboardState.moveSpeed
 				foundHandle.PropPosition = vec3(array.x, array.y, array.z)
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 
 			elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading + toneboardState.moveSpeed
@@ -1635,7 +1736,7 @@ function initMenu()
 					foundHandle.heading = calculatedHeading
 					toneboardState.calculatedHeading = true
 				end
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
 				foundHandle.heading = foundHandle.heading - toneboardState.moveSpeed
@@ -1647,7 +1748,7 @@ function initMenu()
 					foundHandle.heading = calculatedHeading
 					toneboardState.calculatedHeading = true
 				end
-				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z - 1, true, true, true, false)
+				SetEntityCoordsNoOffset(foundHandle.Handle, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z, true, true, true, false)
 				SetEntityHeading(foundHandle.Handle, foundHandle.heading)
 			elseif IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
 				if toneboardState.moveSpeed < 2.0 then

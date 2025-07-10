@@ -56,11 +56,8 @@ function createChannelContent(channelTitle, users) {
 
 function refreshCall() {
 	const hudContentWrapper = document.getElementById("hudContentWrapper");
-	const hudDiv = document.getElementById("hudDiv");
 	hudContentWrapper.innerHTML = "";
 	if (activeChannels.length == 0) {
-		hudContentWrapper.style.minHeight = 'auto';
-		hudDiv.style.height = "auto";
 		const channelContent = document.createElement("div");
 		channelContent.classList.add("channelContent"); // Add class for styling
 		// Create the channel title element
@@ -81,8 +78,6 @@ function refreshCall() {
 	activeChannels.forEach((channel) => {
 		createChannelContent(channel.channelName, channel.activeUsers);
 	});
-	hudDiv.style.height = ""; // Resets height to original or css-styled value
-	hudContentWrapper.style.minHeight = ""; // Resets height to original or css-styled value
 }
 
 function moduleVisible(module, visible) {

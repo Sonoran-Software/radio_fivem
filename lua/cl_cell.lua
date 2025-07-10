@@ -68,7 +68,7 @@ function initCell()
 		end
 		DecorSetInt(cellRepeater.Handle, 'sonrad_cellRepeater', 1)
 		FreezeEntityPosition(cellRepeater.Handle, true)
-		SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z - 1, true, true, true, false)
+		SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z, true, true, true, false)
 		SetEntityHeading(cellRepeater.Handle, cellRepeater.heading)
 		SetModelAsNoLongerNeeded(CellRepeaterModel)
 		cellRepeater.Spawned = true
@@ -217,7 +217,8 @@ function initCell()
 				end
 			end
 
-			if cellRepeater ~= nil and d < 2.0 and GetCellRepeaterCapacity(cellRepeater) < 1.0 then
+			if cellRepeater ~= nil and d < 2.0 and GetCellRepeaterCapacity(cellRepeater) < 1.0 and not displayHelpLock then
+				displayHelpLock = true
 				BeginTextCommandDisplayHelp('STRING')
 				AddTextComponentSubstringPlayerName('Press ~INPUT_DETONATE~ to repair this cell repeater.')
 				EndTextCommandDisplayHelp(0, false, true, -1)
@@ -228,6 +229,7 @@ function initCell()
 				end
 
 				Wait(0)
+				displayHelpLock = false
 			else
 				Wait(500)
 			end

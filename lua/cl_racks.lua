@@ -213,7 +213,7 @@ function initRacks()
 		end
 		SetDisableVehicleEngineFires(rack.Handle, true)
 		SetDisableVehiclePetrolTankFires(rack.Handle, true)
-		SetEntityCoordsNoOffset(rack.Handle, coords.x, coords.y, coords.z - 1.1, false, false, false, false)
+		SetEntityCoordsNoOffset(rack.Handle, coords.x, coords.y, coords.z, false, false, false, false)
 		FreezeEntityPosition(rack.Handle, true)
 		local calculatedHeading = rack.heading + 180.0 -- invert the heading to get the direction the server is facing (0 is the back of the server, 180 is the front)
 		if calculatedHeading > 360.0 then
@@ -421,7 +421,8 @@ function initRacks()
 					end
 				end
 			end
-			if rack ~= nil and d < 2.0 and GetrackCapacity(rack) < 1.0 then
+			if rack ~= nil and d < 2.0 and GetrackCapacity(rack) < 1.0 and not displayHelpLock then
+				displayHelpLock = true
 				BeginTextCommandDisplayHelp('STRING')
 				AddTextComponentSubstringPlayerName('Press ~INPUT_DETONATE~ to repair this rack.')
 				EndTextCommandDisplayHelp(0, false, true, -1)
@@ -432,6 +433,7 @@ function initRacks()
 				end
 
 				Wait(0)
+				displayHelpLock = false
 			else
 				Wait(500)
 			end

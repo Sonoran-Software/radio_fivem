@@ -9,10 +9,6 @@ local ErrorBuffer = {}
 local tunnels = {}
 scanners = {}
 local critError = false
-jsonFileName = 'towers.DEFAULT.json'
-polyZoneFileName = 'tunnels.DEFAULT.json'
-speakersFileName = 'speakers.DEFAULT.json'
-chatterFileName = 'earpieces.json'
 chatterConfig = {}
 local clientConfig
 local sirens = {}
@@ -32,10 +28,10 @@ else
 	end)
 	if not IsDuplicityVersion() then
 		RegisterNetEvent('SonoranRadio::API:PlayerDeath', function(playerid)
-			TriggerEvent('SonoranRadio::PlayerDeath') -- This event will kill the player
+			TriggerClientEvent('SonoranRadio::PlayerDeath', playerid) -- This event will kill the player
 		end)
 		RegisterNetEvent('SonoranRadio::API:PlayerRevive', function(playerid)
-			TriggerEvent('SonoranRadio::PlayerRevive') -- This event will revive the player
+			TriggerClientEvent('SonoranRadio::PlayerRevive', playerid) -- This event will revive the player
 		end)
 	end
 	if Config.acePermsForRadio ~= nil then
@@ -356,14 +352,30 @@ RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
 		end
 	end
 end)
+RegisterNetEvent('SonoranRadio::SaveSkinConfig', function(configPath, config)
+	local src = source
+	if not Config.debug then
+		warnLog(('Player id:%s is attempting to save a radio skin config, even though debug is not enabled (possible security issue)'):format(source))
+		return
+	end
+
+	local success = SaveResourceFile(GetCurrentResourceName(), configPath, config, -1)
+	if success then
+		infoLog(('Successfully saved %s'):format(configPath))
+		TriggerClientEvent('SonoranRadio::DisplayInfo', src, 'Successfully saved skin.json')
+	else
+		errorLog(('Could not save %s, skin settings will not be saved'):format(configPath))
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Could not save skin.json (see server log for more info)')
+	end
+end)
 
 local function CopyFile(old_path, new_path)
 	local old_file = io.open(old_path, 'rb')
-	local new_file = io.open(new_path, 'wb')
 	if not old_file then
 		print('Failed to open source file: ' .. old_path .. ' - please check your folder permissions or rename file manually.')
 		return false
 	end
+	local new_file = io.open(new_path, 'wb')
 	if not new_file then
 		print('Failed to create target file: ' .. new_path .. ' - please check your folder permissions or rename file manually.')
 		old_file:close()
@@ -372,7 +384,7 @@ local function CopyFile(old_path, new_path)
 
 	local old_file_sz, new_file_sz
 	while true do
-		local block = old_file:read(2 ^ 13)
+		local block = old_file:read(2 ^ 13) -- 8KiB
 		if not block then
 			old_file_sz = old_file:seek('end')
 			break
@@ -388,6 +400,162 @@ local function CopyFile(old_path, new_path)
 	end
 	return true
 end
+local defaultJsonConfigFiles = {
+	['earpieces.json'] = 'earpieces.DEFAULT.json',
+	['scanners.json']  = 'scanners.DEFAULT.json',
+	['speakers.json']  = 'speakers.DEFAULT.json',
+	['towers.json']    = 'towers.DEFAULT.json',
+	['tunnels.json']   = 'tunnels.DEFAULT.json',
+}
+function LoadJsonConfig(file)
+	local resourceName = GetCurrentResourceName()
+	local fileData = LoadResourceFile(resourceName, file)
+	if not fileData then
+		local defaultFile = defaultJsonConfigFiles[file]
+		if not defaultFile then error('no default json config found for '..file) end
+
+		-- Rename default to proper config file for user
+		fileData = LoadResourceFile(resourceName, defaultFile)
+		infoLog(('%s is not found, attempting to rename %s to %s'):format(file, defaultFile, file))
+		local success = CopyFile(GetResourcePath(resourceName)..'/'..defaultFile, GetResourcePath(resourceName)..'/'..file)
+		if success then
+			infoLog(('Successfully renamed %s to %s'):format(defaultFile, file))
+		else
+			warnLog(('Failed to rename %s to %s'):format(defaultFile, file))
+			file = defaultFile -- when loading below, use the default file
+		end
+	end
+	fileData = LoadResourceFile(resourceName, file)
+	return json.decode(fileData) or {}
+end
+function SaveJsonConfig(file, obj)
+	local resourceName = GetCurrentResourceName()
+	local contents = json.encode(obj, { indent = true })
+	local success = SaveResourceFile(resourceName, file, contents, -1)
+	if not success then
+		-- file could not be saved (permission issues probably)
+		-- try to write to default file with warning
+		local defaultFile = defaultJsonConfigFiles[file]
+		if not defaultFile then error('no default json config found for '..file) end
+		warnLog(('Could not save updated %s, trying to write changes to %s (NOTE: If auto-update is enabled, this file will be replaced during an update)'):format(file, defaultFile))
+		success = SaveResourceFile(resourceName, defaultFile, contents, -1)
+	end
+	if not success then
+		-- could not write to default file, write error
+		errorLog(('Could not save updated %s. Changes are not saved'):format(defaultJsonConfigFiles[file]))
+	end
+	return success
+end
+
+local function checkPushUrl(url, tries)
+	local d = promise.new()
+	if not url then return d:resolve(false) end
+	tries = tries or 1
+	if tries <= 0 then return d:resolve(false) end
+
+	exports['sonoranradio']:HandleHttpRequest(url..'/ping', function(code, data, headers)
+		if code == 200 then return d:resolve(true) end
+
+		-- invalid request
+		warnLog(('pushUrl check failed for %s, tries left: %d'):format(url, tries - 1))
+		checkPushUrl(url, tries - 1):next(function(success)
+			d:resolve(success)
+		end)
+	end, 'GET')
+	return d
+end
+local function getWebPushUrl(checkTries)
+	local d = promise.new()
+	Citizen.CreateThreadNow(function()
+		-- wait for web_baseUrl to be populated
+		local webUrl = GetConvar('web_baseUrl', '')
+		local tries = 0
+		while (not webUrl or webUrl == '') and tries < 5 do
+			warnLog('Waiting for web_baseUrl convar...')
+			Citizen.Wait(15000)
+			tries = tries + 1
+			webUrl = GetConvar('web_baseUrl', '')
+		end
+		if webUrl and webUrl ~= '' then
+			local pushUrl = 'https://'..webUrl..'/'..GetCurrentResourceName()..'/events'
+			checkPushUrl(pushUrl, checkTries or 5):next(function(success)
+				if success then
+					d:resolve(pushUrl)
+				else
+					warnLog(('Tried using %s as pushUrl, but could not send events'):format(pushUrl))
+					d:resolve(nil)
+				end
+			end)
+		else
+			warnLog('Could not find web_baseUrl convar')
+			d:resolve(nil)
+		end
+	end)
+	return d
+end
+local function getIpPushUrl(checkTries)
+	local d = promise.new()
+	local port = GetConvar('netPort', '30120')
+	exports['sonoranradio']:HandleHttpRequest('https://api.ipify.org', function(code, data)
+		if code == 200 then
+			local pushUrl = 'http://'..data..':'..port..'/'..GetCurrentResourceName()..'/events'
+			checkPushUrl(pushUrl, checkTries or 5):next(function(success)
+				if success then
+					d:resolve(pushUrl)
+				else
+					warnLog(('Tried using %s as pushUrl, but could not send events'):format(pushUrl))
+					d:resolve(nil)
+				end
+			end)
+		else
+			errorLog('Could not obtain public IP address, no internet connection?')
+			d:resolve(nil)
+		end
+	end, 'GET')
+	return d
+end
+local function getPushUrl(tries)
+	local d = promise.new()
+	if type(Config.overridePushUrl) == 'string' and Config.overridePushUrl ~= '' then
+		infoLog(('Using %s as override pushUrl'):format(Config.overridePushUrl))
+		return d:resolve(Config.overridePushUrl)
+	end
+	getWebPushUrl(tries):next(function(webPushUrl)
+		if webPushUrl then
+			d:resolve(webPushUrl)
+		else
+			getIpPushUrl(tries):next(function(ipPushUrl)
+				d:resolve(ipPushUrl)
+			end)
+		end
+	end)
+	return d
+end
+
+-- thread function for keeping the pushUrl up-to-date
+local function updatePushUrlThread()
+	local lastPushUrl = Config.pushUrl
+	while true do
+		Citizen.Wait(5 * 60 * 1000)
+
+		local pushUrl = Citizen.Await(getPushUrl(2))
+		if pushUrl ~= lastPushUrl then
+			infoLog(('Last pushUrl %s is invalid, setting to new pushUrl %s'):format(lastPushUrl, pushUrl))
+			lastPushUrl = pushUrl
+			exports['sonoranradio']:performApiRequest({
+				['id'] = Config.comId,
+				['key'] = Config.apiKey,
+				['roomId'] = Config.serverId,
+				['pushUrl'] = pushUrl,
+				-- no need to set nickname since roomId exists
+			}, 'SET-SERVER-IP', function(data, success)
+				if not success then
+					warnLog('Failed to set updated pushUrl for radio service.')
+				end
+			end)
+		end
+	end
+end
 
 -- this function creates/initializes the sanitized clientConfig
 -- it returns a promise that can be waited with Citizen.Await
@@ -398,36 +566,30 @@ local function createClientConfig()
 	local d = promise.new()
 	Config.init = false
 	Citizen.CreateThreadNow(function()
-		local tries = 0
-		local webUrl = GetConvar('web_baseUrl', '')
-		while (not webUrl or webUrl == '') and tries < 5 do
-			Citizen.Wait(15000)
-			tries = tries + 1
-			webUrl = GetConvar('web_baseUrl', '')
+		local pushUrl = Citizen.Await(getPushUrl())
+		if not pushUrl then
+			errorLog('[ERR-101] Could not obtain a valid pushUrl. This could be because of no internet connection, strict firewall settings, or an advanced internet setup')
+			errorLog('[ERR-101] Consider setting overridePushUrl in the config.lua to http://ip:port/sonoranradio/events')
+			errorLog('[ERR-101] See https://sonoran.link/radiocodes for more info')
+			return d:reject('failed to get pushUrl')
 		end
 
-		if not webUrl or webUrl == '' then
-			d:reject('failed to get web_baseUrl')
-			errorLog('Failed to get web_baseUrl after 5 attempts. Please check your server configuration.')
-			return
-		end
 		local roomId = Config.serverId or GetResourceKvpInt('standalone_serverId') or nil -- use the config value, or the KVP as a backup
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
 		-- roomId will be created by the backend
-		local pushUrl = 'https://'..webUrl..'/sonoranradio/events'
 		print('[SonoranRadio] - Attempting to set server IP for radio service... '..pushUrl)
 		exports['sonoranradio']:performApiRequest({
 			['id'] = Config.comId,
 			['key'] = Config.apiKey,
 			['roomId'] = roomId,
 			['pushUrl'] = pushUrl,
+			['serverPort'] = GetConvarInt('netPort', 30120),
 			['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
 		}, 'SET-SERVER-IP', function(data, success)
 			if not success then
-				d:reject('failed to update server IP')
 				errorLog('Failed to set server IP for radio service. Please check the comId and apiKey in your config file.')
-				return
+				return d:reject('failed to update server IP')
 			end
 
 			data = json.decode(data)
@@ -451,11 +613,12 @@ local function createClientConfig()
 			SetResourceKvpInt('standalone_serverId', data.roomId) -- save the roomId to the resource KVP as a backup
 			Config.init = true
 			Config.serverId = data.roomId
+			Config.pushUrl = pushUrl
 
 			-- create the client config
 			local clConfig = {}
 			for k, v in pairs(Config) do
-				if k ~= 'apiKey' and k ~= 'init' then -- filter out sensitive data
+				if k ~= 'apiKey' and k ~= 'pushUrl' and k ~= 'init' then -- filter out sensitive data
 					clConfig[k] = v
 				end
 			end
@@ -485,24 +648,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	getFramework()
 	local initConfigPromise = createClientConfig()
 
-	-- create a towers.json if it doesn't exist already
-	local jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.json')
-	if not jsonFile then -- Request default if there was an issue getting the regular
-		jsonFile = LoadResourceFile(GetCurrentResourceName(), 'towers.DEFAULT.json')
-		print('[SonoranRadio] - Using default tower locations - Please update your towers.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename towers.DEFAULT.json to towers.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/towers.DEFAULT.json', GetResourcePath(resourceName) .. '/towers.json') then
-			print('[SonoranRadio] - Failed to rename towers.DEFAULT.json to towers.json')
-			jsonFileName = 'towers.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed towers.DEFAULT.json to towers.json')
-			jsonFileName = 'towers.json'
-		end
-	else
-		jsonFileName = 'towers.json'
-	end
-	local t = LoadResourceFile(GetCurrentResourceName(), jsonFileName)
-	local towers = json.decode(t)
+	-- initialize towers
+	local towers = LoadJsonConfig('towers.json')
 	for i = 1, #towers do
 		if towers[i].type == 'radioTower' then
 			local obj = shallowcopy(RadioTower)
@@ -556,24 +703,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end
 
-	-- create a tunnels.json if it doesn't exist already
-	local polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.json')
-	if not polyZoneFile then -- Request default if there was an issue getting the regular
-		polyZoneFile = LoadResourceFile(GetCurrentResourceName(), 'tunnels.DEFAULT.json')
-		print('[SonoranRadio] - Using default tunnel locations - Please update your tunnels.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename tunnels.DEFAULT.json to tunnels.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/tunnels.DEFAULT.json', GetResourcePath(resourceName) .. '/tunnels.json') then
-			print('[SonoranRadio] - Failed to rename tunnels.DEFAULT.json to tunnels.json')
-			polyZoneFileName = 'tunnels.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed tunnels.DEFAULT.json to tunnels.json')
-			polyZoneFileName = 'tunnels.json'
-		end
-	else
-		polyZoneFileName = 'tunnels.json'
-	end
-	local polyZones = LoadResourceFile(GetCurrentResourceName(), polyZoneFileName)
-	local tnl = json.decode(polyZones)
+	-- initialize polyzone tunnels
+	local tnl = LoadJsonConfig('tunnels.json')
 	for i = 1, #tnl do
 		local obj = {}
 		obj.points = tnl[i].points
@@ -586,24 +717,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 		table.insert(tunnels, obj)
 	end
 
-	-- create a speakers.json if it doesn't exist already
-	local speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.json')
-	if not speakersFile then
-		speakersFile = LoadResourceFile(GetCurrentResourceName(), 'speakers.DEFAULT.json')
-		print('[SonoranRadio] - Using default tunnel locations - Please update your speakers.json file name to prevent this message from appearing.')
-		print('[SonoranRadio] - Attempting to rename speakers.DEFAULT.json to speakers.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/speakers.DEFAULT.json', GetResourcePath(resourceName) .. '/speakers.json') then
-			print('[SonoranRadio] - Failed to rename speakers.DEFAULT.json to speakers.json')
-			speakersFileName = 'speakers.DEFAULT.json'
-		else
-			print('[SonoranRadio] - Successfully renamed speakers.DEFAULT.json to speakers.json')
-			speakersFileName = 'speakers.json'
-		end
-	else
-		speakersFileName = 'speakers.json'
-	end
-	local spk = LoadResourceFile(GetCurrentResourceName(), speakersFileName)
-	local spkrs = json.decode(spk)
+	-- initialize speakers
+	local spkrs = LoadJsonConfig('speakers.json')
 	for i = 1, #spkrs do
 		local obj = {}
 		if spkrs[i].Id == nil then
@@ -617,28 +732,15 @@ AddEventHandler('onResourceStart', function(resourceName)
 		obj.Id = spkrs[i].Id
 		obj.type = spkrs[i].type
 		obj.Label = spkrs[i].Label
+		obj.group = spkrs[i].group or ''
 		table.insert(Speakers, obj)
 	end
 
-	-- create a earpieces.json if it doesn't exist already
-	local chatterFile = LoadResourceFile(resourceName, 'earpieces.json')
-	if not chatterFile then
-		chatterFile = LoadResourceFile(resourceName, 'earpieces.DEFAULT.json')
-		infoLog('Using default chatter configuration - Please update your earpieces.json file name to prevent this message from appearing.')
-		infoLog('Attempting to rename earpieces.DEFAULT.json to earpieces.json')
-		if not CopyFile(GetResourcePath(resourceName) .. '/earpieces.DEFAULT.json', GetResourcePath(resourceName) .. '/earpieces.json') then
-			errorLog('Failed to rename earpieces.DEFAULT.json to earpieces.json. Please manually rename')
-			chatterFileName = 'earpieces.DEFAULT.json'
-		else
-			infoLog('Successfully renamed earpieces.DEFAULT.json to earpieces.json')
-			chatterFileName = 'earpieces.json'
-		end
-	else
-		chatterFileName = 'earpieces.json'
-	end
-	-- Load JSON
-	local chat = LoadResourceFile(resourceName, chatterFileName)
-	local chatter = json.decode(chat) or {}
+	local staticScanners = LoadJsonConfig('scanners.json')
+	initStaticScanners(staticScanners)
+
+	-- initialize chatter earpieces
+	local chatter = LoadJsonConfig('earpieces.json')
 	local luaConfig = {}
 	-- Function to check if a config item exists in the JSON
 	local function isConfigInJson(jsonTable, configItem)
@@ -661,10 +763,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	chatterConfig = chatter
 	-- Save updated earpieces.json if changes were made
 	if updated then
-		SaveResourceFile(resourceName, 'earpieces.json', json.encode(luaConfig, { indent = true }), -1)
 		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
-		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
-		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
+		SaveJsonConfig('earpieces.json', luaConfig)
 		chatterConfig = luaConfig
 	end
 
@@ -678,7 +778,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
@@ -694,6 +795,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
+	Citizen.CreateThread(updatePushUrlThread)
 end)
 
 exports('performApiRequest', performApiRequest)
@@ -718,7 +820,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 			table.insert(saveData, t)
 		end
 	end
-	SaveResourceFile(GetCurrentResourceName(), jsonFileName, json.encode(saveData, { indent = true }), -1)
+	SaveJsonConfig('towers.json', saveData)
 	DebugPrint('Saved towers to file ' .. json.encode(saveData))
 	Towers = towers
 	Servers = racks
@@ -736,14 +838,15 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 		t.Spawned = nil -- Remove the key 'spawned'
 		table.insert(saveData, t)
 	end
-	SaveResourceFile(GetCurrentResourceName(), speakersFileName, json.encode(saveData, { indent = true }), -1)
+	SaveJsonConfig('speakers.json', saveData)
 	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
 	Speakers = speakers
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {
 			['label'] = speaker.Label,
-			['id'] = speaker.Id
+			['id'] = speaker.Id,
+			['group'] = speaker.group or ''
 		})
 	end
 	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
@@ -784,7 +887,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		name = name
 	}
 	table.insert(tunnels, obj)
-	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
@@ -795,7 +898,7 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 			break
 		end
 	end
-	SaveResourceFile(GetCurrentResourceName(), polyZoneFileName, json.encode(tunnels, { indent = true }), -1)
+	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
@@ -899,18 +1002,18 @@ exports('serverNameChange', serverNameChange)
 RegisterNetEvent('SonoranRadio::RequestSirens', function()
 	for k, v in pairs(sirens) do
 		if v.isOn then
-			TriggerClientEvent('sonoranradio:receiveSirenState', source, k, v.isOn, v.coords)
+			TriggerClientEvent('sonoranradio:receiveSirenState', source, k, v.isOn, v.netId)
 		end
 	end
 end)
 
 RegisterNetEvent('sonoranradio:syncSirenState')
-AddEventHandler('sonoranradio:syncSirenState', function(isOn, coords)
+AddEventHandler('sonoranradio:syncSirenState', function(isOn, netId)
 	local src = source
 	-- pass along who, on/off, volume, and where
 	sirens[src] = {
 		isOn = isOn,
-		coords = coords
+		netId = netId
 	}
-	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, coords)
+	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, netId)
 end)

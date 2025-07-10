@@ -1,13 +1,18 @@
 <template>
-  <div>
-    <div class="draggable" :class="{ 'drag-mode': dragEnabled }" :style="{
-      right: `${posX}px`,
-      bottom: `${posY}px`,
-      fontSize: `${size}px`,
-    }" @mousedown="handleStartDrag">
-      <slot />
+    <div
+      class="draggable"
+      :class="{ 'drag-mode': dragEnabled }"
+      :style="{
+        right: `${posX}px`,
+        bottom: `${posY}px`,
+        fontSize: `${size}px`,
+      }"
+      @mousedown="handleStartDrag"
+    >
+      <div style="position: relative">
+        <slot></slot>
+      </div>
     </div>
-  </div>
 </template>
 
 <script>

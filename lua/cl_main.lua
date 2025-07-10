@@ -11,7 +11,7 @@ local authorized = false
 local allowedFrames = {}
 local critError = false
 local calledSyncAcePerms = false
-local frame = GetResourceKvpString('sonoranradio_skin') or 'default'
+local frame
 polyZonesTable = {}
 Config = {}
 
@@ -28,6 +28,7 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
 	getFramework()
 	getInventory()
 	initCell()
@@ -58,28 +59,12 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	TriggerServerEvent('SonoranRadio::RequestSirens')
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
 	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
+		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
 		Config.luxartResourceName = 'lvc'
 	end
 end)
 
 function initClient()
-	if Config.comId == nil or Config.comId == '' then
-		TriggerEvent('chat:addMessage', {
-			color = {
-				255,
-				0,
-				0
-			},
-			multiline = true,
-			args = {
-				'Sonoran Radio',
-				'There is no community ID set for SonoranRadio. Please contact the server owner.'
-			}
-		})
-		critError = true
-		return
-	end
-
 	local comId = Config.comId or Config.communityId or Config.standaloneId
 	TriggerEvent('SonoranRadio::ClientReady')
 	RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
@@ -432,19 +417,17 @@ function initClient()
 				visibility = false
 			})
 		elseif action == 'refresh' then
-			SendNUIMessage({
-				type = 'refresh'
-			})
+			SendNUIMessage({ type = 'refresh' })
 		elseif action == 'reset' then
 			-- debug print ui info to console
 			print('SONORANRADIO UI DATA')
 			print('skin', GetResourceKvpString('sonoranradio_skin'))
 			print('pos', GetResourceKvpString('ui_pos_dic'))
 
-			frame = 'default'
+			frame = Config.defaultSkinId or 'default'
 			DeleteResourceKvp('sonoranradio_skin')
 			SetResourceKvp('ui_pos_dic', '{}')
-			SendNUIMessage({ type = 'reset' })
+			SendNUIMessage({ type = 'reset', skin = frame })
 		elseif action == 'scanner' and not Config.enforceRadioItem then
 			openLocalScanner()
 		elseif action == 'displayname' then
@@ -654,6 +637,158 @@ function initClient()
 	end)
 	RegisterKeyMapping('+sonradptt', 'Radio PTT', 'keyboard', getConfigKeybind('ptt'))
 
+	local function headingToDirectionCallout(heading)
+		if heading >= 45 and heading < 135 then
+			return 'westbound'
+		elseif heading >= 135 and heading < 225 then
+			return 'southbound'
+		elseif heading >= 225 and heading < 315 then
+			return 'eastbound'
+		else
+			return 'northbound'
+		end
+	end
+	local function isOppositeDirection(a, b)
+		if not a or not b then
+			return true
+		end
+		if a == 'southbound' or a == 'westbound' then
+			-- swap values so a is always north/east and b is always south/west if opposite
+			local tmp = a
+			a = b
+			b = tmp
+		end
+		return (a == 'northbound' and b == 'southbound') or (a == 'eastbound' and b == 'westbound')
+	end
+	local function getCurrentCallout(streetNameCache)
+		local ped = PlayerPedId()
+		local dir = headingToDirectionCallout(GetEntityHeading(ped))
+
+		-- get the coord of the closest vehicle node (favoring the direction the player is facing)
+		local playerCoord = GetEntityCoords(ped)
+		local playerForwardCoord = GetOffsetFromEntityInWorldCoords(ped, 0.0, 1.0, 0.0)
+		local found, coord, heading = GetNthClosestVehicleNodeFavourDirection(
+			playerCoord.x, playerCoord.y, playerCoord.z,
+			playerForwardCoord.x, playerForwardCoord.y, playerForwardCoord.z,
+			0, 0, 0, 0
+		)
+		if not found or #(playerCoord - coord) > 40 then
+			return dir -- not near a street
+		end
+
+		-- get the street names at the vehicle node coordinate
+		local streetHash, crossStreetHash = GetStreetNameAtCoord(coord.x, coord.y, coord.z)
+		local street = streetNameCache[streetHash]
+		if streetHash ~= 0 and not street then
+			street = GetStreetNameFromHashKey(streetHash)
+			streetNameCache[streetHash] = street
+		end
+		local crossStreet = streetNameCache[crossStreetHash]
+		if crossStreetHash ~= 0 and not crossStreet then
+			crossStreet = GetStreetNameFromHashKey(crossStreetHash)
+			streetNameCache[crossStreetHash] = crossStreet
+		end
+
+		return dir, street, crossStreet
+	end
+	local calloutThreadStatus = 'killed'
+	local function autoCalloutsThread()
+		local streetNameCache = {}
+
+		local speedAverage = 0.0
+		local speedAlpha = 0.1104
+
+		local loc = {}
+		local establishedLoc = {}
+
+		while calloutThreadStatus == 'run' do
+			local ped = PlayerPedId()
+			if IsPedInAnyVehicle(ped, false) then
+				local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+
+				-- find the vehicle's current speed (based on the config opt)
+				local speed
+				if Config.autoCallouts.speedUnit == 'mph' then
+					speed = GetEntitySpeed(veh) * 2.23694
+				elseif Config.autoCallouts.speedUnit == 'kmh' then
+					speed = GetEntitySpeed(veh) * 3.6
+				else
+					speed = -1
+				end
+				-- compute the EMA of the vehicle speed
+				if speedAverage < 10.0 then
+					speedAverage = speed
+				else
+					speedAverage = (speedAlpha * speed) + (1 - speedAlpha) * speedAverage
+				end
+
+				local direction, street, crossStreet = getCurrentCallout(streetNameCache)
+				if direction ~= loc.direction then
+					loc.direction = direction
+					loc.speed = speedAverage
+					loc.time = GetGameTimer()
+				end
+				if street ~= loc.street then
+					loc.street = street
+					loc.speed = speedAverage
+					loc.time = GetGameTimer()
+				end
+
+				if (GetGameTimer() - loc.time) > 1525 and loc.street and (loc.street ~= establishedLoc.street or isOppositeDirection(loc.direction, establishedLoc.direction)) then
+					establishedLoc.street = loc.street
+					establishedLoc.direction = loc.direction
+					establishedLoc.speed = loc.speed
+					SendNUIMessage({
+						type = 'broadcastLocation',
+						loc = {
+							heading = establishedLoc.direction,
+							street = establishedLoc.street,
+							speed = math.floor(establishedLoc.speed / 5.0 + 2.5) * 5.0, -- round to nearest 5
+							speeds = 'speeds',
+						}
+					})
+				end
+			else
+				speedAverage = 0.0
+				loc = {}
+				establishedLoc = {}
+			end
+
+			Citizen.Wait(250)
+		end
+		calloutThreadStatus = 'killed'
+	end
+
+	-- add default for auto callouts
+	if Config.autoCallouts == nil then
+		Config.autoCallouts = {
+			enabled = true,
+			speedUnit = 'mph',
+		}
+	end
+	-- if auto callouts are enabled, add the command and keybind
+	if Config.autoCallouts.enabled then
+		RegisterCommand('sonradtogglecallouts', function()
+			if calloutThreadStatus == 'killed' then
+				calloutThreadStatus = 'run'
+				Citizen.CreateThreadNow(autoCalloutsThread)
+				TriggerEvent('chat:addMessage', {
+					args = {'Sonoran Radio', 'Auto-Callouts Enabled'},
+					color = {255, 0, 0}
+				})
+			else
+				-- ! kill, not killed
+				-- ! this prevents multiple auto callout threads if spamming the keybind/command
+				calloutThreadStatus = 'kill'
+				TriggerEvent('chat:addMessage', {
+					args = {'Sonoran Radio', 'Auto-Callouts Disabled'},
+					color = {255, 0, 0}
+				})
+			end
+		end)
+		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
+	end
+
 	function Radio:Talking(toggle)
 		local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
 		TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
@@ -711,15 +846,6 @@ function initClient()
 			end
 		end
 	end
-
-	-- Citizen.CreateThread(function()
-	-- 	while true do
-	-- 		Wait(1)
-	-- 		if isTalking and Config.talkSync then
-	-- 			SetControlNormal(0, 249, 1.0);
-	-- 		end
-	-- 	end
-	-- end)
 
 	function Radio:Toggle(toggle)
 		local playerPed = PlayerPedId()
@@ -834,8 +960,36 @@ function initClient()
 			SendNotification(data.message)
 		end
 
-		if data.type == 'panic' and data.status then
-			TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+		if data.type == 'panic' then
+			if data.status then
+				if Config.autoPttOnPanic then
+					if Config.autoPttOnPanic.enabled then
+						Radio:Talking(true)
+						SendNUIMessage({
+							type = 'ptt',
+							state = true
+						})
+						Citizen.SetTimeout(Config.autoPttOnPanic.duration * 1000, function()
+							SendNUIMessage({
+								type = 'ptt',
+								state = false
+							})
+							Radio:Talking(false)
+						end)
+					end
+				end
+				TriggerServerEvent('SonoranCAD::callcommands:SendPanicApi')
+			else
+				if Config.autoPttOnPanic then
+					if Config.autoPttOnPanic.enabled then
+						SendNUIMessage({
+							type = 'ptt',
+							state = false
+						})
+						Radio:Talking(false)
+					end
+				end
+			end
 		end
 
 		if data.type == 'emergencyCallStatus' then
@@ -894,12 +1048,12 @@ function initClient()
 			print('setting current frame', frame)
 		end
 
-		if data.type == 'chatterInit' then
-			chatterForceUpdate() -- force a resend of important chatter info
+		if data.type == 'saveSkinConfig' then
+			TriggerServerEvent('SonoranRadio::SaveSkinConfig', data.configPath, data.config)
 		end
 
-		if data.type == 'setChatterConfig' then
-			setScannerProfiles(data.config.profiles, data.config.defaultProfileId)
+		if data.type == 'chatterInit' then
+			chatterForceUpdate() -- force a resend of important chatter info
 		end
 
 		if data.type == 'toggle_background_audio_confirm' then
@@ -939,15 +1093,18 @@ function initClient()
 		Radio:Destroy()
 	end)
 
-	local PlayerDead = false
+	PlayerDead = false
 	local RadioLastState = nil
 
 	RegisterNetEvent('SonoranRadio::PlayerDeath', function()
 		PlayerDead = true
 		if Config.disableRadioOnDeath then
 			if Radio.On then
+				local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
+				TriggerEvent('SonoranRadio::API:Talking', false, inVeh)
 				Radio.Enabled = false
 				Radio:Toggle(false)
+				isTalking = false
 				SendNUIMessage({
 					type = 'setVisible',
 					visibility = false
@@ -1016,7 +1173,7 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
-		frame = frame or 'default'
+		frame = frame or Config.defaultSkinId or 'default'
 
 		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
 			TriggerEvent('chat:addMessage', {
@@ -1091,6 +1248,24 @@ function initClient()
 			critError = false
 		end
 	end)
+	RegisterNetEvent('SonoranRadio::DisplayError', function(msg)
+		TriggerEvent('chat:addMessage', {
+			color = {255, 0, 0},
+			args = {
+				'Sonoran Radio',
+				'Error: '..(msg or 'unknown error')
+			}
+		})
+	end)
+	RegisterNetEvent('SonoranRadio::DisplayInfo', function(msg)
+		TriggerEvent('chat:addMessage', {
+			color = {255, 0, 0},
+			args = {
+				'Sonoran Radio',
+				'Info: '..(msg or 'no message?')
+			}
+		})
+	end)
 
 	RegisterNetEvent('QBCore:Client:OnJobUpdate', function(_)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
@@ -1114,15 +1289,18 @@ function initClient()
 	local state_lxsiren = 0
 	local state_pwrcall = 0
 	local state_airmanu = 0
+	local lastVeh = 0
+	local lastNetId = nil
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
+				print('lvc payload', data)
 				data = json.decode(data)
-				state_lxsiren = data.state_lxsiren
-				state_pwrcall = data.state_pwrcall
-				state_airmanu = data.state_airmanu
+				state_lxsiren = data.state_lxsiren or 0
+				state_pwrcall = data.state_pwrcall or 0
+				state_airmanu = data.state_airmanu or 0
 				if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 					SendNUIMessage({
 						type = 'siren_toggle',
@@ -1164,46 +1342,40 @@ function initClient()
 				end
 			end)
 		else
-			while true and not lvcStarted do
-				if IsVehicleSirenOn(GetVehiclePedIsIn(PlayerPedId(), false)) then
-					SendNUIMessage({
-						type = 'siren_toggle',
-						state = true
-					})
-					local ped = PlayerPedId()
-					local veh = GetVehiclePedIsIn(ped, false)
+			while not lvcStarted do
+				local ped = PlayerPedId()
+				local veh = GetVehiclePedIsIn(ped, false)
+				local isDriver = (veh and veh ~= 0) and (GetPedInVehicleSeat(veh, -1) == ped)
 
-					-- Only proceed if you're actually in a vehicle
-					if veh and veh ~= 0 then
-					-- Optionally check it really is networked
-						if NetworkGetEntityIsNetworked(veh) then
-							local netId = NetworkGetNetworkIdFromEntity(veh)
-							if netId and netId ~= 0 then
-							-- safe to send to server now
-							TriggerServerEvent('sonoranradio:syncSirenState', true, netId)
-							end
-						end
+				-- VEHICLE CHANGE / EXIT DETECTION (driver only)
+				if veh ~= lastVeh then
+					-- if we just left being the driver, send siren-off for old vehicle
+					if lastVeh and lastVeh ~= 0 and lastNetId then
+						TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
 					end
-				else
-					SendNUIMessage({
-						type = 'siren_toggle',
-						state = false
-					})
-					local ped = PlayerPedId()
-					local veh = GetVehiclePedIsIn(ped, false)
-					-- Only proceed if you're actually in a vehicle
-					if veh and veh ~= 0 then
-					-- Optionally check it really is networked
-						if NetworkGetEntityIsNetworked(veh) then
-							local netId = NetworkGetNetworkIdFromEntity(veh)
-							if netId and netId ~= 0 then
-							-- safe to send to server now
-							TriggerServerEvent('sonoranradio:syncSirenState', false, netId)
-							end
-						end
+
+					-- update to new vehicle (or none)
+					lastVeh = veh
+
+					if isDriver and NetworkGetEntityIsNetworked(veh) then
+						lastNetId = NetworkGetNetworkIdFromEntity(veh)
+					else
+						lastNetId = nil
 					end
 				end
-				Citizen.Wait(500)
+
+				-- ONLY WHEN YOU’RE DRIVER, SYNC SIREN
+				if isDriver and lastNetId then
+					local sirenOn = IsVehicleSirenOn(veh)
+					SendNUIMessage({ type = 'siren_toggle', state = sirenOn })
+					TriggerServerEvent('sonoranradio:syncSirenState', sirenOn, lastNetId)
+				else
+					-- not driver or not in vehicle → force NUI off
+					SendNUIMessage({ type = 'siren_toggle', state = false })
+					TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
+				end
+
+				Citizen.Wait(100)
 			end
 		end
 	end)
@@ -1215,9 +1387,9 @@ function initClient()
 				AddEventHandler('lvc:UpdateThirdParty', function(data)
 					data = json.encode(data)
 					data = json.decode(data)
-					state_lxsiren = data.state_lxsiren
-					state_pwrcall = data.state_pwrcall
-					state_airmanu = data.state_airmanu
+					state_lxsiren = data.state_lxsiren or 0
+					state_pwrcall = data.state_pwrcall or 0
+					state_airmanu = data.state_airmanu or 0
 					if state_lxsiren > 0 or state_pwrcall > 0 or state_airmanu > 0 then
 						SendNUIMessage({
 							type = 'siren_toggle',
@@ -1351,7 +1523,11 @@ function initClient()
 			if isOn and vehNetId then
 				-- store by vehicle network‐ID
 				remoteSirens[vehNetId] = true
-			else
+			elseif vehNetId then
+				if not remoteSirens[vehNetId] then
+					-- if the vehicle is not in the table, we don't need to do anything
+					return
+				end
 				-- remove by the same network‐ID
 				remoteSirens[vehNetId] = nil
 			end
@@ -1411,6 +1587,9 @@ function initClient()
 								if dist <= MAX_DIST then
 									table.insert(distances, math.max(0, 1 - (dist / MAX_DIST)))
 								end
+							else
+								-- If the vehicle is not valid anymore, remove it from the remoteSirens table
+								remoteSirens[key] = nil
 							end
 						else
 							-- remove the entry if the vehicle is not valid anymore
@@ -1563,24 +1742,12 @@ local function sendConsole(level, color, message)
 	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
 		print(msg)
 	end
-	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
-		table.insert(ErrorBuffer, 1, msg)
-	end
-	if level == 'DEBUG' and IsDuplicityVersion() then
-		if #DebugBuffer > 50 then
-			table.remove(DebugBuffer)
-		end
-		table.insert(DebugBuffer, 1, msg)
-	else
-		if not IsDuplicityVersion() then
-			if #MessageBuffer > 10 then
-				table.remove(MessageBuffer)
-			end
-			table.insert(MessageBuffer, 1, msg)
-		end
-	end
 end
 
 function errorLog(message)
 	sendConsole('ERROR', '^1', message)
+end
+
+function warnLog(message)
+	sendConsole('WARNING', '^3', message)
 end

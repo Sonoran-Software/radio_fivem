@@ -1,5 +1,5 @@
 <template>
-    <div class="appcontainer" :class="{ debug, help }">
+    <div class="appcontainer" :class="{ debug: debug.enabled, help }">
         <div class="top-instructions">
             <div v-if="dragMode">
                 Click and drag to move the components.
@@ -16,15 +16,69 @@
                         {{ peer.name }}
                     </div>
                 </div>
-                <div v-else style="color:orange" >Waiting for dispatcher...</div>
+                <div v-else style="color:orange">Waiting for dispatcher...</div>
             </div>
         </div>
 
-        <div v-if="debug && activeFrames">
-            <div style="display:inline-block" class="label-on-top">
-                <code>path = {{ nudgePath }}</code>
-                <pre>{{ nudgeProp }}</pre>
+        <!-- SKIN DEBUG MENU -->
+        <div
+            v-if="debug.enabled && debug.skinMenuExpanded"
+            class="label-on-top skin-debug-menu"
+            @keydown.prevent
+            @keyup.prevent
+        >
+            <div style="display:flex;align-items:center;gap:8px">
+                <h1>Sonoran Radio Skin Debug Menu</h1>
+                <button @click="debug.skinMenuExpanded = false">&times;</button>
             </div>
+            <!-- Options for changing/selecting the frame to modify -->
+            <div>
+                <h2>Choose Skin/Frame</h2>
+                <select :value="curSkin?.id" @change="selectSkin($event.target.value)">
+                    <option disabled value="">Select Skin</option>
+                    <option v-for="skinId in selectSkinIds" :key="skinId" :value="skinId">
+                        {{ skinId }}
+                    </option>
+                </select>
+                <select v-model="debug.frameIndex">
+                    <option disabled value="">Select Frame</option>
+                    <option v-for="(frame, i) in (curSkin?.frames ?? [])" :key="frameKey(frame)" :value="i">
+                        {{ frame.type }}
+                    </option>
+                </select>
+                <label>
+                    <input v-model="dragMode" type="checkbox" />
+                    <span>Move/Resize</span>
+                </label>
+            </div>
+            <!-- Options for selecting a frame component, then moving it -->
+            <div style="display:flex;gap:10px">
+                <div>
+                    <h2>Choose Component</h2>
+                    <label v-for="fc in debugFrameComponentOptions" :key="fc.path.join('-')" class="radio-option">
+                        <input v-model="debug.frameComponentPath" type="radio" :value="fc.path" />
+                        <span>{{ fc.label }}</span>
+                    </label>
+                </div>
+                <div>
+                    <h2>Move Component</h2>
+                    <adjust-buttons @action="debugMoveFrameComponent" />
+                    <code><b>TIP</b>: Use arrow keys</code>
+
+                    <h2>Resize Component</h2>
+                    <adjust-buttons @action="debugResizeFrameComponent" />
+                    <code><b>TIP</b>: Use CTRL + arrow keys</code>
+                </div>
+            </div>
+            <div>
+                <h2>Component Properties</h2>
+                <pre v-if="debugFrameComponent">{{ debugFrameComponent }}</pre>
+                <pre v-else>invalid component</pre>
+                <button style="margin-top:10px" @click="debugSaveSkin">Save skin.json</button>
+            </div>
+        </div>
+        <div v-else-if="debug.enabled && activeFrames.length > 0" class="skin-debug-menu">
+            <button @click="debug.skinMenuExpanded = true" style="opacity:0.25">&#x2C5;</button>
         </div>
 
         <!-- radio iframe for emergency calls -->
@@ -46,36 +100,44 @@
             feature="chatter"
         />
 
-        <draggable-box v-for="frame in activeFrames" :key="frame.type" :drag-enabled="dragMode"
-            :value="positions[frame.key] || defaultPositions[frame.type]" @input="$set(positions, frame.key, $event)">
-            <div class="radio-body">
-                <skin-body-img v-if="frame.body" :body-skin="frame.body" />
+        <draggable-box
+            v-for="frame in activeFrames"
+            :key="frameKey(frame)"
+            class="radio-frame"
+            :drag-enabled="dragMode"
+            :value="positions[frameKey(frame)] || defaultPositions[frame.type]"
+            @input="$set(positions, frameKey(frame), $event)"
+        >
+            <skin-body-img v-if="frame.body" :skin-id="curSkin.id" :body-skin="frame.body" />
 
-                <skin-body-component v-if="frame.screen" :bounds="frame.screen"
-                    @click.middle="(nudgePath = [frame.type, 'screen'])">
-                    <primary-screen :on="radioPower">
-                        <standalone-frame
-                            v-if="radioPower && standaloneServerId && !dragMode"
-                            ref="standaloneFrame"
-                            :server-id="standaloneServerId"
-                            :url="standaloneUrl"
-                            :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
-                            iframe-persistent
-                        />
-                    </primary-screen>
-                </skin-body-component>
+            <skin-body-component v-if="frame.screen" :bounds="frame.screen">
+                <primary-screen :on="radioPower">
+                    <standalone-frame
+                        v-if="radioPower && standaloneServerId && !dragMode"
+                        ref="standaloneFrame"
+                        :server-id="standaloneServerId"
+                        :url="standaloneUrl"
+                        :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
+                        iframe-persistent
+                    />
+                </primary-screen>
+            </skin-body-component>
 
-                <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
-                    <mini-screen v-if="radioPower" />
-                </skin-body-component>
+            <skin-body-component v-if="frame.miniScreen" :bounds="frame.miniScreen">
+                <mini-screen v-if="radioPower" />
+            </skin-body-component>
+            <skin-body-component v-if="frame.scannerScreen" :bounds="frame.scannerScreen">
+                <scanner-screen v-if="scannerMenu.state && scannerMenu.state.powered" :state="scannerMenu.state" />
+            </skin-body-component>
 
-                <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
-                    <button class="radio-control" v-on="ctrl.events"
-                        @click.middle="nudgePath = [frame.type, 'controls', i]"></button>
-                    <code v-if="debug || help" class="label-on-top"
-                        :class="{ 'hack': ctrl.action === 'next_preset' }">{{ ctrl.action }}</code>
-                </skin-body-component>
-            </div>
+            <skin-body-component v-for="(ctrl, i) in frame.controls" :key="i" :bounds="ctrl">
+                <button class="radio-control" v-on="ctrl.events"></button>
+                <code
+                    v-if="debug.enabled || help"
+                    class="label-on-top"
+                    :class="{ 'hack': ['next', 'next_preset', 'scanner_next'].includes(ctrl.action) }"
+                >{{ ctrl.action }}</code>
+            </skin-body-component>
         </draggable-box>
     </div>
 </template>
@@ -84,25 +146,35 @@
 import SkinBodyImg from './components/skin/BodyImage.vue'
 import SkinBodyComponent from './components/skin/BodyComp.vue'
 import DraggableBox from './components/util/DraggableBox.vue'
+import AdjustButtons from './components/util/AdjustButtons.vue'
 import MiniScreen from './components/MiniScreen.vue'
+import ScannerScreen from './components/ScannerScreen.vue'
 import Screen from './components/Screen.vue'
 import StandaloneFrame, {
     getFrameEl as getRadioFrameEl,
     removePersistentFrame as removeRadioFrame
 } from './components/StandaloneFrame.vue'
+import scannerPng from './assets/scanner.png'
 
 export default {
     components: {
         SkinBodyImg,
         SkinBodyComponent,
         DraggableBox,
+        AdjustButtons,
         MiniScreen,
+        ScannerScreen,
         PrimaryScreen: Screen,
         StandaloneFrame,
     },
     data: () => {
         return {
-            debug: false,
+            debug: {
+                enabled: false,
+                skinMenuExpanded: false,
+                frameIndex: 0,
+                frameComponentPath: ['screen']
+            },
             help: false,
             standaloneServerId: null,
             standaloneRoomId: null,
@@ -114,14 +186,15 @@ export default {
             radioPower: false,
             escapeMode: localStorage.getItem("escape_mode") || "keep",
             nextPrevMode: 'preset',
-            inVehicle: false,
+            inVehicleClass: -1,
             towerQuality: 1.0,
 
             dragMode: false,
             defaultPositions: {
                 portable: [0, 0, 16],
                 vehicle: [0, 0, 16],
-                hud: [400, 0, 16]
+                hud: [400, 0, 16],
+                scanner: [0, 0, 16],
             },
             positions: {},
 
@@ -134,13 +207,17 @@ export default {
                 cmd: '911',
                 showHelpText: true,
             },
+            scannerMenu: {
+                open: false,
+                id: null,
+                state: null,
+            },
 
             // promises of queried skin data (so we don't query twice)
             // Record<string, Promise<SkinData> | SkinData>
             skinCache: {},
             selectSkinIds: [], // list of skin ids that can be selected
             curSkin: null,
-            nudgePath: null,
         }
     },
     created() {
@@ -179,11 +256,24 @@ export default {
         radioVisible() {
             return this.showRadio || (this.escapeMode === 'transmit_only' && this.$store.state.talking);
         },
-        mobileRadioVisible() {
-            return this.radioVisible && this.inVehicle;
+        activeRadioFrame() {
+            if (!this.curSkin || !this.radioVisible) return null;
+
+            if (this.inVehicleClass !== -1) {
+                // we are in a vehicle, find the appropriate vehicle frame for this veh class
+                const vehFrame = this.curSkin.frames.find(frame =>
+                    frame.type === 'vehicle' &&
+                    (!Array.isArray(frame.vehicleClasses) || frame.vehicleClasses.includes(this.inVehicleClass))
+                );
+                if (vehFrame) return vehFrame;
+                // fallback to portable frame if vehFrame does not exist
+            }
+
+            // find portable frame, or return first frame if not found
+            return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
         activeFrames() {
-            if (!this.curSkin) return; // no skin for the frames
+            if (!this.curSkin) return []; // no skin for the frames
 
             const getFrame = (type) => {
                 const find = this.curSkin.frames.find(x => x.type === type)
@@ -193,9 +283,16 @@ export default {
             };
 
             let frames = [];
-            if (this.mobileRadioVisible) frames.push(getFrame('vehicle'));
-            else if (this.radioVisible) frames.push(getFrame('portable'));
-            if (this.showTopRadio) frames.push(getFrame('hud'));
+            if (this.debug.skinMenuExpanded) {
+                // debug menu on, only show the currently debugged frame
+                const frame = this.curSkin.frames[this.debug.frameIndex];
+                if (frame) frames.push(frame);
+            } else {
+                // normal operation frame checks
+                if (this.scannerFrame) frames.push(this.scannerFrame);
+                if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
+                if (this.showTopRadio) frames.push(getFrame('hud'));
+            }
 
             // dedupe frames by type
             frames = frames.filter((frame, i) => frames.findIndex((x) => x.type === frame.type) === i);
@@ -204,12 +301,21 @@ export default {
                 'power': this.buttonPower,
                 'next': this.buttonNext,
                 'prev': this.buttonPrev,
-                // below two are only included for legacy support
-                'next_preset': this.buttonNext,
-                'prev_preset': this.buttonPrev,
+                'next_group': this.nextGroup,
+                'prev_group': this.prevGroup,
+                'vol_up': this.buttonVolUp,
+                'vol_down': this.buttonVolDown,
                 'panic': this.buttonPanic,
                 'home': this.refreshScreen,
                 'hide': () => this.escapeRadio(true),
+
+                // below two are only included for legacy support
+                'next_preset': this.buttonNext,
+                'prev_preset': this.buttonPrev,
+
+                'scanner_power': this.scannerPower,
+                'scanner_next': () => this.scannerAdvChannel(1),
+                'scanner_prev': () => this.scannerAdvChannel(-1),
             };
             return frames.map((frame) => ({
                 ...frame,
@@ -222,13 +328,22 @@ export default {
                 })),
             }));
         },
-        nudgeProp() {
-            if (!this.nudgePath) return null;
+        debugFrameComponentOptions() {
+            const frame = this.curSkin?.frames[this.debug.frameIndex];
+            if (!frame) return [];
 
-            const [frameType, ...path] = this.nudgePath;
-            let prop = this.curSkin.frames.find(x => x.type === frameType);
-            for (const key of path) prop = prop[key];
-
+            const components = [];
+            if (frame.screen) components.push({ path: ['screen'], label: 'screen' });
+            if (frame.miniScreen) components.push({ path: ['miniScreen'], label: 'miniScreen' })
+            frame.controls.forEach((control, i) =>
+                components.push({ path: ['controls', i], label: `controls,${control.action}` })
+            );
+            return components;
+        },
+        debugFrameComponent() {
+            let prop = this.curSkin?.frames[this.debug.frameIndex];
+            if (!prop) return null;
+            for (const key of this.debug.frameComponentPath) prop = prop[key];
             return prop;
         },
         skinNames() {
@@ -263,8 +378,55 @@ export default {
         internalEmergencyCallDispatchers() {
             return this.emergencyCall.peers.map(x => x.name);
         },
+        scannerFrame() {
+            if (!this.scannerMenu.open) return null;
+            const imageUrl = new URL(scannerPng, window.location.href);
+            const frame = {
+                type: 'scanner',
+                key: 'scanner',
+                body: { image: imageUrl.toString(),  width: 25 },
+                controls: [
+                    {
+                        action: 'scanner_power',
+                        bottom: 5.25,
+                        right: 2.75,
+                        width: 1.5,
+                        height: 1.5,
+                    },
+                    {
+                        action: 'scanner_prev',
+                        bottom: 7.5,
+                        right: 6.5,
+                        width: 2.5,
+                        height: 5.5,
+                    },
+                    {
+                        action: 'scanner_next',
+                        bottom: 7.5,
+                        right: 4,
+                        width: 2.5,
+                        height: 5.5,
+                    },
+                ],
+                scannerScreen: {
+                    top: 6.25,
+                    height: 4.5,
+                    left: 4.5,
+                    right: 4.5,
+                    zIndex: 25,
+                },
+            };
+            return frame;
+        }
     },
     watch: {
+        dragMode(newMode) {
+            if (newMode) return; // only save when dragMode is disabled
+            // save the positions by sending them back to the client
+            this.postClient({
+                type: 'setUiPositions', data: this.positions
+            });
+        },
         skinNames() {
             this.updateAvailableSkins();
         },
@@ -307,14 +469,10 @@ export default {
                     this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
                     this.chatterFeatureEnabled = event.chatter;
-                    this.debug = event.debug;
+                    this.debug.enabled = event.debug;
                     break;
                 case 'power':
-                    this.radioPower = event.power !== undefined ? !!event.power : !this.radioPower;
-                    this.postClient({
-                        type: 'power',
-                        power: this.radioPower
-                    });
+                    if (event.power !== this.radioPower) this.buttonPower();
                     break;
                 case 'setVisible':
                     this.showRadio = event.visibility;
@@ -324,9 +482,14 @@ export default {
                     localStorage.clear();
                     this.positions = {};
                     this.escapeMode = 'keep';
-                    this.selectSkin('default');
+                    this.selectSkin(event.skin || 'default');
                 case 'refresh':
                     this.refreshScreen();
+                    break;
+                case 'openScanner':
+                    this.scannerMenu.open = true;
+                    this.scannerMenu.id = event.id;
+                    this.scannerMenu.state = event.state;
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
@@ -371,10 +534,10 @@ export default {
                             this.prevGroup();
                             break;
                         case 'vol_up':
-                            this.postRadioFrame({ type: 'notch_vol_up' });
+                            this.buttonVolUp();
                             break;
                         case 'vol_down':
-                            this.postRadioFrame({ type: 'notch_vol_down' });
+                            this.buttonVolDown();
                             break;
                         case 'power':
                             this.buttonPower();
@@ -395,7 +558,7 @@ export default {
                     this.$store.commit('setUnitStatus', event.status);
                     break;
                 case 'inVehicle':
-                    this.inVehicle = event.vehState;
+                    this.inVehicleClass = event.vehClass;
                     break;
                 case 'noRadioItem':
                     if (this.radioPower) this.buttonPower();
@@ -462,6 +625,12 @@ export default {
                         volume: event.volume,
                     });
                     break;
+                case 'broadcastLocation':
+                    this.postRadioFrame({
+                        type: 'broadcast_location',
+                        ...event.loc,
+                    })
+                    break;
             }
         },
 
@@ -527,7 +696,8 @@ export default {
                 case 'radio_connected':
                     this.postClient({ type: 'chatterInit' });
                 case 'config_updated':
-                    this.postClient({ type: 'setChatterConfig', config: event.config });
+                    this.$store.commit('setChatterConfig', event.config);
+                    this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
                     break;
             }
         },
@@ -554,29 +724,27 @@ export default {
         },
 
         onKeyPressed(e, type) {
-            if (type === 'keyup') {
-                switch (e.code) {
-                    case "Escape":
-                        if (this.dragMode) {
-                            this.dragMode = false;
-                            // save the positions by sending them back to the client
-                            this.postClient({
-                                type: 'setUiPositions', data: this.positions
-                            });
-                        } else {
-                            this.escapeRadio(false);
-                        }
-                        break;
-                    case 'ArrowUp':
-                    case 'ArrowDown':
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        this.debug && this.debugNudgeSkinProperty(e);
-                        break;
-                }
+            if (type === 'keyup' && e.code === 'Escape') {
+                if (this.dragMode)
+                    this.dragMode = false;
+                else
+                    this.escapeRadio(false);
+            } else if (type === 'keydown' && this.debug.enabled) {
+                const dirs = {
+                    'ArrowUp': 'up',
+                    'ArrowDown': 'down',
+                    'ArrowLeft': 'left',
+                    'ArrowRight': 'right'
+                };
+                const dir = dirs[e.code];
+                if (!dir) { /* pass */ }
+                else if (!e.ctrlKey)
+                    this.debugMoveFrameComponent(dir);
+                else
+                    this.debugResizeFrameComponent(dir);
             }
 
-            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
+            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.postRadioFrame({ type: 'ptt', state: type === 'keydown' });
@@ -584,17 +752,12 @@ export default {
         },
 
         async querySkinNoCache(skinId) {
-            const BASE = `https://cfx-nui-${GetParentResourceName()}/skins`;
-            const res = await fetch(`${BASE}/${skinId}/skin.json`)
+            const url = new URL(`https://cfx-nui-${GetParentResourceName()}/skins/${skinId}/skin.json`);
+            const res = await fetch(url);
             const skinData = await res.json()
 
             skinData.id = skinId;
-            for (const frame of skinData.frames) {
-                // add the base url to the image paths
-                if (frame.body?.image)
-                    frame.body.image = `${BASE}/${skinId}/${frame.body.image}`;
-                frame.key = `${skinId}-${frame.type}`;
-            }
+            skinData.configPath = url.pathname;
             return skinData;
         },
         querySkin(skinId) {
@@ -620,45 +783,6 @@ export default {
             this.querySkin(skinId).then(skin => this.curSkin = skin);
             if (!temporary) this.postClient({ type: 'currentSkinUpdated', skin: skinId });
         },
-        debugNudgeSkinProperty({ code: direction, shiftKey }) {
-            if (!this.nudgeProp) return;
-
-            const NUDGE = 1 / 8;
-            let wNudge = 0;
-            let hNudge = 0;
-            if (direction === 'ArrowUp') hNudge = -NUDGE;
-            else if (direction === 'ArrowDown') hNudge = NUDGE;
-            else if (direction === 'ArrowLeft') wNudge = -NUDGE;
-            else if (direction === 'ArrowRight') wNudge = NUDGE;
-
-            // even though this is a computed property, it pulls directly from
-            // the data so it's fine to mutate it
-            const prop = this.nudgeProp;
-            if (shiftKey) {
-                if (prop.height !== undefined)
-                    this.$set(prop, 'height', prop.height - hNudge);
-                else if (prop.bottom !== undefined)
-                    this.$set(prop, 'bottom', prop.bottom + hNudge);
-                else if (prop.top !== undefined)
-                    this.$set(prop, 'top', prop.top - hNudge);
-
-                if (prop.width !== undefined)
-                    this.$set(prop, 'width', prop.width + wNudge);
-                else if (prop.right !== undefined)
-                    this.$set(prop, 'right', prop.right - wNudge);
-                else if (prop.left !== undefined)
-                    this.$set(prop, 'left', prop.left + wNudge);
-            } else {
-                if (prop.top !== undefined)
-                    this.$set(prop, 'top', prop.top + hNudge);
-                if (prop.bottom !== undefined)
-                    this.$set(prop, 'bottom', prop.bottom - hNudge);
-                if (prop.left !== undefined)
-                    this.$set(prop, 'left', prop.left + wNudge);
-                if (prop.right !== undefined)
-                    this.$set(prop, 'right', prop.right - wNudge);
-            }
-        },
         selectSkinOptions() {
             // NOTE: this cannot be a computed property because of this.extractSkin
             const skinOptions = [];
@@ -674,10 +798,73 @@ export default {
             }
             return skinOptions;
         },
+        frameKey(frame) {
+            return [this.curSkin.id, frame.type, ...(frame.vehicleClasses ?? [])].join('-');
+        },
+        debugGetNudge(dir) {
+            const NUDGE = 1 / 8;
+            let w = 0;
+            let h = 0;
+            if (dir === 'up') h = -NUDGE;
+            else if (dir === 'down') h = NUDGE;
+            else if (dir === 'left') w = -NUDGE;
+            else if (dir === 'right') w = NUDGE;
+            return { w, h };
+        },
+        debugMoveFrameComponent(dir) {
+            const prop = this.debugFrameComponent;
+            if (!prop) return;
+
+            const {w, h} = this.debugGetNudge(dir);
+            if (prop.top !== undefined)
+                this.$set(prop, 'top', prop.top + h);
+            if (prop.bottom !== undefined)
+                this.$set(prop, 'bottom', prop.bottom - h);
+            if (prop.left !== undefined)
+                this.$set(prop, 'left', prop.left + w);
+            if (prop.right !== undefined)
+                this.$set(prop, 'right', prop.right - w);
+        },
+        debugResizeFrameComponent(dir) {
+            const prop = this.debugFrameComponent;
+            if (!prop) return;
+
+            const {w, h} = this.debugGetNudge(dir);
+            if (prop.height !== undefined)
+                this.$set(prop, 'height', prop.height - h);
+            else if (prop.bottom !== undefined)
+                this.$set(prop, 'bottom', prop.bottom + h);
+            else if (prop.top !== undefined)
+                this.$set(prop, 'top', prop.top - h);
+
+            if (prop.width !== undefined)
+                this.$set(prop, 'width', prop.width + w);
+            else if (prop.right !== undefined)
+                this.$set(prop, 'right', prop.right - w);
+            else if (prop.left !== undefined)
+                this.$set(prop, 'left', prop.left + w);
+        },
+        debugSaveSkin() {
+            const configPath = this.curSkin.configPath;
+            // shallow clone curSkin to delete properties
+            const skinJson = {...this.curSkin};
+            delete skinJson['id'];
+            delete skinJson['configPath'];
+            this.postClient({
+                type: 'saveSkinConfig',
+                configPath: configPath.substring(1), // get rid of trailing slash
+                config: JSON.stringify(skinJson, null, 2)
+            });
+        },
 
         escapeRadio(hide) {
             this.postClient({ type: 'escape' });
             if (hide || this.escapeMode !== 'keep') this.showRadio = false;
+            if (hide && this.debug.skinMenuExpanded) this.debug.skinMenuExpanded = false;
+            if (this.scannerMenu.open) {
+                this.scannerMenu.open = false;
+                this.postClient({ type: 'saveScanner', id: this.scannerMenu.id }, 'scanners');
+            }
 
             // notify player on how to hide radio if this is the first time
             const LS_KEY = 'hide_portable_hint_seen';
@@ -714,6 +901,12 @@ export default {
         },
         prevGroup() {
             this.postRadioFrame({type: 'group_prev'});
+        },
+        buttonVolUp() {
+            this.postRadioFrame({ type: 'notch_vol_up' });
+        },
+        buttonVolDown() {
+            this.postRadioFrame({ type: 'notch_vol_down' });
         },
         updateAvailableSkins() {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
@@ -789,6 +982,21 @@ export default {
                 removeRadioFrame('radio');
             });
         },
+        scannerPower() {
+            if (!this.scannerMenu.state) this.scannerMenu.state = {};
+            this.scannerMenu.state.powered = !this.scannerMenu.state.powered;
+            this.scannerMenu.state.channelId = this.$store.getters.chatterDefaultProfileId;
+            this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
+        },
+        scannerAdvChannel(offset) {
+            const profiles = this.$store.getters.chatterProfilesSorted.filter(x => x.visibility === 'public');
+            const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
+            const idx = profiles.findIndex(x => x.id === chId) || 0;
+
+            const nextIdx = (idx + offset + profiles.length) % profiles.length;
+            this.scannerMenu.state.channelId = profiles[nextIdx].id;
+            this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
+        },
         setEmergencyCall(enabled, displayName, cmd, showHelpText) {
             const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
             this.emergencyCall.open = enable;
@@ -849,10 +1057,6 @@ export default {
     color: white;
 }
 
-.radio-body {
-    position: relative;
-}
-
 .radio-control {
     outline: none;
     border: none;
@@ -874,7 +1078,16 @@ export default {
     /* label-on-top uses pixel values */
 }
 
-.debug .radio-body {
+.skin-debug-menu {
+    display: inline-block;
+    padding: 1rem;
+}
+.skin-debug-menu .radio-option {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.debug .radio-frame {
     outline: 3px solid red;
 }
 

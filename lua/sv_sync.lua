@@ -84,11 +84,13 @@ RegisterNetEvent('SonoranRadio::SyncAcePerms', function(accId, profiles, authori
 	local src = source
 	if src == nil then return end -- don't allow from server
 	if not Config.acePermSync then return end -- feature disabled
-	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.autoapprove') then return end -- access denied
+	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then return end -- access denied
 
 	if authorize then
-		authorizeRadioUser(accId)
-		TriggerClientEvent('SonoranRadio::RefreshScreen', src)
+		if IsPlayerAceAllowed(src, 'sonoranradio.autoapprove') then
+			authorizeRadioUser(accId)
+			TriggerClientEvent('SonoranRadio::RefreshScreen', src)
+		end
 	else
 		local perm = calculateRadioPerm(src)
 		local profilePerms = calculateRadioProfilePerms(src, profiles or {})

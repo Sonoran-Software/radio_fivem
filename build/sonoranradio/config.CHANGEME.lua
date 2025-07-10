@@ -4,10 +4,12 @@ Config.comId = 'YOUR COMMUNITY ID' -- IMPORTANT set your Community ID here! http
 Config.apiKey = 'YOUR API KEY' -- IMPORTANT set your API Key here! https://sonoran.link/radioconfig
 Config.radioUrl = 'https://sonoranradio.com' -- DO NOT CHANGE FROM 'https://sonoranradio.com' UNLESS YOU KNOW WHAT YOU ARE DOING (Developer)
 Config.apiUrl = 'https://api.sonoranradio.com/' -- DO NOT CHANGE FROM 'https://api.sonoranradio.com/' UNLESS YOU KNOW WHAT YOU ARE DOING (Developer)
+Config.overridePushUrl = '' -- Override the automatic resolution of a pushUrl -- change to 'http://ip:port/sonoranradio/events' ONLY IF you receive ERR-101
 Config.debug = false
 Config.allowUpdateWithPlayers = true
 Config.enableCanary = false
 Config.allowAutoUpdate = true
+Config.defaultSkinId = nil -- Configure the default skin for the radio (e.g. 'default', 'hi-vis')
 Config.chatter = true -- Hear chatter from other players if their radio is on
 Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
@@ -34,7 +36,7 @@ Config.ScannerItem = {
 }
 Config.disableRadioOnDeath = true -- Disables radio when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
-Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore
+Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore | qbox
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
 Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to hide physical server racks
@@ -45,7 +47,10 @@ Config.showEmergencyCallHelp = true -- Show emergency call help text at top of s
 Config.luxartResourceName = 'lvc' -- Resource name for Luxart Vehicle Control (Required for siren control)
 Config.phoneResource = 'none' -- Which phone resource to utilize for 911 calls | OPTIONS: none (no phone resource) | lb-phone (https://lbscripts.com/)
 Config.enableBackgroundAudio = true -- Enable background audio for the radio when transmitting
-
+Config.autoPttOnPanic = {
+	enabled = true, -- Enable automatic PTT when panic button is pressed
+	duration = 15 -- Duration in seconds to hold PTT when panic button is pressed
+}
 -- Notification Settings --
 Config.notifications = {
 	type = 'native', -- Available options: native, pNotify, okokNotify, or custom
@@ -75,7 +80,15 @@ Config.keybinds = {
 	['nextGroup'] = '',
 	['prevGroup'] = '',
 	['volUp'] = '',
-	['volDown'] = ''
+	['volDown'] = '',
+
+	['toggleAutoCallouts'] = '',
+}
+
+-- Have the radio automatically callout pursuit locations (when toggled with the keybind)
+Config.autoCallouts = {
+	enabled = true, -- Whether or not this feature is enabled
+	speedUnit = 'mph', -- mph | kmh | none -- The unit of speed provided with the callout
 }
 
 -- Radio Item Settings --

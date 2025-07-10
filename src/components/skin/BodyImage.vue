@@ -1,5 +1,5 @@
 <template>
-  <img v-if="bodySkin" :src="bodySkin.image" class="body-image" :style="imgStyle" draggable="false" />
+  <img v-if="bodySkin" :src="imgUrl" class="body-image" :style="imgStyle" draggable="false" />
   <div v-else :style="imgStyle"></div>
 </template>
 
@@ -8,6 +8,7 @@ import { unitToSize } from "./util";
 
 export default {
   props: {
+    skinId: { type: String },
     bodySkin: { type: Object },
   },
   computed: {
@@ -15,6 +16,14 @@ export default {
       const width = unitToSize(this.bodySkin?.width);
       const height = unitToSize(this.bodySkin?.height);
       return { width, height };
+    },
+    imgUrl() {
+      if (/^https?:\/\//.test(this.bodySkin.image)) return this.bodySkin.image;
+      const url = new URL(
+        `/skins/${this.skinId}/${this.bodySkin.image}`,
+        `https://cfx-nui-${GetParentResourceName()}`
+      );
+      return url.toString();
     },
   },
 };

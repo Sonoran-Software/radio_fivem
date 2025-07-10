@@ -59,6 +59,82 @@
     },
     {
       "type": "vehicle",
+      "vehicleClasses": [15, 16],
+      "body": {
+        "image": "radio-aircraft.png",
+        "width": 32
+      },
+      "controls": [
+        {
+          "action": "power",
+          "top": 1.125,
+          "left": 23.775,
+          "width": 3.875,
+          "height": 2
+        },
+        {
+          "action": "prev",
+          "top": 19.875,
+          "right": 23.75,
+          "width": 3,
+          "height": 1.75
+        },
+        {
+          "action": "next",
+          "top": 19.875,
+          "right": 19.875,
+          "width": 2.875,
+          "height": 2.125
+        },
+        {
+          "action": "vol_up",
+          "top": 22.375,
+          "right": 23.75,
+          "width": 3,
+          "height": 1.75
+        },
+        {
+          "action": "vol_down",
+          "top": 22.375,
+          "right": 19.875,
+          "width": 2.875,
+          "height": 1.75
+        },
+        {
+          "action": "hide",
+          "top": 1.375,
+          "right": 20.125,
+          "width": 3.25,
+          "height": 1.75
+        },
+        {
+          "action": "home",
+          "top": 1.25,
+          "right": 13.625,
+          "width": 3.5,
+          "height": 1.875
+        },
+        {
+          "action": "panic",
+          "top": 1.25,
+          "right": 24.625,
+          "width": 3.25,
+          "height": 1.875
+        }
+      ],
+      "screen": {
+        "top": 4.275,
+        "height": 13.7,
+        "left": 5,
+        "width": 21.95,
+        "zIndex": 5
+      }
+    },
+    {
+      "type": "vehicle",
+      "vehicleClasses": [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18, 19, 20
+      ],
       "body": { "image": "radio-mobile.png", "width": 50 },
       "controls": [
         {
