@@ -67,10 +67,11 @@ Config.notifications = {
 	end
 }
 
--- Default radio keybinds (these can be changed in GTA settings) --
+-- Default radio keybinds (these can be changed in GTA settings)                                                --
+-- See https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard (input parameter column) --
 Config.keybinds = {
 	['toggle'] = '',
-	['ptt'] = '\\',
+	['ptt'] = 'BACKSLASH',
 
 	['power'] = '',
 	['panic'] = '',
