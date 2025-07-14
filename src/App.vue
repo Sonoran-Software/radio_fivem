@@ -154,7 +154,7 @@ import StandaloneFrame, {
     getFrameEl as getRadioFrameEl,
     removePersistentFrame as removeRadioFrame
 } from './components/StandaloneFrame.vue'
-import scannerPng from './assets/scanner.png'
+import defaultScannerFrame from './assets/scannerFrame'
 
 export default {
     components: {
@@ -209,7 +209,7 @@ export default {
             },
             scannerMenu: {
                 open: false,
-                id: null,
+                id: 0,
                 state: null,
             },
 
@@ -272,6 +272,15 @@ export default {
             // find portable frame, or return first frame if not found
             return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
+        activeScannerFrame() {
+            if (!this.scannerMenu.open) return null;
+            if (this.curSkin) {
+                const frame = this.curSkin.frames.find(x => x.type === 'scanner');
+                if (frame) return frame;
+                // fallback to default scanner frame if not found
+            }
+            return defaultScannerFrame;
+        },
         activeFrames() {
             if (!this.curSkin) return []; // no skin for the frames
 
@@ -289,7 +298,7 @@ export default {
                 if (frame) frames.push(frame);
             } else {
                 // normal operation frame checks
-                if (this.scannerFrame) frames.push(this.scannerFrame);
+                if (this.activeScannerFrame) frames.push(this.activeScannerFrame);
                 if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
                 if (this.showTopRadio) frames.push(getFrame('hud'));
             }
@@ -377,46 +386,6 @@ export default {
         },
         internalEmergencyCallDispatchers() {
             return this.emergencyCall.peers.map(x => x.name);
-        },
-        scannerFrame() {
-            if (!this.scannerMenu.open) return null;
-            const imageUrl = new URL(scannerPng, window.location.href);
-            const frame = {
-                type: 'scanner',
-                key: 'scanner',
-                body: { image: imageUrl.toString(),  width: 25 },
-                controls: [
-                    {
-                        action: 'scanner_power',
-                        bottom: 5.25,
-                        right: 2.75,
-                        width: 1.5,
-                        height: 1.5,
-                    },
-                    {
-                        action: 'scanner_prev',
-                        bottom: 7.5,
-                        right: 6.5,
-                        width: 2.5,
-                        height: 5.5,
-                    },
-                    {
-                        action: 'scanner_next',
-                        bottom: 7.5,
-                        right: 4,
-                        width: 2.5,
-                        height: 5.5,
-                    },
-                ],
-                scannerScreen: {
-                    top: 6.25,
-                    height: 4.5,
-                    left: 4.5,
-                    right: 4.5,
-                    zIndex: 25,
-                },
-            };
-            return frame;
         }
     },
     watch: {
