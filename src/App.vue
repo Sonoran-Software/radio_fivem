@@ -184,7 +184,7 @@ export default {
             showRadio: false,
             showTopRadio: false,
             radioPower: false,
-            escapeMode: localStorage.getItem("escape_mode") || "keep",
+            escapeMode: "keep",
             nextPrevMode: 'preset',
             inVehicleClass: -1,
             towerQuality: 1.0,
@@ -433,10 +433,11 @@ export default {
         },
         onClientEvent(event) {
             switch (event.type) {
-                case 'setStandalone':
+                case 'setConfig':
                     this.standaloneServerId = event.standaloneId;
                     this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
+                    this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug.enabled = event.debug;
                     break;
