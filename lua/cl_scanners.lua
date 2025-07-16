@@ -330,6 +330,13 @@ function initScanners()
 			pushScanner(data.id)
 		end
 
+		if data.type == 'requestProfilePerms' then
+			TriggerServerEvent('SonoranRadio::checkScannerProfilePerms', data.profiles)
+		end
+
 		cb('OK')
+	end)
+	RegisterNetEvent('SonoranRadio::allowScannerProfiles', function(allowedProfileIds)
+		SendNUIMessage({ type = 'allowScannerProfiles', profileIds = allowedProfileIds })
 	end)
 end

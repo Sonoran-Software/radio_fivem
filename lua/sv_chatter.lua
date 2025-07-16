@@ -247,11 +247,12 @@ Citizen.CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('SonoranRadio::checkProfilePerms', function(profileInfos)
+RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
 	for _, info in ipairs(profileInfos) do
 		local allowed = not Config.acePermsForScanners or
-			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName)
+			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
+			IsPlayerAceAllowded(source, 'sonoranradio.channel.'..info.id)
 		if allowed then
 			table.insert(allowedProfileIds, info.id)
 		end

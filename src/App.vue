@@ -211,6 +211,7 @@ export default {
                 open: false,
                 id: 0,
                 state: null,
+                allowedProfileIds: [],
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -460,6 +461,10 @@ export default {
                     this.scannerMenu.open = true;
                     this.scannerMenu.id = event.id;
                     this.scannerMenu.state = event.state;
+                    this.onChatterProfilesUpdate();
+                    break;
+                case 'allowScannerProfiles':
+                    this.scannerMenu.allowedProfileIds = event.profileIds;
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
@@ -668,6 +673,7 @@ export default {
                 case 'config_updated':
                     this.$store.commit('setChatterConfig', event.config);
                     this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
+                    this.onChatterProfilesUpdate();
                     break;
             }
         },
@@ -953,18 +959,22 @@ export default {
             });
         },
         scannerPower() {
-            if (!this.scannerMenu.state) this.scannerMenu.state = {};
-            this.scannerMenu.state.powered = !this.scannerMenu.state.powered;
-            this.scannerMenu.state.channelId = this.$store.getters.chatterDefaultProfileId;
+            this.scannerMenu.state = {
+                powered: !this.scannerMenu.state?.powered,
+                channelId: this.$store.getters.chatterDefaultProfileId
+            };
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
         scannerAdvChannel(offset) {
-            const profiles = this.$store.getters.chatterProfilesSorted.filter(x => x.visibility === 'public');
+            if (!this.scannerMenu.state) return;
+            const profiles = this.$store.getters.chatterProfilesSorted.filter(x =>
+                x.visibility === 'public' || this.scannerMenu.allowedProfileIds.includes(x.id)
+            );
             const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
             const idx = profiles.findIndex(x => x.id === chId) || 0;
 
             const nextIdx = (idx + offset + profiles.length) % profiles.length;
-            this.scannerMenu.state.channelId = profiles[nextIdx].id;
+            this.$set(this.scannerMenu.state, 'channelId', profiles[nextIdx].id);
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
         setEmergencyCall(enabled, displayName, cmd, showHelpText) {
@@ -990,6 +1000,16 @@ export default {
                 const state = this.$store.state.radioState;
                 if (state) this.postClient({ type: 'stateUpdated', state });
             }
+        },
+        onChatterProfilesUpdate() {
+            const profiles = this.$store.state.chatterConfig?.profiles || [];
+            this.postClient({
+                type: 'requestProfilePerms',
+                profiles: profiles.map(x => ({
+                    id: x.id,
+                    displayName: x.displayName,
+                })),
+            }, 'scanners');
         },
         onStandaloneConnected() {
             this.updateGamestate();
