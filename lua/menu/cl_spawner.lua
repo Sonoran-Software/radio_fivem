@@ -317,7 +317,7 @@ function initMenu()
 					end
 					if WarMenu.Button("Save Config", "Confirm Selection") then
 						local finalConfig = {
-							componentId = realProp,
+							componentId = realProp + 14, -- Adjusted componentId for props
 							drawableId = currentProp,
 							texture = {}
 						}

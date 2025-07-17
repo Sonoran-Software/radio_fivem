@@ -26,6 +26,10 @@ function DebugPrint(...)
 	end
 end
 
+function errorLog(message)
+	print('[Sonoran Radio - ERROR]:', '^1', message, '^0')
+end
+
 function showNotification(notification, urgent)
 	if urgent == nil then
 		urgent = true
@@ -66,6 +70,8 @@ function getInventory()
 		elseif GetResourceState('ox_inventory') == 'started' then
 			inventoryEnum = 2
 		elseif GetResourceState('qs-inventory') == 'started' then
+			inventoryEnum = 1
+		elseif GetResourceState('core_inventory') == 'started' then
 			inventoryEnum = 1
 		else
 			inventoryEnum = 0

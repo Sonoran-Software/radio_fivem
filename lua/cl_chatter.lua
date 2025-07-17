@@ -11,10 +11,10 @@ function initChatter()
 		local drawableOffset = 14
 		if componentId >= drawableOffset then -- components 14 and above are props (hats, glasses, etc)
 			DebugPrint('Component ID is a prop (over 14)')
-			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId))
-			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId ))
-			return GetPedDrawableVariation(ped, componentId - drawableOffset) == drawableId and
-				(not textureId or GetPedTextureVariation(ped, componentId - drawableOffset) == textureId)
+			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedPropIndex(ped, componentId - drawableOffset) == drawableId))
+			DebugPrint('Does Texture ID match? ' .. tostring(not textureId or GetPedPropTextureIndex(ped, componentId - drawableOffset) == textureId))
+			return GetPedPropIndex(ped, componentId - drawableOffset) == drawableId and
+				(not textureId or GetPedPropTextureIndex(ped, componentId - drawableOffset) == textureId)
 		else
 			DebugPrint('Component ID is not a prop (under 14)')
 			DebugPrint('Does Drawable ID match? ' .. tostring(GetPedDrawableVariation(ped, componentId) == drawableId))
