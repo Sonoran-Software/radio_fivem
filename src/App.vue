@@ -154,7 +154,7 @@ import StandaloneFrame, {
     getFrameEl as getRadioFrameEl,
     removePersistentFrame as removeRadioFrame
 } from './components/StandaloneFrame.vue'
-import scannerPng from './assets/scanner.png'
+import defaultScannerFrame from './assets/scannerFrame'
 
 export default {
     components: {
@@ -184,7 +184,7 @@ export default {
             showRadio: false,
             showTopRadio: false,
             radioPower: false,
-            escapeMode: localStorage.getItem("escape_mode") || "keep",
+            escapeMode: "keep",
             nextPrevMode: 'preset',
             inVehicleClass: -1,
             towerQuality: 1.0,
@@ -209,8 +209,9 @@ export default {
             },
             scannerMenu: {
                 open: false,
-                id: null,
+                id: 0,
                 state: null,
+                allowedProfileIds: [],
             },
 
             // promises of queried skin data (so we don't query twice)
@@ -272,6 +273,15 @@ export default {
             // find portable frame, or return first frame if not found
             return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
+        activeScannerFrame() {
+            if (!this.scannerMenu.open) return null;
+            if (this.curSkin) {
+                const frame = this.curSkin.frames.find(x => x.type === 'scanner');
+                if (frame) return frame;
+                // fallback to default scanner frame if not found
+            }
+            return defaultScannerFrame;
+        },
         activeFrames() {
             if (!this.curSkin) return []; // no skin for the frames
 
@@ -289,7 +299,7 @@ export default {
                 if (frame) frames.push(frame);
             } else {
                 // normal operation frame checks
-                if (this.scannerFrame) frames.push(this.scannerFrame);
+                if (this.activeScannerFrame) frames.push(this.activeScannerFrame);
                 if (this.activeRadioFrame) frames.push(this.activeRadioFrame);
                 if (this.showTopRadio) frames.push(getFrame('hud'));
             }
@@ -377,46 +387,6 @@ export default {
         },
         internalEmergencyCallDispatchers() {
             return this.emergencyCall.peers.map(x => x.name);
-        },
-        scannerFrame() {
-            if (!this.scannerMenu.open) return null;
-            const imageUrl = new URL(scannerPng, window.location.href);
-            const frame = {
-                type: 'scanner',
-                key: 'scanner',
-                body: { image: imageUrl.toString(),  width: 25 },
-                controls: [
-                    {
-                        action: 'scanner_power',
-                        bottom: 5.25,
-                        right: 2.75,
-                        width: 1.5,
-                        height: 1.5,
-                    },
-                    {
-                        action: 'scanner_prev',
-                        bottom: 7.5,
-                        right: 6.5,
-                        width: 2.5,
-                        height: 5.5,
-                    },
-                    {
-                        action: 'scanner_next',
-                        bottom: 7.5,
-                        right: 4,
-                        width: 2.5,
-                        height: 5.5,
-                    },
-                ],
-                scannerScreen: {
-                    top: 6.25,
-                    height: 4.5,
-                    left: 4.5,
-                    right: 4.5,
-                    zIndex: 25,
-                },
-            };
-            return frame;
         }
     },
     watch: {
@@ -464,10 +434,11 @@ export default {
         },
         onClientEvent(event) {
             switch (event.type) {
-                case 'setStandalone':
+                case 'setConfig':
                     this.standaloneServerId = event.standaloneId;
                     this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
+                    this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug.enabled = event.debug;
                     break;
@@ -490,6 +461,10 @@ export default {
                     this.scannerMenu.open = true;
                     this.scannerMenu.id = event.id;
                     this.scannerMenu.state = event.state;
+                    this.onChatterProfilesUpdate();
+                    break;
+                case 'allowScannerProfiles':
+                    this.scannerMenu.allowedProfileIds = event.profileIds;
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
@@ -698,6 +673,7 @@ export default {
                 case 'config_updated':
                     this.$store.commit('setChatterConfig', event.config);
                     this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
+                    this.onChatterProfilesUpdate();
                     break;
             }
         },
@@ -983,18 +959,22 @@ export default {
             });
         },
         scannerPower() {
-            if (!this.scannerMenu.state) this.scannerMenu.state = {};
-            this.scannerMenu.state.powered = !this.scannerMenu.state.powered;
-            this.scannerMenu.state.channelId = this.$store.getters.chatterDefaultProfileId;
+            this.scannerMenu.state = {
+                powered: !this.scannerMenu.state?.powered,
+                channelId: this.$store.getters.chatterDefaultProfileId
+            };
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
         scannerAdvChannel(offset) {
-            const profiles = this.$store.getters.chatterProfilesSorted.filter(x => x.visibility === 'public');
+            if (!this.scannerMenu.state) return;
+            const profiles = this.$store.getters.chatterProfilesSorted.filter(x =>
+                x.visibility === 'public' || this.scannerMenu.allowedProfileIds.includes(x.id)
+            );
             const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
             const idx = profiles.findIndex(x => x.id === chId) || 0;
 
             const nextIdx = (idx + offset + profiles.length) % profiles.length;
-            this.scannerMenu.state.channelId = profiles[nextIdx].id;
+            this.$set(this.scannerMenu.state, 'channelId', profiles[nextIdx].id);
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
         setEmergencyCall(enabled, displayName, cmd, showHelpText) {
@@ -1020,6 +1000,16 @@ export default {
                 const state = this.$store.state.radioState;
                 if (state) this.postClient({ type: 'stateUpdated', state });
             }
+        },
+        onChatterProfilesUpdate() {
+            const profiles = this.$store.state.chatterConfig?.profiles || [];
+            this.postClient({
+                type: 'requestProfilePerms',
+                profiles: profiles.map(x => ({
+                    id: x.id,
+                    displayName: x.displayName,
+                })),
+            }, 'scanners');
         },
         onStandaloneConnected() {
             this.updateGamestate();

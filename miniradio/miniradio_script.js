@@ -113,10 +113,26 @@ $(function () {
 			refreshCall();
 		} else if (event.data.type == "resize") {
 			if (event.data.module == "hud") {
-				document.getElementById("hudFrame").width = event.data.newWidth;
-				document.getElementById("hudFrame").height = event.data.newHeight;
-				document.getElementById("hudDiv").style.width = event.data.newWidth;
-				document.getElementById("hudDiv").style.height = event.data.newHeight;
+				let { newWidth, newHeight } = event.data;
+				newWidth = Math.min(newWidth, window.innerWidth / 1.1); // Ensure minimum width
+				newHeight = Math.min(newHeight, window.innerHeight / 1.1); // Ensure minimum height
+
+				// update frame and div dimensions
+				const frame = document.getElementById("hudFrame");
+				const div = document.getElementById("hudDiv");
+				frame.width = newWidth;
+				frame.height = newHeight;
+				div.style.width = newWidth + "px";
+				div.style.height = newHeight + "px";
+				// clamp position so it doesn't exceed window bounds
+				let left = div.offsetLeft;
+				let top = div.offsetTop;
+				left = Math.max(0, Math.min(left, window.innerWidth - newWidth));
+				top = Math.max(0, Math.min(top, window.innerHeight - newHeight));
+				div.style.left = left + "px";
+				div.style.top = top + "px";
+				frame.style.left = left + "px";
+				frame.style.top = top + "px";
 			}
 		} else if (event.data.type == "setMiniRadioUIPosition") {
 			let x = event.data.x;
@@ -139,47 +155,52 @@ function sendToParent(data) {
 }
 
 function dragElement(elmnt, dragHandleId) {
-    var pos1 = 0,
-        pos2 = 0,
-        pos3 = 0,
-        pos4 = 0;
+	var pos1 = 0,
+		pos2 = 0,
+		pos3 = 0,
+		pos4 = 0;
 
-    const dragHandle = document.getElementById(dragHandleId);
+	const dragHandle = document.getElementById(dragHandleId);
 
-    if (dragHandle) {
-        dragHandle.onmousedown = dragMouseDown;
-    }
+	if (dragHandle) {
+		dragHandle.onmousedown = dragMouseDown;
+	}
 
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // get the mouse cursor position at startup:
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        // call a function whenever the cursor moves:
-        document.onmousemove = elementDrag;
-    }
+	function dragMouseDown(e) {
+		e = e || window.event;
+		e.preventDefault();
+		// get the mouse cursor position at startup:
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		document.onmouseup = closeDragElement;
+		// call a function whenever the cursor moves:
+		document.onmousemove = elementDrag;
+	}
 
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // calculate the new cursor position:
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        // set the element's new position:
-        elmnt.style.top = elmnt.offsetTop - pos2 + "px";
-        elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
-    }
+	function elementDrag(e) {
+		e = e || window.event;
+		e.preventDefault();
+		// calculate the new cursor position:
+		pos1 = pos3 - e.clientX;
+		pos2 = pos4 - e.clientY;
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		// calculate and clamp new position to keep within window boundaries
+		var newTop = elmnt.offsetTop - pos2;
+		var newLeft = elmnt.offsetLeft - pos1;
+		newTop = Math.max(0, Math.min(newTop, window.innerHeight - elmnt.offsetHeight));
+		newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - elmnt.offsetWidth));
+		elmnt.style.top = newTop + "px";
+		elmnt.style.left = newLeft + "px";
+	}
 
-    function closeDragElement() {
-        // stop moving when mouse button is released:
-        document.onmouseup = null;
-        document.onmousemove = null;
+	function closeDragElement() {
+		// stop moving when mouse button is released
+		document.onmouseup = null;
+		document.onmousemove = null;
+		// save position
 		$.post("https://sonoranradio/SaveMiniRadioPos", JSON.stringify({ x: elmnt.style.left, y: elmnt.style.top }));
-    }
+	}
 }
 
 window.addEventListener("message", function (event) {

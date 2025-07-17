@@ -922,10 +922,11 @@ function initClient()
 		local chatter = Config.chatter
 		if chatter == nil then chatter = true end
 		SendNUIMessage({
-			type = 'setStandalone',
+			type = 'setConfig',
 			standaloneId = comId,
 			roomId = Config.serverId,
 			standaloneUrl = Config.radioUrl,
+			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
 			debug = Config.debug,
 		})

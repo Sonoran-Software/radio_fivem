@@ -8,37 +8,42 @@ function initScanners()
 	end)
 
 	-- STATIC SCANNER LOGIC
-	local staticScanners = {}
+	StaticScanners = {}
 	local ssObjects = {}
 	Citizen.CreateThread(function()
 		local OBJ_RANGE = 100.0
-		local OBJ_MODEL = `prop_cs_hand_radio`
 
 		while true do
 			local myPos = GetEntityCoords(PlayerPedId())
 			local ssIdSet = {}
-			for _, ss in ipairs(staticScanners) do
+			for _, ss in ipairs(StaticScanners) do
 				ssIdSet[ss.Id] = true
 
+				local model = GetHashKey(ss.PropModel or 'prop_cs_hand_radio')
 				local pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
 				local dist = #(pos - myPos)
 
-				if dist < OBJ_RANGE and ssObjects[ss.Id] == nil then
-					-- we are in range, but the obj is not spawned
-					while not HasModelLoaded(OBJ_MODEL) do
-						RequestModel(OBJ_MODEL)
-						Citizen.Wait(0)
+				if dist < OBJ_RANGE then
+					if ssObjects[ss.Id] == nil then
+						-- we are in range, but the obj is not spawned
+						while not HasModelLoaded(model) do
+							RequestModel(model)
+							Citizen.Wait(0)
+						end
+						-- create the object in the world
+						-- NOTE: position/heading and set below
+						local obj = CreateObject(model, pos.x, pos.y, pos.z, false, true, false)
+						SetEntityCollision(obj, false, false)
+						SetModelAsNoLongerNeeded(model)
+						ssObjects[ss.Id] = obj
 					end
-					-- create the object in the world
-					local obj = CreateObject(OBJ_MODEL, pos.x, pos.y, pos.z, false, true, false)
-					SetEntityHeading(obj, ss.PropPosition.heading)
-					SetEntityCollision(obj, false, false)
+
+					SetEntityCoords(ssObjects[ss.Id], pos.x, pos.y, pos.z, false, false, false, true)
+					SetEntityHeading(ssObjects[ss.Id], ss.PropPosition.heading)
 					if not ss.PropPosition.exact then
-						PlaceObjectOnGroundOrObjectProperly(obj)
+						PlaceObjectOnGroundOrObjectProperly(ssObjects[ss.Id])
 					end
-					SetModelAsNoLongerNeeded(OBJ_MODEL)
-					ssObjects[ss.Id] = obj
-				elseif dist >= OBJ_RANGE and ssObjects[ss.Id] ~= nil then
+				elseif ssObjects[ss.Id] ~= nil then
 					-- we are out of range, but the object still exists
 					DeleteObject(ssObjects[ss.Id])
 					ssObjects[ss.Id] = nil
@@ -59,7 +64,7 @@ function initScanners()
 	function getNearestStaticScanner(coord, nearDist)
 		nearDist = nearDist or math.huge
 		local nearScanner
-		for _, ss in ipairs(staticScanners) do
+		for _, ss in ipairs(StaticScanners) do
 			local ssCoord = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
 			local d = #(coord - ssCoord)
 			if d < nearDist then
@@ -91,7 +96,7 @@ function initScanners()
 		scanners[0] = localScanner
 
 		if static then
-			staticScanners = static
+			StaticScanners = static
 		end
 	end)
 
@@ -325,6 +330,13 @@ function initScanners()
 			pushScanner(data.id)
 		end
 
+		if data.type == 'requestProfilePerms' then
+			TriggerServerEvent('SonoranRadio::checkScannerProfilePerms', data.profiles)
+		end
+
 		cb('OK')
+	end)
+	RegisterNetEvent('SonoranRadio::allowScannerProfiles', function(allowedProfileIds)
+		SendNUIMessage({ type = 'allowScannerProfiles', profileIds = allowedProfileIds })
 	end)
 end

@@ -10,7 +10,7 @@ local function pushRadioStatesNow()
 	end
 
 	TriggerClientEvent('SonoranRadio::ReceiveRadioStates', -1, states)
-	lastRadioPush = GetGameTimer()
+	lastRadioStatesPush = GetGameTimer()
 end
 local function pushRadioStates()
 	local toWait = 2500 - (GetGameTimer() - lastRadioStatesPush)
@@ -92,60 +92,82 @@ function initStaticScanners(s)
 	end
 end
 
-local function addAndSaveStaticScanner(ss)
-	globalScanners[ss.Id] = {
-		powered = ss.Powered ~= false,
-		channelId = ss.ChannelId,
-		pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
-	}
-	staticScanners[#staticScanners + 1] = ss
-	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
-	return SaveJsonConfig('scanners.json', staticScanners)
-end
-RegisterNetEvent('SonoranRadio::SpawnAndSaveScanner', function(coord, heading)
+RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
 	local src = source
 	local scannerInfo = {
 		Id = uuid(),
+		Note = note,
 		Powered = true,
 		ChannelId = 0, -- use the default channel
-		PropPosition = {
-			x = coord.x,
-			y = coord.y,
-			z = coord.z,
-			heading = heading,
-			exact = false,
-		}
+		PropModel = propModel, -- may be nil, since there is a default prop
+		PropPosition = propPosition
 	}
-	local success = addAndSaveStaticScanner(scannerInfo)
-	if not success then
-		TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
-	end
-end)
 
-local function deleteAndSaveStaticScanner(scannerId)
-	local idx
-	for i = 1, #staticScanners do
-		if staticScanners[i].Id == scannerId then
-			idx = i
-			break
+	-- add to the scanners.json
+	local newStaticScanners = {}
+	for _, ss in ipairs(staticScanners) do
+		newStaticScanners[#newStaticScanners + 1] = ss
+	end
+	newStaticScanners[#newStaticScanners + 1] = scannerInfo
+	if not SaveJsonConfig('scanners.json', newStaticScanners) then
+		return TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
+	end
+
+	-- send out new scanner info
+	staticScanners = newStaticScanners
+	globalScanners[scannerInfo.Id] = {
+		powered = scannerInfo.Powered ~= false,
+		channelId = scannerInfo.ChannelId,
+		pos = vec3(scannerInfo.PropPosition.x, scannerInfo.PropPosition.y, scannerInfo.PropPosition.z)
+	}
+	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
+end)
+RegisterNetEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosition)
+	local src = source
+
+	-- update the scanners.json
+	local newStaticScanners = {}
+	for _, ss in ipairs(staticScanners) do
+		if ss.Id == scannerId then
+			-- if ids match, shallow copy the scanner and update the position
+			local newScanner = {}
+			for k, v in pairs(ss) do
+				newScanner[k] = v
+			end
+			newScanner.PropPosition = propPosition
+			ss = newScanner
+		end
+		newStaticScanners[#newStaticScanners + 1] = ss
+	end
+	if not SaveJsonConfig('scanners.json', newStaticScanners) then
+		return TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
+	end
+
+	-- send out new scanner info
+	staticScanners = newStaticScanners
+	if globalScanners[scannerId] then
+		globalScanners[scannerId].pos = vec3(propPosition.x, propPosition.y, propPosition.z)
+	end
+	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
+end)
+RegisterNetEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
+	local src = source
+
+	-- remove from the scanners.json
+	local newStaticScanners = {}
+	for _, ss in ipairs(staticScanners) do
+		if ss.Id ~= scannerId then
+			newStaticScanners[#newStaticScanners + 1] = ss
 		end
 	end
-	if idx == nil then
-		warnLog('Tried to delete static scanner '..scannerId..', but it does not exist')
-		return false
+	if not SaveJsonConfig('scanners.json', newStaticScanners) then
+		return TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
 	end
 
+	-- send out new scanner info
+	staticScanners = newStaticScanners
 	globalScanners[scannerId] = nil
-	table.remove(staticScanners, idx)
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
-	return SaveJsonConfig('scanners.json', staticScanners)
-end
-RegisterNetEvent('SonoranRadio::DeleteAndSaveScanner', function(scannerId)
-	local src = source
-	local success = deleteAndSaveStaticScanner(scannerId)
-	if not success then
-		TriggerClientEvent('SonoranRadio::DisplayError', src, 'An error prevents your changes from saving (see server log for more)')
-	end
 end)
 
 -- check for radio scanners and add metadata if needed
@@ -226,11 +248,12 @@ Citizen.CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('SonoranRadio::checkProfilePerms', function(profileInfos)
+RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
 	for _, info in ipairs(profileInfos) do
 		local allowed = not Config.acePermsForScanners or
-			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName)
+			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
+			IsPlayerAceAllowded(source, 'sonoranradio.channel.'..info.id)
 		if allowed then
 			table.insert(allowedProfileIds, info.id)
 		end
