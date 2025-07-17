@@ -12,7 +12,6 @@ function initScanners()
 	local ssObjects = {}
 	Citizen.CreateThread(function()
 		local OBJ_RANGE = 100.0
-		local OBJ_MODEL = `prop_cs_hand_radio`
 
 		while true do
 			local myPos = GetEntityCoords(PlayerPedId())
@@ -20,21 +19,22 @@ function initScanners()
 			for _, ss in ipairs(StaticScanners) do
 				ssIdSet[ss.Id] = true
 
+				local model = GetHashKey(ss.PropModel or 'prop_cs_hand_radio')
 				local pos = vec3(ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z)
 				local dist = #(pos - myPos)
 
 				if dist < OBJ_RANGE then
 					if ssObjects[ss.Id] == nil then
 						-- we are in range, but the obj is not spawned
-						while not HasModelLoaded(OBJ_MODEL) do
-							RequestModel(OBJ_MODEL)
+						while not HasModelLoaded(model) do
+							RequestModel(model)
 							Citizen.Wait(0)
 						end
 						-- create the object in the world
 						-- NOTE: position/heading and set below
-						local obj = CreateObject(OBJ_MODEL, pos.x, pos.y, pos.z, false, true, false)
+						local obj = CreateObject(model, pos.x, pos.y, pos.z, false, true, false)
 						SetEntityCollision(obj, false, false)
-						SetModelAsNoLongerNeeded(OBJ_MODEL)
+						SetModelAsNoLongerNeeded(model)
 						ssObjects[ss.Id] = obj
 					end
 

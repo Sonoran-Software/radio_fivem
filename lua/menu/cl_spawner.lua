@@ -10,6 +10,11 @@ function initMenu()
 	}
 
 	local staticScannerState = {
+		-- spawn menu
+		propIndex = 1,
+		note = '',
+
+		-- move/delete menu
 		index = 1,
 		moveSpeed = 0.001,
 	}
@@ -79,7 +84,7 @@ function initMenu()
 
 		-- permanent scanner menus
 		defineMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
-		-- TODO: prop type menu for static scanner spawning
+		defineMenu('staticScannerSpawnMenu', 'staticScannerMenu', 'Spawn Scanner')
 		defineMenu('staticScannerMoveMenu', 'staticScannerMenu', 'Move Permanent Scanner')
 		defineMenu('staticScannerDeleteMenu', 'staticScannerMenu', 'Delete Permanent Scanner')
 
@@ -115,10 +120,12 @@ function initMenu()
 		while true do
 			if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 				WarMenu.MenuButton('Radio Repeaters', 'repeaterMenu')
-				WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
+				if Config.chatter ~= false then
+					WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
+				end
 				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
 				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
-				if Config.chatter then
+				if Config.chatter ~= false then
 					WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
 				end
 				WarMenu.Display()
@@ -140,11 +147,12 @@ function initMenu()
 				deletingRadioRepeater()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
-				if WarMenu.Button('Spawn Scanner') then
-					staticScannerCreate()
-				end
+				WarMenu.MenuButton('Spawn Scanner', 'staticScannerSpawnMenu')
 				WarMenu.MenuButton('Move Scanner', 'staticScannerMoveMenu')
 				WarMenu.MenuButton('Delete Scanner', 'staticScannerDeleteMenu')
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerSpawnMenu') then
+				staticScannerSpawnMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('staticScannerMoveMenu') then
 				staticScannerMoveMenu()
@@ -989,20 +997,10 @@ function initMenu()
 		end
 		return labels
 	end
-	function staticScannerCreate()
-		AddTextEntry('SRM_SS_LABEL', 'Static Scanner Label/Note:')
-		DisplayOnscreenKeyboard(1, 'SRM_SS_LABEL', '', '', '', '', '', 30)
-		while UpdateOnscreenKeyboard() == 0 do
-			DisableAllControlActions(0)
-			Wait(0)
+	local function staticScannerCreate(propModel, note)
+		if type(note) == 'string' and #note == 0 then
+			note = nil
 		end
-		if UpdateOnscreenKeyboard() ~= 1 then
-			showNotification('~r~Error: ~w~Label prompt was cancelled')
-			return
-		end
-
-		local note = GetOnscreenKeyboardResult()
-		if #note < 1 then note = nil end
 
 		local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
 		local heading = GetEntityHeading(PlayerPedId())
@@ -1013,7 +1011,39 @@ function initMenu()
 			heading = heading,
 			exact = false
 		}
-		TriggerServerEvent('SonoranRadio::SpawnStaticScanner', propPosition, note)
+		TriggerServerEvent('SonoranRadio::SpawnStaticScanner', propModel, propPosition, note)
+	end
+	function staticScannerSpawnMenu()
+		local props = {'prop_cs_hand_radio', 'prop_police_radio_main', 'sm_prop_smug_wall_radio_01', 'prop_radio_01', 'v_res_j_radio'}
+		local propLabels = {'Handheld Radio', 'Desk Radio', 'Wall Radio', 'FM Radio', 'Old FM Radio'}
+		WarMenu.ComboBox('Select Prop:', propLabels, staticScannerState.propIndex, staticScannerState.propIndex, function(current)
+			staticScannerState.propIndex = current
+		end)
+
+		local truncNote = staticScannerState.note
+		if #truncNote > 23 then
+			truncNote = string.sub(truncNote, 1, 20) .. '...'
+		end
+		if WarMenu.Button('Label/Note:', truncNote) then
+			AddTextEntry('SRM_SS_LABEL', 'Static Scanner Label/Note:')
+			DisplayOnscreenKeyboard(1, 'SRM_SS_LABEL', '', staticScannerState.note, '', '', '', 50)
+			while UpdateOnscreenKeyboard() == 0 do
+				DisableAllControlActions(0)
+				Wait(0)
+			end
+			if UpdateOnscreenKeyboard() == 1 then
+				staticScannerState.note = GetOnscreenKeyboardResult()
+			else
+				showNotification('~r~Error: ~w~Label prompt was cancelled')
+			end
+		end
+
+		if WarMenu.Button('Confirm') then
+			staticScannerCreate(props[staticScannerState.propIndex], staticScannerState.note)
+			staticScannerState.propIndex = 1
+			staticScannerState.note = ''
+			WarMenu.OpenMenu('staticScannerMenu')
+		end
 	end
 	function staticScannerMoveMenu()
 		WarMenu.ComboBox('Select Scanner:', staticScannerLabels(), staticScannerState.index, staticScannerState.index, function(current)
@@ -1119,6 +1149,9 @@ function initMenu()
 
 		if WarMenu.Button('Delete Scanner') then
 			TriggerServerEvent('SonoranRadio::DeleteStaticScanner', ss.Id)
+			if staticScannerState.index > 1 then
+				staticScannerState.index = staticScannerState.index - 1
+			end
 			WarMenu.OpenMenu('staticScannerMenu')
 		end
 	end

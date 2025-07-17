@@ -92,13 +92,14 @@ function initStaticScanners(s)
 	end
 end
 
-RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propPosition, note)
+RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
 	local src = source
 	local scannerInfo = {
 		Id = uuid(),
 		Note = note,
 		Powered = true,
 		ChannelId = 0, -- use the default channel
+		PropModel = propModel, -- may be nil, since there is a default prop
 		PropPosition = propPosition
 	}
 
