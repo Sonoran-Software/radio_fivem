@@ -244,16 +244,6 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
 	end
-	local scannerAceAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
-	if scannerAceAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source)
-	end
-end)
-
-RegisterNetEvent('SonoranRadio::Msg:ToServer')
-AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
-	local sender = source
-	TriggerClientEvent('SonoranRadio::Msg:ToClient', recipient, sender, payload)
 end)
 
 function validFrame(frame)

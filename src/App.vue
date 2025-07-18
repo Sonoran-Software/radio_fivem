@@ -840,6 +840,7 @@ export default {
             if (this.scannerMenu.open) {
                 this.scannerMenu.open = false;
                 this.postClient({ type: 'saveScanner', id: this.scannerMenu.id }, 'scanners');
+                return;
             }
 
             // notify player on how to hide radio if this is the first time

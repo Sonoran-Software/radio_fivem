@@ -3,8 +3,8 @@ function initScanners()
 
 	-- SCANNER PERMS
 	local allowed = false
-	RegisterNetEvent('SonoranRadio::AuthorizeScanners', function()
-		allowed = true
+	RegisterNetEvent('SonoranRadio::AuthorizeScanners', function(perm)
+		allowed = perm
 	end)
 
 	-- STATIC SCANNER LOGIC
