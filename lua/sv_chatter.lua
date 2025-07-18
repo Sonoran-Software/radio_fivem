@@ -266,10 +266,11 @@ Citizen.CreateThread(function()
 	while true do
 		for i = 0, GetNumPlayerIndices() - 1 do
 			local playerId = GetPlayerFromIndex(i)
-			local hasScannerPerm = not Config.acePermsForScanners or IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
+			local hasScannerPerm = not Config.acePermsForScanners or not not IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
 			if aceCache[playerId] ~= hasScannerPerm then
 				aceCache[playerId] = hasScannerPerm
 				TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, hasScannerPerm)
+				print('authorize scanners', hasScannerPerm, 'for player', playerId)
 			end
 
 			Citizen.Wait(100)
