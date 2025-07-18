@@ -251,9 +251,9 @@ end)
 RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
 	for _, info in ipairs(profileInfos) do
-		local allowed = not Config.acePermsForScanners or
+		local allowed = 
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
-			IsPlayerAceAllowded(source, 'sonoranradio.channel.'..info.id)
+			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.id)
 		if allowed then
 			table.insert(allowedProfileIds, info.id)
 		end

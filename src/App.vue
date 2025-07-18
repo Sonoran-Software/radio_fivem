@@ -461,7 +461,7 @@ export default {
                     this.scannerMenu.open = true;
                     this.scannerMenu.id = event.id;
                     this.scannerMenu.state = event.state;
-                    this.onChatterProfilesUpdate();
+                    this.requestScannerProfilePerms();
                     break;
                 case 'allowScannerProfiles':
                     this.scannerMenu.allowedProfileIds = event.profileIds;
@@ -673,7 +673,7 @@ export default {
                 case 'config_updated':
                     this.$store.commit('setChatterConfig', event.config);
                     this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
-                    this.onChatterProfilesUpdate();
+                    this.requestScannerProfilePerms();
                     break;
             }
         },
@@ -1001,7 +1001,7 @@ export default {
                 if (state) this.postClient({ type: 'stateUpdated', state });
             }
         },
-        onChatterProfilesUpdate() {
+        requestScannerProfilePerms() {
             const profiles = this.$store.state.chatterConfig?.profiles || [];
             this.postClient({
                 type: 'requestProfilePerms',
