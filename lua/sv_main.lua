@@ -84,11 +84,7 @@ else
 				if not radio then
 					return
 				end
-				if not radio.info.frame then
-					TriggerClientEvent('qb-sonrad:use', source, 'default')
-				else
-					TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
-				end
+				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
 			end)
 
 			if Config.ScannerItem == nil then
