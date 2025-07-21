@@ -84,11 +84,7 @@ else
 				if not radio then
 					return
 				end
-				if not radio.info.frame then
-					TriggerClientEvent('qb-sonrad:use', source, 'default')
-				else
-					TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
-				end
+				TriggerClientEvent('qb-sonrad:use', source, item.info.frame)
 			end)
 
 			if Config.ScannerItem == nil then
@@ -218,15 +214,9 @@ end, true)
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
 	local framePermissions = checkFramePermissions(source)
-	local allowedMiniRadio = false
-	if Config.acePermsForRadioUsers then
-		if IsPlayerAceAllowed(source, 'sonoranradio.miniradio') then
-			allowedMiniRadio = true
-		end
-	else
-		allowedMiniRadio = true
-	end
 	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(source, 'sonoranradio.use')
+	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(source, 'sonoranradio.radiousers')
+	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
 	if radioAceAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
 	end
@@ -251,16 +241,9 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
 	end
-	local scannerAceAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
-	if scannerAceAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source)
+	if scannersAllowed then
+		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
 	end
-end)
-
-RegisterNetEvent('SonoranRadio::Msg:ToServer')
-AddEventHandler('SonoranRadio::Msg:ToServer', function(recipient, payload)
-	local sender = source
-	TriggerClientEvent('SonoranRadio::Msg:ToClient', recipient, sender, payload)
 end)
 
 function validFrame(frame)

@@ -9,6 +9,16 @@ function initMenu()
 		calculatedHeading = nil
 	}
 
+	local staticScannerState = {
+		-- spawn menu
+		propIndex = 1,
+		note = '',
+
+		-- move/delete menu
+		index = 1,
+		moveSpeed = 0.001,
+	}
+
 	local toneboardState = {
 		index = 1,
 		speakerId = nil,
@@ -55,67 +65,76 @@ function initMenu()
 	end)
 
 	Citizen.CreateThread(function()
+		-- main menu def
 		WarMenu.CreateMenu('sonoranRadioMenu', ' SonoranRadio Menu')
 		WarMenu.SetTitleColor('sonoranRadioMenu', 0, 0, 0, 255)
 		WarMenu.SetMenuTitleBackgroundSprite('sonoranRadioMenu', 'radio_menu_header', 'option_1')
 		WarMenu.SetSubTitle('sonoranRadioMenu', 'Sonoran Software')
-		WarMenu.CreateSubMenu('spawnRadioMenu', 'sonoranRadioMenu', 'Spawn Repeater')
-		WarMenu.SetMenuTitleBackgroundSprite('spawnRadioMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('moveRadioMenu', 'sonoranRadioMenu', 'Move Repeater')
-		WarMenu.SetMenuTitleBackgroundSprite('moveRadioMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('deleteRadioMenu', 'sonoranRadioMenu', 'Delete Repeater')
-		WarMenu.SetMenuTitleBackgroundSprite('deleteRadioMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
-		WarMenu.SetMenuTitleBackgroundSprite('staticScannerMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
-		WarMenu.SetMenuTitleBackgroundSprite('degradeMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('degradeEditMenu', 'degradeMenu', 'Modify Degradation Zones')
-		WarMenu.SetMenuTitleBackgroundSprite('degradeEditMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('degradeDeleteMenu', 'degradeEditMenu', 'Confirm Deletion')
-		WarMenu.SetMenuTitleBackgroundSprite('degradeDeleteMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('toneboardMenu', 'sonoranRadioMenu', 'Toneboard Speaker Menu')
-		WarMenu.SetMenuTitleBackgroundSprite('toneboardMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('toneboardSpawnMenu', 'toneboardMenu', 'Spawn Speaker')
-		WarMenu.SetMenuTitleBackgroundSprite('toneboardSpawnMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('toneboardMoveMenu', 'toneboardMenu', 'Move Speaker')
-		WarMenu.SetMenuTitleBackgroundSprite('toneboardMoveMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
-		WarMenu.CreateSubMenu('chatterMenu', 'sonoranRadioMenu', 'Configure Chatter Earpieces')
-		WarMenu.SetMenuTitleBackgroundSprite('chatterMenu', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('addChatterConfig', 'chatterMenu', 'Add Earpiece Item')
-		WarMenu.SetMenuTitleBackgroundSprite('addChatterConfig', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('editChatterConfig', 'chatterMenu', 'Remove Earpiece Item')
-		WarMenu.SetMenuTitleBackgroundSprite('editChatterConfig', 'radio_menu_header', 'option_1')
-		WarMenu.CreateSubMenu('deleteChatterConfig', 'chatterMenu', 'Delete Earpiece Config')
-		WarMenu.SetMenuTitleBackgroundSprite('deleteChatterConfig', 'radio_menu_header', 'option_1')
-			-- Pre-create all drawable submenus
-		for drawable = 0, 11 do
-			WarMenu.CreateSubMenu('drawable_' .. drawable, 'addChatterConfig', 'Select ' .. textureNames[drawable + 1])
-			WarMenu.SetMenuTitleBackgroundSprite('drawable_' .. drawable, 'radio_menu_header', 'option_1')
+
+		local function defineMenu(id, parent, title)
+			WarMenu.CreateSubMenu(id, parent, title)
+			WarMenu.SetMenuTitleBackgroundSprite(id, 'radio_menu_header', 'option_1')
 		end
 
+		-- repeater menus
+		defineMenu('repeaterMenu', 'sonoranRadioMenu', 'Radio Repeaters')
+		defineMenu('spawnRadioMenu', 'repeaterMenu', 'Spawn Repeater')
+		defineMenu('moveRadioMenu', 'repeaterMenu', 'Move Repeater')
+		defineMenu('deleteRadioMenu', 'repeaterMenu', 'Delete Repeater')
+
+		-- permanent scanner menus
+		defineMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
+		defineMenu('staticScannerSpawnMenu', 'staticScannerMenu', 'Spawn Scanner')
+		defineMenu('staticScannerMoveMenu', 'staticScannerMenu', 'Move Permanent Scanner')
+		defineMenu('staticScannerDeleteMenu', 'staticScannerMenu', 'Delete Permanent Scanner')
+
+		-- degredation zones menu
+		defineMenu('degradeMenu', 'sonoranRadioMenu', 'Degradation Zones')
+		defineMenu('degradeEditMenu', 'degradeMenu', 'Modify Degradation Zones')
+		defineMenu('degradeDeleteMenu', 'degradeEditMenu', 'Confirm Deletion')
+
+		-- toneboard menus
+		defineMenu('toneboardMenu', 'sonoranRadioMenu', 'Toneboard Speaker Menu')
+		defineMenu('toneboardSpawnMenu', 'toneboardMenu', 'Spawn Speaker')
+		defineMenu('toneboardMoveMenu', 'toneboardMenu', 'Move Speaker')
+		defineMenu('toneboardDeleteMenu', 'toneboardMenu', 'Delete Speaker')
+
+		-- chatter menus
+		defineMenu('chatterMenu', 'sonoranRadioMenu', 'Configure Chatter Earpieces')
+		defineMenu('addChatterConfig', 'chatterMenu', 'Add Earpiece Item')
+		defineMenu('editChatterConfig', 'chatterMenu', 'Remove Earpiece Item')
+		defineMenu('deleteChatterConfig', 'chatterMenu', 'Delete Earpiece Config')
+		-- Pre-create all drawable submenus
+		for drawable = 0, 11 do
+			defineMenu('drawable_' .. drawable, 'addChatterConfig', 'Select ' .. textureNames[drawable + 1])
+		end
 		-- Pre-create all prop submenus
 		for tmpProp = 0, 4 do
 			local realProp = (tmpProp > 2) and (tmpProp + 3) or tmpProp
-			WarMenu.CreateSubMenu('prop_' .. tmpProp, 'addChatterConfig', 'Select ' .. propNames[tmpProp + 1])
-			WarMenu.SetMenuTitleBackgroundSprite('prop_' .. tmpProp, 'radio_menu_header', 'option_1')
+			defineMenu('prop_' .. tmpProp, 'addChatterConfig', 'Select ' .. propNames[tmpProp + 1])
 		end
 		for index, _ in ipairs(chatterConfig) do
-			WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
+			defineMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
 		end
+
 		while true do
 			if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
+				WarMenu.MenuButton('Radio Repeaters', 'repeaterMenu')
+				if Config.chatter ~= false then
+					WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
+				end
+				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
+				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
+				if Config.chatter ~= false then
+					WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('repeaterMenu') then
 				WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu')
 				WarMenu.MenuButton('Move Repeater', 'moveRadioMenu')
 				WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu')
 				if WarMenu.Button('Repair All Repeaters') then
 					TriggerServerEvent('RadioTower:RepairAllTowers')
-				end
-				WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
-				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
-				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
-				if Config.chatter then
-					WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
 				end
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('spawnRadioMenu') then
@@ -128,22 +147,18 @@ function initMenu()
 				deletingRadioRepeater()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
-				if WarMenu.Button('Spawn Permanent Scanner') then
-					local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
-					local heading = GetEntityHeading(PlayerPedId())
-					TriggerServerEvent('SonoranRadio::SpawnAndSaveScanner', coord, heading)
-				end
-				if WarMenu.Button('Delete Nearest Permanent Scanner') then
-					local staticScanner = getNearestStaticScanner(GetEntityCoords(PlayerPedId()), 5.0)
-					if staticScanner then
-						TriggerServerEvent('SonoranRadio::DeleteAndSaveScanner', staticScanner.Id)
-					else
-						TriggerEvent('chat:addMessage', {
-							color = {255, 0, 0},
-							args = {'Sonoran Radio', 'Error: No nearby permanent scanner found'}
-						})
-					end
-				end
+				WarMenu.MenuButton('Spawn Scanner', 'staticScannerSpawnMenu')
+				WarMenu.MenuButton('Move Scanner', 'staticScannerMoveMenu')
+				WarMenu.MenuButton('Delete Scanner', 'staticScannerDeleteMenu')
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerSpawnMenu') then
+				staticScannerSpawnMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerMoveMenu') then
+				staticScannerMoveMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('staticScannerDeleteMenu') then
+				staticScannerDeleteMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('degradeMenu') then
 				degradeMenu()
@@ -174,7 +189,7 @@ function initMenu()
 					WarMenu.OpenMenu('degradeEditMenu')
 				end
 				WarMenu.Display()
-		elseif WarMenu.IsMenuOpened('toneboardMenu') then
+			elseif WarMenu.IsMenuOpened('toneboardMenu') then
 				toneboardMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('toneboardSpawnMenu') then
@@ -374,6 +389,7 @@ function initMenu()
 					end
 				end
 			end
+
 			Wait(0)
 		end
 	end)
@@ -593,7 +609,7 @@ function initMenu()
 		end
 		if WarMenu.Button('Confirm Placement') then
 			confirmRadioPlacement()
-			WarMenu.OpenMenu('sonoranRadioMenu')
+			WarMenu.OpenMenu('repeaterMenu')
 		end
 		local foundHandle = nil;
 		for _, repeater in ipairs(CellRepeaters) do
@@ -965,8 +981,178 @@ function initMenu()
 				state.lastCoordUpdate = nil
 
 				confirmRadioPlacement()
-				WarMenu.OpenMenu('sonoranRadioMenu')
+				WarMenu.OpenMenu('repeaterMenu')
 			end
+		end
+	end
+
+	local function staticScannerLabels()
+		local labels = {}
+		for _, ss in ipairs(StaticScanners) do
+			local label = ss.Note or ss.Id
+			if #label > 18 then
+				label = string.sub(label, 1, 15) .. '...'
+			end
+			labels[#labels + 1] = label
+		end
+		return labels
+	end
+	local function staticScannerCreate(propModel, note)
+		if type(note) == 'string' and #note == 0 then
+			note = nil
+		end
+
+		local coord = GetEntityCoords(PlayerPedId()) - vec3(0.0, 0.0, 1.0)
+		local heading = GetEntityHeading(PlayerPedId())
+		local propPosition = {
+			x = coord.x,
+			y = coord.y,
+			z = coord.z,
+			heading = heading,
+			exact = false
+		}
+		TriggerServerEvent('SonoranRadio::SpawnStaticScanner', propModel, propPosition, note)
+	end
+	function staticScannerSpawnMenu()
+		local props = {'prop_cs_hand_radio', 'prop_police_radio_main', 'sm_prop_smug_wall_radio_01', 'prop_radio_01', 'v_res_j_radio'}
+		local propLabels = {'Handheld Radio', 'Desk Radio', 'Wall Radio', 'FM Radio', 'Old FM Radio'}
+		WarMenu.ComboBox('Select Prop:', propLabels, staticScannerState.propIndex, staticScannerState.propIndex, function(current)
+			staticScannerState.propIndex = current
+		end)
+
+		local truncNote = staticScannerState.note
+		if #truncNote > 23 then
+			truncNote = string.sub(truncNote, 1, 20) .. '...'
+		end
+		if WarMenu.Button('Label/Note:', truncNote) then
+			AddTextEntry('SRM_SS_LABEL', 'Static Scanner Label/Note:')
+			DisplayOnscreenKeyboard(1, 'SRM_SS_LABEL', '', staticScannerState.note, '', '', '', 50)
+			while UpdateOnscreenKeyboard() == 0 do
+				DisableAllControlActions(0)
+				Wait(0)
+			end
+			if UpdateOnscreenKeyboard() == 1 then
+				staticScannerState.note = GetOnscreenKeyboardResult()
+			else
+				showNotification('~r~Error: ~w~Label prompt was cancelled')
+			end
+		end
+
+		if WarMenu.Button('Confirm') then
+			staticScannerCreate(props[staticScannerState.propIndex], staticScannerState.note)
+			staticScannerState.propIndex = 1
+			staticScannerState.note = ''
+			WarMenu.OpenMenu('staticScannerMenu')
+		end
+	end
+	function staticScannerMoveMenu()
+		WarMenu.ComboBox('Select Scanner:', staticScannerLabels(), staticScannerState.index, staticScannerState.index, function(current)
+			staticScannerState.index = current
+		end)
+
+		local propPosition = StaticScanners[staticScannerState.index].PropPosition
+		if propPosition == nil then
+			return
+		end
+
+		if WarMenu.CheckBox('Exact?', propPosition.exact) then
+			propPosition.exact = not propPosition.exact
+		end
+		if WarMenu.Button('Confirm Placement') then
+			TriggerServerEvent('SonoranRadio::MoveStaticScanner', StaticScanners[staticScannerState.index].Id, propPosition)
+			WarMenu.OpenMenu('staticScannerMenu')
+			return
+		end
+
+		DrawMarker(2, propPosition.x, propPosition.y, propPosition.z + 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, propPosition.heading or 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, false, false, 2, false, nil, nil, false)
+		if IsControlJustReleased(0, 21) and GetLastInputMethod(0) then
+			if staticScannerState.moveSpeed < 0.1 then
+				staticScannerState.moveSpeed = staticScannerState.moveSpeed * 2.0
+			else
+				showNotification('Cannot move faster')
+			end
+		elseif IsControlJustReleased(0, 132) and GetLastInputMethod(0) then
+			if staticScannerState.moveSpeed > 0.0005 then
+				staticScannerState.moveSpeed = staticScannerState.moveSpeed / 2.0
+			else
+				showNotification('Cannot move slower')
+			end
+		elseif IsControlPressed(0, 108) and GetLastInputMethod(0) then -- Movement Keys
+			propPosition.x = propPosition.x + staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 107) and GetLastInputMethod(0) then
+			propPosition.x = propPosition.x - staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 112) and GetLastInputMethod(0) then
+			propPosition.y = propPosition.y + staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 111) and GetLastInputMethod(0) then
+			propPosition.y = propPosition.y - staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 314) and GetLastInputMethod(0) then
+			propPosition.z = propPosition.z + staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 315) and GetLastInputMethod(0) then
+			propPosition.z = propPosition.z - staticScannerState.moveSpeed
+		elseif IsControlPressed(0, 118) and GetLastInputMethod(0) then
+			propPosition.heading = (propPosition.heading or 0.0) + 0.5
+		elseif IsControlPressed(0, 117) and GetLastInputMethod(0) then
+			propPosition.heading = (propPosition.heading or 0.0) - 0.5
+		end
+
+		BeginScaleformMovieMethod(radioScaleform, 'CLEAR_ALL')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(0)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 108))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 107))
+		PushScaleformMovieMethodParameterString('Move X')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(1)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 112))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 111))
+		PushScaleformMovieMethodParameterString('Move Y')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(2)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 314))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 315))
+		PushScaleformMovieMethodParameterString('Move Z')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(3)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 118))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 117))
+		PushScaleformMovieMethodParameterString('Rotate')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'SET_DATA_SLOT')
+		ScaleformMovieMethodAddParamInt(6)
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 21))
+		PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 36))
+		PushScaleformMovieMethodParameterString('Change Speed')
+		EndScaleformMovieMethod()
+
+		BeginScaleformMovieMethod(radioScaleform, 'DRAW_INSTRUCTIONAL_BUTTONS')
+		ScaleformMovieMethodAddParamInt(0)
+		EndScaleformMovieMethod()
+		DrawScaleformMovieFullscreen(radioScaleform, 255, 255, 255, 255, 0)
+	end
+	function staticScannerDeleteMenu()
+		WarMenu.ComboBox('Select Scanner:', staticScannerLabels(), staticScannerState.index, staticScannerState.index, function(current)
+			staticScannerState.index = current
+		end)
+
+		local ss = StaticScanners[staticScannerState.index]
+		if not ss then return end
+		DrawMarker(2, ss.PropPosition.x, ss.PropPosition.y, ss.PropPosition.z + 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, ss.PropPosition.heading or 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, false, false, 2, false, nil, nil, false)
+
+		if WarMenu.Button('Delete Scanner') then
+			TriggerServerEvent('SonoranRadio::DeleteStaticScanner', ss.Id)
+			if staticScannerState.index > 1 then
+				staticScannerState.index = staticScannerState.index - 1
+			end
+			WarMenu.OpenMenu('staticScannerMenu')
 		end
 	end
 
