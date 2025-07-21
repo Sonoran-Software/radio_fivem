@@ -14,6 +14,7 @@ server_script 'lua/update/updater.lua'
 
 shared_script 'lua/**/sh_*.lua'
 server_script 'lua/**/sv_*.lua'
+server_script 'lua/**/sv_*.js'
 client_script 'lua/**/cl_*.lua'
 
 

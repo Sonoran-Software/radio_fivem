@@ -1,15 +1,20 @@
 function checkFramePermissions(player)
 	local allowedFrames = {}
-	if not Config.frames.departments or (type(Config.frames.departments) == 'table' and next(Config.frames.departments) == nil) then
+	if not Config.frames or not Config.frames.permissionMode or Config.frames.permissionMode == 'none' then
+		local frames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
 		Config.frames.departments = {
 			['common'] = {
 				label = 'Common',
-				allowedFrames = {
-					'default',
-					'signalpro',
-					'voxguard',
-					'hi-vis'
-				}
+				allowedFrames = frames
+			}
+		}
+	elseif not Config.frames.departments then
+		errorLog('No departments defined in Config.frames.departments for permission mode: ' .. Config.frames.permissionMode .. ' - returning default frame list')
+		local frames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
+		Config.frames.departments = {
+			['common'] = {
+				label = 'Common',
+				allowedFrames = frames
 			}
 		}
 	end
