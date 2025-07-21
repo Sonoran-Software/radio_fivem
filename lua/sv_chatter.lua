@@ -251,7 +251,7 @@ end)
 RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
 	for _, info in ipairs(profileInfos) do
-		local allowed = 
+		local allowed =
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.id)
 		if allowed then
@@ -270,7 +270,6 @@ Citizen.CreateThread(function()
 			if aceCache[playerId] ~= hasScannerPerm then
 				aceCache[playerId] = hasScannerPerm
 				TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, hasScannerPerm)
-				print('authorize scanners', hasScannerPerm, 'for player', playerId)
 			end
 
 			Citizen.Wait(100)
