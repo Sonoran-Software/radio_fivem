@@ -308,9 +308,9 @@ function initClient()
 		end
 	end
 	function playerHasRadioItem()
-		local itemName = Config.RadioItem and Config.RadioItem.name
-		if not itemName then
-			itemName = 'sonoran_radio'
+		local itemName = 'sonoran_radio'
+		if Config.RadioItem then
+			itemName = Config.RadioItem.name
 		end
 		return playerHasItem(itemName)
 	end
