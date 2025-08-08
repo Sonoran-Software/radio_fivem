@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     emit("SonoranRadio::core:writeLog", "debug", "[http] to: " + dest + " - data: " + dest, JSON.stringify(data));
     const destInfo = new URL(dest);
@@ -48,3 +50,12 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         callback = undefined;
     }, 30000);
 });
+
+// Synchronously read only top‑level directories under skins/
+function getAvailableFrames(skinsDir) {
+	return fs
+		.readdirSync(skinsDir, { withFileTypes: true })
+		.filter((dirent) => dirent.isDirectory())
+		.map((dirent) => dirent.name);
+}
+exports("GetAvailableFrames", getAvailableFrames);

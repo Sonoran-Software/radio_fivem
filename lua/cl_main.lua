@@ -368,8 +368,9 @@ function initClient()
 		return Config.emergencyCallCommand or '911'
 	end
 	function setEmergencyCall(enabled, displayName)
+		local playerId = PlayerId()
 		if type(displayName) ~= 'string' then
-			displayName = GetPlayerName(PlayerId())
+			displayName = GetPlayerName(playerId)
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -378,6 +379,7 @@ function initClient()
 			type = 'setEmergencyCall',
 			enabled = enabled,
 			displayName = displayName,
+			fivemServerId = GetPlayerServerId(playerId),
 			callCommand = emergencyCallCommand(),
 			showHelpText = Config.showEmergencyCallHelp
 		})
@@ -994,9 +996,12 @@ function initClient()
 		end
 
 		if data.type == 'emergencyCallStatus' then
+			isEmergCallActive = data.status
 			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
 		elseif data.type == 'emergencyCallDispatcher' then
 			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
+		elseif data.type == 'emergencyCallRedial' then
+			TriggerEvent('SonoranRadio::API:EmergencyCallRedial')
 		end
 
 		if data.type == 'power' then
@@ -1032,10 +1037,6 @@ function initClient()
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
-		end
-
-		if data.type == 'emergencyCall' then
-			isEmergCallActive = data.enabled
 		end
 
 		if data.type == 'refreshScreen' then

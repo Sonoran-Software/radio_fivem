@@ -8,13 +8,12 @@ version '$RESOURCE_VERSION'
 
 
 server_script 'config.lua'
-server_script 'lua/http.js'
+server_script 'lua/utils.js'
 server_script 'lua/update/unzip.js'
 server_script 'lua/update/updater.lua'
 
 shared_script 'lua/**/sh_*.lua'
 server_script 'lua/**/sv_*.lua'
-server_script 'lua/**/sv_*.js'
 client_script 'lua/**/cl_*.lua'
 
 
