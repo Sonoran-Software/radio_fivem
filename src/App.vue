@@ -441,6 +441,7 @@ export default {
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug.enabled = event.debug;
+                    this.emergencyCall.name = event.displayName;
                     break;
                 case 'power':
                     if (event.power !== this.radioPower) this.buttonPower();

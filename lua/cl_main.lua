@@ -370,7 +370,7 @@ function initClient()
 	function setEmergencyCall(enabled, displayName)
 		local playerId = PlayerId()
 		if type(displayName) ~= 'string' then
-			displayName = GetPlayerName(playerId)
+			displayName = nil
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -379,7 +379,6 @@ function initClient()
 			type = 'setEmergencyCall',
 			enabled = enabled,
 			displayName = displayName,
-			fivemServerId = GetPlayerServerId(playerId),
 			callCommand = emergencyCallCommand(),
 			showHelpText = Config.showEmergencyCallHelp
 		})
@@ -791,6 +790,36 @@ function initClient()
 		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
 	end
 
+	local function emergencyCallRedialNotif()
+		local crashout = false
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			local notifs = {}
+			PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+			while (GetGameTimer() - start) < 10000 and not crashout do
+				BeginTextCommandThefeedPost("STRING")
+				AddTextComponentSubstringPlayerName('Emergency Services is trying to re-dial you! Press ~g~Y~s~ within 10s to accept')
+				local notifId = EndTextCommandThefeedPostMessagetext("CHAR_CALL911", "CHAR_CALL911", false, 0, "Emergency Services", 'Re-dial')
+				table.insert(notifs, notifId)
+				Citizen.Wait(1000)
+			end
+			for _, notifId in ipairs(notifs) do
+				ThefeedRemoveItem(notifId)
+			end
+		end)
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			while (GetGameTimer() - start) < 10000 do
+				if IsControlJustReleased(0, 246) then
+					crashout = true
+					setEmergencyCall(true)
+					break
+				end
+				Citizen.Wait(0)
+			end
+		end)
+	end
+
 	function Radio:Talking(toggle)
 		local inVeh = IsPedInAnyVehicle(PlayerPedId(), false)
 		TriggerEvent('SonoranRadio::API:Talking', toggle, inVeh)
@@ -931,6 +960,7 @@ function initClient()
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
 			debug = Config.debug,
+			displayName = GetPlayerName(PlayerId()),
 		})
 	end
 	Citizen.CreateThread(function()
@@ -1002,6 +1032,9 @@ function initClient()
 			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
 		elseif data.type == 'emergencyCallRedial' then
 			TriggerEvent('SonoranRadio::API:EmergencyCallRedial')
+			if not WasEventCanceled() then
+				emergencyCallRedialNotif()
+			end
 		end
 
 		if data.type == 'power' then
