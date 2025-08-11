@@ -90,6 +90,8 @@ Config.keybinds = {
 Config.autoCallouts = {
 	enabled = true, -- Whether or not this feature is enabled
 	speedUnit = 'mph', -- mph | kmh | none -- The unit of speed provided with the callout
+	withPostals = false, -- Whether to include postals with the automatic callouts
+	postalResource = 'nearest-postal',
 }
 
 -- Radio Item Settings --

@@ -739,11 +739,15 @@ function initClient()
 					establishedLoc.street = loc.street
 					establishedLoc.direction = loc.direction
 					establishedLoc.speed = loc.speed
+					local postalCode = Config.autoCallouts.withPostals and
+						exports[Config.autoCallouts.postalResource or 'nearest-postal']:getPostal() or
+						nil
 					SendNUIMessage({
 						type = 'broadcastLocation',
 						loc = {
 							heading = establishedLoc.direction,
 							street = establishedLoc.street,
+							postal = postalCode,
 							speed = math.floor(establishedLoc.speed / 5.0 + 2.5) * 5.0, -- round to nearest 5
 							speeds = 'speeds',
 						}
