@@ -851,7 +851,7 @@ RegisterCommand('radioMenu', function(source)
 end, true)
 
 RegisterNetEvent('SonoranRadio:GetTunnels', function()
-	TriggerClientEvent('SonoranRadio:SyncTunnels', source, tunnels)
+	TriggerLatentClientEvent('SonoranRadio:SyncTunnels', source, 10000, tunnels)
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)

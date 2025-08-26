@@ -7,6 +7,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 server_script 'config.lua'
+server_script 'lua/sv_changeFrames.js'
 server_script 'lua/http.js'
 
 shared_script 'lua/**/sh_*.lua'
