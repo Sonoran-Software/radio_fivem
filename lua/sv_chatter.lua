@@ -9,8 +9,8 @@ local function pushRadioStatesNow()
 		states[ply] = info.state
 	end
 
-	local msgBytes = #json.encode(states)
-	local bitrate = math.max(msgBytes / 4.0, 1000) * 8
+	local msgBytes = msgpack.pack_args(states):len()
+	local bitrate = math.max(msgBytes / 4.0, 500) * 8
 	TriggerLatentClientEvent('SonoranRadio::ReceiveRadioStates', -1, bitrate, states)
 
 	lastRadioStatesPush = GetGameTimer()
