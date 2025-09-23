@@ -30,10 +30,6 @@ function initChatter()
 					if pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, texture) then
 						return true
 					end
-					if hasComponent then
-						DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
-						goto continue
-					end
 				end
 			end
 		end
