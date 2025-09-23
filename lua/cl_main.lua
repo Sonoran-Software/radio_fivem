@@ -1330,6 +1330,7 @@ function initClient()
 	local state_airmanu = 0
 	local lastVeh = 0
 	local lastNetId = nil
+	local lastSirenState = false
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
@@ -1404,14 +1405,11 @@ function initClient()
 				end
 
 				-- ONLY WHEN YOU’RE DRIVER, SYNC SIREN
-				if isDriver and lastNetId then
-					local sirenOn = IsVehicleSirenOn(veh)
-					SendNUIMessage({ type = 'siren_toggle', state = sirenOn })
-					TriggerServerEvent('sonoranradio:syncSirenState', sirenOn, lastNetId)
-				else
-					-- not driver or not in vehicle → force NUI off
-					SendNUIMessage({ type = 'siren_toggle', state = false })
-					TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
+				local sirenState = isDriver and (not not lastNetId) and IsVehicleSirenOn(veh)
+				if sirenState ~= lastSirenState then
+					lastSirenState = sirenState
+					SendNUIMessage({ type = 'siren_toggle', state = sirenState })
+					TriggerServerEvent('sonoranradio:syncSirenState', sirenState, lastNetId)
 				end
 
 				Citizen.Wait(100)

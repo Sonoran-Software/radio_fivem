@@ -453,9 +453,9 @@ local function getWebPushUrl(checkTries)
 		-- wait for web_baseUrl to be populated
 		local webUrl = GetConvar('web_baseUrl', '')
 		local tries = 0
-		while (not webUrl or webUrl == '') and tries < 5 do
+		while (not webUrl or webUrl == '') and tries < 3 do
 			warnLog('Waiting for web_baseUrl convar...')
-			Citizen.Wait(15000)
+			Citizen.Wait(5000)
 			tries = tries + 1
 			webUrl = GetConvar('web_baseUrl', '')
 		end
@@ -851,7 +851,7 @@ RegisterCommand('radioMenu', function(source)
 end, true)
 
 RegisterNetEvent('SonoranRadio:GetTunnels', function()
-	TriggerClientEvent('SonoranRadio:SyncTunnels', source, tunnels)
+	TriggerLatentClientEvent('SonoranRadio:SyncTunnels', source, 10000, tunnels)
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
