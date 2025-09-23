@@ -369,9 +369,9 @@ function initChatter()
 				if isExcluded ~= lastIsExcluded then
 					lastIsExcluded = isExcluded
 					if isExcluded then
-						SendNotification('~b[Sonoran Radio]~s Earpiece Inserted: Nearby sound disabled')
+						SendNotification('~b~[Sonoran Radio]~s~ Earpiece Inserted: Nearby sound disabled')
 					else
-						SendNotification('~b[Sonoran Radio]~s Earpiece Removed: Nearby sound enabled')
+						SendNotification('~b~[Sonoran Radio]~s~ Earpiece Removed: Nearby sound enabled')
 					end
 				end
 			end
