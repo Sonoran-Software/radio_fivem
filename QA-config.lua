@@ -1,7 +1,7 @@
 Config = {}
 
-Config.comId = 'c6b14624-2396-46f8-b2dc-72318454e819'
-Config.apiKey = '73ddb2c7-ebef-4cc4-8453-76fed7c55ac3'
+Config.comId = 'SONORANQA'
+Config.apiKey = '4582c86c-6857-4b6e-90cd-bca86aa063a6'
 Config.debug = false -- PER MAX: NEVER set debug to enabled by default on QA. Please manually edit config file using SFTP or https://game.sonoranservers.com
 Config.radioUrl = 'https://radio.dev.sonoransoftware.com'
 Config.apiUrl = 'https://radioapi.dev.sonoransoftware.com/'
