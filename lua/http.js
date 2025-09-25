@@ -26,7 +26,7 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
             output += chunk.toString()
         });
         res.on('end', () => {
-            callback(res.statusCode, output, res.headers);
+            if (callback) callback(res.statusCode, output, res.headers);
             callback = undefined;
         });
     });
@@ -34,7 +34,7 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         let ignore_ids = ["EAI_AGAIN", "ETIMEOUT", "ENOTFOUND"]
         if (!ignore_ids.includes(error.code))
             console.debug("HTTP error caught: " + JSON.stringify(error));
-        callback(error.errono, {}, {});
+        if (callback) callback(error.errono, {}, {});
         callback = undefined;
     })
     if (method == "POST") {
@@ -43,8 +43,7 @@ exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
     req.end();
 
     setTimeout(() => {
-        if (!callback) return;
-        callback(-1, {}, {});
+        if (callback) callback(-1, {}, {});
         callback = undefined;
     }, 30000);
 });

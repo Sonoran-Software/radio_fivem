@@ -499,9 +499,10 @@ local function getIpPushUrl(checkTries)
 end
 local function getPushUrl(tries)
 	local d = promise.new()
-	if type(Config.overridePushUrl) == 'string' and Config.overridePushUrl ~= '' then
-		infoLog(('Using %s as override pushUrl'):format(Config.overridePushUrl))
-		return d:resolve(Config.overridePushUrl)
+	local overridePushUrl = Config.overridePushUrl or GetConvar('sonoranradio_pushUrl', '')
+	if type(overridePushUrl) == 'string' and overridePushUrl ~= '' then
+		infoLog(('Using %s as override pushUrl'):format(overridePushUrl))
+		return d:resolve(overridePushUrl)
 	end
 	getWebPushUrl(tries):next(function(webPushUrl)
 		if webPushUrl then
@@ -557,7 +558,11 @@ local function createClientConfig()
 			return d:reject('failed to get pushUrl')
 		end
 
-		local roomId = Config.serverId or GetResourceKvpInt('standalone_serverId') or nil -- use the config value, or the KVP as a backup
+		-- get the room id this server intends to use from convar, then config, then backup kvp
+		local roomId =
+			GetConvarInt('sonoranradio_serverId') or
+			Config.serverId or
+			GetResourceKvpInt('standalone_serverId')
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
 		-- roomId will be created by the backend
@@ -576,8 +581,9 @@ local function createClientConfig()
 			end
 
 			data = json.decode(data)
-			-- if the room id doesn't match the one in the config, update the config file
-			if data.roomId ~= Config.serverId then
+
+			-- if the room id doesn't match the one in the convar or config, update the config file
+			if data.roomId ~= GetConvarInt('sonoranradio_serverId') and data.roomId ~= Config.serverId then
 				local configFile = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
 				configFile = configFile:gsub("[\n^]Config%.serverId%s*=[^\n]*", "") -- remove other "serverId" instances
 
