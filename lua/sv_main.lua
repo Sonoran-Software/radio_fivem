@@ -113,6 +113,28 @@ else
 				local Player = QBCore.Functions.GetPlayer(src)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
+			for _, jammer in ipairs((Config.radioJammers and Config.radioJammers.jammers) or {}) do
+				if jammer.type == 'handheld' and jammer.name then
+					if jammer.itemName and jammer.itemName ~= '' then
+						QBCore.Functions.CreateUseableItem(jammer.itemName, function(source, item)
+							TriggerClientEvent('SonoranRadio::Jammers::UseHandheldItem', source, {
+								configName = jammer.name,
+								item = jammer.itemName,
+								powered = false
+							})
+						end)
+					end
+					if jammer.poweredItemName and jammer.poweredItemName ~= '' then
+						QBCore.Functions.CreateUseableItem(jammer.poweredItemName, function(source, item)
+							TriggerClientEvent('SonoranRadio::Jammers::UseHandheldItem', source, {
+								configName = jammer.name,
+								item = jammer.poweredItemName,
+								powered = true
+							})
+						end)
+					end
+				end
+			end
 		elseif frameworkEnum == 2 then
 			if Config.RadioItem == nil then
 				errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
@@ -157,6 +179,28 @@ else
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
+			for _, jammer in ipairs((Config.radioJammers and Config.radioJammers.jammers) or {}) do
+				if jammer.type == 'handheld' and jammer.name then
+					if jammer.itemName and jammer.itemName ~= '' then
+						exports.qbx_core:CreateUseableItem(jammer.itemName, function(source, item)
+							TriggerClientEvent('SonoranRadio::Jammers::UseHandheldItem', source, {
+								configName = jammer.name,
+								item = jammer.itemName,
+								powered = false
+							})
+						end)
+					end
+					if jammer.poweredItemName and jammer.poweredItemName ~= '' then
+						exports.qbx_core:CreateUseableItem(jammer.poweredItemName, function(source, item)
+							TriggerClientEvent('SonoranRadio::Jammers::UseHandheldItem', source, {
+								configName = jammer.name,
+								item = jammer.poweredItemName,
+								powered = true
+							})
+						end)
+					end
+				end
+			end
 		end
 		RegisterNetEvent('SonoranRadio::RemoveDrop::Scanner', function(scanner)
 			for k, v in pairs(scanners) do
@@ -385,6 +429,7 @@ local function CopyFile(old_path, new_path)
 end
 local defaultJsonConfigFiles = {
 	['earpieces.json'] = 'earpieces.DEFAULT.json',
+	['jammers.json']   = 'jammers.DEFAULT.json',
 	['scanners.json']  = 'scanners.DEFAULT.json',
 	['speakers.json']  = 'speakers.DEFAULT.json',
 	['towers.json']    = 'towers.DEFAULT.json',
@@ -721,6 +766,11 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	local staticScanners = LoadJsonConfig('scanners.json')
 	initStaticScanners(staticScanners)
+
+	local staticJammers = LoadJsonConfig('jammers.json')
+	if type(initStaticJammers) == 'function' then
+		initStaticJammers(staticJammers)
+	end
 
 	-- initialize chatter earpieces
 	local chatter = LoadJsonConfig('earpieces.json')

@@ -305,13 +305,28 @@ function initThreads()
                     bestQuality = bestQuality * (1 - degradeStrength)
                 end
             end
-
+            -- Jammer logic
+            local isJammed = false
+            for _, jammer in pairs(jammers) do
+                local jammerRange = jammer.range or 100.0
+                local jammerCoords = jammer.coords or vector3(0, 0, 0)
+                if #(coord - jammerCoords) < jammerRange then
+                    if jammer.active then
+                        isJammed = true
+                        local jammerStrength = jammer.strength or 0.5
+                        local jammerDist = #(coord - jammerCoords)
+                        local jammerQuality = 1.0 - (jammerDist / jammerRange)
+                        bestQuality = bestQuality * (1 - (jammerStrength * jammerQuality))
+                        DebugPrint(('Jammer active, reducing quality by %.2f'):format(jammerStrength * jammerQuality))
+                    end
+                end
+            end
             -- update the tower quality if it has changed significantly
             local delta = bestQuality < 0.1 and 0.01 or 0.05 -- if tower quality <10%, update every 1% change, otherwise update every 5%
             if math.abs(bestQuality - lastTowerQuality) >= delta or
                 (bestQuality <= 0.0 and lastTowerQuality > 0.0) then
                 lastTowerQuality = bestQuality
-                SendNUIMessage({type = 'setTowerQuality', quality = bestQuality})
+                SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = isJammed and (bestQuality < 0.1 and 0.01 or 0.05) or 0.0})
             end
 
             for k, v in pairs(soundInfo) do

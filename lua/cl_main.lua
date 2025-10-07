@@ -42,6 +42,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initClient()
 	initScanners()
 	initMenu()
+	initJammers()
 	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
 		if GetResourceState('lb-phone') == 'started' then
 			-- lb-phone is started, so we can initialize the phone integration
@@ -307,6 +308,7 @@ function initClient()
 			return false
 		end
 	end
+<<<<<<< Updated upstream
 	function playerHasRadioItem()
 		local itemName = 'sonoran_radio'
 		if Config.RadioItem then
@@ -315,6 +317,15 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
+=======
+    function playerHasRadioItem()
+        local itemName = 'sonoran_radio'
+        if Config.RadioItem then
+            itemName = Config.RadioItem.name
+        end
+        return playerHasItem(itemName)
+    end
+>>>>>>> Stashed changes
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -436,6 +447,8 @@ function initClient()
 				type = 'set_display_name',
 				name = name
 			})
+		elseif action == Config.radioJammers.menuCommand then
+			TriggerServerEvent('SonoranRadio::Request::OpenJammerMenu')
 		else
 			radioToggle()
 		end
@@ -1297,7 +1310,6 @@ function initClient()
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
-				print('lvc payload', data)
 				data = json.decode(data)
 				state_lxsiren = data.state_lxsiren or 0
 				state_pwrcall = data.state_pwrcall or 0
