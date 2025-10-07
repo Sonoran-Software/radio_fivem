@@ -6,7 +6,7 @@
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
             </div>
-            <div v-else-if="emergencyCall.open && emergencyCall.showHelpText" style="display: flex; flex-direction: column; align-items: center">
+            <div v-else-if="emergencyCall.status === 'open' && emergencyCall.showHelpText" style="display: flex; flex-direction: column; align-items: center">
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
                 </div>
@@ -83,7 +83,7 @@
 
         <!-- radio iframe for emergency calls -->
         <standalone-frame
-            v-if="emergencyCallEnabled"
+            v-if="emergencyCall.status !== 'closed'"
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
@@ -200,7 +200,7 @@ export default {
 
             chatterFeatureEnabled: false,
             emergencyCall: {
-                open: false,
+                status: 'closed', // closed, open, idle (for redial)
                 name: 'Guest',
                 peers: [],
                 state: null,
@@ -367,7 +367,7 @@ export default {
             return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
-            return this.emergencyCall.open && !!this.standaloneServerId;
+            return !!this.standaloneServerId;
         },
         emergencyCallCommand() {
             const formatted = /\s/.test(this.emergencyCall.cmd) ? `"${this.emergencyCall.cmd}"` : this.emergencyCall.cmd;
@@ -383,7 +383,7 @@ export default {
             else return !!myState.panic;
         },
         internalEmergencyCallOpen() {
-            return this.emergencyCall.open;
+            return this.emergencyCall.status === 'open';
         },
         internalEmergencyCallDispatchers() {
             return this.emergencyCall.peers.map(x => x.name);
@@ -441,6 +441,7 @@ export default {
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug.enabled = event.debug;
+                    this.emergencyCall.name = event.displayName;
                     break;
                 case 'power':
                     if (event.power !== this.radioPower) this.buttonPower();
@@ -467,7 +468,7 @@ export default {
                     this.scannerMenu.allowedProfileIds = event.profileIds;
                     break;
                 case 'setEmergencyCall':
-                    this.setEmergencyCall(event.enabled, event.displayName, event.callCommand, event.showHelpText);
+                    this.setEmergencyCall(event.enabled, event);
                     break;
                 case 'ptt':
                     if (!this.radioPower) return;
@@ -685,16 +686,24 @@ export default {
                 case 'radio_connected':
                     this.emergencyCall.state = event.state;
                     this.postClient({ type: 'stateUpdatedEmergencyCall', state: event.state });
+                    this.postEmergencyCallFrame({ type: 'set_emergency_call_status', status: this.emergencyCall.status }); // make sure status is synced
                     break;
                 case "radio_disconnected":
-                    // we were kicked on the radio, so end the call
-                    this.setEmergencyCall(false);
+                    // we were kicked on the radio, so end the call and destroy the frame
+                    this.emergencyCall.status = 'closed';
                     break;
-                case 'call_peers':
+                case "call_status":
+                    this.emergencyCall.status = event.newStatus;
+                    break;
+                case "call_peers":
                     this.emergencyCall.peers = event.peers;
+                    break;
+                case "redial_request":
+                    this.postClient({ type: 'emergencyCallRedial' });
                     break;
                 case "display_error":
                     this.notifyPlayer(`~r~Emergency Call Error: ~s~${event.error}`);
+                    this.emergencyCall.status = 'closed'; // all errors are fatal
                     break;
             }
         },
@@ -978,26 +987,33 @@ export default {
             this.$set(this.scannerMenu.state, 'channelId', profiles[nextIdx].id);
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
-        setEmergencyCall(enabled, displayName, cmd, showHelpText) {
-            const enable = enabled === 'toggle' ? !this.emergencyCall.open : !!enabled;
-            this.emergencyCall.open = enable;
-            if (displayName) this.emergencyCall.name = displayName;
-            if (cmd) this.emergencyCall.cmd = cmd;
-            if (showHelpText != null) this.emergencyCall.showHelpText = showHelpText;
-            if (!enable) {
+        setEmergencyCall(newStatus, info) {
+            if (typeof newStatus === 'boolean')
+                newStatus = newStatus ? 'open' : 'idle';
+            else if (newStatus === 'toggle')
+                newStatus = this.emergencyCall.status === 'open' ? 'idle' : 'open';
+
+            this.emergencyCall.status = newStatus;
+            if (info?.displayName) this.emergencyCall.name = info.displayName;
+            if (info?.cmd) this.emergencyCall.cmd = info.cmd;
+            if (info?.showHelpText != null) this.emergencyCall.showHelpText = info.showHelpText;
+
+            if (newStatus === 'closed') {
                 // reset the emergency call state
                 this.emergencyCall.peers = [];
                 this.emergencyCall.state = null;
+            } else {
+                // update the emergency call frame with the new state
+                this.postEmergencyCallFrame({ type: 'set_emergency_call_status', status: newStatus });
             }
-            this.postClient({ type: 'emergencyCall', enabled: enable })
         },
         loop20() {
-            // keep pushing stateUpdated every 20s
-            // NOTE: chatter won't work without this (the server clears stale data after 30s of no update)
-            if (this.emergencyCallEnabled) {
+            if (this.emergencyCall.status === 'open') {
                 const state = this.emergencyCall.state;
                 if (state) this.postClient({ type: 'stateUpdatedEmergencyCall', state });
             } else if (this.radioPower) {
+                // keep pushing stateUpdated every 20s
+                // NOTE: chatter won't work without this (the server clears stale data after 30s of no update)
                 const state = this.$store.state.radioState;
                 if (state) this.postClient({ type: 'stateUpdated', state });
             }

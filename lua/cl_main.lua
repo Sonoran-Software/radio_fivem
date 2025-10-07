@@ -379,8 +379,9 @@ function initClient()
 		return Config.emergencyCallCommand or '911'
 	end
 	function setEmergencyCall(enabled, displayName)
+		local playerId = PlayerId()
 		if type(displayName) ~= 'string' then
-			displayName = GetPlayerName(PlayerId())
+			displayName = nil
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -751,11 +752,15 @@ function initClient()
 					establishedLoc.street = loc.street
 					establishedLoc.direction = loc.direction
 					establishedLoc.speed = loc.speed
+					local postalCode = Config.autoCallouts.withPostals and
+						exports[Config.autoCallouts.postalResource or 'nearest-postal']:getPostal() or
+						nil
 					SendNUIMessage({
 						type = 'broadcastLocation',
 						loc = {
 							heading = establishedLoc.direction,
 							street = establishedLoc.street,
+							postal = postalCode,
 							speed = math.floor(establishedLoc.speed / 5.0 + 2.5) * 5.0, -- round to nearest 5
 							speeds = 'speeds',
 						}
@@ -800,6 +805,36 @@ function initClient()
 			end
 		end)
 		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
+	end
+
+	local function emergencyCallRedialNotif()
+		local crashout = false
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			local notifs = {}
+			PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+			while (GetGameTimer() - start) < 10000 and not crashout do
+				BeginTextCommandThefeedPost("STRING")
+				AddTextComponentSubstringPlayerName('Emergency Services is trying to re-dial you! Press ~g~Y~s~ within 10s to accept')
+				local notifId = EndTextCommandThefeedPostMessagetext("CHAR_CALL911", "CHAR_CALL911", false, 0, "Emergency Services", 'Re-dial')
+				table.insert(notifs, notifId)
+				Citizen.Wait(1000)
+			end
+			for _, notifId in ipairs(notifs) do
+				ThefeedRemoveItem(notifId)
+			end
+		end)
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			while (GetGameTimer() - start) < 10000 do
+				if IsControlJustReleased(0, 246) then
+					crashout = true
+					setEmergencyCall(true)
+					break
+				end
+				Citizen.Wait(0)
+			end
+		end)
 	end
 
 	function Radio:Talking(toggle)
@@ -942,6 +977,7 @@ function initClient()
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
 			debug = Config.debug,
+			displayName = GetPlayerName(PlayerId()),
 		})
 	end
 	Citizen.CreateThread(function()
@@ -1007,9 +1043,15 @@ function initClient()
 		end
 
 		if data.type == 'emergencyCallStatus' then
+			isEmergCallActive = data.status
 			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
 		elseif data.type == 'emergencyCallDispatcher' then
 			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
+		elseif data.type == 'emergencyCallRedial' then
+			TriggerEvent('SonoranRadio::API:EmergencyCallRedial')
+			if not WasEventCanceled() then
+				emergencyCallRedialNotif()
+			end
 		end
 
 		if data.type == 'power' then
@@ -1045,10 +1087,6 @@ function initClient()
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
-		end
-
-		if data.type == 'emergencyCall' then
-			isEmergCallActive = data.enabled
 		end
 
 		if data.type == 'refreshScreen' then
@@ -1305,6 +1343,7 @@ function initClient()
 	local state_airmanu = 0
 	local lastVeh = 0
 	local lastNetId = nil
+	local lastSirenState = false
 	Citizen.CreateThread(function()
 		if GetResourceState(Config.luxartResourceName) == 'started' then
 			lvcStarted = true
@@ -1378,14 +1417,11 @@ function initClient()
 				end
 
 				-- ONLY WHEN YOU’RE DRIVER, SYNC SIREN
-				if isDriver and lastNetId then
-					local sirenOn = IsVehicleSirenOn(veh)
-					SendNUIMessage({ type = 'siren_toggle', state = sirenOn })
-					TriggerServerEvent('sonoranradio:syncSirenState', sirenOn, lastNetId)
-				else
-					-- not driver or not in vehicle → force NUI off
-					SendNUIMessage({ type = 'siren_toggle', state = false })
-					TriggerServerEvent('sonoranradio:syncSirenState', false, lastNetId)
+				local sirenState = isDriver and (not not lastNetId) and IsVehicleSirenOn(veh)
+				if sirenState ~= lastSirenState then
+					lastSirenState = sirenState
+					SendNUIMessage({ type = 'siren_toggle', state = sirenState })
+					TriggerServerEvent('sonoranradio:syncSirenState', sirenState, lastNetId)
 				end
 
 				Citizen.Wait(100)

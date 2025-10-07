@@ -68,10 +68,11 @@ Config.notifications = {
 	end
 }
 
--- Default radio keybinds (these can be changed in GTA settings) --
+-- Default radio keybinds (these can be changed in GTA settings)                                                --
+-- See https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard (input parameter column) --
 Config.keybinds = {
 	['toggle'] = '',
-	['ptt'] = '\\',
+	['ptt'] = 'BACKSLASH',
 
 	['power'] = '',
 	['panic'] = '',
@@ -90,6 +91,8 @@ Config.keybinds = {
 Config.autoCallouts = {
 	enabled = true, -- Whether or not this feature is enabled
 	speedUnit = 'mph', -- mph | kmh | none -- The unit of speed provided with the callout
+	withPostals = false, -- Whether to include postals with the automatic callouts
+	postalResource = 'nearest-postal',
 }
 
 -- Radio Item Settings --

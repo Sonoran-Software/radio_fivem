@@ -23,6 +23,18 @@ function initChatter()
 				(not textureId or GetPedTextureVariation(ped, componentId) == textureId)
 		end
 	end
+	local function pedIsChatterExcluded(ped)
+		if type(chatterConfig) == 'table' then
+			for _, exclusion in ipairs(chatterConfig) do
+				for _, texture in ipairs(exclusion.texture) do
+					if pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, texture) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
 
 	local function getPlayerState(ply)
 		local state = playerStates[GetPlayerServerId(ply)]
@@ -70,18 +82,9 @@ function initChatter()
 				end
 
 				-- check if the ped is excluded from chatter because of a clothing item
-				if type(chatterConfig) == 'table' then
-					DebugPrint('Checking chatter exclusions')
-					for _, exclusion in ipairs(chatterConfig) do
-						for _, texture in ipairs(exclusion.texture) do
-							local hasComponent = pedHasComponent(ped, exclusion.componentId, exclusion.drawableId, texture)
-							DebugPrint('Has component: ' .. tostring(hasComponent))
-							if hasComponent then
-								DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
-								goto continue
-							end
-						end
-					end
+				if pedIsChatterExcluded(ped) then
+					DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
+					goto continue
 				end
 
 				-- insert the chatter source
@@ -354,6 +357,25 @@ function initChatter()
 			if not WarMenu.DoesMenuExist('editItem_' .. index) then
 				WarMenu.CreateSubMenu('editItem_' .. index, 'chatterMenu', 'Edit Item ' .. index)
 			end
+		end
+	end)
+
+	Citizen.CreateThread(function()
+		local lastIsExcluded = false
+		while true do
+			local ped = GetPlayerPed(-1)
+			if DoesEntityExist(ped) then
+				local isExcluded = pedIsChatterExcluded(ped)
+				if isExcluded ~= lastIsExcluded then
+					lastIsExcluded = isExcluded
+					if isExcluded then
+						SendNotification('~b~[Sonoran Radio]~s~ Earpiece Inserted: Nearby sound disabled')
+					else
+						SendNotification('~b~[Sonoran Radio]~s~ Earpiece Removed: Nearby sound enabled')
+					end
+				end
+			end
+			Citizen.Wait(1000)
 		end
 	end)
 end

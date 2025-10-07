@@ -9,11 +9,14 @@ local function pushRadioStatesNow()
 		states[ply] = info.state
 	end
 
-	TriggerClientEvent('SonoranRadio::ReceiveRadioStates', -1, states)
+	local msgBytes = msgpack.pack_args(states):len()
+	local bitrate = math.max(msgBytes / 4.0, 500) * 8
+	TriggerLatentClientEvent('SonoranRadio::ReceiveRadioStates', -1, bitrate, states)
+
 	lastRadioStatesPush = GetGameTimer()
 end
 local function pushRadioStates()
-	local toWait = 2500 - (GetGameTimer() - lastRadioStatesPush)
+	local toWait = 5000 - (GetGameTimer() - lastRadioStatesPush)
 	if toWait <= 0 then
 		-- push radio states immediately
 		pushRadioStatesNow()
@@ -75,10 +78,10 @@ local staticScanners
 local globalScanners = {}
 RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
 	globalScanners[id] = data
-	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners)
+	TriggerLatentClientEvent('SonoranRadio::receiveScanners', -1, 10000, globalScanners)
 end)
 RegisterNetEvent('SonoranRadio::requestScanners', function()
-	TriggerClientEvent('SonoranRadio::receiveScanners', source, globalScanners, staticScanners)
+	TriggerLatentClientEvent('SonoranRadio::receiveScanners', source, 10000, globalScanners, staticScanners)
 end)
 
 function initStaticScanners(s)

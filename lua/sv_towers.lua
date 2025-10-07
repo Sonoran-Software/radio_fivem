@@ -137,7 +137,7 @@ AddEventHandler('RadioTower:clientTowerSync', function()
 		Wait(10)
 	end
 	local sonoradData = {}
-	TriggerClientEvent('RadioTower:SyncTowers', source, Towers)
+	TriggerLatentClientEvent('RadioTower:SyncTowers', source, 10000, Towers)
 	for _, t in ipairs(CellRepeaters) do
 		if not t.DontSaveMe then
 			table.insert(sonoradData, t)
