@@ -113,8 +113,24 @@ else
 				local Player = QBCore.Functions.GetPlayer(src)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
+			local registeredJammerItems = {}
 			for _, jammer in ipairs((Config.radioJammers and Config.radioJammers.jammers) or {}) do
 				if jammer.type == 'handheld' and jammer.name then
+					if jammer.itemName and jammer.itemName ~= '' and not registeredJammerItems[jammer.itemName] then
+						exports['qb-core']:AddItem(jammer.itemName, {
+							name = jammer.itemName,
+							label = jammer.label or jammer.name,
+							weight = jammer.weight or 1,
+							type = 'item',
+							image = jammer.image or 'radio.png',
+							unique = true,
+							useable = true,
+							shouldClose = true,
+							combinable = false,
+							description = jammer.description or ('Handheld jammer: ' .. jammer.name),
+						})
+						registeredJammerItems[jammer.itemName] = true
+					end
 					if jammer.itemName and jammer.itemName ~= '' then
 						QBCore.Functions.CreateUseableItem(jammer.itemName, function(source, item)
 							TriggerClientEvent('SonoranRadio::Jammers::UseHandheldItem', source, {
@@ -123,6 +139,21 @@ else
 								powered = false
 							})
 						end)
+					end
+					if jammer.poweredItemName and jammer.poweredItemName ~= '' and not registeredJammerItems[jammer.poweredItemName] then
+						exports['qb-core']:AddItem(jammer.poweredItemName, {
+							name = jammer.poweredItemName,
+							label = jammer.poweredLabel or (jammer.label or (jammer.name .. ' (Active)')),
+							weight = jammer.poweredWeight or jammer.weight or 1,
+							type = 'item',
+							image = jammer.poweredImage or jammer.image or 'radio.png',
+							unique = true,
+							useable = true,
+							shouldClose = true,
+							combinable = false,
+							description = jammer.poweredDescription or ('Powered handheld jammer: ' .. jammer.name),
+						})
+						registeredJammerItems[jammer.poweredItemName] = true
 					end
 					if jammer.poweredItemName and jammer.poweredItemName ~= '' then
 						QBCore.Functions.CreateUseableItem(jammer.poweredItemName, function(source, item)

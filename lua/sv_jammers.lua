@@ -296,6 +296,13 @@ local function clearHandheldMemory(src, configName)
     end
 end
 
+local function removeInventoryDrop(dropId)
+    if dropId == nil then return end
+    TriggerClientEvent('inventory:client:RemoveDropItem', -1, dropId)
+    TriggerEvent('inventory:server:RemoveDrop', dropId)
+    TriggerEvent('qb-inventory:server:RemoveDrop', dropId)
+end
+
 local function removeHandheldByOwner(src, skipInventory)
     local removed = false
     for id, entry in pairs(handheldState) do
@@ -633,6 +640,78 @@ RegisterNetEvent('SonoranRadio::Jammers::PlaceHandheldOnGround', function(jammer
         owner = src,
         name = entry.config.name
     })
+end)
+
+RegisterNetEvent('SonoranRadio::Jammers::PlaceFromDroppedItem', function(dropId, configName, coords, powered)
+    local src = source
+    if inventoryEnum ~= 1 then return end
+    if not isJammerEnabled() then return end
+    if type(configName) ~= 'string' then return end
+    if type(coords) ~= 'table' then return end
+    if not checkJammerPermissions(src) then return end
+
+    local cfg = findConfigJammer(configName)
+    if not cfg or cfg.type ~= 'handheld' then return end
+
+    local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
+    if not x or not y or not z then return end
+    local position = vector3(x, y, z)
+
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local pedCoords = GetEntityCoords(ped)
+    if #(pedCoords - position) > 10.0 then
+        return
+    end
+    local heading = GetEntityHeading(ped)
+
+    clearHandheldMemory(src, cfg.name)
+
+    local removedHandheldId
+    for id, entry in pairs(handheldState) do
+        if entry.owner == src and entry.config.name == cfg.name then
+            swapHandheldInventory(src, entry.config, false, true, entry.hadBaseItem)
+            handheldState[id] = nil
+            jammerState[id] = nil
+            removedHandheldId = id
+            break
+        end
+    end
+
+    if removedHandheldId then
+        TriggerClientEvent('SonoranRadio::Jammers::HandheldDeactivated', -1, {
+            id = removedHandheldId,
+            owner = src,
+            name = cfg.name
+        })
+    end
+
+    removeInventoryDrop(dropId)
+
+    local groundEntry = {
+        Id = uuid(),
+        Name = cfg.name,
+        PropModel = cfg.model,
+        OffModel = cfg.offModel,
+        Range = cfg.range,
+        Strength = cfg.strength,
+        Active = powered and true or false,
+        PropPosition = {
+            x = position.x,
+            y = position.y,
+            z = position.z,
+            heading = heading,
+            exact = false
+        },
+        Type = 'static',
+        Temporary = true,
+        Owner = src
+    }
+
+    table.insert(dynamicJammers, groundEntry)
+    upsertState(groundEntry)
+    TriggerClientEvent('SonoranRadio::Jammers::SpawnBroadcast', -1, groundEntry)
+    pushJammers()
 end)
 
 RegisterNetEvent('SonoranRadio::Request::ToggleJammerPower', function(jammerId)

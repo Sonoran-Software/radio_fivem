@@ -54,11 +54,19 @@ function initJammers()
     local jammerObjects = {}
     local jammerObjectModels = {}
     local handheldObjects = {}
+    local lastJammerDropKeys = {}
     local configByName = {}
+    local jammerItemMap = {}
 
     for _, jammer in ipairs(Config.radioJammers.jammers or {}) do
         if jammer.name then
             configByName[jammer.name] = jammer
+        end
+        if jammer.itemName and jammer.itemName ~= '' then
+            jammerItemMap[jammer.itemName] = jammer
+        end
+        if jammer.poweredItemName and jammer.poweredItemName ~= '' then
+            jammerItemMap[jammer.poweredItemName] = jammer
         end
     end
 
@@ -78,6 +86,7 @@ function initJammers()
         note = ''
     }
     local handheldMenuState = {index = 1, pending = false, action = nil}
+    local pendingHandheldMenuOpen = nil
     local localHandheldState = {active = false, id = nil, config = nil, powered = false}
 
     local function clonePosition(pos)
@@ -193,6 +202,56 @@ function initJammers()
             Citizen.Wait(500)
         end
     end)
+
+    if Config.enforceRadioItem and frameworkEnum == 1 and inventoryEnum == 1 then
+        Citizen.CreateThread(function()
+            while Config.radioJammers and Config.radioJammers.enabled ~= false do
+                QBCore = QBCore or (exports['qb-core'] and exports['qb-core']:GetCoreObject()) or QBCore
+                if QBCore and GetResourceState('qb-inventory') == 'started' then
+                    QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
+                        if type(drops) ~= 'table' then drops = {} end
+                        local seen = {}
+                        for dropId, drop in pairs(drops) do
+                            local dropKey = tostring(dropId)
+                            seen[dropKey] = true
+                            local jammerData = findJammerInDrop(drop)
+                            if jammerData then
+                                local coords = drop.coords or drop.position or drop.location
+                                local dropVec = nil
+                                if coords then
+                                    if type(coords) == 'vector3' then
+                                        dropVec = coords
+                                    elseif type(coords) == 'table' and coords.x and coords.y and coords.z then
+                                        dropVec = vector3(coords.x + 0.0, coords.y + 0.0, coords.z + 0.0)
+                                    end
+                                end
+                                if dropVec then
+                                    local playerCoords = GetEntityCoords(PlayerPedId())
+                                    if #(playerCoords - dropVec) <= 7.0 then
+                                        local signature = jammerData.config.name .. ':' .. (jammerData.isPowered and '1' or '0')
+                                        if lastJammerDropKeys[dropKey] ~= signature then
+                                            lastJammerDropKeys[dropKey] = signature
+                                            TriggerServerEvent('SonoranRadio::Jammers::PlaceFromDroppedItem', dropId, jammerData.config.name, {
+                                                x = dropVec.x,
+                                                y = dropVec.y,
+                                                z = dropVec.z
+                                            }, jammerData.isPowered)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        for dropKey in pairs(lastJammerDropKeys) do
+                            if not seen[dropKey] then
+                                lastJammerDropKeys[dropKey] = nil
+                            end
+                        end
+                    end)
+                end
+                Citizen.Wait(1000)
+            end
+        end)
+    end
 
     Citizen.CreateThread(function()
         while true do
@@ -350,6 +409,44 @@ function initJammers()
             end
         end
         return options, valid
+    end
+
+    local function focusHandheldMenuSelection(targetName)
+        local _, valid = buildHandheldOptions()
+        if targetName then
+            for idx, jammer in ipairs(valid) do
+                if jammer.name == targetName then
+                    handheldMenuState.index = idx
+                    return
+                end
+            end
+        end
+        if #valid > 0 then
+            handheldMenuState.index = math.min(handheldMenuState.index, #valid)
+            if handheldMenuState.index < 1 then
+                handheldMenuState.index = 1
+            end
+        end
+    end
+
+    local function findJammerInDrop(drop)
+        if type(drop) ~= 'table' then return nil end
+        local itemList = drop.items or drop.inventory or drop.contents
+        if type(itemList) ~= 'table' then return nil end
+        for _, item in pairs(itemList) do
+            if type(item) == 'table' and item.name then
+                local config = jammerItemMap[item.name]
+                if config then
+                    return {
+                        config = config,
+                        isPowered = config.poweredItemName and item.name == config.poweredItemName,
+                        info = item.info,
+                        amount = item.amount or item.count or item.quantity or 1
+                    }
+                end
+            end
+        end
+        return nil
     end
 
     local function spawnJammerMenu()
@@ -991,15 +1088,8 @@ function initJammers()
         local config = configByName[payload.configName]
         if not config then return end
 
-        if localHandheldState.active then
-            if localHandheldState.config and localHandheldState.config.name == config.name then
-                if not handheldMenuState.pending and localHandheldState.id then
-                    handheldMenuState.pending = true
-                    TriggerServerEvent('SonoranRadio::Jammers::DeactivateHandheld', localHandheldState.id)
-                end
-            else
-                showNotification('~r~Error: ~w~Another handheld jammer is already active.')
-            end
+        if localHandheldState.active and localHandheldState.config and localHandheldState.config.name ~= config.name then
+            showNotification('~r~Error: ~w~Another handheld jammer is already active.')
             return
         end
 
@@ -1008,13 +1098,17 @@ function initJammers()
             return
         end
 
-        if not handheldMenuState.pending then
-            handheldMenuState.pending = true
-            handheldMenuState.action = 'activate'
-            TriggerServerEvent('SonoranRadio::Jammers::ActivateHandheld', config.name, {
-                itemPowered = payload.powered
-            })
+        handheldMenuState.pending = false
+        handheldMenuState.action = nil
+        focusHandheldMenuSelection(config.name)
+
+        if localHandheldState.active and localHandheldState.config and localHandheldState.config.name == config.name then
+            if type(payload.powered) == 'boolean' then
+                localHandheldState.powered = payload.powered
+            end
         end
+
+        pendingHandheldMenuOpen = config.name
     end)
 
     RegisterNetEvent('menu:back', function(menu)
@@ -1059,6 +1153,12 @@ function initJammers()
         defineJammerMenu('jammerHandheldMenu', 'jammerMenu', 'Handheld Jammer')
 
         while true do
+            if pendingHandheldMenuOpen then
+                WarMenu.OpenMenu('sonoranRadioMenuJammers')
+                WarMenu.OpenMenu('jammerMenu')
+                WarMenu.OpenMenu('jammerHandheldMenu')
+                pendingHandheldMenuOpen = nil
+            end
             if WarMenu.IsMenuOpened('sonoranRadioMenuJammers') then
                 WarMenu.MenuButton('Spawn Jammer', 'jammerSpawnMenu')
                 WarMenu.MenuButton('Move Jammer', 'jammerMoveMenu')
