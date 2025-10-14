@@ -1,0 +1,68 @@
+name: Resource Build
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  resource-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext-base
+
+      - name: Install production dependencies
+        run: yarn install --production
+
+      - name: Prepare build directory
+        run: |
+          mkdir -p build/sonoranradio
+          cp -R node_modules build/sonoranradio
+
+      - name: Install all dependencies
+        run: yarn install
+
+      - name: Build application
+        env:
+          NODE_ENV: production
+        run: yarn build
+
+      - name: Copy resource files
+        run: |
+          cp -R sonrad_tower/stream sonrad_tower/data build/sonoranradio
+          cp -R lua dist miniradio skins towers.DEFAULT.json tunnels.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json sonoranradio.cfg build/sonoranradio
+
+      - name: Determine resource version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "RESOURCE_VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          else
+            echo "RESOURCE_VERSION=${GITHUB_REF_NAME}@${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Generate version files
+        run: |
+          envsubst < version.json > build/version.json
+          envsubst < fxmanifest.prod.lua > build/sonoranradio/fxmanifest.lua
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-build
+          path: build
+          retention-days: 31
