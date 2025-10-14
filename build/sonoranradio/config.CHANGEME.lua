@@ -169,8 +169,8 @@ Config.radioJammers = {
 		-- Example:
 		{
 			name = 'Hand Held Jammer', -- Name of the jammer
-			model = 'm24_2_prop_m42_jammer_01a', -- Model name for the jammer
-			offModel = 'm24_2_prop_m42_jammer_01b', -- Model name for the jammer when off | Optional
+			model = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer
+			offModel = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer when off | Optional
 			range = 25, -- Range of the jammer in meters
 			strength = 0.5, -- Strength of the jammer (0.0 to 1.0)
 			permission = 'sonoranradio.jammer_handheld', -- ACE permission required to use this jammer | Optional

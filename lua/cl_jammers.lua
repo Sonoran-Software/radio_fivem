@@ -313,7 +313,14 @@ function initJammers()
 
                 if IsControlJustReleased(0, 38) and (GetGameTimer() - lastToggle) > 1000 then
                     lastToggle = GetGameTimer()
+                    showNotification('Toggling jammer power, please wait...')
+                    Wait(200)
+                    local label = nearest.name
+                    if not label and nearest then label = nearest.Name or nearest.Note end
+                    label = label or 'Jammer'
+                    local message = nearest.Active and (label .. ' powered on.') or (label .. ' powered off.')
                     TriggerServerEvent('SonoranRadio::Request::ToggleJammerPower', nearest.Id)
+                    showNotification(message)
                 end
                 Citizen.Wait(0)
             else
@@ -493,7 +500,7 @@ function initJammers()
                 })
                 jammerMenuState.index = 1
                 jammerMenuState.note = ''
-                WarMenu.OpenMenu('jammerMenu')
+                WarMenu.OpenMenu('sonoranRadioMenuJammers')
             end
         end
     end
@@ -523,7 +530,7 @@ function initJammers()
             jammerMenuState.jammerId = nil
             jammerMenuState.ogCoords = nil
             jammerMenuState.ogHeading = nil
-            WarMenu.OpenMenu('jammerMenu')
+            WarMenu.OpenMenu('sonoranRadioMenuJammers')
             return
         end
 
@@ -536,7 +543,7 @@ function initJammers()
             jammerMenuState.jammerId = nil
             jammerMenuState.ogCoords = nil
             jammerMenuState.ogHeading = nil
-            WarMenu.OpenMenu('jammerMenu')
+            WarMenu.OpenMenu('sonoranRadioMenuJammers')
             return
         end
 
@@ -643,7 +650,7 @@ function initJammers()
             if jammerMenuState.index > 1 then
                 jammerMenuState.index = jammerMenuState.index - 1
             end
-            WarMenu.OpenMenu('jammerMenu')
+            WarMenu.OpenMenu('sonoranRadioMenuJammers')
         end
     end
 
@@ -824,7 +831,7 @@ function initJammers()
     end)
 
     RegisterNetEvent('SonoranRadio::OpenJammerMenu', function()
-        WarMenu.OpenMenu('jammerMenu')
+        WarMenu.OpenMenu('sonoranRadioMenuJammers')
     end)
 
     RegisterNetEvent('SonoranRadio::Jammers::HandheldActivated', function(data)
@@ -1018,11 +1025,11 @@ function initJammers()
             ensureJammerObject(jam, GetEntityCoords(PlayerPedId()))
         end
 
-        local label = data.name
-        if not label and jam then label = jam.Name or jam.Note end
-        label = label or 'Jammer'
-        local message = active and (label .. ' powered on.') or (label .. ' powered off.')
-        showNotification(message)
+        -- local label = data.name
+        -- if not label and jam then label = jam.Name or jam.Note end
+        -- label = label or 'Jammer'
+        -- local message = active and (label .. ' powered on.') or (label .. ' powered off.')
+        -- showNotification(message)
     end)
 
     RegisterNetEvent('SonoranRadio::Jammers::SpawnBroadcast', function(data)
@@ -1146,16 +1153,14 @@ function initJammers()
             WarMenu.SetMenuTitleBackgroundSprite(id, 'radio_menu_header', 'option_1')
         end
 
-        defineJammerMenu('jammerMenu', 'sonoranRadioMenuJammers', 'Signal Jammers')
-        defineJammerMenu('jammerSpawnMenu', 'jammerMenu', 'Spawn Jammer')
-        defineJammerMenu('jammerMoveMenu', 'jammerMenu', 'Move Jammer')
-        defineJammerMenu('jammerDeleteMenu', 'jammerMenu', 'Delete Jammer')
-        defineJammerMenu('jammerHandheldMenu', 'jammerMenu', 'Handheld Jammer')
+        defineJammerMenu('jammerSpawnMenu', 'sonoranRadioMenuJammers', 'Spawn Jammer')
+        defineJammerMenu('jammerMoveMenu', 'sonoranRadioMenuJammers', 'Move Jammer')
+        defineJammerMenu('jammerDeleteMenu', 'sonoranRadioMenuJammers', 'Delete Jammer')
+        defineJammerMenu('jammerHandheldMenu', 'sonoranRadioMenuJammers', 'Handheld Jammer')
 
         while true do
             if pendingHandheldMenuOpen then
                 WarMenu.OpenMenu('sonoranRadioMenuJammers')
-                WarMenu.OpenMenu('jammerMenu')
                 WarMenu.OpenMenu('jammerHandheldMenu')
                 pendingHandheldMenuOpen = nil
             end
