@@ -1,0 +1,204 @@
+name: Resource Release Production
+
+on:
+  workflow_run:
+    workflows:
+      - Resource Build
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  BUCKET_HOST: download.sonoransoftware.com
+  BUCKET_NAME: download
+  BASE_PREFIX: sonoransoftware/sonoranradio
+  CF_ZONE_ID: 5e892b9b03facaf059df71c6154a823b
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && startsWith(github.event.workflow_run.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine release target
+        id: determine
+        env:
+          WORKFLOW_REF: ${{ github.event.workflow_run.ref }}
+          BASE_PREFIX: ${{ env.BASE_PREFIX }}
+          BUCKET_HOST: ${{ env.BUCKET_HOST }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${WORKFLOW_REF:-}" ]]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=Workflow run ref missing; nothing to release." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$WORKFLOW_REF" != refs/tags/* ]]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=Workflow run ref '$WORKFLOW_REF' is not a tag." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          tag="${WORKFLOW_REF#refs/tags/}"
+          echo "tag_name=$tag" >> "$GITHUB_OUTPUT"
+
+          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=Tag '$tag' does not match release pattern x.y.z." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          release_prefix="$BASE_PREFIX"
+          public_prefix="https://${BUCKET_HOST}/sonoranradio"
+
+          if [[ ! "$tag" =~ ^1\. ]]; then
+            release_prefix="${BASE_PREFIX}/fivem"
+            public_prefix="${public_prefix}/fivem"
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "release_prefix=$release_prefix" >> "$GITHUB_OUTPUT"
+          echo "public_prefix=$public_prefix" >> "$GITHUB_OUTPUT"
+
+      - name: Download build artifact
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: resource-build
+          path: build
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package release archive
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        run: |
+          set -euo pipefail
+          cd build
+          if [ ! -d "sonoranradio" ]; then
+            echo "Expected sonoranradio directory in build artifact." >&2
+            exit 1
+          fi
+
+          zip_targets=(sonoranradio)
+          if [ -d "sonoranradio_updatehelper" ]; then
+            zip_targets+=(sonoranradio_updatehelper)
+          fi
+
+          rm -f latest.zip
+          zip -r latest.zip "${zip_targets[@]}"
+
+      - name: Verify release files
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "build/version.json" ]; then
+            echo "Missing build/version.json for release." >&2
+            exit 1
+          fi
+
+          if [ ! -f "build/latest.zip" ]; then
+            echo "Missing build/latest.zip for release." >&2
+            exit 1
+          fi
+
+      - name: Install AWS CLI
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        run: |
+          curl -sSLo awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          rm -rf aws awscliv2.zip
+
+      - name: Upload release to R2
+        id: upload
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        env:
+          TAG_NAME: ${{ steps.determine.outputs.tag_name }}
+          RELEASE_PREFIX: ${{ steps.determine.outputs.release_prefix }}
+          PUBLIC_PREFIX: ${{ steps.determine.outputs.public_prefix }}
+          R2_ENDPOINT_URL: ${{ secrets.S3_UPLOAD_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$R2_ENDPOINT_URL" ] || [ -z "$R2_ACCESS_KEY_ID" ] || [ -z "$R2_SECRET_ACCESS_KEY" ]; then
+            echo "Missing required R2 upload secrets." >&2
+            exit 1
+          fi
+
+          if [ -z "$TAG_NAME" ]; then
+            echo "TAG_NAME is required to determine release target." >&2
+            exit 1
+          fi
+
+          if [ -z "$RELEASE_PREFIX" ] || [ -z "$PUBLIC_PREFIX" ]; then
+            echo "Release routing information missing." >&2
+            exit 1
+          fi
+
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          export AWS_S3_FORCE_PATH_STYLE="true"
+
+          archive_key="${RELEASE_PREFIX}/archive/latest.zip"
+          version_key="${RELEASE_PREFIX}/version.json"
+
+          aws s3 cp "build/latest.zip" "s3://${BUCKET_NAME}/${archive_key}" \
+            --endpoint-url "$R2_ENDPOINT_URL" \
+            --content-type "application/zip"
+
+          aws s3 cp "build/version.json" "s3://${BUCKET_NAME}/${version_key}" \
+            --endpoint-url "$R2_ENDPOINT_URL" \
+            --content-type "application/json"
+
+          {
+            echo "archive_key=$archive_key"
+            echo "archive_url=${PUBLIC_PREFIX}/archive/latest.zip"
+            echo "version_key=$version_key"
+            echo "version_url=${PUBLIC_PREFIX}/version.json"
+          } >> "$GITHUB_OUTPUT"
+
+      #- name: Purge Cloudflare cache
+      #  if: ${{ steps.determine.outputs.should_release == 'true' }}
+      #  env:
+      #    CF_CACHE_KEY: ${{ secrets.CF_CACHE_KEY }}
+      #  run: |
+      #    set -euo pipefail
+      #
+      #    if [ -z "$CF_CACHE_KEY" ]; then
+      #      echo "CF_CACHE_KEY secret is required to purge the Cloudflare cache." >&2
+      #      exit 1
+      #    fi
+      #
+      #    curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+      #      -H "Authorization: Bearer ${CF_CACHE_KEY}" \
+      #      -H "Content-Type: application/json" \
+      #      --data "{\"files\":[\"https://${BUCKET_HOST}/sonoranradio/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/version.json\",\"https://${BUCKET_HOST}/sonoranradio/fivem/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/fivem/version.json\"]}"
+
+      - name: Summary
+        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        run: |
+          {
+            echo "Published \`build/latest.zip\` to \`${{ steps.upload.outputs.archive_key }}\`"
+            echo "Public URL: ${{ steps.upload.outputs.archive_url }}"
+            echo ""
+            echo "Published \`build/version.json\` to \`${{ steps.upload.outputs.version_key }}\`"
+            echo "Public URL: ${{ steps.upload.outputs.version_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip release
+        if: ${{ steps.determine.outputs.should_release != 'true' }}
+        env:
+          SKIP_REASON: ${{ steps.determine.outputs.skip_reason }}
+        run: |
+          reason="${SKIP_REASON:-Release skipped; semver tag not detected.}"
+          echo "$reason" >> "$GITHUB_STEP_SUMMARY"
