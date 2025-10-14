@@ -189,6 +189,9 @@ export default {
             inVehicleClass: -1,
             towerQuality: 1.0,
 
+            isJammed : false,
+            jammerStrength : 0.0,
+
             dragMode: false,
             defaultPositions: {
                 portable: [0, 0, 16],
@@ -481,6 +484,8 @@ export default {
                     break;
                 case 'setTowerQuality':
                     this.towerQuality = event.quality;
+                    this.isJammed = event.isJammed;
+                    this.jammerStrength = event.jammerStrength;
                     this.updateGamestate();
                     break;
                 case 'radioHud':
@@ -873,7 +878,7 @@ export default {
         updateGamestate() {
             this.postRadioFrame({
                 type: "set_gamestate",
-                state: { tower_quality: this.towerQuality },
+                state: { tower_quality: this.towerQuality, is_jammed: this.isJammed, jammer_strength: this.jammerStrength },
             });
         },
         nextPreset() {

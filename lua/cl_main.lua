@@ -308,7 +308,6 @@ function initClient()
 			return false
 		end
 	end
-<<<<<<< Updated upstream
 	function playerHasRadioItem()
 		local itemName = 'sonoran_radio'
 		if Config.RadioItem then
@@ -317,15 +316,6 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
-=======
-    function playerHasRadioItem()
-        local itemName = 'sonoran_radio'
-        if Config.RadioItem then
-            itemName = Config.RadioItem.name
-        end
-        return playerHasItem(itemName)
-    end
->>>>>>> Stashed changes
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -464,7 +454,8 @@ function initClient()
 		'hide',
 		'refresh',
 		'reset',
-		'displayname'
+		'displayname',
+		Config.radioJammers.menuCommand,
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')

@@ -152,6 +152,7 @@ Config.repeaterVehicleSpawncodes = {
 Config.radioJammers = {
 	enabled = true, -- Enable or disable radio jammers
 	menuCommand = 'jammers', -- Subcommand to open the jammers menu | e.g. /sonoranradio jammers
+	toggleRange = 3.0, -- Distance in meters required to toggle a jammer on/off
 	permissionMode = 'none', -- ace, qbcore, esx or none
 	acePermission = 'sonoranradio.jammers', -- ACE permission required to use jammers
 	allowedJobs = { -- Jobs that can use jammers | Requires permission mode to be set to 'qbcore' or 'esx'

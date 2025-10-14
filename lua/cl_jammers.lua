@@ -52,6 +52,7 @@ function initJammers()
     local StaticJammers = {}
     local handheldEntries = {}
     local jammerObjects = {}
+    local jammerObjectModels = {}
     local handheldObjects = {}
     local configByName = {}
 
@@ -76,15 +77,8 @@ function initJammers()
         calculatedHeading = nil,
         note = ''
     }
-    local handheldMenuState = {
-        index = 1,
-        pending = false
-    }
-    local localHandheldState = {
-        active = false,
-        id = nil,
-        config = nil
-    }
+    local handheldMenuState = {index = 1, pending = false, action = nil}
+    local localHandheldState = {active = false, id = nil, config = nil, powered = false}
 
     local function clonePosition(pos)
         return {
@@ -110,13 +104,19 @@ function initJammers()
             DeleteObject(handle)
         end
         jammerObjects[id] = nil
+        jammerObjectModels[id] = nil
     end
 
     local function ensureJammerObject(jam, myPos)
         myPos = myPos or GetEntityCoords(PlayerPedId())
         local pos = jam.PropPosition or {}
         local coords = vector3(pos.x or 0.0, pos.y or 0.0, pos.z or 0.0)
-        local modelName = jam.PropModel or 'ch_prop_ch_mobile_jammer_01x'
+        local isActive = jam.Active ~= false
+        local modelName = isActive and (jam.PropModel or 'ch_prop_ch_mobile_jammer_01x') or
+                              (jam.OffModel or jam.PropModel or 'ch_prop_ch_mobile_jammer_01x')
+        if jammerObjectModels[jam.Id] ~= modelName then
+            removeJammerObject(jam.Id)
+        end
         local model = GetHashKey(modelName)
 
         if #(coords - myPos) > 100.0 then
@@ -134,6 +134,7 @@ function initJammers()
             SetEntityCollision(handle, false, false)
             SetModelAsNoLongerNeeded(model)
             jammerObjects[jam.Id] = handle
+            jammerObjectModels[jam.Id] = modelName
         end
 
         if DoesEntityExist(handle) then
@@ -210,15 +211,55 @@ function initJammers()
                     ensureHandheldProp(entry, ped)
                     local coords = GetEntityCoords(ped)
                     if not jammers[id] then jammers[id] = {} end
+                    local isActive = entry.active ~= false
                     jammers[id].coords = coords
                     jammers[id].range = entry.range
                     jammers[id].strength = entry.strength
-                    jammers[id].active = entry.active ~= false
+                    jammers[id].active = isActive
                     jammers[id].type = 'handheld'
                     jammers[id].ownerSrc = entry.ownerServerId
+                    if entry.ownerServerId == localId then
+                        localHandheldState.powered = isActive
+                    end
                 end
             end
             Citizen.Wait(500)
+        end
+    end)
+    Citizen.CreateThread(function()
+        local lastToggle = 0
+        while true do
+            local ped = PlayerPedId()
+            local myPos = GetEntityCoords(ped)
+            local nearest, nearestDist
+            for _, jam in ipairs(StaticJammers) do
+                if jam and jam.PropPosition then
+                    local coords = vector3(jam.PropPosition.x, jam.PropPosition.y, jam.PropPosition.z)
+                    local dist = #(coords - myPos)
+                    if not nearestDist or dist < nearestDist then
+                        nearest = jam
+                        nearestDist = dist
+                    end
+                end
+            end
+
+            local maxRange = (Config.radioJammers and Config.radioJammers.toggleRange) or 3.0
+            if nearest and nearestDist and nearestDist <= maxRange then
+                local message = nearest.Active ~= false and
+                                    'Press ~INPUT_CONTEXT~ to power off this jammer' or
+                                    'Press ~INPUT_CONTEXT~ to power on this jammer'
+                BeginTextCommandDisplayHelp('STRING')
+                AddTextComponentSubstringPlayerName(message)
+                EndTextCommandDisplayHelp(0, false, true, 1000)
+
+                if IsControlJustReleased(0, 38) and (GetGameTimer() - lastToggle) > 1000 then
+                    lastToggle = GetGameTimer()
+                    TriggerServerEvent('SonoranRadio::Request::ToggleJammerPower', nearest.Id)
+                end
+                Citizen.Wait(0)
+            else
+                Citizen.Wait(500)
+            end
         end
     end)
 
@@ -511,11 +552,46 @@ function initJammers()
 
     local function handheldJammerMenu()
         if localHandheldState.active and localHandheldState.config then
-            WarMenu.Button('Active Jammer:', localHandheldState.config.name or 'Unknown')
-            if WarMenu.Button(handheldMenuState.pending and 'Powering Off...' or 'Power Off') then
+            local label = localHandheldState.config.name or 'Unknown'
+            WarMenu.Button('Active Jammer:', label)
+
+            local powerCaption
+            if handheldMenuState.pending and handheldMenuState.action == 'toggle' then
+                powerCaption = 'Toggle Power...'
+            else
+                powerCaption = localHandheldState.powered and
+                                   'Toggle Power (Currently On)' or
+                                   'Toggle Power (Currently Off)'
+            end
+
+            if WarMenu.Button(powerCaption) then
                 if not handheldMenuState.pending and localHandheldState.id then
                     handheldMenuState.pending = true
-                    TriggerServerEvent('SonoranRadio::Jammers::DeactivateHandheld', localHandheldState.id)
+                    handheldMenuState.action = 'toggle'
+                    TriggerServerEvent('SonoranRadio::Jammers::ToggleHandheldPower',
+                                       localHandheldState.id)
+                end
+            end
+
+            local stowLabel = (handheldMenuState.pending and handheldMenuState.action == 'stow') and
+                                  'Stowing...' or 'Stow Jammer'
+            if WarMenu.Button(stowLabel) then
+                if not handheldMenuState.pending and localHandheldState.id then
+                    handheldMenuState.pending = true
+                    handheldMenuState.action = 'stow'
+                    TriggerServerEvent('SonoranRadio::Jammers::DeactivateHandheld',
+                                       localHandheldState.id)
+                end
+            end
+
+            local placeLabel = (handheldMenuState.pending and handheldMenuState.action == 'place') and
+                                   'Placing...' or 'Place On Ground'
+            if WarMenu.Button(placeLabel) then
+                if not handheldMenuState.pending and localHandheldState.id then
+                    handheldMenuState.pending = true
+                    handheldMenuState.action = 'place'
+                    TriggerServerEvent('SonoranRadio::Jammers::PlaceHandheldOnGround',
+                                       localHandheldState.id)
                 end
             end
             return
@@ -531,12 +607,16 @@ function initJammers()
             handheldMenuState.index = current
         end)
 
-        if WarMenu.Button(handheldMenuState.pending and 'Powering On...' or 'Power On') then
+        local activateLabel = (handheldMenuState.pending and handheldMenuState.action == 'activate') and
+                                  'Powering On...' or 'Power On'
+        if WarMenu.Button(activateLabel) then
             if not handheldMenuState.pending then
                 local selection = valid[handheldMenuState.index]
                 if selection then
                     handheldMenuState.pending = true
-                    TriggerServerEvent('SonoranRadio::Jammers::ActivateHandheld', selection.name)
+                    handheldMenuState.action = 'activate'
+                    TriggerServerEvent('SonoranRadio::Jammers::ActivateHandheld',
+                                       selection.name)
                 end
             end
         end
@@ -565,6 +645,12 @@ function initJammers()
                 jammers[id].active = handheldEntries[id].active
                 jammers[id].type = 'handheld'
                 jammers[id].ownerSrc = owner
+                if owner == getLocalServerId() then
+                    localHandheldState.active = true
+                    localHandheldState.id = id
+                    localHandheldState.config = configByName[data.name]
+                    localHandheldState.powered = handheldEntries[id].active
+                end
             end
         end
         for id in pairs(handheldObjects) do
@@ -577,9 +663,11 @@ function initJammers()
             localHandheldState.active = false
             localHandheldState.id = nil
             localHandheldState.config = nil
+            localHandheldState.powered = false
         end
         if not localHandheldState.active then
             handheldMenuState.pending = false
+            handheldMenuState.action = nil
         end
     end
 
@@ -596,6 +684,7 @@ function initJammers()
                     Name = jam.Name,
                     Note = jam.Note,
                     PropModel = jam.PropModel,
+                    OffModel = jam.OffModel,
                     Range = jam.Range,
                     Strength = jam.Strength,
                     Active = jam.Active ~= false,
@@ -644,7 +733,9 @@ function initJammers()
     RegisterNetEvent('SonoranRadio::Jammers::HandheldActivated', function(data)
         if not data or not data.id then return end
         handheldMenuState.pending = false
+        handheldMenuState.action = nil
         local owner = tonumber(data.owner) or data.owner
+        local isActive = data.active ~= false
         handheldEntries[data.id] = {
             id = data.id,
             name = data.name,
@@ -653,12 +744,12 @@ function initJammers()
             strength = data.strength or 0.0,
             model = data.model,
             offModel = data.offModel,
-            active = true
+            active = isActive
         }
         if not jammers[data.id] then jammers[data.id] = {} end
         jammers[data.id].range = handheldEntries[data.id].range
         jammers[data.id].strength = handheldEntries[data.id].strength
-        jammers[data.id].active = true
+        jammers[data.id].active = isActive
         jammers[data.id].type = 'handheld'
         jammers[data.id].ownerSrc = owner
 
@@ -667,6 +758,7 @@ function initJammers()
             localHandheldState.active = true
             localHandheldState.id = data.id
             localHandheldState.config = configByName[data.name]
+            localHandheldState.powered = isActive
         end
 
         local ped
@@ -700,27 +792,200 @@ function initJammers()
             localHandheldState.active = false
             localHandheldState.id = nil
             localHandheldState.config = nil
+            localHandheldState.powered = false
         end
 
         local owner = type(data) == 'table' and tonumber(data.owner) or nil
         if owner and owner == getLocalServerId() then
             handheldMenuState.pending = false
+            handheldMenuState.action = nil
         end
     end)
 
     RegisterNetEvent('SonoranRadio::Jammers::HandheldActivationFailed', function(reason)
         handheldMenuState.pending = false
+        handheldMenuState.action = nil
         local messages = {
             invalid_config = 'Invalid handheld jammer selection.',
             missing_permission = 'You do not have permission to use that jammer.',
             already_active = 'A handheld jammer is already active.',
             missing_item = 'You do not have the required jammer item.',
-            not_active = 'No handheld jammer is currently active.'
+            not_active = 'No handheld jammer is currently active.',
+            no_ped = 'Unable to determine your position.'
         }
         local msg = messages[reason] or 'Failed to toggle handheld jammer.'
         showNotification(('~r~Error: ~w~%s'):format(msg))
     end)
 
+    RegisterNetEvent('SonoranRadio::Jammers::HandheldPowerChanged', function(data)
+        if type(data) ~= 'table' or not data.id then return end
+        local isActive = data.active ~= false
+        if handheldEntries[data.id] then
+            handheldEntries[data.id].active = isActive
+        end
+        if jammers[data.id] then
+            jammers[data.id].active = isActive
+        end
+        local owner = tonumber(data.owner) or data.owner
+        if localHandheldState.id == data.id then
+            localHandheldState.powered = isActive
+        end
+        if owner == getLocalServerId() then
+            handheldMenuState.pending = false
+            handheldMenuState.action = nil
+            local label = data.name or (localHandheldState.config and localHandheldState.config.name) or 'Handheld Jammer'
+            local message = isActive and (label .. ' powered on.') or (label .. ' powered off.')
+            showNotification(message)
+        end
+    end)
+
+    RegisterNetEvent('SonoranRadio::Jammers::ToggleResult', function(result)
+        if type(result) ~= 'table' or result.success ~= false then return end
+        local reasons = {
+            no_permission = 'You do not have permission to toggle this jammer.',
+            too_far = 'Move closer to the jammer to toggle it.',
+            not_found = 'This jammer could not be found.',
+            no_ped = 'Unable to determine your position.'
+        }
+        local msg = reasons[result.reason] or 'Failed to toggle jammer.'
+        showNotification(('~r~Error: ~w~%s'):format(msg))
+    end)
+
+    RegisterNetEvent('SonoranRadio::Jammers::ToggleBroadcast', function(data)
+        if type(data) ~= 'table' or not data.id then return end
+        local active = data.active ~= false
+        local jam
+        for _, entry in ipairs(StaticJammers) do
+            if entry.Id == data.id then
+                jam = entry
+                break
+            end
+        end
+        if not jam and data.coords then
+            jam = {
+                Id = data.id,
+                Name = data.name,
+                Note = data.note,
+                PropModel = data.propModel,
+                OffModel = data.offModel,
+                Range = data.range or 0.0,
+                Strength = data.strength or 0.0,
+                Active = active,
+                PropPosition = {
+                    x = data.coords.x or 0.0,
+                    y = data.coords.y or 0.0,
+                    z = data.coords.z or 0.0,
+                    heading = data.coords.heading or 0.0,
+                    exact = data.coords.exact == true
+                }
+            }
+            table.insert(StaticJammers, jam)
+        elseif jam then
+            jam.Active = active
+            if data.propModel then jam.PropModel = data.propModel end
+            if data.offModel then jam.OffModel = data.offModel end
+            if data.coords then
+                jam.PropPosition.x = data.coords.x or jam.PropPosition.x
+                jam.PropPosition.y = data.coords.y or jam.PropPosition.y
+                jam.PropPosition.z = data.coords.z or jam.PropPosition.z
+                jam.PropPosition.heading = data.coords.heading or jam.PropPosition.heading or 0.0
+                jam.PropPosition.exact = data.coords.exact == true
+            end
+            if data.range ~= nil then jam.Range = data.range end
+            if data.strength ~= nil then jam.Strength = data.strength end
+        end
+
+        jammers[data.id] = jammers[data.id] or {}
+        if data.coords then
+            jammers[data.id].coords =
+                vector3(data.coords.x or 0.0, data.coords.y or 0.0, data.coords.z or 0.0)
+        elseif jam and jam.PropPosition then
+            jammers[data.id].coords =
+                vector3(jam.PropPosition.x or 0.0, jam.PropPosition.y or 0.0, jam.PropPosition.z or 0.0)
+        end
+        if data.range ~= nil then
+            jammers[data.id].range = data.range
+        elseif jam then
+            jammers[data.id].range = jam.Range or jammers[data.id].range
+        end
+        if data.strength ~= nil then
+            jammers[data.id].strength = data.strength
+        elseif jam then
+            jammers[data.id].strength = jam.Strength or jammers[data.id].strength
+        end
+        jammers[data.id].active = active
+        jammers[data.id].type = 'static'
+
+        removeJammerObject(data.id)
+        if jam then
+            ensureJammerObject(jam, GetEntityCoords(PlayerPedId()))
+        end
+
+        local label = data.name
+        if not label and jam then label = jam.Name or jam.Note end
+        label = label or 'Jammer'
+        local message = active and (label .. ' powered on.') or (label .. ' powered off.')
+        showNotification(message)
+    end)
+
+    RegisterNetEvent('SonoranRadio::Jammers::SpawnBroadcast', function(data)
+        if type(data) ~= 'table' or not data.Id then return end
+        local pos = data.PropPosition or {}
+        local entry = {
+            Id = data.Id,
+            Name = data.Name,
+            Note = data.Note,
+            PropModel = data.PropModel,
+            OffModel = data.OffModel,
+            Range = data.Range or 0.0,
+            Strength = data.Strength or 0.0,
+            Active = data.Active ~= false,
+            PropPosition = {
+                x = pos.x or 0.0,
+                y = pos.y or 0.0,
+                z = pos.z or 0.0,
+                heading = pos.heading or 0.0,
+                exact = pos.exact == true
+            }
+        }
+
+        local existing = nil
+        for _, jam in ipairs(StaticJammers) do
+            if jam.Id == entry.Id then
+                existing = jam
+                break
+            end
+        end
+        if existing then
+            existing.Name = entry.Name
+            existing.Note = entry.Note
+            existing.PropModel = entry.PropModel
+            existing.OffModel = entry.OffModel
+            existing.Range = entry.Range
+            existing.Strength = entry.Strength
+            existing.Active = entry.Active
+            existing.PropPosition = entry.PropPosition
+        else
+            table.insert(StaticJammers, entry)
+            existing = entry
+        end
+
+        jammers[entry.Id] = jammers[entry.Id] or {}
+        jammers[entry.Id].coords =
+            vector3(entry.PropPosition.x, entry.PropPosition.y, entry.PropPosition.z)
+        jammers[entry.Id].range = entry.Range
+        jammers[entry.Id].strength = entry.Strength
+        jammers[entry.Id].active = entry.Active
+        jammers[entry.Id].type = 'static'
+
+        removeJammerObject(entry.Id)
+        local ownerId = tonumber(data.Owner) or data.Owner
+        if ownerId == getLocalServerId() then
+            local label = entry.Name or 'Jammer'
+            showNotification(label .. ' placed on ground.')
+        end
+        ensureJammerObject(existing, GetEntityCoords(PlayerPedId()))
+    end)
     RegisterNetEvent('SonoranRadio::Jammers::UseHandheldItem', function(payload)
         if type(payload) ~= 'table' or type(payload.configName) ~= 'string' then return end
         local config = configByName[payload.configName]
@@ -745,7 +1010,10 @@ function initJammers()
 
         if not handheldMenuState.pending then
             handheldMenuState.pending = true
-            TriggerServerEvent('SonoranRadio::Jammers::ActivateHandheld', config.name)
+            handheldMenuState.action = 'activate'
+            TriggerServerEvent('SonoranRadio::Jammers::ActivateHandheld', config.name, {
+                itemPowered = payload.powered
+            })
         end
     end)
 
