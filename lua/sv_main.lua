@@ -45,6 +45,73 @@ else
 	if Config.acePermsForServerRepair ~= nil then
 		acePermsForServerRepair = Config.acePermsForServerRepair
 	end
+	if not Config.radioJammers or Config.radioJammers == nil then
+		Config.radioJammers = {
+			enabled = true, -- Enable or disable radio jammers
+			menuCommand = 'jammers', -- Subcommand to open the jammers menu | e.g. /sonoranradio jammers
+			toggleRange = 3.0, -- Distance in meters required to toggle a jammer on/off
+			permissionMode = 'none', -- ace, qbcore, esx or none
+			acePermission = 'sonoranradio.jammers', -- ACE permission required to use jammers
+			allowedJobs = { -- Jobs that can use jammers | Requires permission mode to be set to 'qbcore' or 'esx'
+				['hacker'] = {
+					grades = { -- Job grades that can use jammers
+						1,
+						2,
+						3
+					}
+				}
+			},
+			jammers = {
+				-- Define jammers here
+				-- Example:
+				{
+					name = 'Hand Held Jammer', -- Name of the jammer
+					model = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer
+					offModel = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer when off | Optional
+					range = 25, -- Range of the jammer in meters
+					strength = 0.5, -- Strength of the jammer (0.0 to 1.0)
+					permission = 'sonoranradio.jammer_handheld', -- ACE permission required to use this jammer | Optional
+					-- If permission is not set, the jammer will be available to all players that can access the jammers menu
+					type = 'handheld', -- Type of jammer (handheld or static)
+					itemName = 'sonoran_radio_jammer_handheld', -- Item name for the jammer (if Config.enforceRadioItem is true)
+					poweredItemName = 'sonoran_radio_jammer_handheld_on' -- Optional item that replaces the base item while the jammer is powered on
+				},
+				{
+					name = 'Suitcase Jammer', -- Name of the jammer
+					model = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer
+					offModel = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer when off | Optional
+					range = 100, -- Range of the jammer in meters
+					strength = 0.8, -- Strength of the jammer (0.0 to 1.0)
+					permission = '', -- ACE permission required to use this jammer | Optional
+					-- If permission is not set, the jammer will be available to all players that can access the jammers menu
+					type = 'static', -- Type of jammer (handheld or static)
+					itemName = 'sonoran_radio_jammer_suitcase' -- Item name for the jammer (if Config.enforceRadioItem is true)
+				},
+				{
+					name = 'Case Jammer', -- Name of the jammer
+					model = 'h4_prop_h4_jammer_01a', -- Model name for the jammer
+					offModel = 'h4_prop_h4_jammer_01a', -- Model name for the jammer when off | Optional
+					range = 200, -- Range of the jammer in meters
+					strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
+					permission = '', -- ACE permission required to use this jammer | Optional
+					-- If permission is not set, the jammer will be available to all players that can
+					type = 'static', -- Type of jammer (handheld or static)
+					itemName = 'sonoran_radio_jammer_case' -- Item name for the jammer (if Config.enforceRadioItem is true)
+				},
+				{
+					name = 'Satelite Jammer', -- Name of the jammer
+					model = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer
+					offModel = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer when off | Optional
+					range = 300, -- Range of the jammer in meters
+					strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
+					permission = '', -- ACE permission required to use this jammer | Optional
+					-- If permission is not set, the jammer will be available to all players that can
+					type = 'static', -- Type of jammer (handheld or static)
+					itemName = 'sonoran_radio_jammer_satelite' -- Item name for the jammer (if Config.enforceRadioItem is true)
+				}
+			}
+		}
+		end
 	if Config.enforceRadioItem then
 		getFramework()
 		getInventory()
