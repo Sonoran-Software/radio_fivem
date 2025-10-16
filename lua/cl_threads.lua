@@ -307,6 +307,7 @@ function initThreads()
             end
             -- Jammer logic
             local isJammed = false
+            local jammerQuality = 0.0
             for _, jammer in pairs(jammers) do
                 local jammerRange = jammer.range or 100.0
                 local jammerCoords = jammer.coords or vector3(0, 0, 0)
@@ -315,7 +316,7 @@ function initThreads()
                         isJammed = true
                         local jammerStrength = jammer.strength or 0.5
                         local jammerDist = #(coord - jammerCoords)
-                        local jammerQuality = 1.0 - (jammerDist / jammerRange)
+                        jammerQuality = 1.0 - (jammerDist / jammerRange)
 
                         -- Clamp jammerQuality between 0 and 1
                         jammerQuality = math.max(0.0, math.min(1.0, jammerQuality))
@@ -334,7 +335,7 @@ function initThreads()
             if math.abs(bestQuality - lastTowerQuality) >= delta or
                 (bestQuality <= 0.0 and lastTowerQuality > 0.0) or isJammed then
                 lastTowerQuality = bestQuality
-                SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = isJammed and (bestQuality < 0.1 and 0.01 or 0.05) or 0.0})
+                SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = jammerQuality})
             end
 
             for k, v in pairs(soundInfo) do
