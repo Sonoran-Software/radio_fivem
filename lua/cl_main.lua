@@ -19,6 +19,73 @@ AddEventHandler('onClientResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
 		return
 	end
+	if not Config.radioJammers or Config.radioJammers == nil then
+	Config.radioJammers = {
+		enabled = true, -- Enable or disable radio jammers
+		menuCommand = 'jammers', -- Subcommand to open the jammers menu | e.g. /sonoranradio jammers
+		toggleRange = 3.0, -- Distance in meters required to toggle a jammer on/off
+		permissionMode = 'none', -- ace, qbcore, esx or none
+		acePermission = 'sonoranradio.jammers', -- ACE permission required to use jammers
+		allowedJobs = { -- Jobs that can use jammers | Requires permission mode to be set to 'qbcore' or 'esx'
+			['hacker'] = {
+				grades = { -- Job grades that can use jammers
+					1,
+					2,
+					3
+				}
+			}
+		},
+		jammers = {
+			-- Define jammers here
+			-- Example:
+			{
+				name = 'Hand Held Jammer', -- Name of the jammer
+				model = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer
+				offModel = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer when off | Optional
+				range = 25, -- Range of the jammer in meters
+				strength = 0.5, -- Strength of the jammer (0.0 to 1.0)
+				permission = 'sonoranradio.jammer_handheld', -- ACE permission required to use this jammer | Optional
+				-- If permission is not set, the jammer will be available to all players that can access the jammers menu
+				type = 'handheld', -- Type of jammer (handheld or static)
+				itemName = 'sonoran_radio_jammer_handheld', -- Item name for the jammer (if Config.enforceRadioItem is true)
+				poweredItemName = 'sonoran_radio_jammer_handheld_on' -- Optional item that replaces the base item while the jammer is powered on
+			},
+			{
+				name = 'Suitcase Jammer', -- Name of the jammer
+				model = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer
+				offModel = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer when off | Optional
+				range = 100, -- Range of the jammer in meters
+				strength = 0.8, -- Strength of the jammer (0.0 to 1.0)
+				permission = '', -- ACE permission required to use this jammer | Optional
+				-- If permission is not set, the jammer will be available to all players that can access the jammers menu
+				type = 'static', -- Type of jammer (handheld or static)
+				itemName = 'sonoran_radio_jammer_suitcase' -- Item name for the jammer (if Config.enforceRadioItem is true)
+			},
+			{
+				name = 'Case Jammer', -- Name of the jammer
+				model = 'h4_prop_h4_jammer_01a', -- Model name for the jammer
+				offModel = 'h4_prop_h4_jammer_01a', -- Model name for the jammer when off | Optional
+				range = 200, -- Range of the jammer in meters
+				strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
+				permission = '', -- ACE permission required to use this jammer | Optional
+				-- If permission is not set, the jammer will be available to all players that can
+				type = 'static', -- Type of jammer (handheld or static)
+				itemName = 'sonoran_radio_jammer_case' -- Item name for the jammer (if Config.enforceRadioItem is true)
+			},
+			{
+				name = 'Satelite Jammer', -- Name of the jammer
+				model = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer
+				offModel = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer when off | Optional
+				range = 300, -- Range of the jammer in meters
+				strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
+				permission = '', -- ACE permission required to use this jammer | Optional
+				-- If permission is not set, the jammer will be available to all players that can
+				type = 'static', -- Type of jammer (handheld or static)
+				itemName = 'sonoran_radio_jammer_satelite' -- Item name for the jammer (if Config.enforceRadioItem is true)
+			}
+		}
+	}
+	end
 	TriggerServerEvent('SonoranRadio::core::RequestEnvironment')
 end)
 
@@ -42,6 +109,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	initClient()
 	initScanners()
 	initMenu()
+	initJammers()
 	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
 		if GetResourceState('lb-phone') == 'started' then
 			-- lb-phone is started, so we can initialize the phone integration
@@ -308,9 +376,9 @@ function initClient()
 		end
 	end
 	function playerHasRadioItem()
-		local itemName = Config.RadioItem and Config.RadioItem.name
-		if not itemName then
-			itemName = 'sonoran_radio'
+		local itemName = 'sonoran_radio'
+		if Config.RadioItem then
+			itemName = Config.RadioItem.name
 		end
 		return playerHasItem(itemName)
 	end
@@ -368,8 +436,9 @@ function initClient()
 		return Config.emergencyCallCommand or '911'
 	end
 	function setEmergencyCall(enabled, displayName)
+		local playerId = PlayerId()
 		if type(displayName) ~= 'string' then
-			displayName = GetPlayerName(PlayerId())
+			displayName = nil
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -436,6 +505,8 @@ function initClient()
 				type = 'set_display_name',
 				name = name
 			})
+		elseif action == Config.radioJammers.menuCommand then
+			TriggerServerEvent('SonoranRadio::Request::OpenJammerMenu')
 		else
 			radioToggle()
 		end
@@ -450,7 +521,8 @@ function initClient()
 		'hide',
 		'refresh',
 		'reset',
-		'displayname'
+		'displayname',
+		Config.radioJammers.menuCommand,
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
@@ -738,11 +810,15 @@ function initClient()
 					establishedLoc.street = loc.street
 					establishedLoc.direction = loc.direction
 					establishedLoc.speed = loc.speed
+					local postalCode = Config.autoCallouts.withPostals and
+						exports[Config.autoCallouts.postalResource or 'nearest-postal']:getPostal() or
+						nil
 					SendNUIMessage({
 						type = 'broadcastLocation',
 						loc = {
 							heading = establishedLoc.direction,
 							street = establishedLoc.street,
+							postal = postalCode,
 							speed = math.floor(establishedLoc.speed / 5.0 + 2.5) * 5.0, -- round to nearest 5
 							speeds = 'speeds',
 						}
@@ -787,6 +863,36 @@ function initClient()
 			end
 		end)
 		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
+	end
+
+	local function emergencyCallRedialNotif()
+		local crashout = false
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			local notifs = {}
+			PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+			while (GetGameTimer() - start) < 10000 and not crashout do
+				BeginTextCommandThefeedPost("STRING")
+				AddTextComponentSubstringPlayerName('Emergency Services is trying to re-dial you! Press ~g~Y~s~ within 10s to accept')
+				local notifId = EndTextCommandThefeedPostMessagetext("CHAR_CALL911", "CHAR_CALL911", false, 0, "Emergency Services", 'Re-dial')
+				table.insert(notifs, notifId)
+				Citizen.Wait(1000)
+			end
+			for _, notifId in ipairs(notifs) do
+				ThefeedRemoveItem(notifId)
+			end
+		end)
+		Citizen.CreateThread(function()
+			local start = GetGameTimer()
+			while (GetGameTimer() - start) < 10000 do
+				if IsControlJustReleased(0, 246) then
+					crashout = true
+					setEmergencyCall(true)
+					break
+				end
+				Citizen.Wait(0)
+			end
+		end)
 	end
 
 	function Radio:Talking(toggle)
@@ -929,6 +1035,7 @@ function initClient()
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
 			debug = Config.debug,
+			displayName = GetPlayerName(PlayerId()),
 		})
 	end
 	Citizen.CreateThread(function()
@@ -994,9 +1101,15 @@ function initClient()
 		end
 
 		if data.type == 'emergencyCallStatus' then
+			isEmergCallActive = data.status
 			TriggerEvent('SonoranRadio::API:EmergencyCall', data.status)
 		elseif data.type == 'emergencyCallDispatcher' then
 			TriggerEvent('SonoranRadio::API:EmergencyCallDispatcher', data.dispatcherNames)
+		elseif data.type == 'emergencyCallRedial' then
+			TriggerEvent('SonoranRadio::API:EmergencyCallRedial')
+			if not WasEventCanceled() then
+				emergencyCallRedialNotif()
+			end
 		end
 
 		if data.type == 'power' then
@@ -1032,10 +1145,6 @@ function initClient()
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
-		end
-
-		if data.type == 'emergencyCall' then
-			isEmergCallActive = data.enabled
 		end
 
 		if data.type == 'refreshScreen' then
@@ -1298,7 +1407,6 @@ function initClient()
 			lvcStarted = true
 			AddEventHandler('lvc:UpdateThirdParty', function(data)
 				data = json.encode(data)
-				print('lvc payload', data)
 				data = json.decode(data)
 				state_lxsiren = data.state_lxsiren or 0
 				state_pwrcall = data.state_pwrcall or 0

@@ -20,7 +20,7 @@ function initLbPhone()
         totalCallLength = 0,
     }
     local number911 = Config.emergencyCallCommand or "911"
-    function CanCallEmergencyNumber()
+    local function CanCallEmergencyNumber()
         local number = exports["lb-phone"]:GetEquippedPhoneNumber()
         local hasRequiredItem = exports["lb-phone"]:HasPhoneItem(number)
 
@@ -33,8 +33,15 @@ function initLbPhone()
         DebugPrint("Can call Emergency Number: " .. tostring(hasRequiredItem and not isPhoneDead and not airplaneMode))
         return (hasRequiredItem and not isPhoneDead and not airplaneMode)
     end
+    local function GetFormattedCallerName()
+        local phoneNumber = exports["lb-phone"]:GetEquippedPhoneNumber()
+        local formattedNumber = exports["lb-phone"]:FormatNumber(phoneNumber)
+        local settings = exports["lb-phone"]:GetSettings()
+        local callerId = json.encode(settings.name)
+        return callerId .. " - " .. formattedNumber
+    end
 
-    function CallTimer()
+    local function CallTimer()
         Citizen.CreateThread(function()
             while CallData.callID ~= nil do
                 Citizen.Wait(100)
@@ -43,18 +50,14 @@ function initLbPhone()
         end)
     end
 
-    function EndCall()
+    local function EndCall()
         local inCall = exports["lb-phone"]:IsInCall()
 
-        if inCall and not CallData.inEmergencyCall then
-            DebugPrint("Attempted to end a non emergency call, use LB-Phone exports to end non emergency calls.")
-            return
-        end
-
         if inCall and CallData.inEmergencyCall then
-            local success = exports["lb-phone"]:EndCustomCall()
-            if not success then
-                DebugPrint("Error ending call")
+            if CallData.status == 'inRedial' then
+                TriggerServerEvent('SonoranRadio::lb-phone:EndDispatcherRedial', CallData.callID)
+            else
+                exports["lb-phone"]:EndCustomCall()
             end
         end
 
@@ -67,30 +70,15 @@ function initLbPhone()
             totalCallLength = 0,
         }
 
-
         exports['sonoranradio']:setEmergencyCall(false)
     end
 
     local data = {
         onCall = function(incomingCall)
             local callID = incomingCall.id
-            local phoneNumber = exports["lb-phone"]:GetEquippedPhoneNumber()
-            local formattedNumber = exports["lb-phone"]:FormatNumber(phoneNumber)
-
             if CallData.callID == nil then
-
-                --Set Number to 911
-                incomingCall.setName(number911)
-
-                local settings = exports["lb-phone"]:GetSettings()
-                local callerId = json.encode(settings.name)
-
-                DebugPrint("Incoming emergency call from " .. formattedNumber)
-
-                local sonoranString = callerId .. " - " .. formattedNumber
-
-                exports['sonoranradio']:setEmergencyCall(true, sonoranString)
-
+                incomingCall.setName('Emergency Services')
+                exports['sonoranradio']:setEmergencyCall(true, GetFormattedCallerName())
                 CallData = {
                     status = "callStarted",
                     src = GetPlayerServerId(PlayerId()),
@@ -101,8 +89,6 @@ function initLbPhone()
                     totalCallLength = 0,
                     inEmergencyCall = true,
                 }
-
-
                 CallTimer()
             end
 
@@ -201,44 +187,40 @@ function initLbPhone()
         end)
 
         AddEventHandler('SonoranRadio::API:EmergencyCall', function(enabled)
-            local inCall = exports["lb-phone"]:IsInCall()
-
-            if enabled then
-                if inCall then
-                    if not CallData.inEmergencyCall then
-                        DebugPrint("Not in emergency call on phone, disabling sonoran emergency call event")
-                        exports['sonoranradio']:setEmergencyCall(false)
-                    else
-                        DebugPrint("Already in emergency call ignoring emergency call event")
-                    end
-                    return
-                end
-
-                DebugPrint("attempting to call 911 by command from sonoran radio")
-
-                if not CanCallEmergencyNumber() then
-                    DebugPrint("Player did not pass all checks, ignoring emergency call event")
-                    exports['sonoranradio']:setEmergencyCall(false)
-                    return
-                end
-
-                local options = { number = number911 }
-                exports["lb-phone"]:CreateCall(options)
-                DebugPrint("Sonoran sent emergency call event started, checks passed .. sending emergency call to lbphone")
-            else
-                if CallData.inEmergencyCall then
-                    DebugPrint("Sonoran sent emergency call event ended, ending call.")
-
-                    CallData.status = "dispatcherEndedCall"
-
-                    --SONORAN TEAM you can add a UpdateCall function or trigger a server event here depending on your needs and how you want to handle the call data.
-                    --UpdateCall("dispatcherEndedCall", CallData)
-
-                    EndCall()
-                else
-                    DebugPrint("Call already ended ignoring sonoran event")
-                end
+            if not enabled then
+                EndCall()
+                return
             end
+            if CallData.status ~= nil then return end
+
+            local inCall = exports["lb-phone"]:IsInCall()
+            if not CallData.inEmergencyCall and inCall then
+                exports['sonoranradio']:setEmergencyCall(false)
+                return
+            end
+            if not CanCallEmergencyNumber() then
+                exports['sonoranradio']:setEmergencyCall(false)
+                return
+            end
+
+            local options = { number = number911 }
+            exports["lb-phone"]:CreateCall(options)
         end)
     end
+
+    AddEventHandler('SonoranRadio::API:EmergencyCallRedial', function()
+        if GetResourceState('lb-phone') ~= 'started' then return end
+        CancelEvent()
+        TriggerServerEvent('SonoranRadio::lb-phone:CreateDispatcherRedial')
+    end)
+    RegisterNetEvent('SonoranRadio::lb-phone:RedialAnswered', function(callId)
+        CallData.status = 'inRedial'
+        CallData.inEmergencyCall = true
+        CallData.callID = callId
+        exports['sonoranradio']:setEmergencyCall(true, GetFormattedCallerName())
+    end)
+    RegisterNetEvent('SonoranRadio::lb-phone:RedialEnded', function()
+        CallData.inEmergencyCall = false
+        EndCall()
+    end)
 end
