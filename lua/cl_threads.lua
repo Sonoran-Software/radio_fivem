@@ -308,7 +308,7 @@ function initThreads()
             -- Jammer logic
             local isJammed = false
             local jammerQuality = 0.0
-            for _, jammer in pairs(jammers) do
+            for _, jammer in pairs(jammers or {}) do
                 local jammerRange = jammer.range or 100.0
                 local jammerCoords = jammer.coords or vector3(0, 0, 0)
                 if #(coord - jammerCoords) < jammerRange then

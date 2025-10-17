@@ -83,7 +83,7 @@ function initChatter()
 
 				-- check if the ped is excluded from chatter because of a clothing item
 				if pedIsChatterExcluded(ped) then
-					DebugPrint('Excluded from chatter due to component ' .. exclusion.componentId)
+					DebugPrint('Excluded from chatter')
 					goto continue
 				end
 
