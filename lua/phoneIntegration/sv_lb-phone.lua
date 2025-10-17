@@ -21,6 +21,7 @@ end
 AddEventHandler("lb-phone:callAnswered", function(call)
     local source = emergencyCallIds[call.callId]
     if source == nil then
+        DebugPrint('Redial: callAnswered received for non-redial callId '..call.callId)
         return
     end
     TriggerClientEvent('SonoranRadio::lb-phone:RedialAnswered', source, call.callId)
@@ -28,6 +29,10 @@ end)
 
 AddEventHandler("lb-phone:callEnded", function(call)
     local source = emergencyCallIds[call.callId]
+    if source == nil then
+        DebugPrint('Redial: callEnded received for non-redial callId '..call.callId)
+        return
+    end
     emergencyCallIds[call.callId] = nil
     TriggerClientEvent('SonoranRadio::lb-phone:RedialEnded', source)
 end)
