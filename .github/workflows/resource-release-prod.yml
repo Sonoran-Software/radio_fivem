@@ -1,14 +1,20 @@
 name: Resource Release Production
 
 on:
-  workflow_run:
-    workflows:
-      - Resource Build
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Choose the semantic version bump to apply
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 env:
@@ -19,65 +25,134 @@ env:
 
 jobs:
   release:
-    if: ${{ github.event.workflow_run.conclusion == 'success'
-      && github.event.workflow_run.event == 'push'
-      && startsWith(github.event.workflow_run.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Determine release target
-        id: determine
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine release metadata
+        id: metadata
         env:
-          WORKFLOW_REF: ${{ github.event.workflow_run.ref }}
+          BUMP_TYPE: ${{ github.event.inputs.bump }}
           BASE_PREFIX: ${{ env.BASE_PREFIX }}
           BUCKET_HOST: ${{ env.BUCKET_HOST }}
         run: |
           set -euo pipefail
 
-          if [[ -z "${WORKFLOW_REF:-}" ]]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "skip_reason=Workflow run ref missing; nothing to release." >> "$GITHUB_OUTPUT"
-            exit 0
+          bump_type="${BUMP_TYPE:-patch}"
+          case "$bump_type" in
+            major|minor|patch) ;;
+            *) echo "Unsupported bump type '$bump_type'." >&2; exit 1 ;;
+          esac
+
+          git fetch --tags --force --prune >/dev/null 2>&1 || true
+
+          latest_tag="$(git tag --list --sort=-v:refname | head -n1)"
+          if [[ -z "$latest_tag" ]]; then
+            latest_tag="0.0.0"
           fi
 
-          if [[ "$WORKFLOW_REF" != refs/tags/* ]]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "skip_reason=Workflow run ref '$WORKFLOW_REF' is not a tag." >> "$GITHUB_OUTPUT"
-            exit 0
+          if [[ ! "$latest_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Latest tag '$latest_tag' is not a semantic version (x.y.z)." >&2
+            exit 1
           fi
 
-          tag="${WORKFLOW_REF#refs/tags/}"
-          echo "tag_name=$tag" >> "$GITHUB_OUTPUT"
+          IFS='.' read -r major minor patch <<< "$latest_tag"
+          case "$bump_type" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
 
-          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "skip_reason=Tag '$tag' does not match release pattern x.y.z." >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
+          new_version="${major}.${minor}.${patch}"
           release_prefix="$BASE_PREFIX"
           public_prefix="https://${BUCKET_HOST}/sonoranradio"
-
-          if [[ ! "$tag" =~ ^1\. ]]; then
+          if [[ ! "$new_version" =~ ^1\. ]]; then
             release_prefix="${BASE_PREFIX}/fivem"
             public_prefix="${public_prefix}/fivem"
           fi
 
-          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "previous_version=$latest_tag" >> "$GITHUB_OUTPUT"
+          echo "release_version=$new_version" >> "$GITHUB_OUTPUT"
           echo "release_prefix=$release_prefix" >> "$GITHUB_OUTPUT"
           echo "public_prefix=$public_prefix" >> "$GITHUB_OUTPUT"
 
-      - name: Download build artifact
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
-        uses: actions/download-artifact@v4
+      - name: Create release tag
+        env:
+          RELEASE_VERSION: ${{ steps.metadata.outputs.release_version }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${RELEASE_VERSION:-}" ]]; then
+            echo "RELEASE_VERSION not provided; cannot create tag." >&2
+            exit 1
+          fi
+
+          if git rev-parse "${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "Tag '${RELEASE_VERSION}' already exists." >&2
+            exit 1
+          fi
+
+          git tag "${RELEASE_VERSION}"
+          git push origin "${RELEASE_VERSION}"
+
+      - uses: actions/setup-node@v4
         with:
-          name: resource-build
-          path: build
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext-base
+
+      - name: Install production dependencies
+        run: yarn install --production
+
+      - name: Prepare build directory
+        run: |
+          mkdir -p build/sonoranradio
+          cp -R node_modules build/sonoranradio
+
+      - name: Install all dependencies
+        run: yarn install
+
+      - name: Build application
+        env:
+          NODE_ENV: production
+        run: yarn build
+
+      - name: Copy resource files
+        run: |
+          cp -R sonrad_tower/stream sonrad_tower/data build/sonoranradio
+          cp -R lua dist miniradio skins towers.DEFAULT.json tunnels.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json sonoranradio.cfg build/sonoranradio
+
+      - name: Generate version files
+        env:
+          RESOURCE_VERSION: ${{ steps.metadata.outputs.release_version }}
+        run: |
+          envsubst < version.json > build/version.json
+          envsubst < fxmanifest.prod.lua > build/sonoranradio/fxmanifest.lua
 
       - name: Package release archive
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
         run: |
           set -euo pipefail
           cd build
@@ -95,7 +170,6 @@ jobs:
           zip -r latest.zip "${zip_targets[@]}"
 
       - name: Verify release files
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
         run: |
           set -euo pipefail
           if [ ! -f "build/version.json" ]; then
@@ -109,7 +183,6 @@ jobs:
           fi
 
       - name: Install AWS CLI
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
         run: |
           curl -sSLo awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
           unzip -q awscliv2.zip
@@ -118,11 +191,10 @@ jobs:
 
       - name: Upload release to R2
         id: upload
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
         env:
-          TAG_NAME: ${{ steps.determine.outputs.tag_name }}
-          RELEASE_PREFIX: ${{ steps.determine.outputs.release_prefix }}
-          PUBLIC_PREFIX: ${{ steps.determine.outputs.public_prefix }}
+          TAG_NAME: ${{ steps.metadata.outputs.release_version }}
+          RELEASE_PREFIX: ${{ steps.metadata.outputs.release_prefix }}
+          PUBLIC_PREFIX: ${{ steps.metadata.outputs.public_prefix }}
           R2_ENDPOINT_URL: ${{ secrets.S3_UPLOAD_URL }}
           R2_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
@@ -168,7 +240,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       #- name: Purge Cloudflare cache
-      #  if: ${{ steps.determine.outputs.should_release == 'true' }}
       #  env:
       #    CF_CACHE_KEY: ${{ secrets.CF_CACHE_KEY }}
       #  run: |
@@ -185,20 +256,17 @@ jobs:
       #      --data "{\"files\":[\"https://${BUCKET_HOST}/sonoranradio/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/version.json\",\"https://${BUCKET_HOST}/sonoranradio/fivem/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/fivem/version.json\"]}"
 
       - name: Summary
-        if: ${{ steps.determine.outputs.should_release == 'true' }}
+        env:
+          RELEASE_VERSION: ${{ steps.metadata.outputs.release_version }}
+          PREVIOUS_VERSION: ${{ steps.metadata.outputs.previous_version }}
         run: |
           {
-            echo "Published \`build/latest.zip\` to \`${{ steps.upload.outputs.archive_key }}\`"
-            echo "Public URL: ${{ steps.upload.outputs.archive_url }}"
+            echo "## Release ${RELEASE_VERSION}"
             echo ""
-            echo "Published \`build/version.json\` to \`${{ steps.upload.outputs.version_key }}\`"
-            echo "Public URL: ${{ steps.upload.outputs.version_url }}"
+            echo "- Previous version: ${PREVIOUS_VERSION}"
+            echo "- Archive uploaded to: \`${{ steps.upload.outputs.archive_key }}\`"
+            echo "- Public archive URL: ${{ steps.upload.outputs.archive_url }}"
+            echo ""
+            echo "- Version manifest uploaded to: \`${{ steps.upload.outputs.version_key }}\`"
+            echo "- Public manifest URL: ${{ steps.upload.outputs.version_url }}"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Skip release
-        if: ${{ steps.determine.outputs.should_release != 'true' }}
-        env:
-          SKIP_REASON: ${{ steps.determine.outputs.skip_reason }}
-        run: |
-          reason="${SKIP_REASON:-Release skipped; semver tag not detected.}"
-          echo "$reason" >> "$GITHUB_STEP_SUMMARY"
