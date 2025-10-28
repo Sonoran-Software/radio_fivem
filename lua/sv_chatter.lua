@@ -2,6 +2,22 @@ if not Config or Config.chatter == false then return end -- if chatter is disabl
 
 local radioStates = {}
 local lastRadioStatesPush = 0
+local DevEvents = DeveloperEvents or {}
+
+local function emitDeveloperEvent(suffix, payload)
+	if DevEvents.emit then
+		DevEvents.emit(suffix, payload)
+	else
+		TriggerEvent(('SonoranRadio::Developer:%s'):format(suffix), payload)
+	end
+end
+
+local function getPlayerPayload(src)
+	if DevEvents.playerContext then
+		return DevEvents.playerContext(src)
+	end
+	return {serverId = src}
+end
 
 local function pushRadioStatesNow()
 	local states = {}
@@ -34,6 +50,13 @@ end
 RegisterNetEvent('SonoranRadio::SetRadioState', function(state)
 	radioStates[source] = {state = state, lastUpdate = GetGameTimer()}
 	pushRadioStates()
+	local sanitized = DevEvents.sanitize and DevEvents.sanitize(state) or state
+	if sanitized ~= nil then
+		emitDeveloperEvent('RadioState:Updated', {
+			player = getPlayerPayload(source),
+			state = sanitized
+		})
+	end
 end)
 
 Citizen.CreateThread(function()

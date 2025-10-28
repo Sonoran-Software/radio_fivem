@@ -4,6 +4,73 @@ local dynamicJammers = {}
 local handheldState = {}
 local handheldMemory = {}
 
+local DevEvents = DeveloperEvents or {}
+
+local function emitDeveloperEvent(suffix, payload)
+    if DevEvents.emit then
+        DevEvents.emit(suffix, payload)
+    else
+        TriggerEvent(('SonoranRadio::Developer:%s'):format(suffix), payload)
+    end
+end
+
+local function getPlayerPayload(src, opts)
+    if DevEvents.playerContext then
+        return DevEvents.playerContext(src, opts or { includeCoords = true, includeHeading = true })
+    end
+    return { serverId = src }
+end
+
+local function sanitizePosition(pos)
+    if type(pos) ~= 'table' then return nil end
+    local payload = {}
+    local x = tonumber(pos.x)
+    local y = tonumber(pos.y)
+    local z = tonumber(pos.z)
+    local heading = tonumber(pos.heading)
+    if x then payload.x = x end
+    if y then payload.y = y end
+    if z then payload.z = z end
+    if heading then payload.heading = heading end
+    if pos.exact ~= nil then
+        payload.exact = pos.exact == true
+    end
+    if next(payload) == nil then
+        return nil
+    end
+    return payload
+end
+
+local function staticJammerPayload(entry)
+    if type(entry) ~= 'table' then return nil end
+    local payload = {
+        id = entry.Id,
+        name = entry.Name,
+        note = entry.Note,
+        type = entry.Type or entry.type or 'static',
+        range = tonumber(entry.Range) or tonumber(entry.range),
+        strength = tonumber(entry.Strength) or tonumber(entry.strength),
+        active = entry.Active ~= false,
+        temporary = entry.Temporary == true,
+        owner = entry.Owner
+    }
+    payload.position = sanitizePosition(entry.PropPosition or entry.position or {})
+    return payload
+end
+
+local function handheldJammerPayload(id, entry)
+    if type(entry) ~= 'table' then return nil end
+    local cfg = entry.config or {}
+    return {
+        id = id,
+        owner = entry.owner,
+        name = cfg.name,
+        range = cfg.range and tonumber(cfg.range) or nil,
+        strength = cfg.strength and tonumber(cfg.strength) or nil,
+        active = entry.active ~= false
+    }
+end
+
 local function isJammerEnabled()
     return Config.radioJammers and Config.radioJammers.enabled ~= false
 end
@@ -307,6 +374,7 @@ local function removeHandheldByOwner(src, skipInventory)
     local removed = false
     for id, entry in pairs(handheldState) do
         if entry.owner == src then
+            local payload = handheldJammerPayload(id, entry)
             rememberHandheldPower(src, entry.config.name, entry.active ~= false)
             swapHandheldInventory(src, entry.config, false, skipInventory, entry.hadBaseItem)
             handheldState[id] = nil
@@ -315,6 +383,11 @@ local function removeHandheldByOwner(src, skipInventory)
                 id = id,
                 owner = src,
                 name = entry.config.name
+            })
+            emitDeveloperEvent('Jammer:HandheldDeactivated', {
+                player = getPlayerPayload(src),
+                jammer = payload,
+                reason = skipInventory and 'playerDropped' or 'cleanup'
             })
         end
     end
@@ -436,6 +509,11 @@ RegisterNetEvent('SonoranRadio::Request::SpawnJammer', function(selectedJammer, 
         Active = jammerEntry.Active ~= false,
         PropPosition = jammerEntry.PropPosition
     })
+    emitDeveloperEvent('Jammer:Spawned', {
+        player = getPlayerPayload(src),
+        jammer = staticJammerPayload(jammerEntry),
+        metadata = DevEvents.sanitize and DevEvents.sanitize(metadata) or metadata
+    })
 end)
 
 RegisterNetEvent('SonoranRadio::Request::MoveJammer', function(jammerId, propPosition)
@@ -448,6 +526,8 @@ RegisterNetEvent('SonoranRadio::Request::MoveJammer', function(jammerId, propPos
     local entry, index, isDynamic = findStaticJammer(jammerId)
     if not entry then return end
 
+    local previousPosition = sanitizePosition(entry.PropPosition or {})
+
     entry.PropPosition.x = tonumber(propPosition.x) or entry.PropPosition.x
     entry.PropPosition.y = tonumber(propPosition.y) or entry.PropPosition.y
     entry.PropPosition.z = tonumber(propPosition.z) or entry.PropPosition.z
@@ -457,7 +537,15 @@ RegisterNetEvent('SonoranRadio::Request::MoveJammer', function(jammerId, propPos
     if not isDynamic then
         saveJammers()
     end
+    local payload = staticJammerPayload(entry)
     pushJammers()
+    emitDeveloperEvent('Jammer:Moved', {
+        player = getPlayerPayload(src),
+        jammer = payload,
+        from = previousPosition,
+        to = payload and payload.position or nil,
+        dynamic = isDynamic == true
+    })
 end)
 
 RegisterNetEvent('SonoranRadio::Request::DeleteJammer', function(jammerId)
@@ -476,7 +564,13 @@ RegisterNetEvent('SonoranRadio::Request::DeleteJammer', function(jammerId)
         saveJammers()
     end
     jammerState[jammerId] = nil
+    local payload = staticJammerPayload(entry)
     pushJammers()
+    emitDeveloperEvent('Jammer:Deleted', {
+        player = getPlayerPayload(src),
+        jammer = payload,
+        dynamic = isDynamic == true
+    })
 end)
 
 RegisterNetEvent('SonoranRadio::Jammers::ActivateHandheld', function(configName, options)
@@ -544,6 +638,11 @@ RegisterNetEvent('SonoranRadio::Jammers::ActivateHandheld', function(configName,
         strength = tonumber(cfg.strength) or 0.0,
         active = initialPower
     })
+    emitDeveloperEvent('Jammer:HandheldActivated', {
+        player = getPlayerPayload(src),
+        jammer = handheldJammerPayload(id, newEntry),
+        options = DevEvents.sanitize and DevEvents.sanitize(options) or options
+    })
 end)
 
 RegisterNetEvent('SonoranRadio::Jammers::DeactivateHandheld', function(jammerId)
@@ -555,6 +654,8 @@ RegisterNetEvent('SonoranRadio::Jammers::DeactivateHandheld', function(jammerId)
         return
     end
 
+    local payload = handheldJammerPayload(jammerId, entry)
+
     rememberHandheldPower(src, entry.config.name, entry.active ~= false)
     swapHandheldInventory(src, entry.config, false, false, entry.hadBaseItem)
     handheldState[jammerId] = nil
@@ -563,6 +664,10 @@ RegisterNetEvent('SonoranRadio::Jammers::DeactivateHandheld', function(jammerId)
         id = jammerId,
         owner = src,
         name = entry.config.name
+    })
+    emitDeveloperEvent('Jammer:HandheldDeactivated', {
+        player = getPlayerPayload(src),
+        jammer = payload
     })
 end)
 
@@ -576,6 +681,7 @@ RegisterNetEvent('SonoranRadio::Jammers::ToggleHandheldPower', function(jammerId
     end
 
     entry.active = not entry.active
+    local payload = handheldJammerPayload(jammerId, entry)
     rememberHandheldPower(src, entry.config.name, entry.active ~= false)
     pushJammers()
     TriggerClientEvent('SonoranRadio::Jammers::HandheldPowerChanged', -1, {
@@ -583,6 +689,10 @@ RegisterNetEvent('SonoranRadio::Jammers::ToggleHandheldPower', function(jammerId
         owner = src,
         active = entry.active ~= false,
         name = entry.config.name
+    })
+    emitDeveloperEvent('Jammer:HandheldPowerToggled', {
+        player = getPlayerPayload(src),
+        jammer = payload
     })
 end)
 
@@ -594,6 +704,8 @@ RegisterNetEvent('SonoranRadio::Jammers::PlaceHandheldOnGround', function(jammer
         TriggerClientEvent('SonoranRadio::Jammers::HandheldActivationFailed', src, 'not_active')
         return
     end
+
+    local handheldPayload = handheldJammerPayload(jammerId, entry)
 
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then
@@ -632,13 +744,18 @@ RegisterNetEvent('SonoranRadio::Jammers::PlaceHandheldOnGround', function(jammer
 
     clearHandheldMemory(src, entry.config.name)
     swapHandheldInventory(src, entry.config, false, false, false)
-    handheldState[jammerId] = nil
-    jammerState[jammerId] = nil
-    pushJammers()
-    TriggerClientEvent('SonoranRadio::Jammers::HandheldDeactivated', -1, {
+   handheldState[jammerId] = nil
+   jammerState[jammerId] = nil
+   pushJammers()
+   TriggerClientEvent('SonoranRadio::Jammers::HandheldDeactivated', -1, {
         id = jammerId,
         owner = src,
         name = entry.config.name
+    })
+    emitDeveloperEvent('Jammer:HandheldPlaced', {
+        player = getPlayerPayload(src),
+        handheld = handheldPayload,
+        groundJammer = staticJammerPayload(groundEntry)
     })
 end)
 
@@ -668,8 +785,10 @@ RegisterNetEvent('SonoranRadio::Jammers::PlaceFromDroppedItem', function(dropId,
     clearHandheldMemory(src, cfg.name)
 
     local removedHandheldId
+    local removedHandheldPayload
     for id, entry in pairs(handheldState) do
         if entry.owner == src and entry.config.name == cfg.name then
+            removedHandheldPayload = handheldJammerPayload(id, entry)
             swapHandheldInventory(src, entry.config, false, true, entry.hadBaseItem)
             handheldState[id] = nil
             jammerState[id] = nil
@@ -712,6 +831,12 @@ RegisterNetEvent('SonoranRadio::Jammers::PlaceFromDroppedItem', function(dropId,
     upsertState(groundEntry)
     TriggerClientEvent('SonoranRadio::Jammers::SpawnBroadcast', -1, groundEntry)
     pushJammers()
+    emitDeveloperEvent('Jammer:HandheldDropped', {
+        player = getPlayerPayload(src),
+        handheld = removedHandheldPayload,
+        groundJammer = staticJammerPayload(groundEntry),
+        dropId = dropId
+    })
 end)
 
 RegisterNetEvent('SonoranRadio::Request::ToggleJammerPower', function(jammerId)
@@ -768,6 +893,7 @@ RegisterNetEvent('SonoranRadio::Request::ToggleJammerPower', function(jammerId)
     if not isDynamic then
         saveJammers()
     end
+    local payload = staticJammerPayload(entry)
     pushJammers()
     TriggerClientEvent('SonoranRadio::Jammers::ToggleBroadcast', -1, {
         id = jammerId,
@@ -786,6 +912,11 @@ RegisterNetEvent('SonoranRadio::Request::ToggleJammerPower', function(jammerId)
         range = entry.Range,
         strength = entry.Strength,
         source = src
+    })
+    emitDeveloperEvent('Jammer:PowerToggled', {
+        player = getPlayerPayload(src),
+        jammer = payload,
+        dynamic = isDynamic == true
     })
 end)
 
