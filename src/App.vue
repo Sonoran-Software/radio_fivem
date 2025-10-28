@@ -546,8 +546,9 @@ export default {
                     if (this.showRadio) this.escapeRadio(true);
                     break;
                 case 'setUiPositions':
-                    if (typeof event.data !== 'object') break;
-                    this.positions = event.data;
+                    let positions = event.data || {};
+                    if (typeof positions !== 'object' || Array.isArray(positions)) positions = {};
+                    this.positions = positions;
                     break;
                 case 'setSkins':
                 case 'setCurrentSkin':

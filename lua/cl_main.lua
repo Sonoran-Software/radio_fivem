@@ -415,9 +415,11 @@ function initClient()
 				skins = allowedFrames
 			})
 		end
+		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		setmetatable(uiPositions, {__jsontype = 'object'})
 		SendNUIMessage({
 			type = 'setUiPositions',
-			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+			data = uiPositions,
 		})
 		SendNUIMessage({
 			type = 'setVisible',
@@ -1138,6 +1140,7 @@ function initClient()
 
 		if data.type == 'setUiPositions' then
 			-- save positions of components in the UI
+			setmetatable(data.data, {__jsontype = 'object'})
 			SetResourceKvp('ui_pos_dic', json.encode(data.data))
 		end
 
