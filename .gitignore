@@ -8,6 +8,7 @@
 /tunnels.json
 /earpieces.json
 /scanners.json
+/jammers.json
 
 yarn-error.log
 .yarn.installed
