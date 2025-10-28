@@ -8,10 +8,20 @@ local DebugBuffer = {}
 local ErrorBuffer = {}
 local tunnels = {}
 scanners = {}
+local panicStates = {}
 local critError = false
 chatterConfig = {}
 local clientConfig
 local sirens = {}
+local DevEvents = DeveloperEvents or {}
+
+local function emitDeveloperEvent(suffix, payload)
+	if DevEvents.emit then
+		DevEvents.emit(suffix, payload)
+	else
+		TriggerEvent(('SonoranRadio::Developer:%s'):format(suffix), payload)
+	end
+end
 
 if type(Config) ~= 'table' then
 	critError = true
@@ -324,6 +334,82 @@ else
 		end
 	end
 end
+
+RegisterNetEvent('SonoranRadio::PanicState', function(isActive, metadata)
+	local src = source
+	if type(src) ~= 'number' or src <= 0 then return end
+
+	local state = panicStates[src]
+	if not state then
+		state = {
+			active = false,
+			lastUpdated = 0
+		}
+		panicStates[src] = state
+	end
+
+	local active = isActive == true
+	if state.active == active then
+		state.lastUpdated = os.time()
+		return
+	end
+
+	state.active = active
+	state.lastUpdated = os.time()
+	state.metadata = DevEvents.sanitize and DevEvents.sanitize(metadata) or metadata
+
+	local playerPayload
+	if DevEvents.playerContext then
+		playerPayload = DevEvents.playerContext(src, {
+			includeCoords = true,
+			includeHeading = true
+		})
+	else
+		playerPayload = {serverId = src}
+	end
+
+	local payload = {
+		player = playerPayload,
+		active = active,
+		updatedAt = state.lastUpdated,
+		metadata = state.metadata
+	}
+
+	if not payload.metadata then
+		payload.metadata = nil
+	end
+
+	if active then
+		emitDeveloperEvent('Panic:Activated', payload)
+	else
+		emitDeveloperEvent('Panic:Cleared', payload)
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	local src = source
+	local state = panicStates[src]
+	if not state then return end
+
+	if state.active then
+		local playerPayload
+		if DevEvents.playerContext then
+			playerPayload = DevEvents.playerContext(src, {includeIdentifiers = true})
+		else
+			playerPayload = {serverId = src}
+		end
+
+		emitDeveloperEvent('Panic:Cleared', {
+			player = playerPayload,
+			active = false,
+			updatedAt = os.time(),
+			reason = 'playerDropped',
+			metadata = state.metadata
+		})
+	end
+
+	panicStates[src] = nil
+end)
 
 RegisterCommand('sonoranradio', function(source, args, rawCommands)
 	if source ~= 0 then

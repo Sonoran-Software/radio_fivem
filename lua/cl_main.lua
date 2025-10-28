@@ -1068,12 +1068,13 @@ function initClient()
 			SendNotification(data.message)
 		end
 
-		if data.type == 'panic' then
-			if data.status then
-				if Config.autoPttOnPanic then
-					if Config.autoPttOnPanic.enabled then
-						Radio:Talking(true)
-						SendNUIMessage({
+	if data.type == 'panic' then
+		TriggerServerEvent('SonoranRadio::PanicState', data.status)
+		if data.status then
+			if Config.autoPttOnPanic then
+				if Config.autoPttOnPanic.enabled then
+					Radio:Talking(true)
+					SendNUIMessage({
 							type = 'ptt',
 							state = true
 						})
