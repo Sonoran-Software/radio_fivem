@@ -2,16 +2,6 @@ local pendingRestart = false
 local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/latest.zip'
 local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json '
 
-function PerformHttpRequestS(url, cb, method, data, headers)
-    if not data then
-        data = ""
-    end
-    if not headers then
-        headers = {["X-User-Agent"] = "SonoranCAD"}
-    end
-    exports["sonoranradio"]:HandleHttpRequest(url, cb, method, data, headers)
-end
-
 local function doUnzip(path)
     local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
     exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
@@ -65,10 +55,9 @@ function RunAutoUpdater(manualRun)
         os.remove(GetResourcePath(GetCurrentResourceName()).."/update.zip")
         os.remove(GetResourcePath("sonoranradio_updatehelper").."/run.lock")
     end
-    local versionFile = releaseVersionUrl
     local myVersion = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
-    PerformHttpRequestS(versionFile, function(code, data, headers)
+    local requestCb = function(code, data, headers)
         if code == 200 then
             local remote = json.decode(data)
             if remote == nil then
@@ -111,7 +100,8 @@ function RunAutoUpdater(manualRun)
                 end
             end
         end
-    end, "GET")
+    end
+    exports["sonoranradio"]:HandleHttpRequest(releaseVersionUrl, requestCb, 'GET')
 end
 
 
