@@ -20,7 +20,7 @@ permissions:
 env:
   BUCKET_HOST: download.sonoransoftware.com
   BUCKET_NAME: download
-  BASE_PREFIX: sonoransoftware/sonoranradio
+  BASE_PREFIX: sonoranradio
   CF_ZONE_ID: 5e892b9b03facaf059df71c6154a823b
 
 jobs:
