@@ -221,7 +221,7 @@ jobs:
           export AWS_DEFAULT_REGION="auto"
           export AWS_S3_FORCE_PATH_STYLE="true"
 
-          archive_key="${RELEASE_PREFIX}/archive/latest.zip"
+          archive_key="${RELEASE_PREFIX}/latest.zip"
           version_key="${RELEASE_PREFIX}/version.json"
 
           aws s3 cp "build/latest.zip" "s3://${BUCKET_NAME}/${archive_key}" \
@@ -234,7 +234,7 @@ jobs:
 
           {
             echo "archive_key=$archive_key"
-            echo "archive_url=${PUBLIC_PREFIX}/archive/latest.zip"
+            echo "archive_url=${PUBLIC_PREFIX}/latest.zip"
             echo "version_key=$version_key"
             echo "version_url=${PUBLIC_PREFIX}/version.json"
           } >> "$GITHUB_OUTPUT"
