@@ -787,11 +787,13 @@ local function createClientConfig()
 			return d:reject('failed to get pushUrl')
 		end
 
+		-- turn 0 values into nil so the below "or" chain works
+		local function nonZero(val) if val == 0 then return nil else return val end end
 		-- get the room id this server intends to use from convar, then config, then backup kvp
 		local roomId =
-			GetConvarInt('sonoranradio_serverId') or
-			Config.serverId or
-			GetResourceKvpInt('standalone_serverId')
+			nonZero(GetConvarInt('sonoranradio_serverId')) or
+			nonZero(Config.serverId) or
+			nonZero(GetResourceKvpInt('standalone_serverId'))
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
 		-- roomId will be created by the backend
