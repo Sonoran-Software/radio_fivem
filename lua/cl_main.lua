@@ -456,10 +456,15 @@ function initClient()
 	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
+	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest)
 		DebugPrint('Authorized for Radio Usage')
 		authorized = true
 		allowedMiniRadio = miniRadio
+		SendNUIMessage({
+			type = 'setGuestAllowed',
+			allowed = guest,
+		})
+
 		allowedFrames = frames
 		SendNUIMessage({
 			type = 'setCurrentSkin',
@@ -1070,13 +1075,13 @@ function initClient()
 			SendNotification(data.message)
 		end
 
-	if data.type == 'panic' then
-		TriggerServerEvent('SonoranRadio::PanicState', data.status)
-		if data.status then
-			if Config.autoPttOnPanic then
-				if Config.autoPttOnPanic.enabled then
-					Radio:Talking(true)
-					SendNUIMessage({
+		if data.type == 'panic' then
+			TriggerServerEvent('SonoranRadio::PanicState', data.status)
+			if data.status then
+				if Config.autoPttOnPanic then
+					if Config.autoPttOnPanic.enabled then
+						Radio:Talking(true)
+						SendNUIMessage({
 							type = 'ptt',
 							state = true
 						})
@@ -1175,6 +1180,28 @@ function initClient()
 		end
 
 		cb('OK')
+	end)
+
+	RegisterNetEvent('SonoranRadio::EmergencyCallToken')
+	RegisterNUICallback('create-emergency-call-token', function(_data, cb)
+		local handlerId
+		handlerId = AddEventHandler('SonoranRadio::EmergencyCallToken', function(guestToken)
+			RemoveEventHandler(handlerId)
+			cb({ guestToken = guestToken })
+		end)
+		TriggerServerEvent('SonoranRadio::CreateEmergencyCallToken')
+	end)
+	RegisterNetEvent('SonoranRadio::RadioGuestToken')
+	RegisterNUICallback('create-guest-token', function(_data, cb)
+		local handlerId
+		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken)
+			RemoveEventHandler(handlerId)
+			cb({
+				guestToken = guestToken,
+				displayName = GetPlayerName(PlayerId()),
+			})
+		end)
+		TriggerServerEvent('SonoranRadio::CreateGuestToken')
 	end)
 
 	AddEventHandler('onResourceStart', function(resource)
