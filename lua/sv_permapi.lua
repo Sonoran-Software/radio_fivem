@@ -8,6 +8,31 @@ local function httpRequest(method, url, data, headers)
 	return d
 end
 
+local function createGuestToken(opts)
+	if not opts then opts = {} end
+	local url = Config.apiUrl..'api/servers/'..Config.comId..'/guest-tokens'
+	local payload = {
+		apiKey = Config.apiKey,
+		roomId = Config.serverId,
+		expiresInSeconds = opts.expiresInSeconds,
+		lockedCh = opts.emergCall and 'emergcall' or nil,
+		permission = opts.permission,
+		profilePerms = opts.profilePerms,
+	}
+	local res = Citizen.Await(httpRequest('POST', url, json.encode(payload)))
+	local err = res.status == nil or res.status >= 400
+	if err then
+		print('failed to create guest token', res.status, res.payload)
+		return nil
+	end
+	res.payload = json.decode(res.payload)
+	if res.payload.result ~= 'ok' then
+		print('failed to create guest tokens', json.encode(res.payload))
+		return nil
+	end
+	return res.payload
+end
+
 local function authorizeRadioUser(accId)
 	local url = Config.apiUrl..'api/servers/'..Config.comId..'/members/emplace'
 	local payload = {
@@ -95,5 +120,34 @@ RegisterNetEvent('SonoranRadio::SyncAcePerms', function(accId, profiles, authori
 		local perm = calculateRadioPerm(src)
 		local profilePerms = calculateRadioProfilePerms(src, profiles or {})
 		setRadioUserPerms(accId, perm, profilePerms)
+	end
+end)
+
+-- called from the client when starting a 911 call
+-- creates a guest token and sends it back to the client
+RegisterNetEvent('SonoranRadio::CreateEmergencyCallToken', function()
+	local src = source
+	if src == nil then return end
+
+	local payload = createGuestToken({emergCall = true})
+	if payload ~= nil then
+		TriggerClientEvent('SonoranRadio::EmergencyCallToken', src, payload.data.guestToken)
+	end
+end)
+-- called from the client after clicking "log in as guest"
+-- creates a guest token and sends it back to the client
+RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
+	local src = source
+	if src == nil then return end
+	if Config.acePermsForRadioGuests and not IsPlayerAceAllowed(src, 'sonoranradio.guest') then
+		return
+	end
+
+	local payload = createGuestToken({
+		permission = calculateRadioPerm(src),
+		expiresInSeconds = 24 * 60 * 60, -- one day
+	})
+	if payload ~= nil then
+		TriggerClientEvent('SonoranRadio::RadioGuestToken', src, payload.data.guestToken)
 	end
 end)

@@ -87,7 +87,11 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :query="{ roomId: standaloneRoomId, displayName: emergencyCall.name }"
+            :query="{
+                guestToken: emergencyCall.token,
+                roomId: standaloneRoomId,
+                displayName: emergencyCall.name,
+            }"
             feature="911"
         />
         <!-- radio iframe for nearby chatter -->
@@ -117,7 +121,11 @@
                         ref="standaloneFrame"
                         :server-id="standaloneServerId"
                         :url="standaloneUrl"
-                        :query="{ roomId: standaloneRoomId, screen: frame.screen.style }"
+                        :query="{
+                            roomId: standaloneRoomId,
+                            screen: frame.screen.style,
+                            guestok: allowedGuest,
+                        }"
                         iframe-persistent
                     />
                 </primary-screen>
@@ -188,6 +196,7 @@ export default {
             nextPrevMode: 'preset',
             inVehicleClass: -1,
             towerQuality: 1.0,
+            allowedGuest: false,
 
             isJammed : false,
             jammerStrength : 0.0,
@@ -204,6 +213,7 @@ export default {
             chatterFeatureEnabled: false,
             emergencyCall: {
                 status: 'closed', // closed, open, idle (for redial)
+                token: '',
                 name: 'Guest',
                 peers: [],
                 state: null,
@@ -433,7 +443,8 @@ export default {
                 return console.error(`failed request with code: ${res.status}`);
 
             const msg = await res.json();
-            if (msg !== "OK") throw new Error(`failed request with message: ${data}`);
+            if (typeof msg === 'string' && msg !== "OK") throw new Error(`failed request with message: ${data}`);
+            return msg;
         },
         onClientEvent(event) {
             switch (event.type) {
@@ -445,6 +456,9 @@ export default {
                     this.chatterFeatureEnabled = event.chatter;
                     this.debug.enabled = event.debug;
                     this.emergencyCall.name = event.displayName;
+                    break;
+                case 'setGuestAllowed':
+                    this.allowedGuest = event.allowed;
                     break;
                 case 'power':
                     if (event.power !== this.radioPower) this.buttonPower();
@@ -546,8 +560,9 @@ export default {
                     if (this.showRadio) this.escapeRadio(true);
                     break;
                 case 'setUiPositions':
-                    if (typeof event.data !== 'object') break;
-                    this.positions = event.data;
+                    let positions = event.data || {};
+                    if (typeof positions !== 'object' || Array.isArray(positions)) positions = {};
+                    this.positions = positions;
                     break;
                 case 'setSkins':
                 case 'setCurrentSkin':
@@ -634,6 +649,11 @@ export default {
                     break;
                 case "display_error":
                     this.notifyPlayer(`~r~Radio Error: ~s~${event.error}`);
+                    break;
+                case "guest_login_request":
+                    this.postClient({}, '/create-guest-token').then(res => {
+                        this.postRadioFrame({ type: 'guest_login_response', ...res })
+                    });
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
@@ -992,21 +1012,33 @@ export default {
             this.$set(this.scannerMenu.state, 'channelId', profiles[nextIdx].id);
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
-        setEmergencyCall(newStatus, info) {
+        async setEmergencyCall(newStatus, info) {
             if (typeof newStatus === 'boolean')
                 newStatus = newStatus ? 'open' : 'idle';
             else if (newStatus === 'toggle')
                 newStatus = this.emergencyCall.status === 'open' ? 'idle' : 'open';
 
-            this.emergencyCall.status = newStatus;
+            if (this.emergencyCall.status === 'closed' && newStatus !== 'closed') {
+                // we're opening a call, create a guest (emergency call) token before actually connecting
+                try {
+                    const { guestToken } = await this.postClient({}, '/create-emergency-call-token');
+                    if (guestToken) this.emergencyCall.token = guestToken;
+                    else throw new Error('response OK but guestToken is invalid');
+                } catch (err) {
+                    this.notifyPlayer('~r~Failed to start emergency call (Could not create token)~s~');
+                    newStatus = 'closed';
+                }
+            }
             if (info?.displayName) this.emergencyCall.name = info.displayName;
             if (info?.cmd) this.emergencyCall.cmd = info.cmd;
             if (info?.showHelpText != null) this.emergencyCall.showHelpText = info.showHelpText;
+            this.emergencyCall.status = newStatus;
 
             if (newStatus === 'closed') {
                 // reset the emergency call state
                 this.emergencyCall.peers = [];
                 this.emergencyCall.state = null;
+                this.emergencyCall.token = '';
             } else {
                 // update the emergency call frame with the new state
                 this.postEmergencyCallFrame({ type: 'set_emergency_call_status', status: newStatus });

@@ -415,9 +415,11 @@ function initClient()
 				skins = allowedFrames
 			})
 		end
+		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		setmetatable(uiPositions, {__jsontype = 'object'})
 		SendNUIMessage({
 			type = 'setUiPositions',
-			data = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+			data = uiPositions,
 		})
 		SendNUIMessage({
 			type = 'setVisible',
@@ -454,10 +456,15 @@ function initClient()
 	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio)
+	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest)
 		DebugPrint('Authorized for Radio Usage')
 		authorized = true
 		allowedMiniRadio = miniRadio
+		SendNUIMessage({
+			type = 'setGuestAllowed',
+			allowed = guest,
+		})
+
 		allowedFrames = frames
 		SendNUIMessage({
 			type = 'setCurrentSkin',
@@ -1069,6 +1076,7 @@ function initClient()
 		end
 
 		if data.type == 'panic' then
+			TriggerServerEvent('SonoranRadio::PanicState', data.status)
 			if data.status then
 				if Config.autoPttOnPanic then
 					if Config.autoPttOnPanic.enabled then
@@ -1138,6 +1146,7 @@ function initClient()
 
 		if data.type == 'setUiPositions' then
 			-- save positions of components in the UI
+			setmetatable(data.data, {__jsontype = 'object'})
 			SetResourceKvp('ui_pos_dic', json.encode(data.data))
 		end
 
@@ -1171,6 +1180,28 @@ function initClient()
 		end
 
 		cb('OK')
+	end)
+
+	RegisterNetEvent('SonoranRadio::EmergencyCallToken')
+	RegisterNUICallback('create-emergency-call-token', function(_data, cb)
+		local handlerId
+		handlerId = AddEventHandler('SonoranRadio::EmergencyCallToken', function(guestToken)
+			RemoveEventHandler(handlerId)
+			cb({ guestToken = guestToken })
+		end)
+		TriggerServerEvent('SonoranRadio::CreateEmergencyCallToken')
+	end)
+	RegisterNetEvent('SonoranRadio::RadioGuestToken')
+	RegisterNUICallback('create-guest-token', function(_data, cb)
+		local handlerId
+		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken)
+			RemoveEventHandler(handlerId)
+			cb({
+				guestToken = guestToken,
+				displayName = GetPlayerName(PlayerId()),
+			})
+		end)
+		TriggerServerEvent('SonoranRadio::CreateGuestToken')
 	end)
 
 	AddEventHandler('onResourceStart', function(resource)

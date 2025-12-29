@@ -8,10 +8,20 @@ local DebugBuffer = {}
 local ErrorBuffer = {}
 local tunnels = {}
 scanners = {}
+local panicStates = {}
 local critError = false
 chatterConfig = {}
 local clientConfig
 local sirens = {}
+local DevEvents = DeveloperEvents or {}
+
+local function emitDeveloperEvent(suffix, payload)
+	if DevEvents.emit then
+		DevEvents.emit(suffix, payload)
+	else
+		TriggerEvent(('SonoranRadio::Developer:%s'):format(suffix), payload)
+	end
+end
 
 if type(Config) ~= 'table' then
 	critError = true
@@ -325,6 +335,82 @@ else
 	end
 end
 
+RegisterNetEvent('SonoranRadio::PanicState', function(isActive, metadata)
+	local src = source
+	if type(src) ~= 'number' or src <= 0 then return end
+
+	local state = panicStates[src]
+	if not state then
+		state = {
+			active = false,
+			lastUpdated = 0
+		}
+		panicStates[src] = state
+	end
+
+	local active = isActive == true
+	if state.active == active then
+		state.lastUpdated = os.time()
+		return
+	end
+
+	state.active = active
+	state.lastUpdated = os.time()
+	state.metadata = DevEvents.sanitize and DevEvents.sanitize(metadata) or metadata
+
+	local playerPayload
+	if DevEvents.playerContext then
+		playerPayload = DevEvents.playerContext(src, {
+			includeCoords = true,
+			includeHeading = true
+		})
+	else
+		playerPayload = {serverId = src}
+	end
+
+	local payload = {
+		player = playerPayload,
+		active = active,
+		updatedAt = state.lastUpdated,
+		metadata = state.metadata
+	}
+
+	if not payload.metadata then
+		payload.metadata = nil
+	end
+
+	if active then
+		emitDeveloperEvent('Panic:Activated', payload)
+	else
+		emitDeveloperEvent('Panic:Cleared', payload)
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	local src = source
+	local state = panicStates[src]
+	if not state then return end
+
+	if state.active then
+		local playerPayload
+		if DevEvents.playerContext then
+			playerPayload = DevEvents.playerContext(src, {includeIdentifiers = true})
+		else
+			playerPayload = {serverId = src}
+		end
+
+		emitDeveloperEvent('Panic:Cleared', {
+			player = playerPayload,
+			active = false,
+			updatedAt = os.time(),
+			reason = 'playerDropped',
+			metadata = state.metadata
+		})
+	end
+
+	panicStates[src] = nil
+end)
+
 RegisterCommand('sonoranradio', function(source, args, rawCommands)
 	if source ~= 0 then
         print("This command can only be used from the server console")
@@ -355,12 +441,12 @@ end, true)
 
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
-	local framePermissions = checkFramePermissions(source)
 	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(source, 'sonoranradio.use')
+	local framePermissions = checkFramePermissions(source)
 	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(source, 'sonoranradio.radiousers')
-	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
+	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(source, 'sonoranradio.guest')
 	if radioAceAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio)
+		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio, allowedGuest)
 	end
 	if acePermsForTowerRepair then
 		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
@@ -383,6 +469,8 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
 	end
+
+	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
 	if scannersAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
 	end
@@ -701,11 +789,13 @@ local function createClientConfig()
 			return d:reject('failed to get pushUrl')
 		end
 
+		-- turn 0 values into nil so the below "or" chain works
+		local function nonZero(val) if val == 0 then return nil else return val end end
 		-- get the room id this server intends to use from convar, then config, then backup kvp
 		local roomId =
-			GetConvarInt('sonoranradio_serverId') or
-			Config.serverId or
-			GetResourceKvpInt('standalone_serverId')
+			nonZero(GetConvarInt('sonoranradio_serverId')) or
+			nonZero(Config.serverId) or
+			nonZero(GetResourceKvpInt('standalone_serverId'))
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
 		-- roomId will be created by the backend

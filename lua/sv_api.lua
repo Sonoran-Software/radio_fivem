@@ -4,18 +4,6 @@ local ApiEndpoints = {
 	['SET-USER-DISPLAY-NAME'] = 'api',
 	['PLAY-TONE'] = 'api'
 }
-
-function PerformHttpRequestS(url, cb, method, data, headers)
-	if not data then
-		data = ''
-	end
-	if not headers then
-		headers = {
-			['X-User-Agent'] = 'SonoranRadio'
-		}
-	end
-	exports['sonoranradio']:HandleHttpRequest(url, cb, method, data, headers)
-end
 local rateLimitedEndpoints = {}
 
 function performApiRequest(postData, type, cb)
@@ -36,7 +24,7 @@ function performApiRequest(postData, type, cb)
 		return
 	end
 	if rateLimitedEndpoints[type] == nil then
-		PerformHttpRequestS(url, function(statusCode, res, headers)
+		local requestCb = function(statusCode, res, headers)
 			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(postData), url))
 			if statusCode == 200 or statusCode == 201 and res ~= nil then
 				debugLog('result: ' .. tostring(res))
@@ -81,9 +69,8 @@ function performApiRequest(postData, type, cb)
 			else
 				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
 			end
-		end, 'POST', json.encode(postData), {
-			['Content-Type'] = 'application/json'
-		})
+		end
+		exports['sonoranradio']:HandleHttpRequest(url, requestCb, 'POST', json.encode(postData), {['Content-Type'] = 'application/json'})
 	else
 		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(postData)))
 	end

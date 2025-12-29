@@ -11,13 +11,15 @@
             method: method,
             headers: headers != null && typeof headers == 'object' && !Array.isArray(headers) ? headers : {},
         };
+        options.headers['X-User-Agent'] = 'Sonoran Radio FiveM Resource'
         options.headers['X-SonoranRadio-Version'] = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
-        if (method === "POST") {
+        if (method === "POST" && !options.headers['Content-Type'])
             options.headers['Content-Type'] = 'application/json'
-        } else if (method !== "GET") {
+        if (method !== "GET" && method !== 'POST') {
             console.error("Invalid request. Only GET/POST supported. Method: " + method);
-            return callback(500, "", {});
+            if (callback) callback(-1, "", {});
+            return void (callback = undefined);
         }
 
         const client = destInfo.protocol === 'http:' ? require('http') : require('https');

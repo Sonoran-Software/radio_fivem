@@ -21,6 +21,7 @@ Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace p
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission
 Config.acePermsForScanners = false -- Restrict using the scanner to an ace permission
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
+Config.acePermsForRadioGuests = false -- Restrict users joining the radio as a guest to an ace permission
 Config.acePermsForRadioUsers = false -- Restrict usage of /radiousers to an ace permission
 Config.enforceRadioItem = false
 Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
