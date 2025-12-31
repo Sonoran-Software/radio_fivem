@@ -1,6 +1,6 @@
 local pendingRestart = false
 local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/latest.zip'
-local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json '
+local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json'
 
 local function doUnzip(path)
     local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
@@ -29,7 +29,7 @@ AddEventHandler("UnzipFileComplete", function(success, err)
 end)
 
 local function doUpdate(latest)
-    local releaseUrl = releaseDownloadUrl
+    local releaseUrl = ("%s?cb=%s"):format(releaseDownloadUrl, tostring(latest or os.time()))
     PerformHttpRequest(releaseUrl, function(code, data, headers)
         if code == 200 then
             local savePath = GetResourcePath(GetCurrentResourceName()).."/update.zip"
@@ -44,7 +44,7 @@ local function doUpdate(latest)
             end
         end
     end, "GET")
-    
+
 end
 
 function RunAutoUpdater(manualRun)
