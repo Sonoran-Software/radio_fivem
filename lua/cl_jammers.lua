@@ -489,7 +489,7 @@ function initJammers()
             local selection = valid[jammerMenuState.index]
             if selection then
                 local coords = GetEntityCoords(PlayerPedId())
-                coords = vector3(coords.x, coords.y, coords.z - 1.0)
+                coords = vector3(coords.x, coords.y, coords.z)
                 local heading = GetEntityHeading(PlayerPedId())
                 TriggerServerEvent('SonoranRadio::Request::SpawnJammer', selection, {
                     x = coords.x,
