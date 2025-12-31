@@ -54,7 +54,7 @@ function initToneboard()
         speaker.Handle = CreateObject(speakerModel, coords, false, false, false)
         while not DoesEntityExist(speaker.Handle) do Wait(0) end
         FreezeEntityPosition(speaker.Handle, true)
-        SetEntityCoords(speaker.Handle, coords.x, coords.y, coords.z - 1, true,
+        SetEntityCoords(speaker.Handle, coords.x, coords.y, coords.z, true,
                         true, true, false)
         SetEntityHeading(speaker.Handle, speaker.heading)
         SetModelAsNoLongerNeeded(speakerModel)
