@@ -1191,6 +1191,53 @@ function initClient()
 		end)
 		TriggerServerEvent('SonoranRadio::CreateEmergencyCallToken')
 	end)
+	local function getFrameworkDisplayName()
+		if GetResourceState('qbx_core') == 'started' then
+			local playerData = exports.qbx_core and exports.qbx_core:GetPlayerData()
+			local charinfo = playerData and playerData.charinfo
+			if charinfo then
+				local first = charinfo.firstname or charinfo.firstName
+				local last = charinfo.lastname or charinfo.lastName
+				if first and last then
+					return first .. ' ' .. last
+				end
+				return first or last or charinfo.name
+			end
+		end
+
+		if GetResourceState('qb-core') == 'started' then
+			local qb = exports['qb-core'] and exports['qb-core']:GetCoreObject()
+			if qb and qb.Functions and qb.Functions.GetPlayerData then
+				local playerData = qb.Functions.GetPlayerData()
+				local charinfo = playerData and playerData.charinfo
+				if charinfo then
+					local first = charinfo.firstname or charinfo.firstName
+					local last = charinfo.lastname or charinfo.lastName
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or charinfo.name
+				end
+			end
+		end
+
+		if GetResourceState('es_extended') == 'started' then
+			local esx = exports['es_extended'] and exports['es_extended']:getSharedObject()
+			if esx and esx.GetPlayerData then
+				local playerData = esx.GetPlayerData()
+				if playerData then
+					local first = playerData.firstName or playerData.firstname
+					local last = playerData.lastName or playerData.lastname
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or playerData.name
+				end
+			end
+		end
+
+		return nil
+	end
 	RegisterNetEvent('SonoranRadio::RadioGuestToken')
 	RegisterNUICallback('create-guest-token', function(_data, cb)
 		local handlerId
@@ -1198,7 +1245,7 @@ function initClient()
 			RemoveEventHandler(handlerId)
 			cb({
 				guestToken = guestToken,
-				displayName = GetPlayerName(PlayerId()),
+				displayName = getFrameworkDisplayName() or GetPlayerName(PlayerId()),
 			})
 		end)
 		TriggerServerEvent('SonoranRadio::CreateGuestToken')
