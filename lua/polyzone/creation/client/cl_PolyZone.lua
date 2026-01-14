@@ -1,6 +1,19 @@
 local minZ = GetEntityCoords(PlayerPedId()).z - 1.0
 local maxZ = GetEntityCoords(PlayerPedId()).z + 10.0
 
+local function normalizePurpose(purpose)
+  if purpose == 'geo' then
+    return 'geo'
+  end
+  return 'degrade'
+end
+
+polyZonePurpose = normalizePurpose(polyZonePurpose)
+
+RegisterNetEvent('SonoranRadio:PolyZone:SetPurpose', function(purpose)
+  polyZonePurpose = normalizePurpose(purpose)
+end)
+
 local function handleInput(center)
   local rot = GetGameplayCamRot(2)
   center = handleArrowInput(center, rot.z)
@@ -51,7 +64,14 @@ function polyStart(name)
 end
 
 function polyFinish(degradeStrength, minY, maxY)
-  TriggerServerEvent("SonoranRadio:PolyZone:CreateZone", createdZone.points, createdZone.name, minY, maxY, degradeStrength)
+  local purpose = normalizePurpose(polyZonePurpose)
+  if purpose == 'geo' then
+    local options = geoZoneDraft or {}
+    TriggerServerEvent("SonoranRadio:GeoZone:CreateZone", createdZone.points, createdZone.name, minY, maxY, options)
+  else
+    TriggerServerEvent("SonoranRadio:PolyZone:CreateZone", createdZone.points, createdZone.name, minY, maxY, degradeStrength)
+  end
+  polyZonePurpose = 'degrade'
 end
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzadd")

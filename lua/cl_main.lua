@@ -13,6 +13,11 @@ local critError = false
 local calledSyncAcePerms = false
 local frame
 polyZonesTable = {}
+geoZonesTable = {}
+geoChannelZones = {}
+radioConfigCache = nil
+radioStateCache = nil
+autoGeoSwitchEnabled = true
 Config = {}
 
 AddEventHandler('onClientResourceStart', function(resourceName)
@@ -872,6 +877,52 @@ function initClient()
 		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
 	end
 
+	if Config.geoChannels == nil then
+		Config.geoChannels = {
+			enabled = true,
+			command = 'sonradgeoswitch',
+			acePermission = '',
+			showNotifications = true
+		}
+	end
+	autoGeoSwitchEnabled = Config.geoChannels.enabled ~= false
+
+	function geoSwitchHasPermission()
+		local perm = Config.geoChannels and Config.geoChannels.acePermission or ''
+		if perm == '' then
+			return true
+		end
+		if IsPlayerAceAllowed then
+			local playerId = PlayerId()
+			local serverId = GetPlayerServerId(playerId)
+			return IsPlayerAceAllowed(playerId, perm) or IsPlayerAceAllowed(serverId, perm)
+		end
+		return true
+	end
+
+	if autoGeoSwitchEnabled and not geoSwitchHasPermission() then
+		autoGeoSwitchEnabled = false
+	end
+
+	function setGeoAutoSwitch(enabled, showNotice)
+		autoGeoSwitchEnabled = enabled
+		if showNotice and (Config.geoChannels.showNotifications ~= false) then
+			local label = autoGeoSwitchEnabled and '~g~On' or '~r~Off'
+			SendNotification('Geo Channels Auto-Switch: ' .. label)
+		end
+	end
+
+	local geoCommand = Config.geoChannels.command or 'sonradgeoswitch'
+	RegisterCommand(geoCommand, function()
+		if not geoSwitchHasPermission() then
+			SendNotification('Geo Channels: ~r~No Permission~r~')
+			return
+		end
+		setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
+	end)
+	RegisterKeyMapping(geoCommand, 'Toggle Geo Channels Auto-Switch', 'keyboard', getConfigKeybind('toggleGeoSwitch'))
+	TriggerEvent('chat:addSuggestion', '/' .. geoCommand, 'Toggle geo channel auto-switch', {})
+
 	local function emergencyCallRedialNotif()
 		local crashout = false
 		Citizen.CreateThread(function()
@@ -1125,7 +1176,14 @@ function initClient()
 			Radio.On = data.power
 		end
 
-		if data.type == 'radioConnected' and data.config.myself and not calledSyncAcePerms then
+		if data.type == 'radioConnected' then
+			if data.config then
+				radioConfigCache = data.config
+			end
+			if not (data.config and data.config.myself and not calledSyncAcePerms) then
+				cb('OK')
+				return
+			end
 			-- we don't want to send all profiles since there could be a lot of data,
 			-- so just extract the data we need
 			local profilesInfo = {}
@@ -1153,6 +1211,9 @@ function initClient()
 		if data.type == 'stateUpdated' or data.type == 'stateUpdatedEmergencyCall' then
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
+			if data.type == 'stateUpdated' then
+				radioStateCache = data.state
+			end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 		end
 
@@ -1309,6 +1370,33 @@ function initClient()
 					debugGrid = Config.debug
 				})
 				DebugPrint('Zone created: ' .. zoneData.options.name)
+			end
+		end
+	end)
+
+	RegisterNetEvent('SonoranRadio:SyncGeoChannels', function(zones)
+		geoChannelZones = zones or {}
+		for _, zone in pairs(geoZonesTable) do
+			zone:destroy()
+		end
+		geoZonesTable = {}
+		for _, zoneData in pairs(geoChannelZones) do
+			local options = zoneData.options or {}
+			if options.name then
+				local points = {}
+				for _, point in pairs(zoneData.points or {}) do
+					table.insert(points, vector2(point.x, point.y))
+				end
+				geoZonesTable[options.name] = PolyZone:Create(points, {
+					name = options.name,
+					minZ = options.minZ,
+					maxZ = options.maxZ,
+					debugGrid = Config.debug
+				})
+				local zone = geoZonesTable[options.name]
+				zone.transmitChannels = options.transmitChannels or {}
+				zone.scanChannels = options.scanChannels or {}
+				zone.acePerms = options.acePerms or {}
 			end
 		end
 	end)

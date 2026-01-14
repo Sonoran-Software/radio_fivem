@@ -255,6 +255,78 @@ function initThreads()
     end
     exports('getSignalQuality', getSignalQuality)
 
+    local function copyIdList(list)
+        local copy = {}
+        if type(list) == 'table' then
+            for _, val in ipairs(list) do
+                copy[#copy + 1] = val
+            end
+        end
+        return copy
+    end
+
+    local function buildIdSet(list)
+        local set = {}
+        if type(list) == 'table' then
+            for _, val in ipairs(list) do
+                set[val] = true
+            end
+        end
+        return set
+    end
+
+    local function getScanChannelIds(state)
+        if type(state) ~= 'table' then
+            return {}
+        end
+        if type(state.scannedChIds) == 'table' then
+            return state.scannedChIds
+        end
+        if type(state.scanChIds) == 'table' then
+            return state.scanChIds
+        end
+        return {}
+    end
+
+    local function syncChannelList(targetList, currentList, eventType)
+        local currentSet = buildIdSet(currentList)
+        local targetSet = buildIdSet(targetList)
+        for channelId, _ in pairs(currentSet) do
+            if not targetSet[channelId] then
+                SendNUIMessage({type = eventType, id = channelId})
+            end
+        end
+        for channelId, _ in pairs(targetSet) do
+            if not currentSet[channelId] then
+                SendNUIMessage({type = eventType, id = channelId})
+            end
+        end
+    end
+
+    local function geoZonePermitted(zone)
+        local perms = zone and zone.acePerms or {}
+        if type(perms) ~= 'table' or #perms == 0 then
+            return true
+        end
+        if not IsPlayerAceAllowed then
+            return true
+        end
+        local playerId = PlayerId()
+        local serverId = GetPlayerServerId(playerId)
+        for _, perm in ipairs(perms) do
+            if perm ~= '' and (IsPlayerAceAllowed(playerId, perm) or IsPlayerAceAllowed(serverId, perm)) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local geoSwitchState = {
+        lastZone = nil,
+        baseline = nil,
+        lastAutoEnabled = autoGeoSwitchEnabled
+    }
+
     -- 1000 MS Thread
     local isDead = false
     CreateThread(function()
@@ -263,6 +335,7 @@ function initThreads()
             QBCore = exports['qb-core']:GetCoreObject()
         end
         TriggerServerEvent('SonoranRadio:GetTunnels')
+        TriggerServerEvent('SonoranRadio:GetGeoChannels')
 
         local lastTowerQuality = 0.0
         while true do
@@ -336,6 +409,57 @@ function initThreads()
                 (bestQuality <= 0.0 and lastTowerQuality > 0.0) or isJammed then
                 lastTowerQuality = bestQuality
                 SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = jammerQuality})
+            end
+
+            local autoEnabled = autoGeoSwitchEnabled
+            if autoEnabled ~= geoSwitchState.lastAutoEnabled then
+                if not autoEnabled and geoSwitchState.baseline and radioStateCache then
+                    syncChannelList(geoSwitchState.baseline.primary, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
+                    syncChannelList(geoSwitchState.baseline.scan, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                end
+                geoSwitchState.baseline = nil
+                geoSwitchState.lastZone = nil
+                geoSwitchState.lastAutoEnabled = autoEnabled
+            end
+
+            if autoEnabled then
+                local activeZone = nil
+                local activeZoneName = nil
+                local restoredBaseline = false
+                for zoneName, zone in pairs(geoZonesTable) do
+                    if zone:isPointInside(coord) and geoZonePermitted(zone) then
+                        activeZone = zone
+                        activeZoneName = zoneName
+                        break
+                    end
+                end
+
+                if not activeZoneName then
+                    if geoSwitchState.lastZone and geoSwitchState.baseline and radioStateCache then
+                        syncChannelList(geoSwitchState.baseline.primary, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
+                        syncChannelList(geoSwitchState.baseline.scan, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                        geoSwitchState.lastZone = nil
+                        restoredBaseline = true
+                    end
+                    if radioStateCache and not restoredBaseline then
+                        geoSwitchState.baseline = {
+                            primary = copyIdList(radioStateCache.primaryChIds),
+                            scan = copyIdList(getScanChannelIds(radioStateCache))
+                        }
+                    end
+                elseif geoSwitchState.lastZone ~= activeZoneName then
+                    if radioStateCache and not geoSwitchState.baseline then
+                        geoSwitchState.baseline = {
+                            primary = copyIdList(radioStateCache.primaryChIds),
+                            scan = copyIdList(getScanChannelIds(radioStateCache))
+                        }
+                    end
+                    if radioStateCache then
+                        syncChannelList(activeZone.transmitChannels or {}, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
+                        syncChannelList(activeZone.scanChannels or {}, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                        geoSwitchState.lastZone = activeZoneName
+                    end
+                end
             end
 
             for k, v in pairs(soundInfo) do

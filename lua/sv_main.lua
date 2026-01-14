@@ -7,6 +7,7 @@ local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
 local tunnels = {}
+local geoChannels = {}
 scanners = {}
 local panicStates = {}
 local critError = false
@@ -619,6 +620,7 @@ local defaultJsonConfigFiles = {
 	['scanners.json']  = 'scanners.DEFAULT.json',
 	['speakers.json']  = 'speakers.DEFAULT.json',
 	['towers.json']    = 'towers.DEFAULT.json',
+	['geochannels.json'] = 'geochannels.DEFAULT.json',
 	['tunnels.json']   = 'tunnels.DEFAULT.json',
 }
 function LoadJsonConfig(file)
@@ -939,6 +941,23 @@ AddEventHandler('onResourceStart', function(resourceName)
 		table.insert(tunnels, obj)
 	end
 
+	-- initialize geo channel zones
+	local geos = LoadJsonConfig('geochannels.json')
+	for i = 1, #geos do
+		local options = geos[i].options or {}
+		local obj = {}
+		obj.points = geos[i].points
+		obj.options = {
+			minZ = options.minZ,
+			maxZ = options.maxZ,
+			name = options.name,
+			transmitChannels = options.transmitChannels or {},
+			scanChannels = options.scanChannels or {},
+			acePerms = options.acePerms or {}
+		}
+		table.insert(geoChannels, obj)
+	end
+
 	-- initialize speakers
 	local spkrs = LoadJsonConfig('speakers.json')
 	for i = 1, #spkrs do
@@ -1098,6 +1117,10 @@ RegisterNetEvent('SonoranRadio:GetTunnels', function()
 	TriggerLatentClientEvent('SonoranRadio:SyncTunnels', source, 10000, tunnels)
 end)
 
+RegisterNetEvent('SonoranRadio:GetGeoChannels', function()
+	TriggerLatentClientEvent('SonoranRadio:SyncGeoChannels', source, 10000, geoChannels)
+end)
+
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
 	local obj = {}
 	obj.points = points
@@ -1118,6 +1141,29 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 end)
 
+RegisterNetEvent('SonoranRadio:GeoZone:CreateZone', function(points, name, minY, maxY, options)
+	local obj = {}
+	obj.points = points
+	if type(minY) == 'string' then
+		minY = tonumber(minY)
+	end
+	if type(maxY) == 'string' then
+		maxY = tonumber(maxY)
+	end
+	options = options or {}
+	obj.options = {
+		minZ = minY,
+		maxZ = maxY,
+		name = name,
+		transmitChannels = options.transmitChannels or {},
+		scanChannels = options.scanChannels or {},
+		acePerms = options.acePerms or {}
+	}
+	table.insert(geoChannels, obj)
+	SaveJsonConfig('geochannels.json', geoChannels)
+	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+end)
+
 RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 	for i = 1, #tunnels do
 		if tunnels[i].options.name == zoneName then
@@ -1127,6 +1173,33 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 	end
 	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+end)
+
+RegisterNetEvent('SonoranRadio:GeoZone:UpdateZone', function(zoneName, updates)
+	if type(updates) ~= 'table' then
+		return
+	end
+	for i = 1, #geoChannels do
+		if geoChannels[i].options and geoChannels[i].options.name == zoneName then
+			geoChannels[i].options.transmitChannels = updates.transmitChannels or geoChannels[i].options.transmitChannels or {}
+			geoChannels[i].options.scanChannels = updates.scanChannels or geoChannels[i].options.scanChannels or {}
+			geoChannels[i].options.acePerms = updates.acePerms or geoChannels[i].options.acePerms or {}
+			break
+		end
+	end
+	SaveJsonConfig('geochannels.json', geoChannels)
+	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+end)
+
+RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
+	for i = 1, #geoChannels do
+		if geoChannels[i].options and geoChannels[i].options.name == zoneName then
+			table.remove(geoChannels, i)
+			break
+		end
+	end
+	SaveJsonConfig('geochannels.json', geoChannels)
+	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
 end)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)

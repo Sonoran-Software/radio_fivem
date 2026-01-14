@@ -50,10 +50,22 @@ function initMenu()
 	}
 
 	local creatingZone = false
+	local creatingGeoZone = false
 	local radioScaleform = nil
 	local zoneVisibility = Config.debug
+	local geoZoneVisibility = Config.debug
+
+	geoZoneDraft = geoZoneDraft or {
+		transmitChannels = {},
+		scanChannels = {},
+		acePerms = {}
+	}
 
 	local polyzoneState = {
+		index = 1,
+		zoneId = nil,
+	}
+	local geoZoneState = {
 		index = 1,
 		zoneId = nil,
 	}
@@ -93,6 +105,13 @@ function initMenu()
 		defineMenu('degradeEditMenu', 'degradeMenu', 'Modify Degradation Zones')
 		defineMenu('degradeDeleteMenu', 'degradeEditMenu', 'Confirm Deletion')
 
+		-- geo channels menu
+		defineMenu('geoMenu', 'sonoranRadioMenu', 'Geo Channels')
+		defineMenu('geoEditMenu', 'geoMenu', 'Edit Geo Zones')
+		defineMenu('geoDeleteMenu', 'geoEditMenu', 'Confirm Deletion')
+		defineMenu('geoTransmitMenu', 'geoEditMenu', 'Transmit Channels')
+		defineMenu('geoScanMenu', 'geoEditMenu', 'Scan Channels')
+
 		-- toneboard menus
 		defineMenu('toneboardMenu', 'sonoranRadioMenu', 'Toneboard Speaker Menu')
 		defineMenu('toneboardSpawnMenu', 'toneboardMenu', 'Spawn Speaker')
@@ -124,6 +143,7 @@ function initMenu()
 					WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
 				end
 				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
+				WarMenu.MenuButton('Geo Channels', 'geoMenu')
 				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
 				if Config.chatter ~= false then
 					WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
@@ -188,6 +208,41 @@ function initMenu()
 					polyzoneState.zoneId = nil
 					WarMenu.OpenMenu('degradeEditMenu')
 				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('geoMenu') then
+				geoMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('geoEditMenu') then
+				geoEditMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('geoDeleteMenu') then
+				local zone = geoZonesTable[geoZoneState.zoneId]
+				if zone and WarMenu.Button('Delete ' .. geoZoneState.zoneId) then
+					zone:destroy()
+					geoZonesTable[geoZoneState.zoneId] = nil
+					TriggerServerEvent('SonoranRadio:GeoZone:DeleteZone', geoZoneState.zoneId)
+					TriggerEvent('chat:addMessage', {
+						color = {
+							255,
+							0,
+							0
+						},
+						multiline = true,
+						args = {
+							'Success',
+							'Zone ' .. geoZoneState.zoneId .. ' has been deleted.'
+						}
+					})
+					geoZoneState.index = 1
+					geoZoneState.zoneId = nil
+					WarMenu.OpenMenu('geoEditMenu')
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('geoTransmitMenu') then
+				geoTransmitMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('geoScanMenu') then
+				geoScanMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('toneboardMenu') then
 				toneboardMenu()
@@ -1202,6 +1257,14 @@ function initMenu()
 		elseif menu.id == 'degradeMenu' and creatingZone then
 			creatingZone = false
 			TriggerEvent('SonoranRadio:PolyZone:pzcancel')
+		elseif menu.id == 'geoMenu' and creatingGeoZone then
+			creatingGeoZone = false
+			geoZoneDraft = {
+				transmitChannels = {},
+				scanChannels = {},
+				acePerms = {}
+			}
+			TriggerEvent('SonoranRadio:PolyZone:pzcancel')
 		end
 	end)
 
@@ -1227,6 +1290,7 @@ function initMenu()
 		if WarMenu.Button('Create Degradation Zone') then
 			setMinMax()
 			creatingZone = true
+			TriggerEvent('SonoranRadio:PolyZone:SetPurpose', 'degrade')
 			local pos = GetEntityCoords(PlayerPedId())
 			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
 			local street1 = GetStreetNameFromHashKey(s1)
@@ -1416,6 +1480,309 @@ function initMenu()
 				end
 			end
 		end) then
+		end
+	end
+
+	local function trimString(value)
+		return (value or ''):gsub('^%s+', ''):gsub('%s+$', '')
+	end
+
+	local function parseAcePerms(input)
+		local perms = {}
+		if type(input) ~= 'string' then
+			return perms
+		end
+		for perm in string.gmatch(input, '([^,]+)') do
+			local cleaned = trimString(perm)
+			if cleaned ~= '' then
+				table.insert(perms, cleaned)
+			end
+		end
+		return perms
+	end
+
+	local function formatChannelLabel(profile)
+		local name = profile.displayName or profile.name or tostring(profile.id or 'Unknown')
+		local group = profile.groupName or profile.group or profile.groupLabel or profile.groupId
+		if group == nil or tostring(group) == '' then
+			return tostring(name)
+		end
+		return tostring(group) .. ' - ' .. tostring(name)
+	end
+
+	local function getGeoChannelOptions()
+		local profiles = radioConfigCache and radioConfigCache.profiles or {}
+		local options = {}
+		for _, profile in ipairs(profiles) do
+			options[#options + 1] = {
+				id = profile.id,
+				label = formatChannelLabel(profile)
+			}
+		end
+		table.sort(options, function(a, b)
+			return string.lower(a.label) < string.lower(b.label)
+		end)
+		return options
+	end
+
+	local function hasChannelId(list, channelId)
+		if type(list) ~= 'table' then
+			return false
+		end
+		for _, id in ipairs(list) do
+			if id == channelId then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function setChannelId(list, channelId, enabled)
+		if type(list) ~= 'table' then
+			return
+		end
+		local index = nil
+		for i, id in ipairs(list) do
+			if id == channelId then
+				index = i
+				break
+			end
+		end
+		if enabled and not index then
+			table.insert(list, channelId)
+		elseif not enabled and index then
+			table.remove(list, index)
+		end
+	end
+
+	local function updateGeoZoneOptions(zoneName)
+		local zone = geoZonesTable[zoneName]
+		if not zone then
+			return
+		end
+		TriggerServerEvent('SonoranRadio:GeoZone:UpdateZone', zoneName, {
+			transmitChannels = zone.transmitChannels or {},
+			scanChannels = zone.scanChannels or {},
+			acePerms = zone.acePerms or {}
+		})
+	end
+
+	function geoMenu()
+		local buttonLabel = geoZoneVisibility and "Hide Zones" or "Show Zones"
+		if WarMenu.Button(buttonLabel) then
+			geoZoneVisibility = not geoZoneVisibility
+		end
+		for _, zone in pairs(geoZonesTable) do
+			if geoZoneVisibility then
+				zone:toggleDraw(true, {0, 255, 0})
+			else
+				zone:toggleDraw(false)
+			end
+		end
+		if WarMenu.Button('Create Geo Channel Zone') then
+			setMinMax()
+			creatingGeoZone = true
+			geoZoneDraft = {
+				transmitChannels = {},
+				scanChannels = {},
+				acePerms = {}
+			}
+			TriggerEvent('SonoranRadio:PolyZone:SetPurpose', 'geo')
+			local pos = GetEntityCoords(PlayerPedId())
+			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
+			local street1 = GetStreetNameFromHashKey(s1)
+			local street2 = GetStreetNameFromHashKey(s2)
+			local streetLabel = street1
+			if street2 ~= nil then
+				streetLabel = streetLabel .. " " .. street2
+				streetLabel = string.sub(streetLabel, 1, 15) .. "..."
+			end
+			AddTextEntry('FMMC_MPM_NAA', 'Geo Channel Zone Name: (Default: Cross Streets) - Leave blank for default')
+			DisplayOnscreenKeyboard(1, 'FMMC_MPM_NAA', 'Geo Channel Zone Name: (Default: Cross Streets) - Leave blank for default', streetLabel, '', '', '', 20)
+			while (UpdateOnscreenKeyboard() == 0) do
+				DisableAllControlActions(0);
+				Wait(0)
+			end
+			local zoneName = ''
+			if UpdateOnscreenKeyboard() == 2 then
+				zoneName = streetLabel
+			end
+			if (UpdateOnscreenKeyboard() == 1 and GetOnscreenKeyboardResult()) then
+				local input = GetOnscreenKeyboardResult()
+				if input == '' then
+					zoneName = streetLabel
+				else
+					zoneName = input
+				end
+			end
+			TriggerEvent('SonoranRadio:PolyZone:pzcreate', 'poly', zoneName, nil)
+			TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+		end
+		if WarMenu.MenuButton('Edit Geo Zones', 'geoEditMenu') then
+		end
+		WarMenu.CheckBox('Auto-Switch', autoGeoSwitchEnabled, function(checked)
+			if geoSwitchHasPermission() then
+				setGeoAutoSwitch(checked, true)
+			else
+				SendNotification('Geo Channels: ~r~No Permission~r~')
+			end
+		end)
+		if WarMenu.Button('Add Point to Zone') then
+			TriggerEvent('SonoranRadio:PolyZone:pzadd')
+		end
+		if WarMenu.Button('Undo Last Point') then
+			TriggerEvent('SonoranRadio:PolyZone:pzundo')
+		end
+		local minYPressed, minYInput = WarMenu.InputButton('Min Z', 'Min Z (Default: ' .. minY .. ')', minY, 5, minY)
+		if minYPressed then
+			if minYInput == '' then
+				minY = 45.0
+			else
+				minY = tonumber(minYInput)
+			end
+			TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+		end
+		local maxYPressed, maxYInput = WarMenu.InputButton('Max Z', 'Max Z (Default: ' .. maxY .. ')', maxY, 5, maxY)
+		if maxYPressed then
+			if maxYInput == '' then
+				maxY = 59.0
+			else
+				maxY = tonumber(maxYInput)
+			end
+			TriggerEvent('SonoranRadio:PolyZone:UpdateZ', tonumber(minY), tonumber(maxY))
+		end
+		if WarMenu.Button('Finish Zone Creation') then
+			creatingGeoZone = false
+			geoZoneDraft = {
+				transmitChannels = {},
+				scanChannels = {},
+				acePerms = {}
+			}
+			TriggerEvent('SonoranRadio:PolyZone:pzfinish', 0.0, minY, maxY)
+		end
+		if WarMenu.Button('Cancel Zone Creation') then
+			creatingGeoZone = false
+			geoZoneDraft = {
+				transmitChannels = {},
+				scanChannels = {},
+				acePerms = {}
+			}
+			TriggerEvent('SonoranRadio:PolyZone:pzcancel')
+		end
+	end
+
+	function geoEditMenu()
+		local buttonLabel = geoZoneVisibility and "Hide Zones" or "Show Zones"
+		if WarMenu.Button(buttonLabel) then
+			geoZoneVisibility = not geoZoneVisibility
+		end
+
+		for _, zone in pairs(geoZonesTable) do
+			if geoZoneVisibility then
+				zone:toggleDraw(true, {0, 255, 0})
+			else
+				zone:toggleDraw(false)
+			end
+		end
+
+		local zoneLabels = {}
+		for zoneName, _ in pairs(geoZonesTable) do
+			zoneLabels[#zoneLabels + 1] = zoneName
+		end
+		table.sort(zoneLabels, function(a, b)
+			return string.lower(a) < string.lower(b)
+		end)
+
+		if #zoneLabels == 0 then
+			WarMenu.Button('No Geo Zones Found')
+			return
+		end
+
+		if WarMenu.ComboBox('Select Zone:', zoneLabels, geoZoneState.index, geoZoneState.index, function(current)
+			local selectedZoneName = zoneLabels[current]
+
+			if geoZoneState.index and geoZoneState.zoneId and geoZoneVisibility then
+				geoZonesTable[geoZoneState.zoneId]:toggleDraw(true, {0, 255, 0})
+			elseif geoZoneState.zoneId then
+				geoZonesTable[geoZoneState.zoneId]:toggleDraw(false)
+			end
+
+			geoZoneState.index = current
+			geoZoneState.zoneId = selectedZoneName
+
+			local zone = geoZonesTable[geoZoneState.zoneId]
+			if zone then
+				zone:toggleDraw(true, {255, 0, 0})
+				local playerPed = PlayerPedId()
+				local playerCoords = GetEntityCoords(playerPed)
+				local _, distance = getClosestPointOnPolygon(zone.points, playerCoords)
+				if WarMenu.Button('Distance to ' .. geoZoneState.zoneId .. ': ' .. string.format("%.1f", distance) .. 'm') then
+				end
+				if WarMenu.MenuButton('Transmit Channels', 'geoTransmitMenu') then
+				end
+				if WarMenu.MenuButton('Scan Channels', 'geoScanMenu') then
+				end
+				local permText = table.concat(zone.acePerms or {}, ', ')
+				local pressed, input = WarMenu.InputButton('ACE Permissions', 'ACE Permissions (comma separated)', permText, 255, permText)
+				if pressed then
+					zone.acePerms = parseAcePerms(input or '')
+					updateGeoZoneOptions(geoZoneState.zoneId)
+				end
+				if WarMenu.Button('Delete Zone') then
+					WarMenu.OpenMenu('geoDeleteMenu')
+				end
+			end
+		end) then
+		end
+	end
+
+	function geoTransmitMenu()
+		local zone = geoZonesTable[geoZoneState.zoneId]
+		if not zone then
+			WarMenu.Button('Select a zone in Edit Geo Zones')
+			return
+		end
+		if not radioConfigCache or not radioConfigCache.profiles then
+			WarMenu.Button('Radio not connected')
+			return
+		end
+		local channels = getGeoChannelOptions()
+		if #channels == 0 then
+			WarMenu.Button('No channels available')
+			return
+		end
+		zone.transmitChannels = zone.transmitChannels or {}
+		for _, channel in ipairs(channels) do
+			local checked = hasChannelId(zone.transmitChannels, channel.id)
+			WarMenu.CheckBox(channel.label, checked, function(newChecked)
+				setChannelId(zone.transmitChannels, channel.id, newChecked)
+				updateGeoZoneOptions(geoZoneState.zoneId)
+			end)
+		end
+	end
+
+	function geoScanMenu()
+		local zone = geoZonesTable[geoZoneState.zoneId]
+		if not zone then
+			WarMenu.Button('Select a zone in Edit Geo Zones')
+			return
+		end
+		if not radioConfigCache or not radioConfigCache.profiles then
+			WarMenu.Button('Radio not connected')
+			return
+		end
+		local channels = getGeoChannelOptions()
+		if #channels == 0 then
+			WarMenu.Button('No channels available')
+			return
+		end
+		zone.scanChannels = zone.scanChannels or {}
+		for _, channel in ipairs(channels) do
+			local checked = hasChannelId(zone.scanChannels, channel.id)
+			WarMenu.CheckBox(channel.label, checked, function(newChecked)
+				setChannelId(zone.scanChannels, channel.id, newChecked)
+				updateGeoZoneOptions(geoZoneState.zoneId)
+			end)
 		end
 	end
 
