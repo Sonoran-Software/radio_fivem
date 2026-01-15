@@ -690,6 +690,12 @@ function initClient()
 		TriggerEvent('SonoranRadio::API:VolumeDown')
 	end)
 
+	RegisterCommand('sonradtoggleai', function()
+		SendNUIMessage({
+			type = 'toggle_ai'
+		})
+	end)
+
 	RegisterKeyMapping('sonradradio', 'Show Radio', 'keyboard', getConfigKeybind('toggle'))
 	RegisterKeyMapping('sonradnext', 'Next Channel (In Group)', 'keyboard', getConfigKeybind('nextChannel'))
 	RegisterKeyMapping('sonradprev', 'Prev Channel (In Group)', 'keyboard', getConfigKeybind('prevChannel'))
@@ -699,6 +705,7 @@ function initClient()
 	RegisterKeyMapping('sonradgroupprev', 'Prev Group', 'keyboard', getConfigKeybind('prevGroup'))
 	RegisterKeyMapping('sonradvolup', 'Volume Up', 'keyboard', getConfigKeybind('volUp'))
 	RegisterKeyMapping('sonradvoldown', 'Volume Down', 'keyboard', getConfigKeybind('volDown'))
+	RegisterKeyMapping('sonradtoggleai', 'Toggle AI', 'keyboard', getConfigKeybind('toggleAi'))
 
 
 	-- add PTT for the standalone radio

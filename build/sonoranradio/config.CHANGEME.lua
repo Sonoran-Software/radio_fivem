@@ -86,6 +86,7 @@ Config.keybinds = {
 	['volDown'] = '',
 
 	['toggleAutoCallouts'] = '',
+	['toggleAi'] = '',
 }
 
 -- Have the radio automatically callout pursuit locations (when toggled with the keybind)
