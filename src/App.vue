@@ -621,6 +621,11 @@ export default {
                         volume: event.volume,
                     });
                     break;
+                case 'toggle_ai':
+                    this.postRadioFrame({
+                        type: 'toggle_ai',
+                    });
+                    break;
                 case 'broadcastLocation':
                     this.postRadioFrame({
                         type: 'broadcast_location',
