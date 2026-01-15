@@ -61,12 +61,12 @@ function initRepeaters()
                                     'RepeaterActive') and lastNotificaiton ~=
                     entering then
                     notifyClient(
-                        '~w~ This vehicle is equipped with radio repeaters, press "G" to ~g~enable')
+                        'This vehicle is equipped with radio repeaters, press "G" to enable', nil, '~g~')
                     lastNotificaiton = entering
                 elseif lastNotificaiton ~= entering then
                     -- Check if the vehicle's repeater is disabled and notify the player
                     notifyClient(
-                        '~w~ This vehicle is equipped with radio repeaters, press "G" to ~o~disable')
+                        'This vehicle is equipped with radio repeaters, press "G" to disable', nil, '~o~')
                     lastNotificaiton = entering
                 end
                 -- Check if the player is entering a vehicle and if the vehicle is registered and if the player is in the driver or passenger seat and if the vehicle is attached to a trailer
@@ -94,12 +94,12 @@ function initRepeaters()
                     if not DecorGetBool(trailer, 'RepeaterActive') and
                         lastNotificaiton ~= trailer then
                         notifyClient(
-                            '~w~ Your trailer is equipped with radio repeaters, press "G" to ~g~enable')
+                            'Your trailer is equipped with radio repeaters, press "G" to enable', nil, '~g~')
                         lastNotificaiton = trailer
                     elseif lastNotificaiton ~= trailer then
                         -- Check if the trailer's repeater is disabled and notify the player
                         notifyClient(
-                            '~w~ Your trailer is equipped with radio repeaters, press "G" to ~o~disable')
+                            'Your trailer is equipped with radio repeaters, press "G" to disable', nil, '~o~')
                         lastNotificaiton = trailer
                     end
                 end
@@ -131,9 +131,11 @@ function initRepeaters()
                                     GetEntityCoords(trailer),
                                     getVehicleConfig(trailer).range)
                     -- Show a notification to the player
-                    notifyClient('~w~ Trailer radio repeater ' ..
+                    notifyClient('Trailer radio repeater ' ..
                                     (DecorGetBool(trailer, 'RepeaterActive') and
-                                        '~g~enabled' or '~o~disabled'))
+                                        'enabled' or 'disabled'), nil,
+                                    (DecorGetBool(trailer, 'RepeaterActive') and
+                                        '~g~' or '~o~'))
                     -- If the repeater is enabled, add the trailer to the repeater table
                     if DecorGetBool(trailer, 'RepeaterActive') then
                         RepeaterVehicles[trailer] = true
@@ -159,11 +161,14 @@ function initRepeaters()
                                     getVehicleConfig(
                                         GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
                     -- Show a notification to the player
-                    notifyClient('~w~ Radio repeater ' ..
+                    notifyClient('Radio repeater ' ..
                                     (DecorGetBool(
                                         GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                                        'RepeaterActive') and '~g~enabled' or
-                                        '~o~disabled'))
+                                        'RepeaterActive') and 'enabled' or
+                                        'disabled'), nil,
+                                    (DecorGetBool(
+                                        GetVehiclePedIsIn(GetPlayerPed(-1), false),
+                                        'RepeaterActive') and '~g~' or '~o~'))
                     -- If the repeater is enabled, add the vehicle to the repeater table
                     if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
                                     'RepeaterActive') then
@@ -176,11 +181,11 @@ function initRepeaters()
                     end
                 end
             else
-                notifyClient('~r~This vehicle is not equipped with radio repeaters')
+                notifyClient('This vehicle is not equipped with radio repeaters', nil, '~r~')
             end
         else
             notifyClient(
-                '~r~You must be in the driver or passenger seat to toggle the radio repeater')
+                'You must be in the driver or passenger seat to toggle the radio repeater', nil, '~r~')
         end
     end)
 

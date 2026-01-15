@@ -653,7 +653,7 @@ export default {
                     this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
                     break;
                 case "display_error":
-                    this.notifyPlayer(`~r~Radio Error: ~s~${event.error}`);
+                    this.notifyPlayer(`Radio Error: ${event.error}`, "~r~");
                     break;
                 case "guest_login_request":
                     this.postClient({}, '/create-guest-token').then(res => {
@@ -732,7 +732,7 @@ export default {
                     this.postClient({ type: 'emergencyCallRedial' });
                     break;
                 case "display_error":
-                    this.notifyPlayer(`~r~Emergency Call Error: ~s~${event.error}`);
+                    this.notifyPlayer(`Emergency Call Error: ${event.error}`, "~r~");
                     this.emergencyCall.status = 'closed'; // all errors are fatal
                     break;
             }
@@ -885,7 +885,7 @@ export default {
             // notify player on how to hide radio if this is the first time
             const LS_KEY = 'hide_portable_hint_seen';
             if (hide || this.escapeMode !== 'keep' || localStorage.getItem(LS_KEY)) return;
-            this.notifyPlayer('~g~HINT~s~: Use ~y~/radio hide~s~ or press the ~p~purple button~s~ to hide the radio');
+            this.notifyPlayer('HINT: Use /radio hide or press the purple button to hide the radio', "~g~");
             localStorage.setItem(LS_KEY, 'true');
         },
         setEscapeMode(mode) {
@@ -897,8 +897,8 @@ export default {
             this.postRadioFrame({ type: 'escape_mode', mode: this.escapeMode });
         },
 
-        notifyPlayer(message) {
-            this.postClient({ type: "notify", message: message });
+        notifyPlayer(message, colorCode) {
+            this.postClient({ type: "notify", message: message, colorCode: colorCode });
         },
         updateGamestate() {
             this.postRadioFrame({
@@ -945,41 +945,41 @@ export default {
             if (this.isPanicking === undefined) return;
 
             if (!this.isPanicking)
-                this.notifyPlayer("Radio: ~r~Panic Pressed!");
+                this.notifyPlayer("Radio: Panic Pressed!", "~r~");
             else
-                this.notifyPlayer('Radio: ~r~Stopped Panicking');
+                this.notifyPlayer('Radio: Stopped Panicking', "~r~");
             this.postRadioFrame({ type: 'set_panicking', panicking: !this.isPanicking });
         },
         changeNextPrevMode() {
             this.nextPrevMode = this.nextPrevMode === 'preset' ? 'group' : 'preset';
             if (this.nextPrevMode === 'preset')
-                this.notifyPlayer(`Radio: ~y~Now selecting channels`);
+                this.notifyPlayer(`Radio: Now selecting channels`, "~y~");
             else
-                this.notifyPlayer(`Radio: ~y~Now selecting groups`);
+                this.notifyPlayer(`Radio: Now selecting groups`, "~y~");
         },
         buttonPrev(e) {
             if (!this.$store.state.connected)
-                this.notifyPlayer("Radio: ~r~Not Connected")
+                this.notifyPlayer("Radio: Not Connected", "~r~")
             else if (e?.button === 2) {
                 this.changeNextPrevMode();
             } else if (this.nextPrevMode === 'preset') {
-                this.notifyPlayer("Radio: ~y~Previous channel");
+                this.notifyPlayer("Radio: Previous channel", "~y~");
                 this.prevPreset();
             } else {
-                this.notifyPlayer("Radio: ~y~Previous group");
+                this.notifyPlayer("Radio: Previous group", "~y~");
                 this.prevGroup();
             }
         },
         buttonNext(e) {
             if (!this.$store.state.connected)
-                this.notifyPlayer("Radio: ~r~Not Connected")
+                this.notifyPlayer("Radio: Not Connected", "~r~")
             else if (e?.button === 2) {
                 this.changeNextPrevMode();
             } else if (this.nextPrevMode === 'preset') {
-                this.notifyPlayer("Radio: ~y~Next channel");
+                this.notifyPlayer("Radio: Next channel", "~y~");
                 this.nextPreset();
             } else {
-                this.notifyPlayer("Radio: ~y~Next group");
+                this.notifyPlayer("Radio: Next group", "~y~");
                 this.nextGroup();
             }
         },
@@ -989,7 +989,10 @@ export default {
                 type: 'power',
                 power: this.radioPower
             });
-            this.notifyPlayer("Radio: " + (this.radioPower ? "~g~On" : "~r~Off"));
+            this.notifyPlayer(
+                "Radio: " + (this.radioPower ? "On" : "Off"),
+                this.radioPower ? "~g~" : "~r~"
+            );
 
             if (this.radioPower) return;
             // we need to remove the frame to "disconnect" from the radio
@@ -1030,7 +1033,7 @@ export default {
                     if (guestToken) this.emergencyCall.token = guestToken;
                     else throw new Error('response OK but guestToken is invalid');
                 } catch (err) {
-                    this.notifyPlayer('~r~Failed to start emergency call (Could not create token)~s~');
+                    this.notifyPlayer('Failed to start emergency call (Could not create token)', "~r~");
                     newStatus = 'closed';
                 }
             }
