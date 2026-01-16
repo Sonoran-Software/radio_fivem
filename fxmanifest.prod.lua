@@ -21,9 +21,9 @@ client_script 'lua/**/cl_*.lua'
 files {
     'dist/**/*',
     'miniradio/**/*',
+    'tablet/**/*',
     'skins/**/*',
-    'lua/xsound/html/**/*',
-    'earpieces.json'
+    'lua/xsound/html/**/*'
 }
 ui_page 'dist/ui.html'
 
