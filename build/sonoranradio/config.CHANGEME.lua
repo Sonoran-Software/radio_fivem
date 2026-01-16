@@ -55,11 +55,16 @@ Config.autoPttOnPanic = {
 }
 -- Notification Settings --
 Config.notifications = {
-	type = 'native', -- Available options: native, pNotify, okokNotify, chat, or custom
+	type = 'native', -- Available options: native, pNotify, okokNotify, ox_lib, chat, or custom
 	notificationTitle = 'SonoranRadio', -- Notification Title for methods that support it
 	-- Uncomment line below and comment line 105 if you plan to use pNotify
 	-- notificationMessage = "<b>SonoranRadio</b></br>{{MESSAGE}}"
 	notificationMessage = '~b~SonoranRadio~w~\n{{MESSAGE}}', -- The text of the notification
+	ox_lib = { -- optional overrides
+		type = 'inform',
+		position = 'top-right',
+		duration = 5000
+	},
 	custom = function(notification) -- Custom notification function, only used if type is set to custom
 		Utilities.Logging.logDebug('Custom notification function called with notification: ' .. notification)
 		exports.pNotify:SendNotification({
