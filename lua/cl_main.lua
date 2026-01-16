@@ -1186,6 +1186,13 @@ function initClient()
 			TriggerEvent('SonoranRadio::API:BackgroundAudio', data.start, data.trackId)
 		end
 
+		if data.type == 'routeToPostal' then
+			ExecuteCommand('postal '..data.postal)
+		end
+		if data.type == 'routeToCoordinates' then
+			SetNewWaypoint(data.x, data.y)
+		end
+
 		cb('OK')
 	end)
 

@@ -692,6 +692,19 @@ export default {
                         trackId: event.trackId
                     });
                     break;
+                case 'route_to_postal':
+                    this.postClient({
+                        type: 'routeToPostal',
+                        postal: event.postal
+                    });
+                    break;
+                case 'route_to_coordinates':
+                    this.postClient({
+                        type: 'routeToCoordinates',
+                        x: event.x,
+                        y: event.y,
+                    });
+                    break;
             }
         },
         postChatterFrame(data) {
