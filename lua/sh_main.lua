@@ -39,23 +39,37 @@ function showNotification(notification, urgent)
 	DrawNotification(urgent, true)
 end
 
-function notifyClient(notification, urgent)
-	if Config['notifications']['type'] == 'native' then
-		showNotification('~b~[SonoranRadio] ~w~' .. notification, urgent)
-	elseif Config['notifications']['type'] == 'okokNotify' then
-		exports['okokNotify']:Alert('SonoranRadio', '' .. notification, 10000, 'info')
-	elseif Config['notifications']['type'] == 'pNotify' then
+function notifyClient(notification, urgent, colorCode)
+	local notifications = Config and Config['notifications'] or {}
+	local notificationType = notifications['type'] or 'native'
+	local title = notifications['notificationTitle'] or 'SonoranRadio'
+	local prefix = ('[%s] '):format(title)
+	local formattedNotification = notification
+	local plainNotification = notification
+
+	if notificationType == 'native' and colorCode and colorCode ~= '' then
+		formattedNotification = colorCode .. notification
+	end
+	if notificationType ~= 'native' and type(notification) == 'string' then
+		plainNotification = notification:gsub('~[%w_]~', '')
+	end
+
+	if notificationType == 'native' then
+		showNotification(('~b~%s~w~%s'):format(prefix, formattedNotification), urgent)
+	elseif notificationType == 'okokNotify' then
+		exports['okokNotify']:Alert(title, '' .. plainNotification, 10000, 'info')
+	elseif notificationType == 'pNotify' then
 		exports.pNotify:SendNotification({
 			['type'] = 'info',
-			['text'] = '~b~[SonoranRadio] ~w~' .. notification
+			['text'] = prefix .. plainNotification
 		})
-	elseif Config['notifications']['type'] == 'custom' then
-		Config['notifications']['custom'](notification)
-    elseif Config['notifications']['type'] == 'chat' then
-        TriggerEvent('chat:addMessage', {
-            template = '<div class="chat-message sonoran-radio"><b>SonoranRadio</b> {0}</div>',
-            args = { notification }
-        })
+	elseif notificationType == 'custom' then
+		notifications['custom'](plainNotification)
+	elseif notificationType == 'chat' then
+		TriggerEvent('chat:addMessage', {
+			template = ('<div class="chat-message sonoran-radio"><b>%s</b> {0}</div>'):format(title),
+			args = { plainNotification }
+		})
 	end
 end
 

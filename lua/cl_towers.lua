@@ -277,7 +277,7 @@ function initTowers()
 			-- waiting for the event to propogate
 			TriggerServerEvent('RadioTower:RepairTower', tower.Id)
 		else
-			SendNotification('Radio: ~r~No Repair Permission~r~')
+			notifyClient('Radio: No Repair Permission', nil, '~r~')
 		end
 	end
 

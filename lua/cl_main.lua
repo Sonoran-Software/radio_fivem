@@ -386,7 +386,7 @@ function initClient()
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
-			SendNotification('Radio: ~r~No Permission~r~')
+			notifyClient('Radio: No Permission', nil, '~r~')
 			return
 		end
 		local hasItem = not Config.enforceRadioItem or Radio.HasItem
@@ -549,9 +549,9 @@ function initClient()
 	RegisterCommand('radiotalk', function()
 		Radio.TalkAnim = not Radio.TalkAnim
 		if Radio.TalkAnim then
-			SendNotification('Radio Talk Animation: ~g~On~g~')
+			notifyClient('Radio Talk Animation: On', nil, '~g~')
 		else
-			SendNotification('Radio Talk Animation: ~r~Off~r~')
+			notifyClient('Radio Talk Animation: Off', nil, '~r~')
 		end
 	end)
 	RegisterKeyMapping('radiotalk', 'Toggle Radio Talk Animation', 'keyboard', '')
@@ -569,7 +569,7 @@ function initClient()
 	RegisterCommand('radiovolume', function(source, args)
 		local volume = tonumber(args[1])
 		if volume == nil then
-			SendNotification('Radio Volume: ~r~Invalid~r~')
+			notifyClient('Radio Volume: Invalid', nil, '~r~')
 			return
 		end
 
@@ -578,7 +578,7 @@ function initClient()
 			type = 'setVolume',
 			volume = volume,
 		})
-		SendNotification('Radio Volume: ~g~' .. volume .. '%~g~')
+		notifyClient('Radio Volume: ' .. volume .. '%', nil, '~g~')
 	end)
 	TriggerEvent('chat:addSuggestion', '/radiovolume', 'Change the voice volume of all radios', {{name = 'volume', help = 'The volume percentage (0-250%)'}})
 
@@ -1061,10 +1061,8 @@ function initClient()
 		DebugPrint('Sonoran Radio Started!')
 	end)
 
-	function SendNotification(message)
-		BeginTextCommandThefeedPost('STRING')
-		AddTextComponentSubstringPlayerName(message)
-		EndTextCommandThefeedPostTicker(false, false)
+	function SendNotification(message, urgent, colorCode)
+		notifyClient(message, urgent, colorCode)
 	end
 
 	RegisterNUICallback('data', function(data, cb)
@@ -1079,7 +1077,7 @@ function initClient()
 		end
 
 		if data.type == 'notify' then
-			SendNotification(data.message)
+			notifyClient(data.message, data.urgent, data.colorCode)
 		end
 
 		if data.type == 'panic' then

@@ -399,7 +399,7 @@ function initRacks()
 			-- waiting for the event to propogate
 			TriggerServerEvent('RadioRacks:RepairRack', rack.Id)
 		else
-			SendNotification('Radio: ~r~No Repair Permission~r~')
+			notifyClient('Radio: No Repair Permission', nil, '~r~')
 		end
 	end
 
