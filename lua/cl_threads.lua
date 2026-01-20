@@ -288,19 +288,37 @@ function initThreads()
         return {}
     end
 
-    local function syncChannelList(targetList, currentList, eventType)
+    local function diffChannelLists(targetList, currentList)
         local currentSet = buildIdSet(currentList)
         local targetSet = buildIdSet(targetList)
+        local toRemove = {}
+        local toAdd = {}
         for channelId, _ in pairs(currentSet) do
             if not targetSet[channelId] then
-                SendNUIMessage({type = eventType, id = channelId})
+                toRemove[#toRemove + 1] = channelId
             end
         end
         for channelId, _ in pairs(targetSet) do
             if not currentSet[channelId] then
-                SendNUIMessage({type = eventType, id = channelId})
+                toAdd[#toAdd + 1] = channelId
             end
         end
+        return toAdd, toRemove
+    end
+
+    local function updateScanXmitChannels(targetPrimary, targetScan, currentPrimary, currentScan)
+        local xmitToAdd, xmitToRemove = diffChannelLists(targetPrimary, currentPrimary)
+        local scanToAdd, scanToRemove = diffChannelLists(targetScan, currentScan)
+        if #xmitToAdd == 0 and #xmitToRemove == 0 and #scanToAdd == 0 and #scanToRemove == 0 then
+            return
+        end
+        SendNUIMessage({
+            type = 'update_scan_xmit_channels',
+            xmitToAdd = xmitToAdd,
+            xmitToRemove = xmitToRemove,
+            scanToAdd = scanToAdd,
+            scanToRemove = scanToRemove,
+        })
     end
 
     local function geoZonePermitted(zone)
@@ -414,8 +432,12 @@ function initThreads()
             local autoEnabled = autoGeoSwitchEnabled
             if autoEnabled ~= geoSwitchState.lastAutoEnabled then
                 if not autoEnabled and geoSwitchState.baseline and radioStateCache then
-                    syncChannelList(geoSwitchState.baseline.primary, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
-                    syncChannelList(geoSwitchState.baseline.scan, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                    updateScanXmitChannels(
+                        geoSwitchState.baseline.primary,
+                        geoSwitchState.baseline.scan,
+                        radioStateCache.primaryChIds or {},
+                        getScanChannelIds(radioStateCache)
+                    )
                 end
                 geoSwitchState.baseline = nil
                 geoSwitchState.lastZone = nil
@@ -436,8 +458,12 @@ function initThreads()
 
                 if not activeZoneName then
                     if geoSwitchState.lastZone and geoSwitchState.baseline and radioStateCache then
-                        syncChannelList(geoSwitchState.baseline.primary, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
-                        syncChannelList(geoSwitchState.baseline.scan, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                        updateScanXmitChannels(
+                            geoSwitchState.baseline.primary,
+                            geoSwitchState.baseline.scan,
+                            radioStateCache.primaryChIds or {},
+                            getScanChannelIds(radioStateCache)
+                        )
                         geoSwitchState.lastZone = nil
                         restoredBaseline = true
                     end
@@ -455,8 +481,12 @@ function initThreads()
                         }
                     end
                     if radioStateCache then
-                        syncChannelList(activeZone.transmitChannels or {}, radioStateCache.primaryChIds or {}, 'togglePrimaryChannel')
-                        syncChannelList(activeZone.scanChannels or {}, getScanChannelIds(radioStateCache), 'toggleScanChannel')
+                        updateScanXmitChannels(
+                            activeZone.transmitChannels or {},
+                            activeZone.scanChannels or {},
+                            radioStateCache.primaryChIds or {},
+                            getScanChannelIds(radioStateCache)
+                        )
                         geoSwitchState.lastZone = activeZoneName
                     end
                 end

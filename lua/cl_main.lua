@@ -17,6 +17,8 @@ geoZonesTable = {}
 geoChannelZones = {}
 radioConfigCache = nil
 radioStateCache = nil
+communityChannelsCache = nil
+communityChannelsUpdatedAt = 0
 autoGeoSwitchEnabled = true
 Config = {}
 
@@ -135,6 +137,11 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
 		Config.luxartResourceName = 'lvc'
 	end
+end)
+
+RegisterNetEvent('SonoranRadio::CommunityChannels', function(payload)
+	communityChannelsCache = payload
+	communityChannelsUpdatedAt = GetGameTimer()
 end)
 
 function initClient()
@@ -1353,24 +1360,31 @@ function initClient()
 	RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 		tunnels = TunnelsServer
 		for _, zoneData in pairs (tunnels) do
-			DebugPrint('Attempting to create zone: ' .. zoneData.options.name)
-			if not polyZonesTable[zoneData.options.name] then
+			local options = zoneData.options or {}
+			if options.zoneType == 'geo' or options.transmitChannels ~= nil or options.scanChannels ~= nil or options.acePerms ~= nil then
+				goto continueTunnels
+			end
+			if not options.name then
+				goto continueTunnels
+			end
+			DebugPrint('Attempting to create zone: ' .. options.name)
+			if not polyZonesTable[options.name] then
 				DebugPrint('Zone was not found, creating...')
 				local points = {}
 				for _, point in pairs (zoneData.points) do
 					table.insert(points, vector2(point.x, point.y))
 				end
 				DebugPrint('Creating zone with ' .. #points .. ' points', json.encode(points))
-				local options = zoneData.options -- options
-				polyZonesTable[zoneData.options.name] = PolyZone:Create(points, {
+				polyZonesTable[options.name] = PolyZone:Create(points, {
 					name = options.name,
 					minZ = options.minZ,
 					maxZ = options.maxZ,
 					degradeStrength = options.degradeStrength,
 					debugGrid = Config.debug
 				})
-				DebugPrint('Zone created: ' .. zoneData.options.name)
+				DebugPrint('Zone created: ' .. options.name)
 			end
+			::continueTunnels::
 		end
 	end)
 
@@ -1382,6 +1396,12 @@ function initClient()
 		geoZonesTable = {}
 		for _, zoneData in pairs(geoChannelZones) do
 			local options = zoneData.options or {}
+			if options.zoneType == 'degrade' then
+				goto continueGeoZones
+			end
+			if options.degradeStrength ~= nil and options.transmitChannels == nil and options.scanChannels == nil and options.acePerms == nil then
+				goto continueGeoZones
+			end
 			if options.name then
 				local points = {}
 				for _, point in pairs(zoneData.points or {}) do
@@ -1398,6 +1418,7 @@ function initClient()
 				zone.scanChannels = options.scanChannels or {}
 				zone.acePerms = options.acePerms or {}
 			end
+			::continueGeoZones::
 		end
 	end)
 

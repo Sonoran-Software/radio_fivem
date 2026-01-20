@@ -1510,7 +1510,64 @@ function initMenu()
 		return tostring(group) .. ' - ' .. tostring(name)
 	end
 
-	local function getGeoChannelOptions()
+	local lastCommunityChannelsRequest = 0
+	local communityChannelsRefreshMs = 60000
+	local communityChannelsRequestCooldownMs = 5000
+
+	local function requestCommunityChannelsIfNeeded()
+		local now = GetGameTimer()
+		local needsRefresh = false
+
+		if not communityChannelsCache then
+			needsRefresh = true
+		elseif not communityChannelsUpdatedAt or communityChannelsUpdatedAt <= 0 then
+			needsRefresh = true
+		elseif (now - communityChannelsUpdatedAt) > communityChannelsRefreshMs then
+			needsRefresh = true
+		end
+
+		if not needsRefresh then
+			return
+		end
+		if (now - lastCommunityChannelsRequest) < communityChannelsRequestCooldownMs then
+			return
+		end
+
+		lastCommunityChannelsRequest = now
+		TriggerServerEvent('SonoranRadio::RequestCommunityChannels')
+	end
+
+	local function getCommunityChannelOptions()
+		if type(communityChannelsCache) ~= 'table' then
+			return {}
+		end
+		if communityChannelsCache.result and communityChannelsCache.result ~= 'ok' then
+			return {}
+		end
+		local groupsById = {}
+		for _, group in ipairs(communityChannelsCache.groups or {}) do
+			groupsById[group.id] = group.name
+		end
+		local options = {}
+		for _, channel in ipairs(communityChannelsCache.channels or {}) do
+			local name = channel.displayName or channel.name or tostring(channel.id or 'Unknown')
+			local groupName = groupsById[channel.groupId]
+			local label = tostring(name)
+			if groupName and tostring(groupName) ~= '' then
+				label = tostring(groupName) .. ' - ' .. tostring(name)
+			end
+			options[#options + 1] = {
+				id = channel.id,
+				label = label
+			}
+		end
+		table.sort(options, function(a, b)
+			return string.lower(a.label) < string.lower(b.label)
+		end)
+		return options
+	end
+
+	local function getRadioConfigChannelOptions()
 		local profiles = radioConfigCache and radioConfigCache.profiles or {}
 		local options = {}
 		for _, profile in ipairs(profiles) do
@@ -1522,6 +1579,14 @@ function initMenu()
 		table.sort(options, function(a, b)
 			return string.lower(a.label) < string.lower(b.label)
 		end)
+		return options
+	end
+
+	local function getGeoChannelOptions()
+		local options = getCommunityChannelOptions()
+		if #options == 0 then
+			options = getRadioConfigChannelOptions()
+		end
 		return options
 	end
 
@@ -1742,13 +1807,14 @@ function initMenu()
 			WarMenu.Button('Select a zone in Edit Geo Zones')
 			return
 		end
-		if not radioConfigCache or not radioConfigCache.profiles then
-			WarMenu.Button('Radio not connected')
-			return
-		end
+		requestCommunityChannelsIfNeeded()
 		local channels = getGeoChannelOptions()
 		if #channels == 0 then
-			WarMenu.Button('No channels available')
+			if not communityChannelsCache and (not radioConfigCache or not radioConfigCache.profiles) then
+				WarMenu.Button('Loading community channels...')
+			else
+				WarMenu.Button('No channels available')
+			end
 			return
 		end
 		zone.transmitChannels = zone.transmitChannels or {}
@@ -1767,13 +1833,14 @@ function initMenu()
 			WarMenu.Button('Select a zone in Edit Geo Zones')
 			return
 		end
-		if not radioConfigCache or not radioConfigCache.profiles then
-			WarMenu.Button('Radio not connected')
-			return
-		end
+		requestCommunityChannelsIfNeeded()
 		local channels = getGeoChannelOptions()
 		if #channels == 0 then
-			WarMenu.Button('No channels available')
+			if not communityChannelsCache and (not radioConfigCache or not radioConfigCache.profiles) then
+				WarMenu.Button('Loading community channels...')
+			else
+				WarMenu.Button('No channels available')
+			end
 			return
 		end
 		zone.scanChannels = zone.scanChannels or {}

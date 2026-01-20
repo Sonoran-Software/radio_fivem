@@ -15,6 +15,67 @@ chatterConfig = {}
 local clientConfig
 local sirens = {}
 local DevEvents = DeveloperEvents or {}
+local communityChannelsCache = nil
+local communityChannelsCacheAt = 0
+local communityChannelsRawCache = nil
+local function isGeoZoneOptions(options)
+	if type(options) ~= 'table' then
+		return false
+	end
+	if options.zoneType == 'geo' then
+		return true
+	end
+	if options.transmitChannels ~= nil or options.scanChannels ~= nil or options.acePerms ~= nil then
+		return true
+	end
+	return false
+end
+
+local function isDegradeZoneOptions(options)
+	if type(options) ~= 'table' then
+		return false
+	end
+	if options.zoneType == 'degrade' then
+		return true
+	end
+	if options.degradeStrength ~= nil then
+		return true
+	end
+	return false
+end
+
+local function removeZoneByName(list, zoneName, predicate)
+	if type(list) ~= 'table' or not zoneName then
+		return false
+	end
+	local removed = false
+	for i = #list, 1, -1 do
+		local options = list[i].options or {}
+		if options.name == zoneName and (not predicate or predicate(options)) then
+			table.remove(list, i)
+			removed = true
+		end
+	end
+	return removed
+end
+
+local function resolveZoneType(options, fallbackType)
+	if type(options) ~= 'table' then
+		return fallbackType
+	end
+	if options.zoneType == 'geo' or options.zoneType == 'degrade' then
+		return options.zoneType
+	end
+	local geo = isGeoZoneOptions(options)
+	local degrade = isDegradeZoneOptions(options)
+	if geo and not degrade then
+		return 'geo'
+	end
+	if degrade and not geo then
+		return 'degrade'
+	end
+	return fallbackType
+end
 
 local function emitDeveloperEvent(suffix, payload)
 	if DevEvents.emit then
@@ -412,6 +473,66 @@ AddEventHandler('playerDropped', function()
 	panicStates[src] = nil
 end)
 
+local function fetchCommunityChannels(cb)
+	if not Config or not Config.apiUrl or not Config.apiKey or not Config.comId then
+		errorLog('API request failed: API key, community ID, or apiUrl is not set.')
+		if cb then
+			cb(-1, nil, nil)
+		end
+		return
+	end
+
+	local url = Config.apiUrl .. 'api/radio/get-community-channels/' .. tostring(Config.comId) .. '/' .. tostring(Config.apiKey)
+	PerformHttpRequest(url, function(statusCode, data, headers)
+		local payload = nil
+		if statusCode == 200 and data then
+			local ok, parsed = pcall(json.decode, data)
+			if ok and type(parsed) == 'table' then
+				payload = parsed
+			end
+		end
+		if cb then
+			cb(statusCode, payload, data, headers)
+		end
+	end, 'GET', '', {['Content-Type'] = 'application/json'})
+end
+
+local function getCommunityChannelsCached(cb)
+	local now = os.time()
+	if communityChannelsCache and (now - communityChannelsCacheAt) < 60 then
+		if cb then
+			cb(200, communityChannelsCache, communityChannelsRawCache)
+		end
+		return
+	end
+
+	fetchCommunityChannels(function(statusCode, payload, raw)
+		if statusCode == 200 and payload then
+			communityChannelsCache = payload
+			communityChannelsRawCache = raw
+			communityChannelsCacheAt = os.time()
+		end
+		if cb then
+			cb(statusCode, payload, raw)
+		end
+	end)
+end
+
+RegisterNetEvent('SonoranRadio::RequestCommunityChannels', function()
+	local src = source
+	if type(src) ~= 'number' or src <= 0 then
+		return
+	end
+
+	getCommunityChannelsCached(function(statusCode, payload)
+		if statusCode == 200 and payload then
+			TriggerClientEvent('SonoranRadio::CommunityChannels', src, payload)
+		else
+			warnLog(('Failed to fetch community channels for %s (status %s).'):format(tostring(src), tostring(statusCode)))
+		end
+	end)
+end)
+
 RegisterCommand('sonoranradio', function(source, args, rawCommands)
 	if source ~= 0 then
         print("This command can only be used from the server console")
@@ -426,8 +547,27 @@ RegisterCommand('sonoranradio', function(source, args, rawCommands)
 SonoranRadio Help
     help - shows this message
 	debugmode - Toggles debugging mode
+	getchannels - fetch community channels (add "raw" to print full JSON)
     update - attempt to update the radio script
 ]])
+	elseif args[1] == 'getchannels' then
+		getCommunityChannelsCached(function(statusCode, payload, raw)
+			if statusCode ~= 200 or not payload then
+				errorLog(('Get community channels failed (status %s).'):format(tostring(statusCode)))
+				if raw then
+					print(raw)
+				end
+				return
+			end
+
+			local groups = payload.groups or {}
+			local channels = payload.channels or {}
+			print(('Community channels fetched: %s groups, %s channels'):format(#groups, #channels))
+
+			if args[2] == 'raw' and raw then
+				print(raw)
+			end
+		end)
 	elseif args[1] == 'update' then
 		print('Attempting to auto update...')
 		RunAutoUpdater(true)
@@ -927,35 +1067,83 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end
 
-	-- initialize polyzone tunnels
+	-- initialize polyzone tunnels and geo channel zones (normalize/migrate)
 	local tnl = LoadJsonConfig('tunnels.json')
-	for i = 1, #tnl do
-		local obj = {}
-		obj.points = tnl[i].points
-		obj.options = {
-			minZ = tnl[i].options.minZ,
-			maxZ = tnl[i].options.maxZ,
-			degradeStrength = tnl[i].options.degradeStrength,
-			name = tnl[i].options.name
-		}
-		table.insert(tunnels, obj)
+	local geos = LoadJsonConfig('geochannels.json')
+	local normalizedTunnels = {}
+	local normalizedGeos = {}
+	local tunnelNames = {}
+	local geoNames = {}
+	local zoneListsChanged = false
+
+	local function addTunnel(zoneData)
+		local options = zoneData.options or {}
+		local name = options.name
+		if not name then
+			return
+		end
+		if tunnelNames[name] then
+			zoneListsChanged = true
+			return
+		end
+		if options.zoneType ~= 'degrade' then
+			options.zoneType = 'degrade'
+			zoneListsChanged = true
+		end
+		zoneData.options = options
+		table.insert(normalizedTunnels, zoneData)
+		tunnelNames[name] = true
 	end
 
-	-- initialize geo channel zones
-	local geos = LoadJsonConfig('geochannels.json')
+	local function addGeo(zoneData)
+		local options = zoneData.options or {}
+		local name = options.name
+		if not name then
+			return
+		end
+		if geoNames[name] then
+			zoneListsChanged = true
+			return
+		end
+		if options.zoneType ~= 'geo' then
+			options.zoneType = 'geo'
+			zoneListsChanged = true
+		end
+		zoneData.options = options
+		table.insert(normalizedGeos, zoneData)
+		geoNames[name] = true
+	end
+
 	for i = 1, #geos do
-		local options = geos[i].options or {}
-		local obj = {}
-		obj.points = geos[i].points
-		obj.options = {
-			minZ = options.minZ,
-			maxZ = options.maxZ,
-			name = options.name,
-			transmitChannels = options.transmitChannels or {},
-			scanChannels = options.scanChannels or {},
-			acePerms = options.acePerms or {}
-		}
-		table.insert(geoChannels, obj)
+		local zoneData = geos[i] or {}
+		local options = zoneData.options or {}
+		local targetType = resolveZoneType(options, 'geo')
+		if targetType == 'degrade' then
+			addTunnel(zoneData)
+			zoneListsChanged = true
+		else
+			addGeo(zoneData)
+		end
+	end
+
+	for i = 1, #tnl do
+		local zoneData = tnl[i] or {}
+		local options = zoneData.options or {}
+		local targetType = resolveZoneType(options, 'degrade')
+		if targetType == 'geo' then
+			addGeo(zoneData)
+			zoneListsChanged = true
+		else
+			addTunnel(zoneData)
+		end
+	end
+
+	tunnels = normalizedTunnels
+	geoChannels = normalizedGeos
+
+	if zoneListsChanged then
+		SaveJsonConfig('tunnels.json', tunnels)
+		SaveJsonConfig('geochannels.json', geoChannels)
 	end
 
 	-- initialize speakers
@@ -1134,11 +1322,18 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 		minZ = minY,
 		maxZ = maxY,
 		degradeStrength = degradeStrength,
-		name = name
+		name = name,
+		zoneType = 'degrade'
 	}
+	removeZoneByName(tunnels, name)
+	local removedGeo = removeZoneByName(geoChannels, name, isDegradeZoneOptions)
 	table.insert(tunnels, obj)
 	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	if removedGeo then
+		SaveJsonConfig('geochannels.json', geoChannels)
+		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	end
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:CreateZone', function(points, name, minY, maxY, options)
@@ -1157,11 +1352,18 @@ RegisterNetEvent('SonoranRadio:GeoZone:CreateZone', function(points, name, minY,
 		name = name,
 		transmitChannels = options.transmitChannels or {},
 		scanChannels = options.scanChannels or {},
-		acePerms = options.acePerms or {}
+		acePerms = options.acePerms or {},
+		zoneType = 'geo'
 	}
+	removeZoneByName(geoChannels, name)
+	local removedTunnel = removeZoneByName(tunnels, name, isGeoZoneOptions)
 	table.insert(geoChannels, obj)
 	SaveJsonConfig('geochannels.json', geoChannels)
 	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	if removedTunnel then
+		SaveJsonConfig('tunnels.json', tunnels)
+		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	end
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
@@ -1171,8 +1373,13 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 			break
 		end
 	end
+	local removedGeo = removeZoneByName(geoChannels, zoneName, isDegradeZoneOptions)
 	SaveJsonConfig('tunnels.json', tunnels)
 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	if removedGeo then
+		SaveJsonConfig('geochannels.json', geoChannels)
+		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	end
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:UpdateZone', function(zoneName, updates)
@@ -1184,11 +1391,17 @@ RegisterNetEvent('SonoranRadio:GeoZone:UpdateZone', function(zoneName, updates)
 			geoChannels[i].options.transmitChannels = updates.transmitChannels or geoChannels[i].options.transmitChannels or {}
 			geoChannels[i].options.scanChannels = updates.scanChannels or geoChannels[i].options.scanChannels or {}
 			geoChannels[i].options.acePerms = updates.acePerms or geoChannels[i].options.acePerms or {}
+			geoChannels[i].options.zoneType = 'geo'
 			break
 		end
 	end
+	local removedTunnel = removeZoneByName(tunnels, zoneName, isGeoZoneOptions)
 	SaveJsonConfig('geochannels.json', geoChannels)
 	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	if removedTunnel then
+		SaveJsonConfig('tunnels.json', tunnels)
+		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	end
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
@@ -1198,8 +1411,13 @@ RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
 			break
 		end
 	end
+	local removedTunnel = removeZoneByName(tunnels, zoneName, isGeoZoneOptions)
 	SaveJsonConfig('geochannels.json', geoChannels)
 	TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	if removedTunnel then
+		SaveJsonConfig('tunnels.json', tunnels)
+		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	end
 end)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
