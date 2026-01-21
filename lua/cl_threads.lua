@@ -306,9 +306,56 @@ function initThreads()
         return toAdd, toRemove
     end
 
-    local function updateScanXmitChannels(targetPrimary, targetScan, currentPrimary, currentScan)
-        local xmitToAdd, xmitToRemove = diffChannelLists(targetPrimary, currentPrimary)
-        local scanToAdd, scanToRemove = diffChannelLists(targetScan, currentScan)
+    local function listDifference(list, removeList)
+        local removeSet = buildIdSet(removeList)
+        local result = {}
+        if type(list) == 'table' then
+            for _, id in ipairs(list) do
+                if not removeSet[id] then
+                    result[#result + 1] = id
+                end
+            end
+        end
+        return result
+    end
+
+    local function listIntersection(list, otherList)
+        local otherSet = buildIdSet(otherList)
+        local result = {}
+        if type(list) == 'table' then
+            for _, id in ipairs(list) do
+                if otherSet[id] then
+                    result[#result + 1] = id
+                end
+            end
+        end
+        return result
+    end
+
+    local function listUnion(first, second)
+        local result = {}
+        local seen = {}
+        local function add(list)
+            if type(list) ~= 'table' then
+                return
+            end
+            for _, id in ipairs(list) do
+                if not seen[id] then
+                    seen[id] = true
+                    result[#result + 1] = id
+                end
+            end
+        end
+        add(first)
+        add(second)
+        return result
+    end
+
+    local function sendScanXmitUpdate(xmitToAdd, xmitToRemove, scanToAdd, scanToRemove)
+        xmitToAdd = xmitToAdd or {}
+        xmitToRemove = xmitToRemove or {}
+        scanToAdd = scanToAdd or {}
+        scanToRemove = scanToRemove or {}
         if #xmitToAdd == 0 and #xmitToRemove == 0 and #scanToAdd == 0 and #scanToRemove == 0 then
             return
         end
@@ -341,8 +388,9 @@ function initThreads()
 
     local geoSwitchState = {
         lastZone = nil,
-        baseline = nil,
-        lastAutoEnabled = autoGeoSwitchEnabled
+        lastAutoEnabled = autoGeoSwitchEnabled,
+        addedPrimary = {},
+        addedScan = {}
     }
 
     -- 1000 MS Thread
@@ -357,148 +405,138 @@ function initThreads()
 
         local lastTowerQuality = 0.0
         while true do
-            local QBDeath = false
-            if QBCore ~= nil then
-                local PlayerData = QBCore.Functions.GetPlayerData()
-                if PlayerData ~= nil and PlayerData.metadata ~= nil then
-                    -- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
-                    -- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
-                    QBDeath = PlayerData.metadata['isdead'] or
-                                  PlayerData.metadata['inlaststand']
-                end
-            end
-            if Config.deathDetectionMethod ~= 'manual' then
-                local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
-                if IsPlayerDead then
-                    TriggerEvent('SonoranRadio::PlayerDeath')
-                    isDead = true
-                elseif isDead then
-                    TriggerEvent('SonoranRadio::PlayerRevive')
-                    isDead = false
-                end
-            end
-            -- Tunnel degradation logic
-            local plyPed = PlayerPedId()
-            local coord = GetEntityCoords(plyPed)
-            local insideZone = false
-            local degradeStrength = 0.0
-            for _, zone in pairs(polyZonesTable) do
-                if zone:isPointInside(coord) then
-                    degradeStrength = zone.degradeStrength
-                    insideZone = true
-                    DebugPrint('Inside Zone: ' .. zone.name)
-                    break
-                end
-            end
-            local bestQuality = getSignalQuality()
-            if insideZone then
-                if bestQuality > 0 then
-                    bestQuality = bestQuality * (1 - degradeStrength)
-                end
-            end
-            -- Jammer logic
-            local isJammed = false
-            local jammerQuality = 0.0
-            for _, jammer in pairs(jammers or {}) do
-                local jammerRange = jammer.range or 100.0
-                local jammerCoords = jammer.coords or vector3(0, 0, 0)
-                if #(coord - jammerCoords) < jammerRange then
-                    if jammer.active then
-                        isJammed = true
-                        local jammerStrength = jammer.strength or 0.5
-                        local jammerDist = #(coord - jammerCoords)
-                        jammerQuality = 1.0 - (jammerDist / jammerRange)
-
-                        -- Clamp jammerQuality between 0 and 1
-                        jammerQuality = math.max(0.0, math.min(1.0, jammerQuality))
-
-                        -- Calculate the jammer's impact
-                        local jammerEffect = jammerStrength * jammerQuality
-
-                        -- Offset bestQuality but prevent it from going below 0
-                        bestQuality = math.max(0.0, bestQuality - jammerEffect)
-                        DebugPrint(('Jammer active, reducing quality by %.2f'):format(jammerStrength * jammerQuality))
+            if Radio.On then
+                local QBDeath = false
+                if QBCore ~= nil then
+                    local PlayerData = QBCore.Functions.GetPlayerData()
+                    if PlayerData ~= nil and PlayerData.metadata ~= nil then
+                        -- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
+                        -- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
+                        QBDeath = PlayerData.metadata['isdead'] or
+                                    PlayerData.metadata['inlaststand']
                     end
                 end
-            end
-            -- update the tower quality if it has changed significantly
-            local delta = bestQuality < 0.1 and 0.01 or 0.05 -- if tower quality <10%, update every 1% change, otherwise update every 5%
-            if math.abs(bestQuality - lastTowerQuality) >= delta or
-                (bestQuality <= 0.0 and lastTowerQuality > 0.0) or isJammed then
-                lastTowerQuality = bestQuality
-                SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = jammerQuality})
-            end
+                if Config.deathDetectionMethod ~= 'manual' then
+                    local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
+                    if IsPlayerDead then
+                        TriggerEvent('SonoranRadio::PlayerDeath')
+                        isDead = true
+                    elseif isDead then
+                        TriggerEvent('SonoranRadio::PlayerRevive')
+                        isDead = false
+                    end
+                end
+                -- Tunnel degradation logic
+                local plyPed = PlayerPedId()
+                local coord = GetEntityCoords(plyPed)
+                local insideZone = false
+                local degradeStrength = 0.0
+                for _, zone in pairs(polyZonesTable) do
+                    if zone:isPointInside(coord) then
+                        degradeStrength = zone.degradeStrength
+                        insideZone = true
+                        DebugPrint('Inside Zone: ' .. zone.name)
+                        break
+                    end
+                end
+                local bestQuality = getSignalQuality()
+                if insideZone then
+                    if bestQuality > 0 then
+                        bestQuality = bestQuality * (1 - degradeStrength)
+                    end
+                end
+                -- Jammer logic
+                local isJammed = false
+                local jammerQuality = 0.0
+                for _, jammer in pairs(jammers or {}) do
+                    local jammerRange = jammer.range or 100.0
+                    local jammerCoords = jammer.coords or vector3(0, 0, 0)
+                    if #(coord - jammerCoords) < jammerRange then
+                        if jammer.active then
+                            isJammed = true
+                            local jammerStrength = jammer.strength or 0.5
+                            local jammerDist = #(coord - jammerCoords)
+                            jammerQuality = 1.0 - (jammerDist / jammerRange)
+
+                            -- Clamp jammerQuality between 0 and 1
+                            jammerQuality = math.max(0.0, math.min(1.0, jammerQuality))
+
+                            -- Calculate the jammer's impact
+                            local jammerEffect = jammerStrength * jammerQuality
+
+                            -- Offset bestQuality but prevent it from going below 0
+                            bestQuality = math.max(0.0, bestQuality - jammerEffect)
+                            DebugPrint(('Jammer active, reducing quality by %.2f'):format(jammerStrength * jammerQuality))
+                        end
+                    end
+                end
+                -- update the tower quality if it has changed significantly
+                local delta = bestQuality < 0.1 and 0.01 or 0.05 -- if tower quality <10%, update every 1% change, otherwise update every 5%
+                if math.abs(bestQuality - lastTowerQuality) >= delta or
+                    (bestQuality <= 0.0 and lastTowerQuality > 0.0) or isJammed then
+                    lastTowerQuality = bestQuality
+                    SendNUIMessage({type = 'setTowerQuality', quality = bestQuality, isJammed = isJammed, jammerStrength = jammerQuality})
+                end
 
             local autoEnabled = autoGeoSwitchEnabled
             if autoEnabled ~= geoSwitchState.lastAutoEnabled then
-                if not autoEnabled and geoSwitchState.baseline and radioStateCache then
-                    updateScanXmitChannels(
-                        geoSwitchState.baseline.primary,
-                        geoSwitchState.baseline.scan,
-                        radioStateCache.primaryChIds or {},
-                        getScanChannelIds(radioStateCache)
-                    )
+                if not autoEnabled then
+                    sendScanXmitUpdate({}, geoSwitchState.addedPrimary, {}, geoSwitchState.addedScan)
                 end
-                geoSwitchState.baseline = nil
                 geoSwitchState.lastZone = nil
+                geoSwitchState.addedPrimary = {}
+                geoSwitchState.addedScan = {}
                 geoSwitchState.lastAutoEnabled = autoEnabled
             end
 
             if autoEnabled then
                 local activeZone = nil
                 local activeZoneName = nil
-                local restoredBaseline = false
                 for zoneName, zone in pairs(geoZonesTable) do
                     if zone:isPointInside(coord) and geoZonePermitted(zone) then
                         activeZone = zone
                         activeZoneName = zoneName
-                        break
+                            break
+                        end
                     end
-                end
 
                 if not activeZoneName then
-                    if geoSwitchState.lastZone and geoSwitchState.baseline and radioStateCache then
-                        updateScanXmitChannels(
-                            geoSwitchState.baseline.primary,
-                            geoSwitchState.baseline.scan,
-                            radioStateCache.primaryChIds or {},
-                            getScanChannelIds(radioStateCache)
-                        )
+                    if geoSwitchState.lastZone then
+                        sendScanXmitUpdate({}, geoSwitchState.addedPrimary, {}, geoSwitchState.addedScan)
                         geoSwitchState.lastZone = nil
-                        restoredBaseline = true
-                    end
-                    if radioStateCache and not restoredBaseline then
-                        geoSwitchState.baseline = {
-                            primary = copyIdList(radioStateCache.primaryChIds),
-                            scan = copyIdList(getScanChannelIds(radioStateCache))
-                        }
+                        geoSwitchState.addedPrimary = {}
+                        geoSwitchState.addedScan = {}
                     end
                 elseif geoSwitchState.lastZone ~= activeZoneName then
-                    if radioStateCache and not geoSwitchState.baseline then
-                        geoSwitchState.baseline = {
-                            primary = copyIdList(radioStateCache.primaryChIds),
-                            scan = copyIdList(getScanChannelIds(radioStateCache))
-                        }
-                    end
                     if radioStateCache then
-                        updateScanXmitChannels(
-                            activeZone.transmitChannels or {},
-                            activeZone.scanChannels or {},
-                            radioStateCache.primaryChIds or {},
-                            getScanChannelIds(radioStateCache)
-                        )
+                        local currentPrimary = radioStateCache.primaryChIds or {}
+                        local currentScan = getScanChannelIds(radioStateCache)
+                        local zonePrimary = activeZone.transmitChannels or {}
+                        local zoneScan = activeZone.scanChannels or {}
+                        local xmitToAdd = diffChannelLists(zonePrimary, currentPrimary)
+                        local scanToAdd = diffChannelLists(zoneScan, currentScan)
+                        local xmitToRemove = listDifference(geoSwitchState.addedPrimary, zonePrimary)
+                        local scanToRemove = listDifference(geoSwitchState.addedScan, zoneScan)
+
+                        sendScanXmitUpdate(xmitToAdd, xmitToRemove, scanToAdd, scanToRemove)
+
+                        local stillAddedPrimary = listIntersection(geoSwitchState.addedPrimary, zonePrimary)
+                        local stillAddedScan = listIntersection(geoSwitchState.addedScan, zoneScan)
+                        geoSwitchState.addedPrimary = listUnion(stillAddedPrimary, xmitToAdd)
+                        geoSwitchState.addedScan = listUnion(stillAddedScan, scanToAdd)
                         geoSwitchState.lastZone = activeZoneName
                     end
                 end
             end
 
-            for k, v in pairs(soundInfo) do
-                if v.playing or v.wasSilented then
-                    if getInfo(v.id).timeStamp ~= nil and
-                        getInfo(v.id).maxDuration ~= nil then
-                        if getInfo(v.id).timeStamp < getInfo(v.id).maxDuration then
-                            getInfo(v.id).timeStamp =
-                                getInfo(v.id).timeStamp + 1
+                for k, v in pairs(soundInfo) do
+                    if v.playing or v.wasSilented then
+                        if getInfo(v.id).timeStamp ~= nil and
+                            getInfo(v.id).maxDuration ~= nil then
+                            if getInfo(v.id).timeStamp < getInfo(v.id).maxDuration then
+                                getInfo(v.id).timeStamp =
+                                    getInfo(v.id).timeStamp + 1
+                            end
                         end
                     end
                 end
