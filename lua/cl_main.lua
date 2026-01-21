@@ -526,6 +526,12 @@ function initClient()
 			})
 		elseif action == Config.radioJammers.menuCommand then
 			TriggerServerEvent('SonoranRadio::Request::OpenJammerMenu')
+		elseif action == Config.geoChannels.friendlyCommand then
+			if not geoSwitchHasPermission() then
+				SendNotification('Geo Channels: ~r~No Permission~r~')
+				return
+			end
+			setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
 		else
 			radioToggle()
 		end
@@ -542,6 +548,7 @@ function initClient()
 		'reset',
 		'displayname',
 		Config.radioJammers.menuCommand,
+		Config.geoChannels.friendlyCommand
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
@@ -888,6 +895,7 @@ function initClient()
 		Config.geoChannels = {
 			enabled = true,
 			command = 'sonradgeoswitch',
+			friendlyCommand = 'geoswitch',
 			acePermission = '',
 			showNotifications = true
 		}
@@ -929,6 +937,7 @@ function initClient()
 	end)
 	RegisterKeyMapping(geoCommand, 'Toggle Geo Channels Auto-Switch', 'keyboard', getConfigKeybind('toggleGeoSwitch'))
 	TriggerEvent('chat:addSuggestion', '/' .. geoCommand, 'Toggle geo channel auto-switch', {})
+
 
 	local function emergencyCallRedialNotif()
 		local crashout = false
