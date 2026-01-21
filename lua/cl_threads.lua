@@ -726,7 +726,7 @@ function initThreads()
                                                              false)))
                     -- Show a notification to the player
                     notifyClient(
-                        '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+                        'Radio repeater disabled due to engine damage', nil, '~o~')
                     -- Remove the vehicle from the repeater table
                     RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
                         nil
@@ -750,7 +750,7 @@ function initThreads()
                     TriggerServerEvent('sonoranscripts::togglerepeater',
                                        NetworkGetNetworkIdFromEntity(k))
                     notifyClient(
-                        '~w~ Radio repeater ~o~disabled~w~ due to engine damage')
+                        'Radio repeater disabled due to engine damage', nil, '~o~')
                     RepeaterVehicles[k] = nil
                 end
             end
