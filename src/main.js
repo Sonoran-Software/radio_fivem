@@ -12,6 +12,7 @@ import store from "./store";
 function addInnerFrame(src, messageForwardKey) {
   const iframe = document.createElement('iframe');
   iframe.src = src;
+  iframe.allow = 'microphone *';
   iframe.style.position = 'absolute';
   iframe.style.top = '0px';
   iframe.style.left = '0px';
