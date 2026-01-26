@@ -68,6 +68,11 @@ Config.notifications = {
 		})
 	end
 }
+-- Customize Radio Guest Display Names
+Config.getGuestDisplayName = function(source)
+	-- return ('Guest %s'):format(source)
+	return nil
+end
 
 -- Default radio keybinds (these can be changed in GTA settings)                                                --
 -- See https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard (input parameter column) --

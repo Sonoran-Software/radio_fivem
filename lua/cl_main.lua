@@ -1241,11 +1241,14 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::RadioGuestToken')
 	RegisterNUICallback('create-guest-token', function(_data, cb)
 		local handlerId
-		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken)
+		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken, displayName)
 			RemoveEventHandler(handlerId)
+			if type(displayName) ~= 'string' or displayName == '' then
+				displayName = getFrameworkDisplayName() or GetPlayerName(PlayerId())
+			end
 			cb({
 				guestToken = guestToken,
-				displayName = getFrameworkDisplayName() or GetPlayerName(PlayerId()),
+				displayName = displayName,
 			})
 		end)
 		TriggerServerEvent('SonoranRadio::CreateGuestToken')
