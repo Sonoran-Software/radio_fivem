@@ -396,6 +396,26 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
+	function setRadioVisible(visible, frame)
+		if frame then
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame,
+				skins = allowedFrames
+			})
+		end
+		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		setmetatable(uiPositions, {__jsontype = 'object'})
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = uiPositions,
+		})
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = visible,
+			pttKey = getPttKey()
+		})
+	end
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -421,24 +441,7 @@ function initClient()
 		end
 
 		radActive = not radActive
-		if frame then
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame,
-				skins = allowedFrames
-			})
-		end
-		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-		setmetatable(uiPositions, {__jsontype = 'object'})
-		SendNUIMessage({
-			type = 'setUiPositions',
-			data = uiPositions,
-		})
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive,
-			pttKey = getPttKey()
-		})
+		setRadioVisible(radActive, frame)
 		if radActive then
 			SetNuiFocus(true, true)
 		else
@@ -494,6 +497,15 @@ function initClient()
 			skin = frame,
 			skins = allowedFrames
 		})
+
+		if not Radio.Restored and LocalPlayer.state['sonoranradio_restore'] == true then
+			setRadioVisible(true)
+			SendNUIMessage({
+				type = 'pushButton',
+				button = 'power'
+			})
+			Radio.Restored = true
+		end
 	end)
 
 	RegisterCommand('radio', function(_, args)
@@ -1216,6 +1228,7 @@ function initClient()
 		if data.type == 'power' then
 			handleRadioPower(data.power)
 			Radio.On = data.power
+			LocalPlayer.state:set('sonoranradio_restore', data.power, false)
 		end
 
 		if data.type == 'radioConnected' then
