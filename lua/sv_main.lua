@@ -1535,3 +1535,18 @@ AddEventHandler('sonoranradio:syncSirenState', function(isOn, netId)
 	}
 	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, netId)
 end)
+
+-- Push Event Handling for Geo Zones
+TriggerEvent('sonoranradio::RegisterPushEvent', 'update_geo_zones', function(data)
+	if type(data.payload.geoChannels) == 'table' then
+		geoChannels = data.payload.geoChannels
+		SaveJsonConfig('geochannels.json', geoChannels)
+		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+	end
+	-- TODO: Implement tunnel push event handling
+	-- if type(data.payload.tunnels) == 'table' then
+	-- 	tunnels = data.payload.tunnels
+	-- 	SaveJsonConfig('tunnels.json', tunnels)
+	-- 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	-- end
+end)
