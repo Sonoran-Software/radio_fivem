@@ -385,6 +385,15 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
+	if Config.autoOnSceneStatus == nil then
+		Config.autoOnSceneStatus = {
+			enabled = true,
+			distance = 30.0,
+			statusEnum = 4,
+			timeout = 300000
+		}
+	end
+
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -1879,7 +1888,7 @@ function initClient()
 		-- Postal Routing Support --
 		RegisterNetEvent('nearest-postal:arrivedAtPostal', function(postal)
 			if routingPostal ~= nil and routingPostal.postal ~= nil then
-				if postal == routingPostal.postal then
+				if tonumber(postal) == tonumber(routingPostal.postal) then
 					TriggerServerEvent('SonoranRadio::PostalRouteArrived')
 					routingPostal = nil
 				end
