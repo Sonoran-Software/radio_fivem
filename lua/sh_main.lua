@@ -39,9 +39,33 @@ function showNotification(notification, urgent)
 	DrawNotification(urgent, true)
 end
 
+-- Automatically select notification method if set to auto
+local AutoSelectedNotifyMethod = "chat"
+if Config.notifications.type == "auto" then
+	if GetResourceState("lation_ui") == "started" then
+		AutoSelectedNotifyMethod = "lation_ui"
+	elseif GetResourceState("ox_lib") == "started" then
+		AutoSelectedNotifyMethod = "ox_lib"
+	elseif GetResourceState("pNotify") == "started" then
+		AutoSelectedNotifyMethod = "pnotify"
+	elseif GetResourceState("okokNotify") == "started" then
+		AutoSelectedNotifyMethod = "okokNotify"
+	else
+		AutoSelectedNotifyMethod = "chat"
+	end
+end
+
+local function ResolveNotifyMethod(cfgValue)
+	if cfgValue == "auto" then
+		return AutoSelectedNotifyMethod
+	end
+	return cfgValue
+end
+
+
 function notifyClient(notification, urgent, colorCode)
 	local notifications = Config and Config['notifications'] or {}
-	local notificationType = notifications['type'] or 'native'
+	local notificationType = ResolveNotifyMethod(Config.notifications.type)
 	local title = notifications['notificationTitle'] or 'SonoranRadio'
 	local prefix = ('[%s] '):format(title)
 	local formattedNotification = notification
@@ -62,6 +86,21 @@ function notifyClient(notification, urgent, colorCode)
 		exports.pNotify:SendNotification({
 			['type'] = 'info',
 			['text'] = prefix .. plainNotification
+		})
+	elseif notificationType == 'ox_lib' then
+		exports.ox_lib:notify({
+			title = title,
+			description = plainNotification,
+			type = 'info',
+			duration = 5000,
+			position = 'top-right'
+		})
+	elseif notificationType == 'lation_ui' then
+		exports.lation_ui:notify({
+			title = title,
+			message = plainNotification,
+			type = 'info',
+			duration = 5000,
 		})
 	elseif notificationType == 'custom' then
 		notifications['custom'](plainNotification)
