@@ -4,7 +4,7 @@
             {{ $store.getters.statusText }}
         </div>
         <div v-else-if="peersTalking.length > 0">
-            <div v-for="peer in peersTalking" :key="peer.identity" class="peer-name">{{ peer.displayName ?? 'Undefined' }}</div>
+            <div v-for="peer in peersTalking" :key="peer.identity" class="peer-name">{{ peer.displayName }}</div>
         </div>
         <div v-else-if="!$store.getters.channelProfile">
             <div class="profile-name">Temporary Channel</div>
@@ -21,7 +21,7 @@
 export default {
     computed: {
         peersTalking() {
-            const peersTalking = [...this.$store.state.peersTalking];
+            const peersTalking = [...this.$store.state.peersTalking].filter(x => !!x.displayName);
             return peersTalking.sort((a, b) => a.displayName - b.displayName)
         },
     },
