@@ -12,6 +12,8 @@ local allowedFrames = {}
 local critError = false
 local calledSyncAcePerms = false
 local frame
+routingPostal = nil
+routingCoords = nil
 polyZonesTable = {}
 Config = {}
 
@@ -1185,9 +1187,15 @@ function initClient()
 		end
 
 		if data.type == 'routeToPostal' then
+			if Config.autoOnSceneStatus.enabled then
+				routingPostal = { postal = data.postal, time = GetGameTimer() }
+			end
 			ExecuteCommand('postal '..data.postal)
 		end
 		if data.type == 'routeToCoordinates' then
+			if Config.autoOnSceneStatus.enabled then
+				routingCoords = { x = data.x, y = data.y, time = GetGameTimer() }
+			end
 			SetNewWaypoint(data.x, data.y)
 		end
 
@@ -1864,6 +1872,17 @@ function initClient()
 					end
 				end
 				Citizen.Wait(10)
+			end
+		end)
+	end
+	if Config.autoOnSceneStatus.enabled then
+		-- Postal Routing Support --
+		RegisterNetEvent('nearest-postal:arrivedAtPostal', function(postal)
+			if routingPostal ~= nil and routingPostal.postal ~= nil then
+				if postal == routingPostal.postal then
+					TriggerServerEvent('SonoranRadio::PostalRouteArrived')
+					routingPostal = nil
+				end
 			end
 		end)
 	end

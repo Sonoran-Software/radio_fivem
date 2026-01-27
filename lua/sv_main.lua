@@ -1244,3 +1244,24 @@ AddEventHandler('sonoranradio:syncSirenState', function(isOn, netId)
 	}
 	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, netId)
 end)
+
+RegisterNetEvent('SonoranRadio::PostalRouteArrived', function()
+	local src = source
+	local ids = {}
+    for _, id in ipairs(GetPlayerIdentifiers(player)) do
+        local split = stringsplit(id, ":")
+        ids[split[1]] = split[2]
+    end
+	local sonoranCadMainApi = GetConvar('sonoran_primaryIdentifier', 'steam')
+	local apiId = ids[sonoranCadMainApi] or ids['steam'] or ids['license'] or 'unknown'
+	local data = {
+		['serverId'] = GetConvar('sonoran_serverId', 1),
+		['status'] = Config.autoOnSceneStatus.statusEnum,
+		['apiId'] = apiId
+	}
+	exports.sonorancad.performApiRequest(data, 'UNIT_STATUS', function(response, success)
+		if not success then
+			errorLog('Failed to update unit status on SonoranCAD.')
+		end
+	end)
+end)
