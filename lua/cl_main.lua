@@ -1,4 +1,5 @@
 local radActive = false
+local dispatchOpen = false
 
 local thisUnit = {}
 local unitStatus = nil
@@ -395,6 +396,26 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
+	function setRadioVisible(visible, frame)
+		if frame then
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame,
+				skins = allowedFrames
+			})
+		end
+		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		setmetatable(uiPositions, {__jsontype = 'object'})
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = uiPositions,
+		})
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = visible,
+			pttKey = getPttKey()
+		})
+	end
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -420,30 +441,23 @@ function initClient()
 		end
 
 		radActive = not radActive
-		if frame then
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame,
-				skins = allowedFrames
-			})
-		end
-		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-		setmetatable(uiPositions, {__jsontype = 'object'})
-		SendNUIMessage({
-			type = 'setUiPositions',
-			data = uiPositions,
-		})
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive,
-			pttKey = getPttKey()
-		})
+		setRadioVisible(radActive, frame)
 		if radActive then
 			SetNuiFocus(true, true)
 		else
 			SetNuiFocus(false, false)
 		end
 		Radio:Toggle(radActive)
+	end
+
+	local function setDispatchVisible(visible)
+		dispatchOpen = visible
+		SendNUIMessage({
+			type = 'setDisplay',
+			enable = visible,
+			tablet = true
+		})
+		SetNuiFocus(visible, visible)
 	end
 
 	function emergencyCallCommand()
@@ -483,6 +497,15 @@ function initClient()
 			skin = frame,
 			skins = allowedFrames
 		})
+
+		if not Radio.Restored and LocalPlayer.state['sonoranradio_restore'] == true then
+			setRadioVisible(true)
+			SendNUIMessage({
+				type = 'pushButton',
+				button = 'power'
+			})
+			Radio.Restored = true
+		end
 	end)
 
 	RegisterCommand('radio', function(_, args)
@@ -537,6 +560,15 @@ function initClient()
 		end
 	end)
 	RegisterCommand('sonradradio', radioToggle)
+
+	RegisterCommand('showdispatch', function()
+		if dispatchOpen then
+			SetNuiFocus(true, true)
+			return
+		end
+		setDispatchVisible(true)
+	end)
+	TriggerEvent('chat:addSuggestion', '/showdispatch', 'Open the dispatch tablet', {})
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
@@ -1140,6 +1172,7 @@ function initClient()
 		if data.type == 'escape' then
 			radActive = false
 			SetNuiFocus(false, false)
+			setDispatchVisible(false)
 			Radio:Toggle(radActive)
 		end
 
@@ -1195,6 +1228,7 @@ function initClient()
 		if data.type == 'power' then
 			handleRadioPower(data.power)
 			Radio.On = data.power
+			LocalPlayer.state:set('sonoranradio_restore', data.power, false)
 		end
 
 		if data.type == 'radioConnected' then
@@ -1280,14 +1314,64 @@ function initClient()
 		end)
 		TriggerServerEvent('SonoranRadio::CreateEmergencyCallToken')
 	end)
+	local function getFrameworkDisplayName()
+		if GetResourceState('qbx_core') == 'started' then
+			local playerData = exports.qbx_core and exports.qbx_core:GetPlayerData()
+			local charinfo = playerData and playerData.charinfo
+			if charinfo then
+				local first = charinfo.firstname or charinfo.firstName
+				local last = charinfo.lastname or charinfo.lastName
+				if first and last then
+					return first .. ' ' .. last
+				end
+				return first or last or charinfo.name
+			end
+		end
+
+		if GetResourceState('qb-core') == 'started' then
+			local qb = exports['qb-core'] and exports['qb-core']:GetCoreObject()
+			if qb and qb.Functions and qb.Functions.GetPlayerData then
+				local playerData = qb.Functions.GetPlayerData()
+				local charinfo = playerData and playerData.charinfo
+				if charinfo then
+					local first = charinfo.firstname or charinfo.firstName
+					local last = charinfo.lastname or charinfo.lastName
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or charinfo.name
+				end
+			end
+		end
+
+		if GetResourceState('es_extended') == 'started' then
+			local esx = exports['es_extended'] and exports['es_extended']:getSharedObject()
+			if esx and esx.GetPlayerData then
+				local playerData = esx.GetPlayerData()
+				if playerData then
+					local first = playerData.firstName or playerData.firstname
+					local last = playerData.lastName or playerData.lastname
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or playerData.name
+				end
+			end
+		end
+
+		return nil
+	end
 	RegisterNetEvent('SonoranRadio::RadioGuestToken')
 	RegisterNUICallback('create-guest-token', function(_data, cb)
 		local handlerId
-		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken)
+		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken, displayName)
 			RemoveEventHandler(handlerId)
+			if type(displayName) ~= 'string' or displayName == '' then
+				displayName = getFrameworkDisplayName() or GetPlayerName(PlayerId())
+			end
 			cb({
 				guestToken = guestToken,
-				displayName = GetPlayerName(PlayerId()),
+				displayName = displayName,
 			})
 		end)
 		TriggerServerEvent('SonoranRadio::CreateGuestToken')
