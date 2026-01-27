@@ -1,4 +1,5 @@
 local radActive = false
+local dispatchOpen = false
 
 local thisUnit = {}
 local unitStatus = nil
@@ -446,6 +447,16 @@ function initClient()
 		Radio:Toggle(radActive)
 	end
 
+	local function setDispatchVisible(visible)
+		dispatchOpen = visible
+		SendNUIMessage({
+			type = 'setDisplay',
+			enable = visible,
+			tablet = true
+		})
+		SetNuiFocus(visible, visible)
+	end
+
 	function emergencyCallCommand()
 		return Config.emergencyCallCommand or '911'
 	end
@@ -537,6 +548,15 @@ function initClient()
 		end
 	end)
 	RegisterCommand('sonradradio', radioToggle)
+
+	RegisterCommand('showdispatch', function()
+		if dispatchOpen then
+			SetNuiFocus(true, true)
+			return
+		end
+		setDispatchVisible(true)
+	end)
+	TriggerEvent('chat:addSuggestion', '/showdispatch', 'Open the dispatch tablet', {})
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
@@ -1140,6 +1160,7 @@ function initClient()
 		if data.type == 'escape' then
 			radActive = false
 			SetNuiFocus(false, false)
+			setDispatchVisible(false)
 			Radio:Toggle(radActive)
 		end
 
