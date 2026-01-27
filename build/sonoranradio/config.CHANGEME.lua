@@ -91,7 +91,7 @@ Config.keybinds = {
 	['volDown'] = '',
 
 	['toggleAutoCallouts'] = '',
-	['toggleGeoSwitch'] = ''
+	['toggleGeoSwitch'] = '',
 	['toggleAi'] = '',
 }
 
