@@ -80,6 +80,36 @@ function notifyClient(notification, urgent, colorCode)
 		showNotification(('~b~%s~w~%s'):format(prefix, formattedNotification), urgent)
 	elseif notificationType == 'okokNotify' then
 		exports['okokNotify']:Alert(title, '' .. plainNotification, 10000, 'info')
+	elseif notificationType == 'ox_lib' then
+		if not lib then
+			if GetResourceState('ox_lib') ~= 'started' then
+				errorLog('ox_lib must be started before this resource.')
+				return
+			end
+			local chunk = LoadResourceFile('ox_lib', 'init.lua')
+			if not chunk then
+				errorLog('failed to load resource file @ox_lib/init.lua')
+				return
+			end
+			load(chunk, '@@ox_lib/init.lua', 't')()
+		end
+		if lib and lib.notify then
+			local oxLibConfig = notifications['ox_lib'] or {}
+			local oxNotify = {
+				title = title,
+				description = plainNotification,
+				type = oxLibConfig['type'] or 'inform'
+			}
+			if oxLibConfig['position'] then
+				oxNotify.position = oxLibConfig['position']
+			end
+			if oxLibConfig['duration'] then
+				oxNotify.duration = oxLibConfig['duration']
+			end
+			lib.notify(oxNotify)
+		else
+			errorLog('ox_lib notification selected but lib.notify is unavailable. Ensure ox_lib is started.')
+		end
 	elseif notificationType == 'pNotify' then
 		print('Using pNotify for notifications')
 		TriggerEvent('pNotify:SendNotification', {
