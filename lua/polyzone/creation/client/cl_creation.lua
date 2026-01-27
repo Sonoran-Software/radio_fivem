@@ -99,6 +99,7 @@ AddEventHandler("SonoranRadio:PolyZone:pzfinish", function(degradeStrength, minY
   drawZone = false
   createdZone = nil
   createdZoneType = nil
+  polyZonePurpose = 'degrade'
 end)
 
 RegisterNetEvent("SonoranRadio:PolyZone:pzlast")

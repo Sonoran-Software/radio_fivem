@@ -1,4 +1,5 @@
 local radActive = false
+local dispatchOpen = false
 
 local thisUnit = {}
 local unitStatus = nil
@@ -13,6 +14,13 @@ local critError = false
 local calledSyncAcePerms = false
 local frame
 polyZonesTable = {}
+geoZonesTable = {}
+geoChannelZones = {}
+radioConfigCache = nil
+radioStateCache = nil
+communityChannelsCache = nil
+communityChannelsUpdatedAt = 0
+autoGeoSwitchEnabled = true
 Config = {}
 
 AddEventHandler('onClientResourceStart', function(resourceName)
@@ -130,6 +138,11 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
 		Config.luxartResourceName = 'lvc'
 	end
+end)
+
+RegisterNetEvent('SonoranRadio::CommunityChannels', function(payload)
+	communityChannelsCache = payload
+	communityChannelsUpdatedAt = GetGameTimer()
 end)
 
 function initClient()
@@ -383,6 +396,26 @@ function initClient()
 		return playerHasItem(itemName)
 	end
 
+	function setRadioVisible(visible, frame)
+		if frame then
+			SendNUIMessage({
+				type = 'setCurrentSkin',
+				skin = frame,
+				skins = allowedFrames
+			})
+		end
+		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
+		setmetatable(uiPositions, {__jsontype = 'object'})
+		SendNUIMessage({
+			type = 'setUiPositions',
+			data = uiPositions,
+		})
+		SendNUIMessage({
+			type = 'setVisible',
+			visibility = visible,
+			pttKey = getPttKey()
+		})
+	end
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -408,30 +441,23 @@ function initClient()
 		end
 
 		radActive = not radActive
-		if frame then
-			SendNUIMessage({
-				type = 'setCurrentSkin',
-				skin = frame,
-				skins = allowedFrames
-			})
-		end
-		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
-		setmetatable(uiPositions, {__jsontype = 'object'})
-		SendNUIMessage({
-			type = 'setUiPositions',
-			data = uiPositions,
-		})
-		SendNUIMessage({
-			type = 'setVisible',
-			visibility = radActive,
-			pttKey = getPttKey()
-		})
+		setRadioVisible(radActive, frame)
 		if radActive then
 			SetNuiFocus(true, true)
 		else
 			SetNuiFocus(false, false)
 		end
 		Radio:Toggle(radActive)
+	end
+
+	local function setDispatchVisible(visible)
+		dispatchOpen = visible
+		SendNUIMessage({
+			type = 'setDisplay',
+			enable = visible,
+			tablet = true
+		})
+		SetNuiFocus(visible, visible)
 	end
 
 	function emergencyCallCommand()
@@ -471,6 +497,15 @@ function initClient()
 			skin = frame,
 			skins = allowedFrames
 		})
+
+		if not Radio.Restored and LocalPlayer.state['sonoranradio_restore'] == true then
+			setRadioVisible(true)
+			SendNUIMessage({
+				type = 'pushButton',
+				button = 'power'
+			})
+			Radio.Restored = true
+		end
 	end)
 
 	RegisterCommand('radio', function(_, args)
@@ -514,11 +549,26 @@ function initClient()
 			})
 		elseif action == Config.radioJammers.menuCommand then
 			TriggerServerEvent('SonoranRadio::Request::OpenJammerMenu')
+		elseif action == Config.geoChannels.friendlyCommand then
+			if not geoSwitchHasPermission() then
+				SendNotification('Geo Channels: ~r~No Permission~r~')
+				return
+			end
+			setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
 		else
 			radioToggle()
 		end
 	end)
 	RegisterCommand('sonradradio', radioToggle)
+
+	RegisterCommand('showdispatch', function()
+		if dispatchOpen then
+			SetNuiFocus(true, true)
+			return
+		end
+		setDispatchVisible(true)
+	end)
+	TriggerEvent('chat:addSuggestion', '/showdispatch', 'Open the dispatch tablet', {})
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
@@ -530,6 +580,7 @@ function initClient()
 		'reset',
 		'displayname',
 		Config.radioJammers.menuCommand,
+		Config.geoChannels.friendlyCommand
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
@@ -879,6 +930,54 @@ function initClient()
 		RegisterKeyMapping('sonradtogglecallouts', 'Toggle Auto-Callouts', 'keyboard', getConfigKeybind('toggleAutoCallouts'))
 	end
 
+	if Config.geoChannels == nil then
+		Config.geoChannels = {
+			enabled = true,
+			command = 'sonradgeoswitch',
+			friendlyCommand = 'geoswitch',
+			acePermission = '',
+			showNotifications = true
+		}
+	end
+	autoGeoSwitchEnabled = Config.geoChannels.enabled ~= false
+
+	function geoSwitchHasPermission()
+		local perm = Config.geoChannels and Config.geoChannels.acePermission or ''
+		if perm == '' then
+			return true
+		end
+		if IsPlayerAceAllowed then
+			local playerId = PlayerId()
+			local serverId = GetPlayerServerId(playerId)
+			return IsPlayerAceAllowed(playerId, perm) or IsPlayerAceAllowed(serverId, perm)
+		end
+		return true
+	end
+
+	if autoGeoSwitchEnabled and not geoSwitchHasPermission() then
+		autoGeoSwitchEnabled = false
+	end
+
+	function setGeoAutoSwitch(enabled, showNotice)
+		autoGeoSwitchEnabled = enabled
+		if showNotice and (Config.geoChannels.showNotifications ~= false) then
+			local label = autoGeoSwitchEnabled and '~g~On' or '~r~Off'
+			SendNotification('Geo Channels Auto-Switch: ' .. label)
+		end
+	end
+
+	local geoCommand = Config.geoChannels.command or 'sonradgeoswitch'
+	RegisterCommand(geoCommand, function()
+		if not geoSwitchHasPermission() then
+			SendNotification('Geo Channels: ~r~No Permission~r~')
+			return
+		end
+		setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
+	end)
+	RegisterKeyMapping(geoCommand, 'Toggle Geo Channels Auto-Switch', 'keyboard', getConfigKeybind('toggleGeoSwitch'))
+	TriggerEvent('chat:addSuggestion', '/' .. geoCommand, 'Toggle geo channel auto-switch', {})
+
+
 	local function emergencyCallRedialNotif()
 		local crashout = false
 		Citizen.CreateThread(function()
@@ -1073,6 +1172,7 @@ function initClient()
 		if data.type == 'escape' then
 			radActive = false
 			SetNuiFocus(false, false)
+			setDispatchVisible(false)
 			Radio:Toggle(radActive)
 		end
 
@@ -1128,9 +1228,17 @@ function initClient()
 		if data.type == 'power' then
 			handleRadioPower(data.power)
 			Radio.On = data.power
+			LocalPlayer.state:set('sonoranradio_restore', data.power, false)
 		end
 
-		if data.type == 'radioConnected' and data.config.myself and not calledSyncAcePerms then
+		if data.type == 'radioConnected' then
+			if data.config then
+				radioConfigCache = data.config
+			end
+			if not (data.config and data.config.myself and not calledSyncAcePerms) then
+				cb('OK')
+				return
+			end
 			-- we don't want to send all profiles since there could be a lot of data,
 			-- so just extract the data we need
 			local profilesInfo = {}
@@ -1158,6 +1266,9 @@ function initClient()
 		if data.type == 'stateUpdated' or data.type == 'stateUpdatedEmergencyCall' then
 			-- replicate the new state to other clients
 			if type(data.state) == 'table' then data.state.gamestate = nil end
+			if data.type == 'stateUpdated' then
+				radioStateCache = data.state
+			end
 			TriggerServerEvent('SonoranRadio::SetRadioState', data.state)
 		end
 
@@ -1184,6 +1295,13 @@ function initClient()
 			TriggerEvent('SonoranRadio::API:BackgroundAudio', data.start, data.trackId)
 		end
 
+		if data.type == 'routeToPostal' then
+			ExecuteCommand('postal '..data.postal)
+		end
+		if data.type == 'routeToCoordinates' then
+			SetNewWaypoint(data.x, data.y)
+		end
+
 		cb('OK')
 	end)
 
@@ -1196,14 +1314,64 @@ function initClient()
 		end)
 		TriggerServerEvent('SonoranRadio::CreateEmergencyCallToken')
 	end)
+	local function getFrameworkDisplayName()
+		if GetResourceState('qbx_core') == 'started' then
+			local playerData = exports.qbx_core and exports.qbx_core:GetPlayerData()
+			local charinfo = playerData and playerData.charinfo
+			if charinfo then
+				local first = charinfo.firstname or charinfo.firstName
+				local last = charinfo.lastname or charinfo.lastName
+				if first and last then
+					return first .. ' ' .. last
+				end
+				return first or last or charinfo.name
+			end
+		end
+
+		if GetResourceState('qb-core') == 'started' then
+			local qb = exports['qb-core'] and exports['qb-core']:GetCoreObject()
+			if qb and qb.Functions and qb.Functions.GetPlayerData then
+				local playerData = qb.Functions.GetPlayerData()
+				local charinfo = playerData and playerData.charinfo
+				if charinfo then
+					local first = charinfo.firstname or charinfo.firstName
+					local last = charinfo.lastname or charinfo.lastName
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or charinfo.name
+				end
+			end
+		end
+
+		if GetResourceState('es_extended') == 'started' then
+			local esx = exports['es_extended'] and exports['es_extended']:getSharedObject()
+			if esx and esx.GetPlayerData then
+				local playerData = esx.GetPlayerData()
+				if playerData then
+					local first = playerData.firstName or playerData.firstname
+					local last = playerData.lastName or playerData.lastname
+					if first and last then
+						return first .. ' ' .. last
+					end
+					return first or last or playerData.name
+				end
+			end
+		end
+
+		return nil
+	end
 	RegisterNetEvent('SonoranRadio::RadioGuestToken')
 	RegisterNUICallback('create-guest-token', function(_data, cb)
 		local handlerId
-		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken)
+		handlerId = AddEventHandler('SonoranRadio::RadioGuestToken', function(guestToken, displayName)
 			RemoveEventHandler(handlerId)
+			if type(displayName) ~= 'string' or displayName == '' then
+				displayName = getFrameworkDisplayName() or GetPlayerName(PlayerId())
+			end
 			cb({
 				guestToken = guestToken,
-				displayName = GetPlayerName(PlayerId()),
+				displayName = displayName,
 			})
 		end)
 		TriggerServerEvent('SonoranRadio::CreateGuestToken')
@@ -1297,24 +1465,65 @@ function initClient()
 	RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
 		tunnels = TunnelsServer
 		for _, zoneData in pairs (tunnels) do
-			DebugPrint('Attempting to create zone: ' .. zoneData.options.name)
-			if not polyZonesTable[zoneData.options.name] then
+			local options = zoneData.options or {}
+			if options.zoneType == 'geo' or options.transmitChannels ~= nil or options.scanChannels ~= nil or options.acePerms ~= nil then
+				goto continueTunnels
+			end
+			if not options.name then
+				goto continueTunnels
+			end
+			DebugPrint('Attempting to create zone: ' .. options.name)
+			if not polyZonesTable[options.name] then
 				DebugPrint('Zone was not found, creating...')
 				local points = {}
 				for _, point in pairs (zoneData.points) do
 					table.insert(points, vector2(point.x, point.y))
 				end
 				DebugPrint('Creating zone with ' .. #points .. ' points', json.encode(points))
-				local options = zoneData.options -- options
-				polyZonesTable[zoneData.options.name] = PolyZone:Create(points, {
+				polyZonesTable[options.name] = PolyZone:Create(points, {
 					name = options.name,
 					minZ = options.minZ,
 					maxZ = options.maxZ,
 					degradeStrength = options.degradeStrength,
 					debugGrid = Config.debug
 				})
-				DebugPrint('Zone created: ' .. zoneData.options.name)
+				DebugPrint('Zone created: ' .. options.name)
 			end
+			::continueTunnels::
+		end
+	end)
+
+	RegisterNetEvent('SonoranRadio:SyncGeoChannels', function(zones)
+		geoChannelZones = zones or {}
+		for _, zone in pairs(geoZonesTable) do
+			zone:destroy()
+		end
+		geoZonesTable = {}
+		for _, zoneData in pairs(geoChannelZones) do
+			local options = zoneData.options or {}
+			if options.zoneType == 'degrade' then
+				goto continueGeoZones
+			end
+			if options.degradeStrength ~= nil and options.transmitChannels == nil and options.scanChannels == nil and options.acePerms == nil then
+				goto continueGeoZones
+			end
+			if options.name then
+				local points = {}
+				for _, point in pairs(zoneData.points or {}) do
+					table.insert(points, vector2(point.x, point.y))
+				end
+				geoZonesTable[options.name] = PolyZone:Create(points, {
+					name = options.name,
+					minZ = options.minZ,
+					maxZ = options.maxZ,
+					debugGrid = Config.debug
+				})
+				local zone = geoZonesTable[options.name]
+				zone.transmitChannels = options.transmitChannels or {}
+				zone.scanChannels = options.scanChannels or {}
+				zone.acePerms = options.acePerms or {}
+			end
+			::continueGeoZones::
 		end
 	end)
 

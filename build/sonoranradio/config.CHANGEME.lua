@@ -55,7 +55,7 @@ Config.autoPttOnPanic = {
 }
 -- Notification Settings --
 Config.notifications = {
-	type = 'native', -- Available options: native, pNotify, okokNotify, ox_lib, chat, or custom
+	type = 'auto', -- Available options: auto, native, pNotify, ox_lib, okokNotify, chat, or custom
 	notificationTitle = 'SonoranRadio', -- Notification Title for methods that support it
 	-- Uncomment line below and comment line 105 if you plan to use pNotify
 	-- notificationMessage = "<b>SonoranRadio</b></br>{{MESSAGE}}"
@@ -73,6 +73,11 @@ Config.notifications = {
 		})
 	end
 }
+-- Customize Radio Guest Display Names
+Config.getGuestDisplayName = function(source)
+	-- return ('Guest %s'):format(source)
+	return nil
+end
 
 -- Default radio keybinds (these can be changed in GTA settings)                                                --
 -- See https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard (input parameter column) --
@@ -91,6 +96,7 @@ Config.keybinds = {
 	['volDown'] = '',
 
 	['toggleAutoCallouts'] = '',
+	['toggleGeoSwitch'] = '',
 	['toggleAi'] = '',
 }
 
@@ -100,6 +106,15 @@ Config.autoCallouts = {
 	speedUnit = 'mph', -- mph | kmh | none -- The unit of speed provided with the callout
 	withPostals = false, -- Whether to include postals with the automatic callouts
 	postalResource = 'nearest-postal',
+}
+
+-- Geo-Channel Settings --
+Config.geoChannels = {
+	enabled = true,
+	command = 'sonradgeoswitch', -- command to toggle geo-channel switching | e.g. /sonradgeoswitch
+	friendlyCommand = 'geoswitch', -- friendly subcommand of the /radio command to toggle geo-channel switching | e.g. / radio geoswitch
+	acePermission = '', -- ACE permission required to use disable geo-channel switching | Leave blank to allow all users
+	showNotifications = true -- Show notifications when geo-channel switching is enabled/disabled
 }
 
 -- Radio Item Settings --

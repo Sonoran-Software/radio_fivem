@@ -632,6 +632,15 @@ export default {
                         ...event.loc,
                     })
                     break;
+                case 'update_scan_xmit_channels':
+                    this.postRadioFrame({
+                        type: 'update_scan_xmit_channels',
+                        xmitToAdd: event.xmitToAdd,
+                        xmitToRemove: event.xmitToRemove,
+                        scanToAdd: event.scanToAdd,
+                        scanToRemove: event.scanToRemove,
+                    });
+                    break;
             }
         },
 
@@ -690,6 +699,19 @@ export default {
                         type: 'toggle_background_audio_confirm',
                         start: event.start,
                         trackId: event.trackId
+                    });
+                    break;
+                case 'route_to_postal':
+                    this.postClient({
+                        type: 'routeToPostal',
+                        postal: event.postal
+                    });
+                    break;
+                case 'route_to_coordinates':
+                    this.postClient({
+                        type: 'routeToCoordinates',
+                        x: event.x,
+                        y: event.y,
                     });
                     break;
             }
