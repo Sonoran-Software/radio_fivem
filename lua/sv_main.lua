@@ -81,12 +81,14 @@ local function sendZonesToApi(reason)
 	if not Config or not Config.apiKey or not Config.comId then
 		return
 	end
+	print('Uploading geo and degrade zones to radio service...')
+	print('tunnels', json.encode(tunnels))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
 		['roomId'] = Config.serverId or 1,
-		['geoChannels'] = geoChannels,
-		['tunnels'] = tunnels
+		['geoZones'] = geoChannels,
+		['degradeZones'] = tunnels
 	}, 'SET-ZONES', function(data, success)
 		if not success then
 			warnLog('Failed to set geo and degrade zones for radio service.')
@@ -1250,6 +1252,21 @@ AddEventHandler('onResourceStart', function(resourceName)
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
 	Citizen.CreateThread(updatePushUrlThread)
+
+	-- Push Event Handling for Geo Zones
+	TriggerEvent('sonoranradio::RegisterPushEvent', 'zone_updated', function(data)
+		debugLog('Received zone_updated push event: ' .. json.encode(data))
+		if type(data.payload.geoZones) == 'table' then
+			geoChannels = data.payload.geoZones
+			SaveJsonConfig('geochannels.json', geoChannels)
+			TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+		end
+		if type(data.payload.degradeZones) == 'table' then
+			tunnels = data.payload.degradeZones
+			SaveJsonConfig('tunnels.json', tunnels)
+			TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+		end
+	end)
 end)
 
 exports('performApiRequest', performApiRequest)
@@ -1559,19 +1576,4 @@ AddEventHandler('sonoranradio:syncSirenState', function(isOn, netId)
 		netId = netId
 	}
 	TriggerClientEvent('sonoranradio:receiveSirenState', -1, src, isOn, netId)
-end)
-
--- Push Event Handling for Geo Zones
-TriggerEvent('sonoranradio::RegisterPushEvent', 'update_geo_zones', function(data)
-	if type(data.payload.geoChannels) == 'table' then
-		geoChannels = data.payload.geoChannels
-		SaveJsonConfig('geochannels.json', geoChannels)
-		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
-		sendZonesToApi('push_update')
-	end
-	if type(data.payload.tunnels) == 'table' then
-		tunnels = data.payload.tunnels
-		SaveJsonConfig('tunnels.json', tunnels)
-		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
-	end
 end)
