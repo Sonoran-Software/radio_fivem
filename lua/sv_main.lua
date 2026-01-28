@@ -77,19 +77,21 @@ local function resolveZoneType(options, fallbackType)
 	return fallbackType
 end
 
-local function sendGeoChannelsToApi(reason)
+local function sendZonesToApi(reason)
 	if not Config or not Config.apiKey or not Config.comId then
 		return
 	end
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
-		['geoChannels'] = geoChannels
+		['roomId'] = Config.serverId or 1,
+		['geoChannels'] = geoChannels,
+		['tunnels'] = tunnels
 	}, 'SET-ZONES', function(data, success)
 		if not success then
-			warnLog('Failed to set geo channel zones for radio service.')
+			warnLog('Failed to set geo and degrade zones for radio service.')
 		elseif reason then
-			debugLog(('Uploaded geo channel zones (%s).'):format(reason))
+			debugLog(('Uploaded geo and degrade zones (%s).'):format(reason))
 		end
 	end)
 end
@@ -1162,7 +1164,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		SaveJsonConfig('tunnels.json', tunnels)
 		SaveJsonConfig('geochannels.json', geoChannels)
 	end
-	sendGeoChannelsToApi('resource_start')
+	sendZonesToApi('resource_start')
 
 	-- initialize speakers
 	local spkrs = LoadJsonConfig('speakers.json')
@@ -1351,8 +1353,8 @@ RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY
 	if removedGeo then
 		SaveJsonConfig('geochannels.json', geoChannels)
 		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
-		sendGeoChannelsToApi('tunnel_create_removed_geo')
 	end
+	sendZonesToApi('tunnel_create')
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:CreateZone', function(points, name, minY, maxY, options)
@@ -1383,7 +1385,7 @@ RegisterNetEvent('SonoranRadio:GeoZone:CreateZone', function(points, name, minY,
 		SaveJsonConfig('tunnels.json', tunnels)
 		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 	end
-	sendGeoChannelsToApi('geo_create')
+	sendZonesToApi('geo_create')
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
@@ -1399,8 +1401,8 @@ RegisterNetEvent('SonoranRadio:PolyZone:DeleteZone', function(zoneName)
 	if removedGeo then
 		SaveJsonConfig('geochannels.json', geoChannels)
 		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
-		sendGeoChannelsToApi('tunnel_delete_removed_geo')
 	end
+	sendZonesToApi('tunnel_delete')
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:UpdateZone', function(zoneName, updates)
@@ -1423,7 +1425,7 @@ RegisterNetEvent('SonoranRadio:GeoZone:UpdateZone', function(zoneName, updates)
 		SaveJsonConfig('tunnels.json', tunnels)
 		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 	end
-	sendGeoChannelsToApi('geo_update')
+	sendZonesToApi('geo_update')
 end)
 
 RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
@@ -1440,7 +1442,7 @@ RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
 		SaveJsonConfig('tunnels.json', tunnels)
 		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
 	end
-	sendGeoChannelsToApi('geo_delete')
+	sendZonesToApi('geo_delete')
 end)
 
 AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
@@ -1565,11 +1567,11 @@ TriggerEvent('sonoranradio::RegisterPushEvent', 'update_geo_zones', function(dat
 		geoChannels = data.payload.geoChannels
 		SaveJsonConfig('geochannels.json', geoChannels)
 		TriggerClientEvent('SonoranRadio:SyncGeoChannels', -1, geoChannels)
+		sendZonesToApi('push_update')
 	end
-	-- TODO: Implement tunnel push event handling
-	-- if type(data.payload.tunnels) == 'table' then
-	-- 	tunnels = data.payload.tunnels
-	-- 	SaveJsonConfig('tunnels.json', tunnels)
-	-- 	TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
-	-- end
+	if type(data.payload.tunnels) == 'table' then
+		tunnels = data.payload.tunnels
+		SaveJsonConfig('tunnels.json', tunnels)
+		TriggerClientEvent('SonoranRadio:SyncTunnels', -1, tunnels)
+	end
 end)
