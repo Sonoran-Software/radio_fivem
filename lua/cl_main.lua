@@ -1894,6 +1894,13 @@ function initClient()
 				end
 			end
 		end)
+		RegisterNetEvent('nearest-postal:removedPostalBlip', function(postal)
+			if routingPostal ~= nil and routingPostal.postal ~= nil then
+				if tonumber(postal) == tonumber(routingPostal.postal) then
+					routingPostal = nil
+				end
+			end
+		end)
 	end
 end
 function handleNameChange(name)

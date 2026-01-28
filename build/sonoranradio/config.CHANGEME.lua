@@ -57,7 +57,7 @@ Config.autoOnSceneStatus = {
 	enabled = true, -- Enable automatic ON_SCENE status when arriving at a waypoint created by SonoranRadio AI
 	distance = 30.0, -- Distance in meters from the waypoint to trigger ON_SCENE status
 	statusEnum = 4, -- Status enum for "ON_SCENE" -- See https://docs.sonoransoftware.com/cad/api-integration/api-endpoints/emergency/identifiers/unit-status for more information
-	timeout = 300000 -- Time in milliseconds to timeout the auto ON_SCENE status after arriving at the waypoint
+	timeout = 900000 -- Time in milliseconds to timeout the auto ON_SCENE status after arriving at the waypoint
 }
 -- Notification Settings --
 Config.notifications = {
