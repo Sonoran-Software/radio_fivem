@@ -349,6 +349,25 @@ function initThreads()
                     end
                 end
             end
+            if routingPostal ~= nil and Config.autoOnSceneStatus.enabled and routingPostal.postal ~= nil then
+                if GetGameTimer() - routingPostal.time >= Config.autoOnSceneStatus.timeout then
+                    DebugPrint('Auto ON_SCENE status timed out')
+                    routingPostal = nil
+                end
+            end
+            if routingCoords ~= nil and Config.autoOnSceneStatus.enabled and routingCoords.x ~= nil and routingCoords.y ~= nil then
+                local playerCoords = GetEntityCoords(GetPlayerPed(-1))
+                local destCoords = vector3(routingCoords.x, routingCoords.y, playerCoords.z)
+                local distance = #(playerCoords - destCoords)
+                if distance <= Config.autoOnSceneStatus.distance then
+                    DebugPrint('Arrived at routing coordinates, setting ON_SCENE status')
+                    TriggerEvent('SonoranRadio::PostalRouteArrived')
+                    routingCoords = nil
+                elseif GetGameTimer() - routingCoords.time >= Config.autoOnSceneStatus.timeout then
+                    DebugPrint('Auto ON_SCENE status timed out')
+                    routingCoords = nil
+                end
+            end
             Wait(1000)
         end
     end)
