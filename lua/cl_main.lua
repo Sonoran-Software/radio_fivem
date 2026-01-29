@@ -555,6 +555,8 @@ function initClient()
 				return
 			end
 			setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
+		elseif action == 'tablet' then
+			setDispatchVisible(true)
 		else
 			radioToggle()
 		end
@@ -569,6 +571,7 @@ function initClient()
 		setDispatchVisible(true)
 	end)
 	TriggerEvent('chat:addSuggestion', '/showdispatch', 'Open the dispatch tablet', {})
+	RegisterKeyMapping('showdispatch', 'Open the dispatch tablet', 'keyboard', '')
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
