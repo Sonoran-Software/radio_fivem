@@ -53,6 +53,12 @@ Config.autoPttOnPanic = {
 	enabled = true, -- Enable automatic PTT when panic button is pressed
 	duration = 15 -- Duration in seconds to hold PTT when panic button is pressed
 }
+Config.autoOnSceneStatus = {
+	enabled = true, -- Enable automatic ON_SCENE status when arriving at a waypoint created by SonoranRadio AI
+	distance = 30.0, -- Distance in meters from the waypoint to trigger ON_SCENE status
+	statusEnum = 4, -- Status enum for "ON_SCENE" -- See https://docs.sonoransoftware.com/cad/api-integration/api-endpoints/emergency/identifiers/unit-status for more information
+	timeout = 900000 -- Time in milliseconds to timeout the auto ON_SCENE status after arriving at the waypoint
+}
 -- Notification Settings --
 Config.notifications = {
 	type = 'auto', -- Available options: auto, native, pNotify, ox_lib, okokNotify, chat, lation_ui or custom

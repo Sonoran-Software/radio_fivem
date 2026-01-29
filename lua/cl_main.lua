@@ -13,6 +13,8 @@ local allowedFrames = {}
 local critError = false
 local calledSyncAcePerms = false
 local frame
+routingPostal = nil
+routingCoords = nil
 polyZonesTable = {}
 geoZonesTable = {}
 geoChannelZones = {}
@@ -416,6 +418,15 @@ function initClient()
 			pttKey = getPttKey()
 		})
 	end
+	if Config.autoOnSceneStatus == nil then
+		Config.autoOnSceneStatus = {
+			enabled = true,
+			distance = 30.0,
+			statusEnum = 4,
+			timeout = 300000
+		}
+	end
+
 	function radioToggle(frame)
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		if not authorized then
@@ -1300,9 +1311,15 @@ function initClient()
 		end
 
 		if data.type == 'routeToPostal' then
+			if Config.autoOnSceneStatus.enabled then
+				routingPostal = { postal = data.postal, time = GetGameTimer() }
+			end
 			ExecuteCommand('postal '..data.postal)
 		end
 		if data.type == 'routeToCoordinates' then
+			if Config.autoOnSceneStatus.enabled then
+				routingCoords = { x = data.x, y = data.y, time = GetGameTimer() }
+			end
 			SetNewWaypoint(data.x, data.y)
 		end
 
@@ -2070,6 +2087,24 @@ function initClient()
 					end
 				end
 				Citizen.Wait(10)
+			end
+		end)
+	end
+	if Config.autoOnSceneStatus.enabled then
+		-- Postal Routing Support --
+		RegisterNetEvent('nearest-postal:arrivedAtPostal', function(postal)
+			if routingPostal ~= nil and routingPostal.postal ~= nil then
+				if tonumber(postal) == tonumber(routingPostal.postal) then
+					TriggerServerEvent('SonoranRadio::PostalRouteArrived')
+					routingPostal = nil
+				end
+			end
+		end)
+		RegisterNetEvent('nearest-postal:removedPostalBlip', function(postal)
+			if routingPostal ~= nil and routingPostal.postal ~= nil then
+				if tonumber(postal) == tonumber(routingPostal.postal) then
+					routingPostal = nil
+				end
 			end
 		end)
 	end
