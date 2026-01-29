@@ -88,6 +88,24 @@ local function calculateRadioPerm(src)
 	end
 	return perm
 end
+
+local function resolveGuestDisplayName(src)
+	if type(Config.getGuestDisplayName) ~= 'function' then
+		return nil
+	end
+	local ok, name = pcall(Config.getGuestDisplayName, src)
+	if not ok then
+		print('sonoranradio: getGuestDisplayName failed', name)
+		return nil
+	end
+	if type(name) ~= 'string' then
+		return nil
+	end
+	if name == '' then
+		return nil
+	end
+	return name
+end
 local function calculateRadioProfilePerms(source, profileInfos)
 	local perms = {}
 	for _, profile in ipairs(profileInfos) do
@@ -148,6 +166,7 @@ RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
 		expiresInSeconds = 24 * 60 * 60, -- one day
 	})
 	if payload ~= nil then
-		TriggerClientEvent('SonoranRadio::RadioGuestToken', src, payload.data.guestToken)
+		local displayName = resolveGuestDisplayName(src)
+		TriggerClientEvent('SonoranRadio::RadioGuestToken', src, payload.data.guestToken, displayName)
 	end
 end)

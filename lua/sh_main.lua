@@ -40,8 +40,30 @@ function showNotification(notification, urgent)
 end
 
 function notifyClient(notification, urgent, colorCode)
+	-- Automatically select notification method if set to auto
+	local AutoSelectedNotifyMethod = "native"
+	if Config.notifications.type == "auto" then
+		if GetResourceState("lation_ui") == "started" then
+			AutoSelectedNotifyMethod = "lation_ui"
+		elseif GetResourceState("ox_lib") == "started" then
+			AutoSelectedNotifyMethod = "ox_lib"
+		elseif GetResourceState("pNotify") == "started" then
+			AutoSelectedNotifyMethod = "pNotify"
+		elseif GetResourceState("okokNotify") == "started" then
+			AutoSelectedNotifyMethod = "okokNotify"
+		else
+			AutoSelectedNotifyMethod = "native"
+		end
+	end
+
+	local function ResolveNotifyMethod(cfgValue)
+		if cfgValue == "auto" then
+			return AutoSelectedNotifyMethod
+		end
+		return cfgValue
+	end
 	local notifications = Config and Config['notifications'] or {}
-	local notificationType = notifications['type'] or 'native'
+	local notificationType = ResolveNotifyMethod(Config.notifications.type)
 	local title = notifications['notificationTitle'] or 'SonoranRadio'
 	local prefix = ('[%s] '):format(title)
 	local formattedNotification = notification
@@ -58,10 +80,58 @@ function notifyClient(notification, urgent, colorCode)
 		showNotification(('~b~%s~w~%s'):format(prefix, formattedNotification), urgent)
 	elseif notificationType == 'okokNotify' then
 		exports['okokNotify']:Alert(title, '' .. plainNotification, 10000, 'info')
+	elseif notificationType == 'ox_lib' then
+		if not lib then
+			if GetResourceState('ox_lib') ~= 'started' then
+				errorLog('ox_lib must be started before this resource.')
+				return
+			end
+			local chunk = LoadResourceFile('ox_lib', 'init.lua')
+			if not chunk then
+				errorLog('failed to load resource file @ox_lib/init.lua')
+				return
+			end
+			load(chunk, '@@ox_lib/init.lua', 't')()
+		end
+		if lib and lib.notify then
+			local oxLibConfig = notifications['ox_lib'] or {}
+			local oxNotify = {
+				title = title,
+				description = plainNotification,
+				type = oxLibConfig['type'] or 'inform'
+			}
+			if oxLibConfig['position'] then
+				oxNotify.position = oxLibConfig['position']
+			end
+			if oxLibConfig['duration'] then
+				oxNotify.duration = oxLibConfig['duration']
+			end
+			lib.notify(oxNotify)
+		else
+			errorLog('ox_lib notification selected but lib.notify is unavailable. Ensure ox_lib is started.')
+		end
 	elseif notificationType == 'pNotify' then
-		exports.pNotify:SendNotification({
-			['type'] = 'info',
-			['text'] = prefix .. plainNotification
+		print('Using pNotify for notifications')
+		TriggerEvent('pNotify:SendNotification', {
+			text = ('<b>%s</b><br>%s'):format(title, plainNotification),
+			type = 'info',
+			timeout = 5000,
+			layout = 'topRight'
+		})
+	elseif notificationType == 'ox_lib' then
+		exports.ox_lib:notify({
+			title = title,
+			description = plainNotification,
+			type = 'info',
+			duration = 5000,
+			position = 'top-right'
+		})
+	elseif notificationType == 'lation_ui' then
+		exports.lation_ui:notify({
+			title = title,
+			message = plainNotification,
+			type = 'info',
+			duration = 5000,
 		})
 	elseif notificationType == 'custom' then
 		notifications['custom'](plainNotification)

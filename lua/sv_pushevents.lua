@@ -30,9 +30,11 @@ SetHttpHandler(function(req, res)
                     res.send('ok')
                     return
                 else
+                    TriggerEvent('SonoranRadio::core:writeLog', 'debug', 'Received push event for unregistered type: ' .. tostring(body.type))
                     res.send('Event not registered')
                 end
             else
+                TriggerEvent('SonoranRadio::core:writeLog', 'debug', 'Received push event with invalid API key.')
                 res.send('Bad API Key')
                 return
             end

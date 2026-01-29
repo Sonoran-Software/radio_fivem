@@ -2,7 +2,8 @@ local ApiEndpoints = {
 	['SET-SERVER-IP'] = 'radio',
 	['SET-SERVER-SPEAKERS'] = 'api',
 	['SET-USER-DISPLAY-NAME'] = 'api',
-	['PLAY-TONE'] = 'api'
+	['PLAY-TONE'] = 'api',
+	['SET-ZONES'] = 'api'
 }
 local rateLimitedEndpoints = {}
 

@@ -632,6 +632,15 @@ export default {
                         ...event.loc,
                     })
                     break;
+                case 'update_scan_xmit_channels':
+                    this.postRadioFrame({
+                        type: 'update_scan_xmit_channels',
+                        xmitToAdd: event.xmitToAdd,
+                        xmitToRemove: event.xmitToRemove,
+                        scanToAdd: event.scanToAdd,
+                        scanToRemove: event.scanToRemove,
+                    });
+                    break;
             }
         },
 
