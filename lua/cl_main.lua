@@ -583,7 +583,8 @@ function initClient()
 		'reset',
 		'displayname',
 		Config.radioJammers.menuCommand,
-		Config.geoChannels.friendlyCommand
+		Config.geoChannels.friendlyCommand,
+		'tablet'
 	}
 	if not Config.enforceRadioItem then
 		table.insert(radioSubcommands, 2, 'scanner')
