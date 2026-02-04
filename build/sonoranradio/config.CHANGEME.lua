@@ -120,7 +120,8 @@ Config.geoChannels = {
 	command = 'sonradgeoswitch', -- command to toggle geo-channel switching | e.g. /sonradgeoswitch
 	friendlyCommand = 'geoswitch', -- friendly subcommand of the /radio command to toggle geo-channel switching | e.g. / radio geoswitch
 	acePermission = '', -- ACE permission required to use disable geo-channel switching | Leave blank to allow all users
-	showNotifications = true -- Show notifications when geo-channel switching is enabled/disabled
+	showNotifications = true, -- Show notifications when geo-channel switching is enabled/disabled
+	permRefreshMs = 15000
 }
 
 -- Radio Item Settings --

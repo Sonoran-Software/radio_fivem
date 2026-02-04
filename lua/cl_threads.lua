@@ -351,6 +351,36 @@ function initThreads()
         return result
     end
 
+    local function listIntersectionWithSet(list, set)
+        local result = {}
+        if type(list) == 'table' and type(set) == 'table' then
+            for _, id in ipairs(list) do
+                if set[id] then
+                    result[#result + 1] = id
+                end
+            end
+        end
+        return result
+    end
+
+    local function getGeoManagedChannelSets()
+        local primarySet = {}
+        local scanSet = {}
+        for _, zone in pairs(geoZonesTable) do
+            if type(zone.transmitChannels) == 'table' then
+                for _, id in ipairs(zone.transmitChannels) do
+                    primarySet[id] = true
+                end
+            end
+            if type(zone.scanChannels) == 'table' then
+                for _, id in ipairs(zone.scanChannels) do
+                    scanSet[id] = true
+                end
+            end
+        end
+        return primarySet, scanSet
+    end
+
     local function sendScanXmitUpdate(xmitToAdd, xmitToRemove, scanToAdd, scanToRemove)
         xmitToAdd = xmitToAdd or {}
         xmitToRemove = xmitToRemove or {}
@@ -373,13 +403,8 @@ function initThreads()
         if type(perms) ~= 'table' or #perms == 0 then
             return true
         end
-        if not IsPlayerAceAllowed then
-            return true
-        end
-        local playerId = PlayerId()
-        local serverId = GetPlayerServerId(playerId)
         for _, perm in ipairs(perms) do
-            if perm ~= '' and (IsPlayerAceAllowed(playerId, perm) or IsPlayerAceAllowed(serverId, perm)) then
+            if perm ~= '' and hasGeoAcePerm(perm) then
                 return true
             end
         end
@@ -402,9 +427,20 @@ function initThreads()
         end
         TriggerServerEvent('SonoranRadio:GetTunnels')
         TriggerServerEvent('SonoranRadio:GetGeoChannels')
+        requestGeoAcePerms(true)
 
         local lastTowerQuality = 0.0
+        local lastGeoPermRefresh = 0
         while true do
+            local now = GetGameTimer()
+            local refreshMs = geoAcePerms and geoAcePerms.refreshMs or 15000
+            if Config.geoChannels and Config.geoChannels.permRefreshMs ~= nil then
+                refreshMs = tonumber(Config.geoChannels.permRefreshMs) or refreshMs
+            end
+            if refreshMs > 0 and (now - lastGeoPermRefresh) >= refreshMs then
+                requestGeoAcePerms(false)
+                lastGeoPermRefresh = now
+            end
             if Radio.On then
                 local QBDeath = false
                 if QBCore ~= nil then
@@ -496,13 +532,22 @@ function initThreads()
                     if zone:isPointInside(coord) and geoZonePermitted(zone) then
                         activeZone = zone
                         activeZoneName = zoneName
-                            break
-                        end
+                        break
                     end
+                end
 
                 if not activeZoneName then
                     if geoSwitchState.lastZone then
-                        sendScanXmitUpdate({}, geoSwitchState.addedPrimary, {}, geoSwitchState.addedScan)
+                        if radioStateCache then
+                            local currentPrimary = radioStateCache.primaryChIds or {}
+                            local currentScan = getScanChannelIds(radioStateCache)
+                            local managedPrimarySet, managedScanSet = getGeoManagedChannelSets()
+                            local xmitToRemove = listIntersectionWithSet(currentPrimary, managedPrimarySet)
+                            local scanToRemove = listIntersectionWithSet(currentScan, managedScanSet)
+                            sendScanXmitUpdate({}, xmitToRemove, {}, scanToRemove)
+                        else
+                            sendScanXmitUpdate({}, geoSwitchState.addedPrimary, {}, geoSwitchState.addedScan)
+                        end
                         geoSwitchState.lastZone = nil
                         geoSwitchState.addedPrimary = {}
                         geoSwitchState.addedScan = {}
@@ -513,17 +558,30 @@ function initThreads()
                         local currentScan = getScanChannelIds(radioStateCache)
                         local zonePrimary = activeZone.transmitChannels or {}
                         local zoneScan = activeZone.scanChannels or {}
+                        local managedPrimarySet, managedScanSet = getGeoManagedChannelSets()
+                        local zonePrimarySet = buildIdSet(zonePrimary)
+                        local zoneScanSet = buildIdSet(zoneScan)
+                        local xmitToRemove = {}
+                        local scanToRemove = {}
+
+                        for _, id in ipairs(currentPrimary) do
+                            if managedPrimarySet[id] and not zonePrimarySet[id] then
+                                xmitToRemove[#xmitToRemove + 1] = id
+                            end
+                        end
+                        for _, id in ipairs(currentScan) do
+                            if managedScanSet[id] and not zoneScanSet[id] then
+                                scanToRemove[#scanToRemove + 1] = id
+                            end
+                        end
+
                         local xmitToAdd = diffChannelLists(zonePrimary, currentPrimary)
                         local scanToAdd = diffChannelLists(zoneScan, currentScan)
-                        local xmitToRemove = listDifference(geoSwitchState.addedPrimary, zonePrimary)
-                        local scanToRemove = listDifference(geoSwitchState.addedScan, zoneScan)
 
                         sendScanXmitUpdate(xmitToAdd, xmitToRemove, scanToAdd, scanToRemove)
 
-                        local stillAddedPrimary = listIntersection(geoSwitchState.addedPrimary, zonePrimary)
-                        local stillAddedScan = listIntersection(geoSwitchState.addedScan, zoneScan)
-                        geoSwitchState.addedPrimary = listUnion(stillAddedPrimary, xmitToAdd)
-                        geoSwitchState.addedScan = listUnion(stillAddedScan, scanToAdd)
+                        geoSwitchState.addedPrimary = copyIdList(zonePrimary)
+                        geoSwitchState.addedScan = copyIdList(zoneScan)
                         geoSwitchState.lastZone = activeZoneName
                     end
                 end
