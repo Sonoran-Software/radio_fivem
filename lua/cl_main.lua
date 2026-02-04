@@ -22,6 +22,13 @@ communityChannelsCache = nil
 communityChannelsUpdatedAt = 0
 autoGeoSwitchEnabled = true
 Config = {}
+geoAcePerms = {
+	ready = false,
+	perms = {},
+	lastRequest = 0,
+	requestCooldownMs = 5000,
+	refreshMs = 15000
+}
 
 AddEventHandler('onClientResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
@@ -143,6 +150,59 @@ end)
 RegisterNetEvent('SonoranRadio::CommunityChannels', function(payload)
 	communityChannelsCache = payload
 	communityChannelsUpdatedAt = GetGameTimer()
+end)
+
+local function normalizeGeoAcePerm(perm)
+	if type(perm) ~= 'string' then
+		return ''
+	end
+	return perm:gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local function shouldRequestGeoAcePerms(force)
+	if force then
+		return true
+	end
+	local now = GetGameTimer()
+	if (now - (geoAcePerms.lastRequest or 0)) < (geoAcePerms.requestCooldownMs or 5000) then
+		return false
+	end
+	return true
+end
+
+function requestGeoAcePerms(force)
+	if not shouldRequestGeoAcePerms(force) then
+		return
+	end
+	geoAcePerms.lastRequest = GetGameTimer()
+	TriggerServerEvent('SonoranRadio::RequestGeoPerms')
+end
+
+function hasGeoAcePerm(perm)
+	local cleaned = normalizeGeoAcePerm(perm)
+	if cleaned == '' then
+		return true
+	end
+	if not geoAcePerms.ready then
+		requestGeoAcePerms(false)
+		return false
+	end
+	if geoAcePerms.perms and geoAcePerms.perms[cleaned] == nil then
+		requestGeoAcePerms(false)
+	end
+	return geoAcePerms.perms and geoAcePerms.perms[cleaned] == true
+end
+
+RegisterNetEvent('SonoranRadio::GeoPerms', function(payload)
+	local perms = payload and payload.perms or {}
+	geoAcePerms.perms = perms
+	geoAcePerms.ready = true
+	if autoGeoSwitchEnabled and type(geoSwitchHasPermission) == 'function' and not geoSwitchHasPermission() then
+		autoGeoSwitchEnabled = false
+		if Config.geoChannels and Config.geoChannels.showNotifications ~= false then
+			SendNotification('Geo Channels: ~r~No Permission~r~')
+		end
+	end
 end)
 
 function initClient()
@@ -946,16 +1006,18 @@ function initClient()
 	autoGeoSwitchEnabled = Config.geoChannels.enabled ~= false
 
 	function geoSwitchHasPermission()
-		local perm = Config.geoChannels and Config.geoChannels.acePermission or ''
+		local perm = normalizeGeoAcePerm(Config.geoChannels and Config.geoChannels.acePermission or '')
 		if perm == '' then
 			return true
 		end
-		if IsPlayerAceAllowed then
-			local playerId = PlayerId()
-			local serverId = GetPlayerServerId(playerId)
-			return IsPlayerAceAllowed(playerId, perm) or IsPlayerAceAllowed(serverId, perm)
+		if not geoAcePerms.ready then
+			requestGeoAcePerms(false)
+			return true
 		end
-		return true
+		if geoAcePerms.perms and geoAcePerms.perms[perm] == nil then
+			requestGeoAcePerms(false)
+		end
+		return geoAcePerms.perms and geoAcePerms.perms[perm] == true
 	end
 
 	if autoGeoSwitchEnabled and not geoSwitchHasPermission() then
@@ -1529,6 +1591,7 @@ function initClient()
 			end
 			::continueGeoZones::
 		end
+		requestGeoAcePerms(true)
 	end)
 
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
