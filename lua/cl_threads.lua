@@ -405,27 +405,30 @@ function initThreads()
 
         local lastTowerQuality = 0.0
         while true do
-            if Radio.On then
+            -- qbcore/standalone death detection
+            if Config.deathDetectionMethod ~= 'manual' then
                 local QBDeath = false
                 if QBCore ~= nil then
                     local PlayerData = QBCore.Functions.GetPlayerData()
                     if PlayerData ~= nil and PlayerData.metadata ~= nil then
-                        -- print("Is Dead: " .. tostring(PlayerData.metadata["isdead"]))
-                        -- print("Is Last Stand: " .. tostring(PlayerData.metadata["islaststand"]))
                         QBDeath = PlayerData.metadata['isdead'] or
                                     PlayerData.metadata['inlaststand']
                     end
                 end
-                if Config.deathDetectionMethod ~= 'manual' then
-                    local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
-                    if IsPlayerDead then
+
+                local IsPlayerDead = IsEntityDead(PlayerPedId()) or QBDeath
+                if IsPlayerDead then
+                    if Radio.On then
                         TriggerEvent('SonoranRadio::PlayerDeath')
                         isDead = true
-                    elseif isDead then
-                        TriggerEvent('SonoranRadio::PlayerRevive')
-                        isDead = false
                     end
+                elseif isDead then
+                    TriggerEvent('SonoranRadio::PlayerRevive')
+                    isDead = false
                 end
+            end
+
+            if Radio.On then
                 -- Tunnel degradation logic
                 local plyPed = PlayerPedId()
                 local coord = GetEntityCoords(plyPed)
