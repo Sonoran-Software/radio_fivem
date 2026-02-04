@@ -148,33 +148,29 @@ frameworkEnum = 0;
 inventoryEnum = 0;
 -- Enums | 0 = None, 1 = QBCore, 2 = Ox_Inventory
 function getInventory()
-	if Config.enforceRadioItem then
-		if GetResourceState('qb-inventory') == 'started' then
-			inventoryEnum = 1
-		elseif GetResourceState('ox_inventory') == 'started' then
-			inventoryEnum = 2
-		elseif GetResourceState('qs-inventory') == 'started' then
-			inventoryEnum = 1
-		elseif GetResourceState('core_inventory') == 'started' then
-			inventoryEnum = 1
-		else
-			inventoryEnum = 0
-			errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. https://sonoran.link/radiocodes')
-		end
+	if GetResourceState('qb-inventory') == 'started' then
+		inventoryEnum = 1
+	elseif GetResourceState('ox_inventory') == 'started' then
+		inventoryEnum = 2
+	elseif GetResourceState('qs-inventory') == 'started' then
+		inventoryEnum = 1
+	elseif GetResourceState('core_inventory') == 'started' then
+		inventoryEnum = 1
+	elseif Config.enforceRadioItem then
+		inventoryEnum = 0
+		errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. https://sonoran.link/radiocodes')
 	end
 end
 
 function getFramework()
-	if Config.enforceRadioItem then
-		if GetResourceState('qbx_core') == 'started' then
-			frameworkEnum = 2
-			return
-		elseif GetResourceState('qb-core') == 'started' then
-			frameworkEnum = 1
-			return
-		else
-			frameworkEnum = 0
-			errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. https://sonoran.link/radiocodes')
-		end
+	if GetResourceState('qbx_core') == 'started' then
+		frameworkEnum = 2
+		return
+	elseif GetResourceState('qb-core') == 'started' then
+		frameworkEnum = 1
+		return
+	elseif Config.enforceRadioItem then
+		frameworkEnum = 0
+		errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. https://sonoran.link/radiocodes')
 	end
 end
