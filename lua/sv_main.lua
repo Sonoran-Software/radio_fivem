@@ -77,12 +77,54 @@ local function resolveZoneType(options, fallbackType)
 	return fallbackType
 end
 
+local function addGeoAcePerm(target, perm)
+	if type(perm) ~= 'string' then
+		return
+	end
+	local cleaned = perm:gsub('^%s+', ''):gsub('%s+$', '')
+	if cleaned == '' then
+		return
+	end
+	target[cleaned] = true
+end
+
+local function collectGeoAcePerms()
+	local perms = {}
+	if Config and Config.geoChannels then
+		addGeoAcePerm(perms, Config.geoChannels.acePermission)
+	end
+	for _, zone in ipairs(geoChannels or {}) do
+		local options = zone.options or {}
+		if type(options.acePerms) == 'table' then
+			for _, perm in ipairs(options.acePerms) do
+				addGeoAcePerm(perms, perm)
+			end
+		end
+	end
+	return perms
+end
+
+local function buildGeoPermPayload(src)
+	local permSet = collectGeoAcePerms()
+	local allowed = {}
+	for perm, _ in pairs(permSet) do
+		allowed[perm] = IsPlayerAceAllowed(src, perm) and true or false
+	end
+	return {perms = allowed}
+end
+
+local function sendGeoPerms(src)
+	if type(src) ~= 'number' or src <= 0 then
+		return
+	end
+	local payload = buildGeoPermPayload(src)
+	TriggerClientEvent('SonoranRadio::GeoPerms', src, payload)
+end
+
 local function sendZonesToApi(reason)
 	if not Config or not Config.apiKey or not Config.comId then
 		return
 	end
-	print('Uploading geo and degrade zones to radio service...')
-	print('tunnels', json.encode(tunnels))
 	exports['sonoranradio']:performApiRequest({
 		['id'] = Config.comId,
 		['key'] = Config.apiKey,
@@ -636,6 +678,7 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	if scannersAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
 	end
+	sendGeoPerms(source)
 end)
 
 function validFrame(frame)
@@ -1344,6 +1387,10 @@ end)
 
 RegisterNetEvent('SonoranRadio:GetGeoChannels', function()
 	TriggerLatentClientEvent('SonoranRadio:SyncGeoChannels', source, 10000, geoChannels)
+end)
+
+RegisterNetEvent('SonoranRadio::RequestGeoPerms', function()
+	sendGeoPerms(source)
 end)
 
 RegisterNetEvent('SonoranRadio:PolyZone:CreateZone', function(points, name, minY, maxY, degradeStrength)
