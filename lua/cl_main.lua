@@ -1508,9 +1508,10 @@ function initClient()
 		if Config.disableRadioOnDeath then
 			if Config.restoreRadioStateWhenAlive then
 				if Radio.Enabled == false then
+					setRadioVisible(true)
 					SendNUIMessage({
-						type = 'power',
-						power = true
+						type = 'pushButton',
+						button = 'power'
 					})
 					SendNUIMessage({
 						type = 'radioHud',
