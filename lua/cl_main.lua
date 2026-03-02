@@ -631,7 +631,7 @@ function initClient()
 			radioToggle()
 		end
 	end)
-	RegisterCommand('sonradradio', radioToggle)
+	RegisterCommand('sonradradio', function() radioToggle() end)
 
 	RegisterCommand('showdispatch', function()
 		if dispatchOpen then
