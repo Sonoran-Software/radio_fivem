@@ -1,11 +1,20 @@
 local pendingRestart = false
 local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/latest.zip'
 local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json'
+local helperSignalKey = "sonoranradio_updatehelper_action"
+
+local function signalUpdateHelper()
+    SetConvar(helperSignalKey, "radio")
+end
+
+local function clearUpdateHelperSignal()
+    SetConvar(helperSignalKey, "")
+end
 
 local function doUnzip(path)
     local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
-    exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
     print("Unzipping to " .. unzipPath .. ". Waiting for unzip to complete.")
+    exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
     if not Config.allowUpdateWithPlayers and GetNumPlayerIndices() > 0 then
         pendingRestart = true
         print("Delaying auto-update until server is empty.")
@@ -17,9 +26,7 @@ AddEventHandler("UnzipFileComplete", function(success, err)
 	if success then
 		print("Update Decompressed Successfully...")
 		print("Auto-restarting...")
-		local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
-		f:write("radio")
-		f:close()
+		signalUpdateHelper()
 		Wait(1000)
 		ExecuteCommand("ensure sonoranradio_updatehelper")
 	else
@@ -53,7 +60,7 @@ function RunAutoUpdater(manualRun)
         -- remove the update file and stop the helper
         ExecuteCommand("stop sonoranradio_updatehelper")
         os.remove(GetResourcePath(GetCurrentResourceName()).."/update.zip")
-        os.remove(GetResourcePath("sonoranradio_updatehelper").."/run.lock")
+        clearUpdateHelperSignal()
     end
     local myVersion = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
 
@@ -112,9 +119,7 @@ CreateThread(function()
                 print("An update has been applied to SonoranCAD but requires a resource restart. Restart delayed until server is empty.")
             else
                 print("Server is empty, restarting resources...")
-                local f = assert(io.open(GetResourcePath("sonoranradio_updatehelper").."/run.lock", "w+"))
-                f:write("radio")
-                f:close()
+                signalUpdateHelper()
                 ExecuteCommand("ensure sonoranradio_updatehelper")
             end
         else
