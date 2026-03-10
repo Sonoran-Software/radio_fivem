@@ -9,6 +9,7 @@
 /earpieces.json
 /scanners.json
 /jammers.json
+/geochannels.json
 
 yarn-error.log
 .yarn.installed
