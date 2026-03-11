@@ -574,8 +574,8 @@ function initClient()
 				type = 'pushButton',
 				button = 'power'
 			})
-			Radio.Restored = true
 		end
+		Radio.Restored = true
 	end)
 
 	RegisterCommand('radio', function(_, args)
