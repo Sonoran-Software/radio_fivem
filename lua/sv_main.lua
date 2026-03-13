@@ -884,35 +884,6 @@ local function checkPushUrl(url, tries)
 	end, 'GET')
 	return d
 end
-local function getWebPushUrl(checkTries)
-	local d = promise.new()
-	Citizen.CreateThreadNow(function()
-		-- wait for web_baseUrl to be populated
-		local webUrl = GetConvar('web_baseUrl', '')
-		local tries = 0
-		while (not webUrl or webUrl == '') and tries < 3 do
-			warnLog('Waiting for web_baseUrl convar...')
-			Citizen.Wait(5000)
-			tries = tries + 1
-			webUrl = GetConvar('web_baseUrl', '')
-		end
-		if webUrl and webUrl ~= '' then
-			local pushUrl = 'https://'..webUrl..'/'..GetCurrentResourceName()..'/events'
-			checkPushUrl(pushUrl, checkTries or 5):next(function(success)
-				if success then
-					d:resolve(pushUrl)
-				else
-					warnLog(('Tried using %s as pushUrl, but could not send events'):format(pushUrl))
-					d:resolve(nil)
-				end
-			end)
-		else
-			warnLog('Could not find web_baseUrl convar')
-			d:resolve(nil)
-		end
-	end)
-	return d
-end
 local function getIpPushUrl(checkTries)
 	local d = promise.new()
 	local port = GetConvar('netPort', '30120')
@@ -941,14 +912,8 @@ local function getPushUrl(tries)
 		infoLog(('Using %s as override pushUrl'):format(overridePushUrl))
 		return d:resolve(overridePushUrl)
 	end
-	getWebPushUrl(tries):next(function(webPushUrl)
-		if webPushUrl then
-			d:resolve(webPushUrl)
-		else
-			getIpPushUrl(tries):next(function(ipPushUrl)
-				d:resolve(ipPushUrl)
-			end)
-		end
+	getIpPushUrl(tries):next(function(ipPushUrl)
+		d:resolve(ipPushUrl)
 	end)
 	return d
 end
