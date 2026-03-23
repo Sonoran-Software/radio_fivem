@@ -51,6 +51,7 @@ function performApiRequest(postData, type, cb)
 				warnLog('WARN_404: 404 response from API: ' .. tostring(res))
 				cb(res, false)
 			elseif statusCode == 429 then -- rate limited :(
+				cb(nil, false)
 				if rateLimitedEndpoints[type] then
 					-- don't warn again, it's spammy. Instead, just print a debug
 					debugLog(('Endpoint %s ratelimited. Dropping request.'))
@@ -67,8 +68,10 @@ function performApiRequest(postData, type, cb)
 			elseif string.match(tostring(statusCode), '50') then
 				errorLog(('API error returned (%s). Check status.sonoransoftware.com or our Discord to see if there\'s an outage.'):format(statusCode))
 				debugLog(('API_ERROR Error returned: %s %s'):format(statusCode, res))
+				cb(nil, false)
 			else
 				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
+				cb(nil, false)
 			end
 		end
 		exports['sonoranradio']:HandleHttpRequest(url, requestCb, 'POST', json.encode(postData), {['Content-Type'] = 'application/json'})
