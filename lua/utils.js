@@ -36,10 +36,7 @@
             });
         });
         req.on('error', (error) => {
-            let ignore_ids = ["EAI_AGAIN", "ETIMEOUT", "ENOTFOUND"]
-            if (!ignore_ids.includes(error.code))
-                console.debug("HTTP error caught: " + JSON.stringify(error));
-            if (callback) callback(error.errono, {}, {});
+            if (callback) callback(-1, error, {});
             callback = undefined;
         })
         if (method == "POST") {
