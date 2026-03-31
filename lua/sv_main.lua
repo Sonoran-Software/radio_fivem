@@ -1240,6 +1240,19 @@ end)
 exports('performApiRequest', performApiRequest)
 
 RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	-- Strip client-only fields (entity handles, blip handles, spawn state) that must
+	-- not be stored on the server or forwarded to other clients, where the handle
+	-- values would be meaningless or could accidentally match unrelated local objects.
+	local clientOnlyFields = { 'Handle', 'Dishes', 'Servers', 'Ladder', 'Spawned', 'DebugBlip' }
+	local function stripClientFields(t)
+		for _, field in ipairs(clientOnlyFields) do
+			t[field] = nil
+		end
+	end
+	for _, t in ipairs(towers) do stripClientFields(t) end
+	for _, t in ipairs(racks) do stripClientFields(t) end
+	for _, t in ipairs(cell) do stripClientFields(t) end
+
 	DebugPrint('Processing towers to file ' .. json.encode(towers))
 	DebugPrint('Processing racks to file ' .. json.encode(racks))
 	DebugPrint('Processing cell to file ' .. json.encode(cell))

@@ -46,11 +46,14 @@ function initCell()
 	function AddCellRepeaterRange(t)
 		if not Config.debug then
 			return
+		elseif t.DebugBlip then
+			RemoveBlip(t.DebugBlip)
 		end
 		-- create a radius blip that indicates the range of the cellRepeater (where edge of circle = 50% capacity)
 		local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
 		SetBlipAlpha(blip, 127)
 		SetBlipColour(blip, 2)
+		t.DebugBlip = blip
 	end
 
 	-- fully creates a cellRepeater based on the given cellRepeater object
@@ -71,6 +74,7 @@ function initCell()
 		SetEntityCoords(cellRepeater.Handle, coords.x, coords.y, coords.z, true, true, true, false)
 		SetEntityHeading(cellRepeater.Handle, cellRepeater.heading)
 		SetModelAsNoLongerNeeded(CellRepeaterModel)
+		AddCellRepeaterRange(cellRepeater)
 		cellRepeater.Spawned = true
 	end
 	-- delete the physical cellRepeater entities
@@ -85,6 +89,9 @@ function initCell()
 		for j = 1, n do
 			DeleteEntity(cellRepeater.Dishes[j])
 		end
+		if cellRepeater.DebugBlip and DoesBlipExist(cellRepeater.DebugBlip) then
+			RemoveBlip(cellRepeater.DebugBlip)
+		end
 		cellRepeater.Dishes = {}
 		cellRepeater.Spawned = false
 	end
@@ -97,9 +104,6 @@ function initCell()
 		end
 
 		CellRepeaters = CellRepeatersServer
-		for i = 1, #CellRepeaters do
-			AddCellRepeaterRange(CellRepeaters[i])
-		end
 		DebugPrint(('synced %s'):format(json.encode(CellRepeaters)))
 	end)
 
