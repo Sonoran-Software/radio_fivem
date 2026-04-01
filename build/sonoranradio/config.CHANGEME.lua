@@ -39,6 +39,7 @@ Config.ScannerItem = {
 Config.disableRadioOnDeath = true -- Disables radio when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore | qbox
+Config.heavySignalDegradeInWater = true -- Heavily degrade radio signal while the player is in water to mimic an IP67-rated handheld
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
 Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to hide physical server racks

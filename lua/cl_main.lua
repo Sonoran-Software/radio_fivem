@@ -110,6 +110,9 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	if Config.heavySignalDegradeInWater == nil then
+		Config.heavySignalDegradeInWater = true
+	end
 	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
 	getFramework()
 	getInventory()
