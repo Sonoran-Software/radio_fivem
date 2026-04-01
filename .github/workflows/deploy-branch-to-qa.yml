@@ -1,0 +1,172 @@
+name: Deploy Branch to QA
+run-name: Deploy QA from ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+env:
+  QA_SFTP_HOST: ${{ secrets.QA_SFTP_HOST }}
+  QA_SFTP_PORT: ${{ secrets.QA_SFTP_PORT }}
+  QA_DEPLOY_ROOT: ${{ secrets.QA_DEPLOY_ROOT }}
+  QA_PTERO_API_BASE: ${{ secrets.QA_PTERO_API_BASE }}
+  QA_SERVER_ID: ${{ secrets.FIVEM01_ID }}
+
+concurrency:
+  group: deploy-branch-to-qa
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version metadata
+        id: metadata
+        shell: bash
+        env:
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          SAFE_BRANCH=$(printf '%s' "$DEPLOY_BRANCH" | tr '/\\' '-' | tr -cd '[:alnum:]._-' )
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="${DEPLOY_BRANCH}@${RUN_NUMBER}"
+          ARCHIVE_NAME="sonoranradio-${SAFE_BRANCH}-${SHORT_SHA}.zip"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$ARCHIVE_NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install envsubst
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext-base
+
+      - name: Install production dependencies
+        shell: bash
+        run: yarn install --production
+
+      - name: Prepare build directory
+        shell: bash
+        run: |
+          mkdir -p build/sonoranradio
+          cp -R node_modules build/sonoranradio
+
+      - name: Install all dependencies
+        shell: bash
+        run: yarn install
+
+      - name: Build application
+        shell: bash
+        env:
+          NODE_ENV: production
+        run: yarn build
+
+      - name: Copy resource files
+        shell: bash
+        run: |
+          cp -R sonrad_tower/stream sonrad_tower/data build/sonoranradio
+          cp -R lua dist miniradio tablet skins towers.DEFAULT.json tunnels.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json jammers.DEFAULT.json geochannels.DEFAULT.json sonoranradio.cfg build/sonoranradio
+
+      - name: Generate version files
+        shell: bash
+        env:
+          RESOURCE_VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          envsubst < version.json > build/version.json
+          envsubst < fxmanifest.prod.lua > build/sonoranradio/fxmanifest.lua
+
+      - name: Build QA archive
+        id: build
+        shell: bash
+        env:
+          ARCHIVE_NAME: ${{ steps.metadata.outputs.archive_name }}
+        run: |
+          cd build
+
+          zip_targets=(sonoranradio)
+          if [ -d "sonoranradio_updatehelper" ]; then
+            zip_targets+=(sonoranradio_updatehelper)
+          fi
+
+          zip -r "../$ARCHIVE_NAME" "${zip_targets[@]}"
+
+      - name: Upload QA build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-${{ steps.metadata.outputs.short_sha }}
+          path: ${{ steps.metadata.outputs.archive_name }}
+          retention-days: 1
+
+      - name: Install deploy tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      - name: Trust SFTP host key
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$QA_SFTP_PORT" "$QA_SFTP_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload archive to QA server
+        shell: bash
+        env:
+          QA_PTERO_USER: ${{ secrets.FiveM01_Ptero_User }}
+          QA_PTERO_PASS: ${{ secrets.FiveM01_Ptero_Pass }}
+          ARCHIVE_NAME: ${{ steps.metadata.outputs.archive_name }}
+        run: |
+          lftp -e "open sftp://${QA_SFTP_HOST}:${QA_SFTP_PORT}; user $QA_PTERO_USER $QA_PTERO_PASS; cd ${QA_DEPLOY_ROOT}; put $ARCHIVE_NAME; bye"
+
+      - name: Decompress archive on QA server
+        shell: bash
+        env:
+          PTERO_API_KEY: ${{ secrets.PTERO_API_KEY }}
+          ARCHIVE_NAME: ${{ steps.metadata.outputs.archive_name }}
+        run: |
+          curl --fail --show-error "${QA_PTERO_API_BASE}/servers/${QA_SERVER_ID}/files/decompress" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $PTERO_API_KEY" \
+            -X POST \
+            -d "{\"root\": \"${QA_DEPLOY_ROOT}/\", \"file\": \"${ARCHIVE_NAME}\"}"
+
+      - name: Remove uploaded archive from QA server
+        shell: bash
+        env:
+          PTERO_API_KEY: ${{ secrets.PTERO_API_KEY }}
+          ARCHIVE_NAME: ${{ steps.metadata.outputs.archive_name }}
+        run: |
+          curl --fail --show-error "${QA_PTERO_API_BASE}/servers/${QA_SERVER_ID}/files/delete" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $PTERO_API_KEY" \
+            -X POST \
+            -d "{\"root\": \"${QA_DEPLOY_ROOT}/\", \"files\": [\"${ARCHIVE_NAME}\"]}"
+
+      - name: Publish job summary
+        shell: bash
+        run: |
+          {
+            echo "## QA deployment complete"
+            echo ""
+            echo "- Branch: \`${{ github.ref_name }}\`"
+            echo "- Commit: \`${{ steps.metadata.outputs.short_sha }}\`"
+            echo "- Version: \`${{ steps.metadata.outputs.version }}\`"
+            echo "- Archive: \`${{ steps.metadata.outputs.archive_name }}\`"
+            echo "- Remote root: \`${QA_DEPLOY_ROOT}\`"
+            echo ""
+            echo "The archive was decompressed in place so existing files that are not present in the build were left alone."
+          } >> "$GITHUB_STEP_SUMMARY"
