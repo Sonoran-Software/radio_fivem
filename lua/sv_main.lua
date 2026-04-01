@@ -912,7 +912,7 @@ local function initConfigServerId()
 					end
 
 					-- start retry
-					Citizen.SetTimeout(5000, tryRequest)
+					Citizen.SetTimeout(30000, tryRequest)
 
 					-- if we already have a roomId from a previous successful call, short-circuit to success
 					-- but keep retrying in the background so the server IP eventually gets updated
