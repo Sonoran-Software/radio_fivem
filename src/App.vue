@@ -6,6 +6,11 @@
                 Hold <code>CTRL</code> to resize.
                 Press <code>ESC</code> to save.
             </div>
+            <div v-else-if="emergencyCall.showMicTroubleshooting" style="display: flex; flex-direction: column; align-items: center">
+                <div>
+                    Microphone troubleshooting is open. Press <code>ESC</code> to close it
+                </div>
+            </div>
             <div v-else-if="emergencyCall.status === 'open' && emergencyCall.showHelpText" style="display: flex; flex-direction: column; align-items: center">
                 <div>
                     You are in an emergency call. Use <code>{{ emergencyCallCommand }}</code> to end it
@@ -82,18 +87,20 @@
         </div>
 
         <!-- radio iframe for emergency calls -->
-        <standalone-frame
-            v-if="emergencyCall.status !== 'closed'"
-            ref="standaloneFrame"
-            :server-id="standaloneServerId"
-            :url="standaloneUrl"
-            :query="{
-                guestToken: emergencyCall.token,
-                roomId: standaloneRoomId,
-                displayName: emergencyCall.name,
-            }"
-            feature="911"
-        />
+        <div v-if="emergencyCall.status !== 'closed'" class="emergency-call-frame-shell">
+            <standalone-frame
+                ref="standaloneFrame"
+                :server-id="standaloneServerId"
+                :url="standaloneUrl"
+                :query="{
+                    guestToken: emergencyCall.token,
+                    roomId: standaloneRoomId,
+                    displayName: emergencyCall.name,
+                }"
+                :visible="emergencyCall.showMicTroubleshooting"
+                feature="911"
+            />
+        </div>
         <!-- radio iframe for nearby chatter -->
         <standalone-frame
             v-if="chatterEnabled"
@@ -219,6 +226,7 @@ export default {
                 state: null,
                 cmd: '911',
                 showHelpText: true,
+                showMicTroubleshooting: false,
             },
             scannerMenu: {
                 open: false,
@@ -733,15 +741,37 @@ export default {
         postEmergencyCallFrame(data) {
             getRadioFrameEl('911')?.contentWindow.postMessage(data, '*');
         },
+        syncEmergencyCallFrameStatus() {
+            if (this.emergencyCall.status === 'closed') return;
+            const showMicTroubleshooting = !!this.emergencyCall.showMicTroubleshooting;
+            this.postEmergencyCallFrame({
+                type: 'set_emergency_call_status',
+                status: this.emergencyCall.status,
+                showMicTroubleshooting,
+                showMicSelector: showMicTroubleshooting,
+                showMicLevelMeter: showMicTroubleshooting,
+            });
+        },
+        closeEmergencyCallMicTroubleshooting() {
+            if (!this.emergencyCall.showMicTroubleshooting) return;
+            this.emergencyCall.showMicTroubleshooting = false;
+            this.postClient({ type: 'emergencyCallMicTroubleshooting', active: false });
+            this.syncEmergencyCallFrameStatus();
+        },
+        clearEmergencyCallMicWarning() {
+            this.postClient({ type: 'emergencyCallMicWarning', active: false });
+        },
         onEmergencyCallFrameEvent(event) {
             switch (event.type) {
                 case 'radio_connected':
                     this.emergencyCall.state = event.state;
                     this.postClient({ type: 'stateUpdatedEmergencyCall', state: event.state });
-                    this.postEmergencyCallFrame({ type: 'set_emergency_call_status', status: this.emergencyCall.status }); // make sure status is synced
+                    this.syncEmergencyCallFrameStatus();
                     break;
                 case "radio_disconnected":
                     // we were kicked on the radio, so end the call and destroy the frame
+                    this.clearEmergencyCallMicWarning();
+                    this.closeEmergencyCallMicTroubleshooting();
                     this.emergencyCall.status = 'closed';
                     break;
                 case "call_status":
@@ -753,8 +783,20 @@ export default {
                 case "redial_request":
                     this.postClient({ type: 'emergencyCallRedial' });
                     break;
+                case "emergency_call_mic_warning":
+                    console.log('received emergency_call_mic_warning', event);
+                    this.postClient({
+                        type: 'emergencyCallMicWarning',
+                        active: !!event.active,
+                        reason: event.reason,
+                        deviceId: event.deviceId,
+                        deviceLabel: event.deviceLabel,
+                    });
+                    break;
                 case "display_error":
                     this.notifyPlayer(`Emergency Call Error: ${event.error}`, "~r~");
+                    this.clearEmergencyCallMicWarning();
+                    this.closeEmergencyCallMicTroubleshooting();
                     this.emergencyCall.status = 'closed'; // all errors are fatal
                     break;
             }
@@ -895,6 +937,11 @@ export default {
         },
 
         escapeRadio(hide) {
+            if (this.emergencyCall.showMicTroubleshooting) {
+                this.closeEmergencyCallMicTroubleshooting();
+                return;
+            }
+
             this.postClient({ type: 'escape' });
             if (hide || this.escapeMode !== 'keep') this.showRadio = false;
             if (hide && this.debug.skinMenuExpanded) this.debug.skinMenuExpanded = false;
@@ -1060,8 +1107,9 @@ export default {
                 }
             }
             if (info?.displayName) this.emergencyCall.name = info.displayName;
-            if (info?.cmd) this.emergencyCall.cmd = info.cmd;
+            if (info?.cmd || info?.callCommand) this.emergencyCall.cmd = info.cmd || info.callCommand;
             if (info?.showHelpText != null) this.emergencyCall.showHelpText = info.showHelpText;
+            if (info?.showMicTroubleshooting != null) this.emergencyCall.showMicTroubleshooting = info.showMicTroubleshooting;
             this.emergencyCall.status = newStatus;
 
             if (newStatus === 'closed') {
@@ -1069,9 +1117,12 @@ export default {
                 this.emergencyCall.peers = [];
                 this.emergencyCall.state = null;
                 this.emergencyCall.token = '';
+                this.emergencyCall.showMicTroubleshooting = false;
+                this.clearEmergencyCallMicWarning();
+                this.postClient({ type: 'emergencyCallMicTroubleshooting', active: false });
             } else {
                 // update the emergency call frame with the new state
-                this.postEmergencyCallFrame({ type: 'set_emergency_call_status', status: newStatus });
+                this.syncEmergencyCallFrameStatus();
             }
         },
         loop20() {
@@ -1111,6 +1162,18 @@ export default {
 <style scoped>
 .appcontainer {
     overflow: hidden;
+}
+
+.emergency-call-frame-shell {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 30vw;
+    height: 20vh;
+    transform: translate(-50%, -50%);
+}
+.emergency-call-frame-shell iframe {
+    transform: scale(1.5);
 }
 
 

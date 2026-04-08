@@ -1,5 +1,10 @@
 local radActive = false
 local dispatchOpen = false
+local emergencyCallMicUiOpen = false
+local emergencyCallMicWarningState = {
+	active = false,
+	key = nil
+}
 
 local thisUnit = {}
 local unitStatus = nil
@@ -29,6 +34,51 @@ geoAcePerms = {
 	requestCooldownMs = 5000,
 	refreshMs = 15000
 }
+
+local function updateNuiFocus()
+	local shouldFocus = radActive or dispatchOpen or emergencyCallMicUiOpen
+	SetNuiFocus(shouldFocus, shouldFocus)
+end
+
+local function clearEmergencyCallMicWarning()
+	emergencyCallMicWarningState.active = false
+	emergencyCallMicWarningState.key = nil
+end
+
+local function handleEmergencyCallMicWarning(data)
+	if data.active ~= true then
+		clearEmergencyCallMicWarning()
+		return
+	end
+
+	local reason = data.reason == 'device_missing' and 'device_missing' or 'silence'
+	local warningKey = table.concat({
+		reason,
+		tostring(data.deviceId or ''),
+		tostring(data.deviceLabel or '')
+	}, '|')
+	if emergencyCallMicWarningState.active and emergencyCallMicWarningState.key == warningKey then
+		return
+	end
+
+	emergencyCallMicWarningState.active = true
+	emergencyCallMicWarningState.key = warningKey
+
+	local commandHint = ('Use /radio %s mic.'):format(emergencyCallCommand())
+	local message
+	if reason == 'device_missing' then
+		local selectedDevice = data.deviceLabel
+		if type(selectedDevice) == 'string' and selectedDevice ~= '' then
+			message = ('911 Mic unavailable: %s. %s'):format(selectedDevice, commandHint)
+		else
+			message = ('911 Mic unavailable. %s'):format(commandHint)
+		end
+	else
+		message = ('911 Mic not detecting input. %s'):format(commandHint)
+	end
+
+	notifyClient(message, nil, '~o~')
+end
 
 AddEventHandler('onClientResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
@@ -512,11 +562,7 @@ function initClient()
 
 		radActive = not radActive
 		setRadioVisible(radActive, frame)
-		if radActive then
-			SetNuiFocus(true, true)
-		else
-			SetNuiFocus(false, false)
-		end
+		updateNuiFocus()
 		Radio:Toggle(radActive)
 	end
 
@@ -527,16 +573,22 @@ function initClient()
 			enable = visible,
 			tablet = true
 		})
-		SetNuiFocus(visible, visible)
+		updateNuiFocus()
 	end
 
 	function emergencyCallCommand()
 		return Config.emergencyCallCommand or '911'
 	end
-	function setEmergencyCall(enabled, displayName)
-		local playerId = PlayerId()
+	function setEmergencyCall(enabled, displayName, options)
+		if type(displayName) == 'table' and options == nil then
+			options = displayName
+			displayName = nil
+		end
 		if type(displayName) ~= 'string' then
 			displayName = nil
+		end
+		if type(options) ~= 'table' then
+			options = {}
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -545,8 +597,10 @@ function initClient()
 			type = 'setEmergencyCall',
 			enabled = enabled,
 			displayName = displayName,
+			cmd = emergencyCallCommand(),
 			callCommand = emergencyCallCommand(),
-			showHelpText = Config.showEmergencyCallHelp
+			showHelpText = Config.showEmergencyCallHelp,
+			showMicTroubleshooting = options.showMicTroubleshooting,
 		})
 	end
 	exports('setEmergencyCall', setEmergencyCall)
@@ -581,7 +635,15 @@ function initClient()
 	RegisterCommand('radio', function(_, args)
 		local action = args[1]
 		if action == emergencyCallCommand() then
-			setEmergencyCall('toggle')
+			if args[2] == 'mic' then
+				emergencyCallMicUiOpen = true
+				updateNuiFocus()
+				setEmergencyCall(isEmergCallActive and 'open' or 'idle', {
+					showMicTroubleshooting = true
+				})
+			else
+				setEmergencyCall('toggle')
+			end
 		elseif action == 'channel' or action == 'scan' or action == 'scanlist' then
 			local selectId = tonumber(args[2])
 			if selectId == nil then return end
@@ -635,7 +697,7 @@ function initClient()
 
 	RegisterCommand('showdispatch', function()
 		if dispatchOpen then
-			SetNuiFocus(true, true)
+			updateNuiFocus()
 			return
 		end
 		setDispatchVisible(true)
@@ -645,6 +707,7 @@ function initClient()
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
+		emergencyCallCommand() .. ' mic',
 		'channel',
 		'scanlist',
 		'scan',
@@ -1219,7 +1282,7 @@ function initClient()
 	end
 	Citizen.CreateThread(function()
 		if critError or Config.critError then return end
-		SetNuiFocus(false, false)
+		updateNuiFocus()
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		initNui()
 
@@ -1237,8 +1300,8 @@ function initClient()
 
 		if data.type == 'escape' then
 			radActive = false
-			SetNuiFocus(false, false)
 			setDispatchVisible(false)
+			updateNuiFocus()
 			Radio:Toggle(radActive)
 		end
 
@@ -1366,6 +1429,15 @@ function initClient()
 		end
 		if data.type == 'routeToCoordinates' then
 			SetNewWaypoint(data.x, data.y)
+		end
+
+		if data.type == 'emergencyCallMicTroubleshooting' then
+			emergencyCallMicUiOpen = data.active == true
+			updateNuiFocus()
+		end
+
+		if data.type == 'emergencyCallMicWarning' then
+			handleEmergencyCallMicWarning(data)
 		end
 
 		cb('OK')
