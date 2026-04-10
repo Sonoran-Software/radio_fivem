@@ -126,8 +126,6 @@ local function sendZonesToApi(reason)
 		return
 	end
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['roomId'] = Config.serverId or 1,
 		['geoZones'] = geoChannels,
 		['degradeZones'] = tunnels
@@ -895,8 +893,6 @@ local function initConfigServerId()
 			attempt = attempt + 1
 			print('[SonoranRadio] - Attempting to set server IP for radio service...')
 			exports['sonoranradio']:performApiRequest({
-				['id'] = Config.comId,
-				['key'] = Config.apiKey,
 				['roomId'] = roomId,
 				['serverPort'] = GetConvarInt('netPort', 30120),
 				['overridePushUrl'] = overridePushUrl,
@@ -1209,8 +1205,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
@@ -1303,8 +1297,6 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	end
 	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
@@ -1525,8 +1517,6 @@ end
 
 function serverNameChange(data)
 	local postData = {
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['accId'] = data.identity,
 		['displayName'] = data.name
 	}

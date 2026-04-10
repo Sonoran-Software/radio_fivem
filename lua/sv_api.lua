@@ -7,6 +7,18 @@ local ApiEndpoints = {
 }
 local rateLimitedEndpoints = {}
 
+local function buildApiRequestPayload(postData)
+	local payload = {}
+	if type(postData) == 'table' then
+		for key, value in pairs(postData) do
+			payload[key] = value
+		end
+	end
+	payload.id = Config.comId
+	payload.key = Config.apiKey
+	return payload
+end
+
 function performApiRequest(postData, type, cb)
 	if Config.apiKey == nil or Config.comId == nil then
 		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
@@ -18,6 +30,7 @@ function performApiRequest(postData, type, cb)
 	else
 		return warnLog(('API request failed: endpoint %s is not registered. Use the registerApiType function to register this endpoint with the appropriate type.'):format(type))
 	end
+	local requestPayload = buildApiRequestPayload(postData)
 	local url = Config.apiUrl .. tostring(endpoint) .. '/' .. tostring(type:lower())
 	assert(type ~= nil, 'No type specified, invalid request.')
 	if Config.critError then
@@ -26,7 +39,7 @@ function performApiRequest(postData, type, cb)
 	end
 	if rateLimitedEndpoints[type] == nil then
 		local requestCb = function(statusCode, res, headers)
-			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(postData), url))
+			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(requestPayload), url))
 			if statusCode == 200 or statusCode == 201 and res ~= nil then
 				debugLog('result: ' .. tostring(res))
 				if res == 'Sonoran Radio: Backend Service Reached' or res == 'Backend Service Reached' then
@@ -74,9 +87,9 @@ function performApiRequest(postData, type, cb)
 				cb(nil, false)
 			end
 		end
-		exports['sonoranradio']:HandleHttpRequest(url, requestCb, 'POST', json.encode(postData), {['Content-Type'] = 'application/json'})
+		exports['sonoranradio']:HandleHttpRequest(url, requestCb, 'POST', json.encode(requestPayload), {['Content-Type'] = 'application/json'})
 	else
-		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(postData)))
+		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(requestPayload)))
 	end
 end
 

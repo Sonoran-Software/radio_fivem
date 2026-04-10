@@ -36,8 +36,6 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 	end
 	DebugPrint('Sending speaker locations to radio service based upon call to SonoranRadio::SyncSpeakers' ..  json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
