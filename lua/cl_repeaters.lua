@@ -108,6 +108,10 @@ function initRepeaters()
     end)
 
     RegisterCommand('togglerepeater', function()
+        if not Config.enableVehicleRepeaters then
+            return
+        end
+
         if (GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) ==
             GetPlayerPed(-1) or
             GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0) ==
