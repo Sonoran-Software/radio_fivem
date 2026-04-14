@@ -178,6 +178,9 @@ else
 	if Config.acePermsForServerRepair ~= nil then
 		acePermsForServerRepair = Config.acePermsForServerRepair
 	end
+	if Config.heavySignalDegradeInWater == nil then
+		Config.heavySignalDegradeInWater = true
+	end
 	if not Config.radioJammers or Config.radioJammers == nil then
 		Config.radioJammers = {
 			enabled = true, -- Enable or disable radio jammers

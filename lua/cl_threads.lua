@@ -250,10 +250,156 @@ function initThreads()
         end
     end)
 
-    function getSignalQuality()
+    local extraSignalDegradation = {}
+
+    local function clampSignalModifier(value, minValue, maxValue)
+        value = tonumber(value) or 0.0
+        minValue = minValue or 0.0
+        maxValue = maxValue or 1.0
+        return math.min(maxValue, math.max(minValue, value))
+    end
+
+    local function getBaseSignalQuality()
         return math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
     end
+    exports('getBaseSignalQuality', getBaseSignalQuality)
+
+    local function getWaterSignalMultiplier(ped)
+        if not Config.heavySignalDegradeInWater or type(Config.heavySignalDegradeInWater) ~= 'table' or
+            Config.heavySignalDegradeInWater.enabled == false then
+            return 1.0, false
+        end
+        if Config.heavySignalDegradeInWater.enabled == false or not ped or ped == 0 then
+            return 1.0, false
+        end
+
+        -- IP67 radios can survive brief immersion, but RF performance drops off hard once submerged.
+        if IsPedSwimmingUnderWater(ped) then
+            return Config.heavySignalDegradeInWater.pedUnderWaterDegredation, true
+        end
+        if IsPedSwimming(ped) then
+            return Config.heavySignalDegradeInWater.pedInWaterDegredation, true
+        end
+
+        return 1.0, false
+    end
+
+    local function getExtraSignalDegradation()
+        local total = 0.0
+        for _, amount in pairs(extraSignalDegradation) do
+            -- Keep modifiers additive so multiple third-party resources can stack safely.
+            total = total + clampSignalModifier(amount, -1.0, 1.0)
+        end
+        return clampSignalModifier(total, -1.0, 1.0)
+    end
+    exports('getExtraSignalDegradation', getExtraSignalDegradation)
+
+    function setExtraSignalDegradation(key, amount)
+        if type(key) ~= 'string' or key == '' then
+            return false
+        end
+
+        amount = tonumber(amount)
+        if amount == nil or amount == 0.0 then
+            extraSignalDegradation[key] = nil
+            return true
+        end
+
+        extraSignalDegradation[key] = clampSignalModifier(amount, -1.0, 1.0)
+        return true
+    end
+    exports('setExtraSignalDegradation', setExtraSignalDegradation)
+
+    function clearExtraSignalDegradation(key)
+        if type(key) ~= 'string' or key == '' then
+            return false
+        end
+
+        extraSignalDegradation[key] = nil
+        return true
+    end
+    exports('clearExtraSignalDegradation', clearExtraSignalDegradation)
+
+    local function getEffectiveSignalQuality(coord, ped)
+        local baseQuality = getBaseSignalQuality()
+        local bestQuality = baseQuality
+        local isJammed = false
+        local jammerQuality = 0.0
+        local isWaterDegraded = false
+        local zoneDegradation = 0.0
+        local extraDegradation = getExtraSignalDegradation()
+        local zoneName = nil
+
+        coord = coord or GetEntityCoords(PlayerPedId())
+        ped = ped or PlayerPedId()
+
+        for _, zone in pairs(polyZonesTable) do
+            if zone:isPointInside(coord) then
+                zoneDegradation = clampSignalModifier(zone.degradeStrength)
+                zoneName = zone.name
+                if bestQuality > 0 and zoneDegradation > 0 then
+                    bestQuality = bestQuality * (1 - zoneDegradation)
+                end
+                DebugPrint('Inside Zone: ' .. zone.name)
+                break
+            end
+        end
+
+        if bestQuality > 0 and extraDegradation ~= 0.0 then
+            bestQuality = bestQuality * (1 - extraDegradation)
+        end
+
+        local waterMultiplier = 1.0
+        waterMultiplier, isWaterDegraded = getWaterSignalMultiplier(ped)
+        if bestQuality > 0 and waterMultiplier < 1.0 then
+            bestQuality = bestQuality * waterMultiplier
+        end
+
+        for _, jammer in pairs(jammers or {}) do
+            local jammerRange = jammer.range or 100.0
+            local jammerCoords = jammer.coords or vector3(0, 0, 0)
+            if #(coord - jammerCoords) < jammerRange and jammer.active then
+                isJammed = true
+                local jammerStrength = jammer.strength or 0.5
+                local jammerDist = #(coord - jammerCoords)
+                jammerQuality = 1.0 - (jammerDist / jammerRange)
+
+                -- Clamp jammerQuality between 0 and 1
+                jammerQuality = math.max(0.0, math.min(1.0, jammerQuality))
+
+                -- Calculate the jammer's impact
+                local jammerEffect = jammerStrength * jammerQuality
+
+                -- Offset bestQuality but prevent it from going below 0
+                bestQuality = math.max(0.0, bestQuality - jammerEffect)
+                DebugPrint(('Jammer active, reducing quality by %.2f'):format(jammerEffect))
+            end
+        end
+
+        return bestQuality, {
+            baseQuality = baseQuality,
+            zoneDegradation = zoneDegradation,
+            extraDegradation = extraDegradation,
+            totalDegradation = clampSignalModifier(zoneDegradation + extraDegradation),
+            zoneName = zoneName,
+            isJammed = isJammed,
+            jammerStrength = jammerQuality,
+            isWaterDegraded = isWaterDegraded
+        }
+    end
+
+    function getSignalQuality()
+        local quality = getEffectiveSignalQuality()
+        return quality
+    end
     exports('getSignalQuality', getSignalQuality)
+
+    function getSignalQualityDetails()
+        local quality, details = getEffectiveSignalQuality()
+        details.effectiveQuality = quality
+        return details
+    end
+    exports('getSignalQualityDetails', getSignalQualityDetails)
 
     local function copyIdList(list)
         local copy = {}
@@ -465,50 +611,11 @@ function initThreads()
             end
 
             if Radio.On then
-                -- Tunnel degradation logic
                 local plyPed = PlayerPedId()
                 local coord = GetEntityCoords(plyPed)
-                local insideZone = false
-                local degradeStrength = 0.0
-                for _, zone in pairs(polyZonesTable) do
-                    if zone:isPointInside(coord) then
-                        degradeStrength = zone.degradeStrength
-                        insideZone = true
-                        DebugPrint('Inside Zone: ' .. zone.name)
-                        break
-                    end
-                end
-                local bestQuality = getSignalQuality()
-                if insideZone then
-                    if bestQuality > 0 then
-                        bestQuality = bestQuality * (1 - degradeStrength)
-                    end
-                end
-                -- Jammer logic
-                local isJammed = false
-                local jammerQuality = 0.0
-                for _, jammer in pairs(jammers or {}) do
-                    local jammerRange = jammer.range or 100.0
-                    local jammerCoords = jammer.coords or vector3(0, 0, 0)
-                    if #(coord - jammerCoords) < jammerRange then
-                        if jammer.active then
-                            isJammed = true
-                            local jammerStrength = jammer.strength or 0.5
-                            local jammerDist = #(coord - jammerCoords)
-                            jammerQuality = 1.0 - (jammerDist / jammerRange)
-
-                            -- Clamp jammerQuality between 0 and 1
-                            jammerQuality = math.max(0.0, math.min(1.0, jammerQuality))
-
-                            -- Calculate the jammer's impact
-                            local jammerEffect = jammerStrength * jammerQuality
-
-                            -- Offset bestQuality but prevent it from going below 0
-                            bestQuality = math.max(0.0, bestQuality - jammerEffect)
-                            DebugPrint(('Jammer active, reducing quality by %.2f'):format(jammerStrength * jammerQuality))
-                        end
-                    end
-                end
+                local bestQuality, modifiers = getEffectiveSignalQuality(coord, plyPed)
+                local isJammed = modifiers.isJammed
+                local jammerQuality = modifiers.jammerStrength
                 -- update the tower quality if it has changed significantly
                 local delta = bestQuality < 0.1 and 0.01 or 0.05 -- if tower quality <10%, update every 1% change, otherwise update every 5%
                 if math.abs(bestQuality - lastTowerQuality) >= delta or
