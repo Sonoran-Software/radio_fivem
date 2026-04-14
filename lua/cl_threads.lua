@@ -250,9 +250,19 @@ function initThreads()
         end
     end)
 
+    local extraSignalDegradation = {}
+
+    local function clampSignalModifier(value, minValue, maxValue)
+        value = tonumber(value) or 0.0
+        minValue = minValue or 0.0
+        maxValue = maxValue or 1.0
+        return math.min(maxValue, math.max(minValue, value))
+    end
+
     local function getBaseSignalQuality()
         return math.max(bestCellRepeaterQuality, bestRackQuality, bestTowerQuality)
     end
+    exports('getBaseSignalQuality', getBaseSignalQuality)
 
     local function getWaterSignalMultiplier(ped)
         if Config.heavySignalDegradeInWater == false or not ped or ped == 0 then
@@ -270,24 +280,69 @@ function initThreads()
         return 1.0, false
     end
 
+    local function getExtraSignalDegradation()
+        local total = 0.0
+        for _, amount in pairs(extraSignalDegradation) do
+            -- Keep modifiers additive so multiple third-party resources can stack safely.
+            total = total + clampSignalModifier(amount, -1.0, 1.0)
+        end
+        return clampSignalModifier(total, -1.0, 1.0)
+    end
+    exports('getExtraSignalDegradation', getExtraSignalDegradation)
+
+    function setExtraSignalDegradation(key, amount)
+        if type(key) ~= 'string' or key == '' then
+            return false
+        end
+
+        amount = tonumber(amount)
+        if amount == nil or amount == 0.0 then
+            extraSignalDegradation[key] = nil
+            return true
+        end
+
+        extraSignalDegradation[key] = clampSignalModifier(amount, -1.0, 1.0)
+        return true
+    end
+    exports('setExtraSignalDegradation', setExtraSignalDegradation)
+
+    function clearExtraSignalDegradation(key)
+        if type(key) ~= 'string' or key == '' then
+            return false
+        end
+
+        extraSignalDegradation[key] = nil
+        return true
+    end
+    exports('clearExtraSignalDegradation', clearExtraSignalDegradation)
+
     local function getEffectiveSignalQuality(coord, ped)
-        local bestQuality = getBaseSignalQuality()
+        local baseQuality = getBaseSignalQuality()
+        local bestQuality = baseQuality
         local isJammed = false
         local jammerQuality = 0.0
         local isWaterDegraded = false
+        local zoneDegradation = 0.0
+        local extraDegradation = getExtraSignalDegradation()
+        local zoneName = nil
 
         coord = coord or GetEntityCoords(PlayerPedId())
         ped = ped or PlayerPedId()
 
         for _, zone in pairs(polyZonesTable) do
             if zone:isPointInside(coord) then
-                local degradeStrength = zone.degradeStrength or 0.0
-                if bestQuality > 0 and degradeStrength > 0 then
-                    bestQuality = bestQuality * (1 - degradeStrength)
+                zoneDegradation = clampSignalModifier(zone.degradeStrength)
+                zoneName = zone.name
+                if bestQuality > 0 and zoneDegradation > 0 then
+                    bestQuality = bestQuality * (1 - zoneDegradation)
                 end
                 DebugPrint('Inside Zone: ' .. zone.name)
                 break
             end
+        end
+
+        if bestQuality > 0 and extraDegradation ~= 0.0 then
+            bestQuality = bestQuality * (1 - extraDegradation)
         end
 
         local waterMultiplier = 1.0
@@ -318,6 +373,11 @@ function initThreads()
         end
 
         return bestQuality, {
+            baseQuality = baseQuality,
+            zoneDegradation = zoneDegradation,
+            extraDegradation = extraDegradation,
+            totalDegradation = clampSignalModifier(zoneDegradation + extraDegradation),
+            zoneName = zoneName,
             isJammed = isJammed,
             jammerStrength = jammerQuality,
             isWaterDegraded = isWaterDegraded
@@ -329,6 +389,13 @@ function initThreads()
         return quality
     end
     exports('getSignalQuality', getSignalQuality)
+
+    function getSignalQualityDetails()
+        local quality, details = getEffectiveSignalQuality()
+        details.effectiveQuality = quality
+        return details
+    end
+    exports('getSignalQualityDetails', getSignalQualityDetails)
 
     local function copyIdList(list)
         local copy = {}
