@@ -39,7 +39,11 @@ Config.ScannerItem = {
 Config.disableRadioOnDeath = true -- Disables radio when dead
 Config.restoreRadioStateWhenAlive = true -- Restore the radio on/off status when you revive or respawn
 Config.deathDetectionMethod = 'auto' -- auto | manual | qbcore | qbox
-Config.heavySignalDegradeInWater = true -- Heavily degrade radio signal while the player is in water to mimic an IP67-rated handheld
+Config.heavySignalDegradeInWater = { -- Heavily degrade radio signal while the player is in water to mimic an IP67-rated handheld
+	enabled = true, -- Set to true to enable heavy signal degrade in water
+	pedInWaterDegredation = 0.6, -- Signal strength multiplier when the player is simply in water (e.g. 0.6 would reduce signal strength to 60% of normal)
+	pedUnderWaterDegredation = 0.3 -- Signal strength multiplier when the player is underwater (e.g. 0.3 would reduce signal strength to 30% of normal)
+}
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
 Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to hide physical server racks

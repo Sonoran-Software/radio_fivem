@@ -265,16 +265,20 @@ function initThreads()
     exports('getBaseSignalQuality', getBaseSignalQuality)
 
     local function getWaterSignalMultiplier(ped)
-        if Config.heavySignalDegradeInWater == false or not ped or ped == 0 then
+        if not Config.heavySignalDegradeInWater or type(Config.heavySignalDegradeInWater) ~= 'table' or
+            Config.heavySignalDegradeInWater.enabled == false then
+            return 1.0, false
+        end
+        if Config.heavySignalDegradeInWater.enabled == false or not ped or ped == 0 then
             return 1.0, false
         end
 
         -- IP67 radios can survive brief immersion, but RF performance drops off hard once submerged.
         if IsPedSwimmingUnderWater(ped) then
-            return 0.05, true
+            return Config.heavySignalDegradeInWater.pedUnderWaterDegredation, true
         end
-        if IsPedSwimming(ped) or IsEntityInWater(ped) then
-            return 0.30, true
+        if IsPedSwimming(ped) then
+            return Config.heavySignalDegradeInWater.pedInWaterDegredation, true
         end
 
         return 1.0, false
