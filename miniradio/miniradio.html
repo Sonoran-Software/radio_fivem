@@ -6,16 +6,29 @@
     </head>
     <body>
         <div id="hudDiv" style="display:none;">
-            <div id="hudFrame">
+            <div id="hudFrame" class="bg-v2-background">
                 <div id="hudHeader">
-                    <div id="hudHeaderTime">Sonoran Radio</div>
+                    <div id="hudHeaderTitleGroup">
+                        <div id="hudHeaderTitle">Sonoran Radio</div>
+                        <div id="hudHeaderSubtitle">Connected Users</div>
+                    </div>
                     <div id="hudHeaderControls">
-                        <a href="javascript:void;" class="control" onclick="showHelp();">?</a>
-                        <a href="javascript:void;" class="control" onclick="moduleVisible('hud', false);">&times;</a>
+                        <button type="button" class="control" onclick="requestEscape();">&times;</button>
                     </div>
                 </div>
-                <div id="hudContentWrapper">
+                <div id="hudToolbar" class="bg-v2-background-light">
+                    <div id="hudHeaderStats">
+                        <div class="headerStat">
+                            <span class="headerStatLabel">Channels</span>
+                            <strong id="hudChannelCount">0</strong>
+                        </div>
+                        <div class="headerStat">
+                            <span class="headerStatLabel">Users</span>
+                            <strong id="hudUserCount">0</strong>
+                        </div>
+                    </div>
                 </div>
+                <div id="hudContentWrapper"></div>
             </div>
         </div>
 
