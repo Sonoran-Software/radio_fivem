@@ -1371,6 +1371,19 @@ function initClient()
 			SetNewWaypoint(data.x, data.y)
 		end
 
+		if data.type == 'toggleRadio' then
+			radioToggle()
+		end
+
+		if data.type == 'toggleConnectedUsers' then
+			setActiveUsers(activeChannels)
+			openradiousers()
+			SendNUIMessage({
+				type = 'setMiniRadioUIPosition',
+				data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}'),
+				miniradio = true
+			})
+		end
 		cb('OK')
 	end)
 
