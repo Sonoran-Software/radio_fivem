@@ -65,6 +65,9 @@ function initRacks()
 		for j = 1, n do
 			DeleteEntity(rack.Servers[j])
 		end
+		if rack.DebugBlip and DoesBlipExist(rack.DebugBlip) then
+			RemoveBlip(rack.DebugBlip)
+		end
 		rack.Servers = {}
 		rack.Spawned = false
 	end
@@ -225,6 +228,7 @@ function initRacks()
 			CreateServerInRack(rack, i, #rack.serverStatus)
 		end
 		SyncServerStatus(rack, false)
+		AddRackRange(rack)
 		rack.Spawned = true
 	end
 
@@ -235,11 +239,14 @@ function initRacks()
 	function AddRackRange(t)
 		if not Config.debug then
 			return
+		elseif t.DebugBlip then
+			RemoveBlip(t.DebugBlip)
 		end
 		-- create a radius blip that indicates the range of the server rack (where edge of circle = 50% capacity)
 		local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
 		SetBlipAlpha(blip, 127)
 		SetBlipColour(blip, 3)
+		t.DebugBlip = blip
 	end
 
 	-- EVENTS
@@ -250,7 +257,6 @@ function initRacks()
 	RegisterNetEvent('RadioRacks:SpawnRack', function(rack)
 		DebugPrint(('spawned %s'):format(json.encode(rack)))
 		table.insert(racks, rack)
-		AddRackRange(rack)
 		DebugPrint('new rack spawned', rack.Id)
 	end)
 
@@ -265,9 +271,7 @@ function initRacks()
 		end
 
 		racks = racksFromServer
-		for i = 1, #racks do
-			AddRackRange(racks[i])
-		end
+		-- spawning racks is handled in cl_threads.lua
 		DebugPrint(('synced %s'):format(json.encode(racks)))
 	end)
 
@@ -309,65 +313,6 @@ function initRacks()
 		end
 
 		DecorRegister('sonrad_server', 3)
-		-- while true do
-		-- 	bestRackQuality = 0.0
-		-- 	local pCoords = GetEntityCoords(GetPlayerPed(-1))
-		-- 	for i = 1, #racks do
-		-- 		local rack = racks[i]
-		-- 		if not rack then
-		-- 			goto continue
-		-- 		end
-		-- 		local d = #(GetRackCoords(rack) - pCoords)
-		-- 		-- if the player is within range (750m), then spawn a physical rack
-		-- 		local physical = not Config.noPhysicalRacks and not rack.NotPhysical
-		-- 		if d < 750.0 and not rack.Spawned and physical then
-		-- 			CreateRack(rack)
-		-- 			DebugPrint(('spawn physical rack (%f) %s'):format(d, rack.Id))
-		-- 		elseif d >= 750.0 and rack.Spawned then
-		-- 			DestroyRack(rack)
-		-- 			DebugPrint(('destroy physical rack (%f) %s'):format(d, rack.Id))
-		-- 		end
-
-		-- 		-- recreate the rack completely if anything is missing
-		-- 		-- NOTE: not including the ladder, as it will be omitted on certain conditions
-		-- 		local recreate = rack.Spawned and not DoesEntityExist(rack.Handle)
-		-- 		local n = rack.Servers and #rack.Servers or 0
-		-- 		for j = 1, n do
-		-- 			if not recreate then
-		-- 				recreate = not DoesEntityExist(rack.Servers[j])
-		-- 			end
-		-- 		end
-		-- 		if recreate then
-		-- 			DebugPrint(('rack:%s component missing, recreating'):format(rack.Id))
-		-- 			-- CreateRack will automatically delete old entities
-		-- 			CreateRack(rack)
-		-- 			SyncServerStatus(rack, false)
-		-- 		end
-
-		-- 		-- if rack is out of range, then just ignore it
-		-- 		if d > rack.Range then
-		-- 			goto continue
-		-- 		end
-		-- 		local tQuality = (1.0 - (d / rack.Range)) * GetrackCapacity(rack)
-		-- 		if bestRackQuality < tQuality then
-		-- 			bestRackQuality = tQuality
-		-- 		end
-		-- 		::continue::
-		-- 	end
-
-		-- 	if bestRackQuality == 0.0 then
-		-- 		DebugPrint('closest rack out of range')
-		-- 	else
-		-- 		DebugPrint(('best rack quality:%.4f'):format(bestRackQuality))
-		-- 	end
-		-- 	-- SendNUIMessage({
-		-- 	-- 	type = 'setrackQuality',
-		-- 	-- 	state = {
-		-- 	-- 		rack_quality = quality
-		-- 	-- 	}
-		-- 	-- })
-		-- 	Wait(3000)
-		-- end
 	end)
 
 	function RepairRack(rack)
@@ -439,74 +384,6 @@ function initRacks()
 			end
 		end
 	end)
-
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		Wait(0)
-	-- 		local coords = GetEntityCoords(GetPlayerPed(-1))
-	-- 		local closestRack = GetClosestVehicle(coords.x, coords.y, coords.z, 2.0, GetHashKey('serverrack'), 70)
-	-- 		if closestRack ~= 0 then
-	-- 			if GetVehicleBodyHealth(closestRack) < 950 or IsVehicleDoorDamaged(closestRack, 1) or GetVehicleEngineHealth(closestRack) < 950 then
-	-- 				goto continue
-	-- 			end
-	-- 			local doorOpen = false;
-	-- 			if IsVehicleDoorFullyOpen(closestRack, 1) then
-	-- 				doorOpen = true
-	-- 			end
-	-- 			BeginTextCommandDisplayHelp('STRING')
-	-- 			if doorOpen then
-	-- 				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to close this rack.')
-	-- 			else
-	-- 				AddTextComponentSubstringPlayerName('Press ~INPUT_WEAPON_SPECIAL_TWO~ to open this rack.')
-	-- 			end
-	-- 			EndTextCommandDisplayHelp(0, false, true, -1)
-	-- 			DisableControlAction(0, 54, true)
-	-- 			if IsDisabledControlJustReleased(0, 54) then
-	-- 				local Vehicle = closestRack
-	-- 				if doorOpen then
-	-- 					SetVehicleDoorShut(Vehicle, 1, false)
-	-- 				else
-	-- 					SetVehicleDoorOpen(Vehicle, 1, false, false)
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 		::continue::
-	-- 	end
-	-- end)
-
-	-- CreateThread(function()
-	-- 	while true do
-	-- 		for i = 1, #racks do
-	-- 			local rack = racks[i]
-	-- 			if rack then
-	-- 				local n = rack.Servers and #rack.Servers or 0
-	-- 				for j = 1, n do
-	-- 					local e = rack.Servers[j]
-	-- 					if IsVehicleEngineOnFire(e) or IsEntityOnFire(e) then
-	-- 						StopFireInRange(GetEntityCoords(e), 3.0)
-	-- 						StopEntityFire(e)
-	-- 					end
-	-- 					if DecorGetInt(e, 'sonrad_server') ~= 1 then
-	-- 						goto continue
-	-- 					end
-	-- 					if not IsEntityDead(e) then
-	-- 						SetVehiclePetrolTankHealth(e, 1000.0)
-	-- 					end
-	-- 					local health = GetEntityHealth(e)
-	-- 					if health > 980.0 then
-	-- 						goto continue
-	-- 					end
-	-- 					-- here we kill the dish
-	-- 					DecorSetInt(e, 'sonrad_server', 0)
-	-- 					DebugPrint('sending dish destroyed server event')
-	-- 					TriggerServerEvent('RadioRacks:KillServer', rack.Id, j)
-	-- 					::continue::
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 		Wait(250)
-	-- 	end
-	-- end)
 
 	-- cleanup racks on stop
 	AddEventHandler('onResourceStop', function(resource)
