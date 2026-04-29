@@ -1371,7 +1371,7 @@ function initClient()
 			SetNewWaypoint(data.x, data.y)
 		end
 
-		if data.type == 'toggle' then
+		if data.type == 'toggleRadio' then
 			radioToggle()
 		end
 
