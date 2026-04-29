@@ -1,68 +1,41 @@
 -- syncs radio user permissions to the server through the API
 
-local function httpRequest(method, url, data, headers)
-	local d = promise.new()
-	exports['sonoranradio']:HandleHttpRequest(url, function(statusCode, res, headers)
-		d:resolve({status = statusCode, payload = res, headers = headers})
-	end, method, data, headers)
-	return d
-end
-
 local function createGuestToken(opts)
 	if not opts then opts = {} end
-	local url = Config.apiUrl..'api/servers/'..Config.comId..'/guest-tokens'
 	local payload = {
-		apiKey = Config.apiKey,
+		serverId = Config.comId,
 		roomId = Config.serverId,
 		expiresInSeconds = opts.expiresInSeconds,
 		lockedCh = opts.emergCall and 'emergcall' or nil,
 		permission = opts.permission,
 		profilePerms = opts.profilePerms,
 	}
-	local res = Citizen.Await(httpRequest('POST', url, json.encode(payload)))
-	local err = res.status == nil or res.status >= 400
-	if err then
-		print('failed to create guest token', res.status, res.payload)
+	local res = getSonoranRadioClient():createGuestTokenV2(payload)
+	if not res.success then
+		print('failed to create guest token', formatSonoranApiReason(res.reason))
 		return nil
 	end
-	res.payload = json.decode(res.payload)
-	if res.payload.result ~= 'ok' then
-		print('failed to create guest tokens', json.encode(res.payload))
-		return nil
-	end
-	return res.payload
+	return res.data
 end
 
 local function authorizeRadioUser(accId)
-	local url = Config.apiUrl..'api/servers/'..Config.comId..'/members/emplace'
-	local payload = {
-		apiKey = Config.apiKey,
-		accIds = {accId},
-	}
-	local res = Citizen.Await(httpRequest('POST', url, json.encode(payload)))
-	local err = res.status == nil or res.status >= 400
-	if err then
-		print('failed to authorize radio users', res.status, res.payload)
+	local res = getSonoranRadioClient():approveMembersV2({accId}, Config.comId)
+	if not res.success then
+		print('failed to authorize radio users', formatSonoranApiReason(res.reason))
 	end
-	return not err
+	return res.success
 end
 
 local function setRadioUserPerms(accId, perm, profilePerms)
-	local url = Config.apiUrl..'api/servers/'..Config.comId..'/members/permissions'
-	local payload = {
-		apiKey = Config.apiKey,
-		userPerms = {{
-			accId = accId,
-			perm = perm,
-			profilePerms = profilePerms or {},
-		}}
-	}
-	local res = Citizen.Await(httpRequest('POST', url, json.encode(payload)))
-	local err = res.status == nil or res.status >= 400
-	if err then
-		print('failed to set radio user perms', res.status, res.payload)
+	local res = getSonoranRadioClient():setMemberPermissionsV2({{
+		accId = accId,
+		perm = perm,
+		profilePerms = profilePerms or {},
+	}}, Config.comId)
+	if not res.success then
+		print('failed to set radio user perms', formatSonoranApiReason(res.reason))
 	end
-	return not err
+	return res.success
 end
 
 local function calculateRadioPerm(src)
@@ -149,7 +122,7 @@ RegisterNetEvent('SonoranRadio::CreateEmergencyCallToken', function()
 
 	local payload = createGuestToken({emergCall = true})
 	if payload ~= nil then
-		TriggerClientEvent('SonoranRadio::EmergencyCallToken', src, payload.data.guestToken)
+		TriggerClientEvent('SonoranRadio::EmergencyCallToken', src, payload.guestToken)
 	end
 end)
 -- called from the client after clicking "log in as guest"
@@ -167,6 +140,6 @@ RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
 	})
 	if payload ~= nil then
 		local displayName = resolveGuestDisplayName(src)
-		TriggerClientEvent('SonoranRadio::RadioGuestToken', src, payload.data.guestToken, displayName)
+		TriggerClientEvent('SonoranRadio::RadioGuestToken', src, payload.guestToken, displayName)
 	end
 end)

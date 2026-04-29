@@ -5,6 +5,8 @@
 
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
+
 
 server_script 'config.lua'
 server_script 'lua/utils.js'
@@ -25,5 +27,5 @@ files {
 ui_page 'dist/ui.html'
 
 -- build webpack page automatically when resource is started for the first time
-dependencies {'yarn', 'webpack'}
+dependencies {'Sonoran.Lua', 'yarn', 'webpack'}
 webpack_config 'webpack.config.js'

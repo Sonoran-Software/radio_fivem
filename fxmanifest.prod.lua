@@ -6,6 +6,7 @@ author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
 version '$RESOURCE_VERSION'
 
+dependency 'Sonoran.Lua'
 
 server_script 'config.lua'
 server_script 'lua/utils.js'

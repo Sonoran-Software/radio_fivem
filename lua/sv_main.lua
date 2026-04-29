@@ -538,27 +538,26 @@ AddEventHandler('playerDropped', function()
 end)
 
 local function fetchCommunityChannels(cb)
-	if not Config or not Config.apiUrl or not Config.apiKey or not Config.comId then
-		errorLog('API request failed: API key, community ID, or apiUrl is not set.')
+	if not Config or not Config.apiKey or not Config.comId then
+		errorLog('API request failed: API key or community ID is not set.')
 		if cb then
 			cb(-1, nil, nil)
 		end
 		return
 	end
 
-	local url = Config.apiUrl .. 'api/radio/get-community-channels/' .. tostring(Config.comId) .. '/' .. tostring(Config.apiKey)
-	PerformHttpRequest(url, function(statusCode, data, headers)
-		local payload = nil
-		if statusCode == 200 and data then
-			local ok, parsed = pcall(json.decode, data)
-			if ok and type(parsed) == 'table' then
-				payload = parsed
-			end
-		end
+	local result = getSonoranRadioClient():getCommunityChannelsV2(Config.comId)
+	if result.success then
+		local raw = type(result.data) == 'string' and result.data or json.encode(result.data)
 		if cb then
-			cb(statusCode, payload, data, headers)
+			cb(200, result.data, raw)
 		end
-	end, 'GET', '', {['Content-Type'] = 'application/json'})
+	else
+		local reason = formatSonoranApiReason(result.reason)
+		if cb then
+			cb(-1, nil, reason)
+		end
+	end
 end
 
 local function getCommunityChannelsCached(cb)
