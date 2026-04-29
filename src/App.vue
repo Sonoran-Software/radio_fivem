@@ -552,6 +552,12 @@ export default {
                     this.requestStreamDeckSnapshotFromRadio();
                     break;
                 case 'streamdeck_command':
+                    if (message.payload == "desktop.toggleRadio" || message.payload.command == "desktop.focusRadio") {
+                        this.postClient({ type: 'toggleRadio' });
+                    }
+                    if (message.payload == 'desktop.connectedUsers') {
+                        this.postClient({ type: 'toggleConnectedUsers' });
+                    }
                     this.handleStreamDeckCommand(message.payload);
                     break;
                 case 'streamdeck_snapshot':

@@ -6,7 +6,7 @@ function initMiniRadio()
 
     -- Debugging Information
     isDebugging = true
-    local activeChannels = {}
+    activeChannels = {}
 
     -- Initialization Procedure
     Citizen.CreateThread(function()
