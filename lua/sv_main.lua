@@ -18,6 +18,57 @@ local DevEvents = DeveloperEvents or {}
 local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
+local cadTowerSyncTracker = {}
+
+function BuildSonoranCadTowerSyncData()
+	local sonoradData = {}
+
+	for _, t in ipairs(CellRepeaters or {}) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+
+	for _, t in ipairs(Servers or {}) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+
+	for _, t in ipairs(Towers or {}) do
+		if not t.DontSaveMe then
+			table.insert(sonoradData, t)
+		end
+	end
+
+	return sonoradData
+end
+
+RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
+AddEventHandler('SonoranRadio:QueueCadTowerSync', function(syncType)
+	if type(syncType) ~= 'string' then
+		return
+	end
+
+	local src = source
+	if type(src) ~= 'number' then
+		src = 0
+	end
+
+	local syncState = cadTowerSyncTracker[src] or {}
+	syncState[syncType] = true
+	cadTowerSyncTracker[src] = syncState
+
+	if syncState.cell and syncState.racks and syncState.towers then
+		cadTowerSyncTracker[src] = nil
+		TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	cadTowerSyncTracker[source] = nil
+end)
+
 local function isGeoZoneOptions(options)
 	if type(options) ~= 'table' then
 		return false
