@@ -136,24 +136,8 @@ AddEventHandler('RadioTower:clientTowerSync', function()
 	while #Towers == 0 do
 		Wait(10)
 	end
-	local sonoradData = {}
 	TriggerLatentClientEvent('RadioTower:SyncTowers', source, 10000, Towers)
-	for _, t in ipairs(CellRepeaters) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
-	end
-	for _, t in ipairs(Servers) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
-	end
-	for _, t in ipairs(Towers) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
-	end
-	TriggerEvent('SonoranCAD::sonrad:SyncTowers', sonoradData)
+	TriggerEvent('SonoranRadio:QueueCadTowerSync', 'towers')
 end)
 
 RegisterNetEvent('RadioTower:KillDish')
