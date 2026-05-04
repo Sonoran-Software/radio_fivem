@@ -3,6 +3,7 @@ local dispatchOpen = false
 
 local thisUnit = {}
 local unitStatus = nil
+local clientInitialized = false
 
 isTalking = false
 isEmergCallActive = false
@@ -209,6 +210,12 @@ RegisterNetEvent('SonoranRadio::GeoPerms', function(payload)
 end)
 
 function initClient()
+	if clientInitialized then
+		DebugPrint('[Init] initClient already ran, skipping duplicate registration')
+		return
+	end
+	clientInitialized = true
+
 	local comId = Config.comId or Config.communityId or Config.standaloneId
 	TriggerEvent('SonoranRadio::ClientReady')
 	RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
