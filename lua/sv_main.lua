@@ -931,11 +931,30 @@ local function initConfigServerId()
 		end
 
 		-- get the current serverId (from a previous) as defined in the convar, config, or kvp
-		local function nonZero(val) if val == 0 then return nil else return val end end
+		local serverIdConvar = 'sonoranradio_serverId'
+		local function normalizeRoomId(val)
+			val = tonumber(val)
+			if val == nil or val == 0 then
+				return nil
+			end
+			return val
+		end
+		local function persistRoomId(val)
+			local persistedRoomId = normalizeRoomId(val)
+			if persistedRoomId == nil then
+				return nil
+			end
+
+			Config.serverId = persistedRoomId
+			SetResourceKvpInt('standalone_serverId', persistedRoomId)
+			SetConvar(serverIdConvar, tostring(persistedRoomId))
+			return persistedRoomId
+		end
 		local roomId =
-			nonZero(GetConvarInt('sonoranradio_serverId')) or
-			nonZero(Config.serverId) or
-			nonZero(GetResourceKvpInt('standalone_serverId'))
+			normalizeRoomId(GetConvarInt(serverIdConvar)) or
+			normalizeRoomId(Config.serverId) or
+			normalizeRoomId(GetResourceKvpInt('standalone_serverId'))
+		persistRoomId(roomId)
 
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
@@ -969,7 +988,7 @@ local function initConfigServerId()
 					if attempt == 1 and roomId ~= nil then
 						warnLog('Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
 						Config.init = true
-						Config.serverId = roomId
+						persistRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
 					else
@@ -978,28 +997,35 @@ local function initConfigServerId()
 					return
 				end
 
-				data = json.decode(data)
+				data = json.decode(data) or {}
+				local resolvedRoomId = normalizeRoomId(data.roomId)
+				if resolvedRoomId == nil then
+					errorLog('Failed to set server IP for radio service: invalid roomId returned.')
+					if not resolved then
+						d:reject('invalid roomId returned')
+					end
+					return
+				end
 
 				-- if the room id doesn't match the one in the convar or config, update the config file
-				if data.roomId ~= GetConvarInt('sonoranradio_serverId') and data.roomId ~= Config.serverId then
+				if resolvedRoomId ~= normalizeRoomId(GetConvarInt(serverIdConvar)) and resolvedRoomId ~= normalizeRoomId(Config.serverId) then
 					local configFile = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
 					configFile = configFile:gsub("[\n^]Config%.serverId%s*=[^\n]*", "") -- remove other "serverId" instances
 
 					-- insert the new serverId below the apiKey
 					configFile = configFile:gsub("Config%.apiKey%s*=%s*.-\n", function(line)
-						return line .. 'Config.serverId = '..data.roomId..'\n'
+						return line .. 'Config.serverId = '..resolvedRoomId..'\n'
 					end, 1)
 
 					local configWriteSuccess = SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
 					if not configWriteSuccess then
 						-- couldn't write the file, but this is recoverable (kvp is used as backup)
-						warnLog('Failed to write "Config.serverId = '..data.roomId..'" to config.lua. Is the file read-only?')
+						warnLog('Failed to write "Config.serverId = '..resolvedRoomId..'" to config.lua. Is the file read-only?')
 					end
 				end
 
-				SetResourceKvpInt('standalone_serverId', data.roomId) -- save the roomId to the resource KVP as a backup
 				Config.init = true
-				Config.serverId = data.roomId
+				persistRoomId(resolvedRoomId)
 				if not resolved then
 					resolved = true
 					d:resolve(Config.serverId)
