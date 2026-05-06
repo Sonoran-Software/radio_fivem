@@ -24,24 +24,22 @@ function BuildSonoranCadTowerSyncData()
 	local sonoradData = {}
 
 	for _, t in ipairs(CellRepeaters or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	for _, t in ipairs(Servers or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	for _, t in ipairs(Towers or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	return sonoradData
+end
+
+function SyncSonoranCadLiveMap()
+	TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
 end
 
 RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
@@ -61,7 +59,7 @@ AddEventHandler('SonoranRadio:QueueCadTowerSync', function(syncType)
 
 	if syncState.cell and syncState.racks and syncState.towers then
 		cadTowerSyncTracker[src] = nil
-		TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+		SyncSonoranCadLiveMap()
 	end
 end)
 
@@ -1328,6 +1326,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)

@@ -52,11 +52,10 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		DebugPrint(json.encode(tower))
 		tower.Powered = false
         tower.AntennaStatus = 'dead'
-		TriggerClientEvent('CellRepeater:SetAntennaStatus', -1, v, tower.AntennaStatus)
+		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', v, tower.AntennaStatus)
 	end
-	-- TriggerClientEvent("CellRepeater:SyncCellRepeaters", source, CellRepeaters)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncCellRepeaters", CellRepeaters)
+	SyncSonoranCadLiveMap()
 
 end)
 
@@ -68,10 +67,9 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		tower.Powered = true
         tower.AntennaStatus = 'alive'
 		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus)
-		TriggerEvent('SonoranCAD::sonrad:AntennaStatus', v, tower.AntennaStatus)
+		TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', v, tower.AntennaStatus)
 	end
-	-- TriggerClientEvent("CellRepeater:SyncCellRepeaters", source, CellRepeaters)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncCellRepeaters", CellRepeaters)
+	SyncSonoranCadLiveMap()
 end)
 
 -- RegisterCommand('removeCellRepeaters', function()
@@ -156,7 +154,8 @@ AddEventHandler('CellRepeater:KillAntenna', function(towerId)
 
 	tower.AntennaStatus = 'dead'
 	TriggerClientEvent('CellRepeater:AntennaStatus', -1, towerId, tower.AntennaStatus)
-	TriggerEvent('SonoranCAD::sonrad:AntennaStatus', towerId, tower.AntennaStatus)
+	TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', towerId, tower.AntennaStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('CellRepeater:RepairAntenna')
@@ -168,7 +167,8 @@ AddEventHandler('CellRepeater:RepairAntenna', function(towerId)
 	end
     tower.AntennaStatus = 'alive'
 	TriggerClientEvent('CellRepeater:AntennaStatus', -1, towerId, tower.AntennaStatus)
-	TriggerEvent('SonoranCAD::sonrad:AntennaStatus', towerId, tower.AntennaStatus)
+	TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', towerId, tower.AntennaStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('CellRepeater:clientLocationVerify')
@@ -210,6 +210,7 @@ exports('createCellRepeater', function(config)
 	table.insert(CellRepeaters, obj)
 	TriggerClientEvent('CellRepeater:spawncell', -1, obj)
 	TriggerEvent('SonoranCAD::sonrad:SyncCellRepeaters', CellRepeaters)
+	SyncSonoranCadLiveMap()
 	DebugPrint('tower spawned by an api', obj.Id, obj.ApiResource)
 	return obj.Id
 end)
@@ -228,6 +229,7 @@ exports('updateCellRepeater', function(towerId, config)
 				TriggerClientEvent('CellRepeater:SyncOneTower', -1, towerId, CellRepeaters[i])
 				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, CellRepeaters[i])
 			end
+			SyncSonoranCadLiveMap()
 			return config and CellRepeaters[i].Id or ''
 		end
 	end
@@ -250,5 +252,6 @@ AddEventHandler('onResourceStop', function(resource)
 	-- sync all CellRepeaters with all clients
 	if hadChange then
 		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+		SyncSonoranCadLiveMap()
 	end
 end)

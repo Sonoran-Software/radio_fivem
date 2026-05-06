@@ -57,8 +57,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
-	-- TriggerClientEvent("RadioRacks:SyncRacks", source, Servers)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncServers", Servers)
+	SyncSonoranCadLiveMap()
 
 end)
 
@@ -74,8 +73,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
-	-- TriggerClientEvent("RadioRacks:SyncRacks", source, Servers)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncServers", Servers)
+	SyncSonoranCadLiveMap()
 end)
 
 -- RegisterCommand('removeServers', function()
@@ -171,6 +169,7 @@ AddEventHandler('RadioRacks:KillServer', function(towerId, dishIndex)
 	rack.serverStatus[dishIndex] = 'dead'
 	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.serverStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('RadioRacks:RepairRack')
@@ -186,6 +185,7 @@ AddEventHandler('RadioRacks:RepairRack', function(towerId)
 	end
 	TriggerClientEvent('RadioRacks:SetServerStatus', -1, towerId, rack.serverStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetserverStatus', towerId, rack.serverStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('RadioRacks:clientLocationVerify')
@@ -227,6 +227,7 @@ exports('createRack', function(config)
 	table.insert(Servers, obj)
 	TriggerClientEvent('RadioRacks:SpawnRack', -1, obj)
 	TriggerEvent('SonoranCAD::sonrad:SyncServers', Servers)
+	SyncSonoranCadLiveMap()
 	DebugPrint('rack spawned by an api', obj.Id, obj.ApiResource)
 	return obj.Id
 end)
@@ -245,6 +246,7 @@ exports('updateRack', function(towerId, config)
 				TriggerClientEvent('RadioRacks:SyncOneRack', -1, towerId, Servers[i])
 				TriggerEvent('SonoranCAD::sonrad:SyncOneRack', towerId, Servers[i])
 			end
+			SyncSonoranCadLiveMap()
 			return config and Servers[i].Id or ''
 		end
 	end
@@ -267,5 +269,6 @@ AddEventHandler('onResourceStop', function(resource)
 	-- sync all Servers with all clients
 	if hadChange then
 		TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+		SyncSonoranCadLiveMap()
 	end
 end)
