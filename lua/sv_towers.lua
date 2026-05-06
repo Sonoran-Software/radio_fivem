@@ -62,8 +62,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetDishStatus', v, tower.DishStatus)
 	end
-	-- TriggerClientEvent("RadioTower:SyncTowers", source, Towers)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
+	SyncSonoranCadLiveMap()
 
 end)
 
@@ -79,8 +78,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus)
 		TriggerEvent('SonoranCAD::sonrad:SetDishStatus', v, tower.DishStatus)
 	end
-	-- TriggerClientEvent("RadioTower:SyncTowers", source, Towers)
-	-- TriggerEvent("SonoranCAD::sonrad:SyncTowers", Towers)
+	SyncSonoranCadLiveMap()
 end)
 
 -- RegisterCommand('removetowers', function()
@@ -152,6 +150,7 @@ AddEventHandler('RadioTower:KillDish', function(towerId, dishIndex)
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
 	TriggerEvent('SonoranRadio::API:TowerDishDestroyed', source, towerId, tower.DishStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('RadioTower:RepairTower')
@@ -168,6 +167,7 @@ AddEventHandler('RadioTower:RepairTower', function(towerId)
 	TriggerClientEvent('RadioTower:SetDishStatus', -1, towerId, tower.DishStatus)
 	TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
 	TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('RadioTower:RepairAllTowers')
@@ -184,10 +184,11 @@ AddEventHandler('RadioTower:RepairAllTowers', function()
 
 		if needsRepair then
 			TriggerClientEvent('RadioTower:SetDishStatus', -1, tower.Id, tower.DishStatus)
-			TriggerEvent('SonoranCAD::sonrad:SetDishStatus', towerId, tower.DishStatus)
-			TriggerEvent('SonoranRadio::API:TowerRepaired', source, towerId, tower.DishStatus)
+			TriggerEvent('SonoranCAD::sonrad:SetDishStatus', tower.Id, tower.DishStatus)
+			TriggerEvent('SonoranRadio::API:TowerRepaired', source, tower.Id, tower.DishStatus)
 		end
 	end
+	SyncSonoranCadLiveMap()
 end)
 
 -- API
@@ -203,6 +204,7 @@ exports('createTower', function(config)
 	table.insert(Towers, obj)
 	TriggerClientEvent('RadioTower:SpawnTower', -1, obj)
 	TriggerEvent('SonoranCAD::sonrad:SyncTowers', Towers)
+	SyncSonoranCadLiveMap()
 	DebugPrint('tower spawned by an api', obj.Id, obj.ApiResource)
 	return obj.Id
 end)
@@ -225,6 +227,7 @@ exports('updateTower', function(towerId, config)
 				TriggerClientEvent('RadioTower:SyncOneTower', -1, towerId, Towers[i])
 				TriggerEvent('SonoranCAD::sonrad:SyncOneTower', towerId, Towers[i])
 			end
+			SyncSonoranCadLiveMap()
 			return config and Towers[i].Id or ''
 		end
 	end
@@ -247,5 +250,6 @@ AddEventHandler('onResourceStop', function(resource)
 	-- sync all towers with all clients
 	if hadChange then
 		TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
+		SyncSonoranCadLiveMap()
 	end
 end)

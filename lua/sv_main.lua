@@ -19,29 +19,62 @@ local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
 local cadTowerSyncTracker = {}
+local cadLiveMapSyncFlushIntervalMs = 60000
+local cadLiveMapSyncMaxBatchSize = 29
+local cadLiveMapSyncState = {
+	buffer = {},
+	timerActive = false
+}
 
 function BuildSonoranCadTowerSyncData()
 	local sonoradData = {}
 
 	for _, t in ipairs(CellRepeaters or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	for _, t in ipairs(Servers or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	for _, t in ipairs(Towers or {}) do
-		if not t.DontSaveMe then
-			table.insert(sonoradData, t)
-		end
+		table.insert(sonoradData, t)
 	end
 
 	return sonoradData
+end
+
+local function DispatchSonoranCadLiveMapSync()
+	local sendCount = math.min(#cadLiveMapSyncState.buffer, cadLiveMapSyncMaxBatchSize)
+	for _ = 1, sendCount do
+		table.remove(cadLiveMapSyncState.buffer, 1)
+	end
+	TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+end
+
+local function QueueNextSonoranCadLiveMapSyncFlush()
+	if cadLiveMapSyncState.timerActive then
+		return
+	end
+
+	cadLiveMapSyncState.timerActive = true
+	SetTimeout(cadLiveMapSyncFlushIntervalMs, function()
+		cadLiveMapSyncState.timerActive = false
+		if #cadLiveMapSyncState.buffer > 0 then
+			DispatchSonoranCadLiveMapSync()
+			if #cadLiveMapSyncState.buffer > 0 then
+				QueueNextSonoranCadLiveMapSyncFlush()
+			end
+		end
+	end)
+end
+
+function SyncSonoranCadLiveMap()
+	table.insert(cadLiveMapSyncState.buffer, {
+		queuedAt = os.time()
+	})
+
+	QueueNextSonoranCadLiveMapSyncFlush()
 end
 
 RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
@@ -61,7 +94,7 @@ AddEventHandler('SonoranRadio:QueueCadTowerSync', function(syncType)
 
 	if syncState.cell and syncState.racks and syncState.towers then
 		cadTowerSyncTracker[src] = nil
-		TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+		SyncSonoranCadLiveMap()
 	end
 end)
 
@@ -1354,6 +1387,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
