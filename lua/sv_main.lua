@@ -19,6 +19,12 @@ local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
 local cadTowerSyncTracker = {}
+local cadLiveMapSyncFlushIntervalMs = 60000
+local cadLiveMapSyncMaxBatchSize = 29
+local cadLiveMapSyncState = {
+	buffer = {},
+	timerActive = false
+}
 
 function BuildSonoranCadTowerSyncData()
 	local sonoradData = {}
@@ -38,8 +44,37 @@ function BuildSonoranCadTowerSyncData()
 	return sonoradData
 end
 
-function SyncSonoranCadLiveMap()
+local function DispatchSonoranCadLiveMapSync()
+	local sendCount = math.min(#cadLiveMapSyncState.buffer, cadLiveMapSyncMaxBatchSize)
+	for _ = 1, sendCount do
+		table.remove(cadLiveMapSyncState.buffer, 1)
+	end
 	TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+end
+
+local function QueueNextSonoranCadLiveMapSyncFlush()
+	if cadLiveMapSyncState.timerActive then
+		return
+	end
+
+	cadLiveMapSyncState.timerActive = true
+	SetTimeout(cadLiveMapSyncFlushIntervalMs, function()
+		cadLiveMapSyncState.timerActive = false
+		if #cadLiveMapSyncState.buffer > 0 then
+			DispatchSonoranCadLiveMapSync()
+			if #cadLiveMapSyncState.buffer > 0 then
+				QueueNextSonoranCadLiveMapSyncFlush()
+			end
+		end
+	end)
+end
+
+function SyncSonoranCadLiveMap()
+	table.insert(cadLiveMapSyncState.buffer, {
+		queuedAt = os.time()
+	})
+
+	QueueNextSonoranCadLiveMapSyncFlush()
 end
 
 RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
