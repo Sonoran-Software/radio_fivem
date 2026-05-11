@@ -1101,6 +1101,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 		critError = true
 		return
 	end
+
+	local cApiKey = GetConvar('sonoranradio_apiKey', 'NONE')
+
+	if cApiKey == 'NONE' then
+		warnLog('apiKey convar value NOT initialized - has sonoranradio.cfg been executed?')
+	elseif cApiKey == 'protection_initialized' then
+		SetConvar('sonoranradio_apiKey', tostring(Config.apiKey))
+	end
+
+	SetConvar('sonoranradio_communityID', tostring(Config.comId))
+
 	Config.init = false
 	if Config.frames == nil or not Config.frames then
 		errorLog('Config.frames is not set. Please check your configuration.')
