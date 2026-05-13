@@ -332,9 +332,19 @@ else
 			}
 		}
 		end
-	if Config.enforceRadioItem then
-		getFramework()
-		getInventory()
+	local enforcedInventoryItemsInitialized = false
+	local function setupEnforcedInventoryItems()
+		if enforcedInventoryItemsInitialized or not Config.enforceRadioItem then
+			return
+		end
+
+		getFramework(true)
+		getInventory(true)
+		if not hasFrameworkInventory() then
+			return
+		end
+
+		enforcedInventoryItemsInitialized = true
 		if frameworkEnum == 1 then
 			QBCore = exports['qb-core']:GetCoreObject()
 
@@ -463,6 +473,15 @@ else
 					description = 'Communicate with others through the Sonoran Radio',
 				}
 			end
+			if Config.ScannerItem == nil then
+				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.ScannerItem = {
+					name = 'sonoran_radio_scanner', -- Item ID
+					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+					weight = 1, -- Weight of the item in your inventory
+					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+				}
+			end
 			if not exports.ox_inventory:Items(Config.RadioItem.name) then
 				errorLog('Ox_Inventory detected on Qbox, ' .. Config.RadioItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
 				return
@@ -485,15 +504,6 @@ else
 				end
 			end)
 
-			if Config.ScannerItem == nil then
-				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
-				Config.ScannerItem = {
-					name = 'sonoran_radio_scanner', -- Item ID
-					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
-					weight = 1, -- Weight of the item in your inventory
-					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
-				}
-			end
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
@@ -542,6 +552,14 @@ else
 				return scanners
 			end)
 		end
+	end
+
+	if Config.enforceRadioItem then
+		Citizen.CreateThread(function()
+			if waitForFrameworkInventory() then
+				setupEnforcedInventoryItems()
+			end
+		end)
 	end
 end
 
