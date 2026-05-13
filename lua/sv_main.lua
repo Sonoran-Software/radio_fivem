@@ -887,22 +887,17 @@ local function initConfigServerId()
 			end
 			return val
 		end
-		local function persistRoomId(val)
-			local persistedRoomId = normalizeRoomId(val)
-			if persistedRoomId == nil then
-				return nil
-			end
-
-			Config.serverId = persistedRoomId
-			SetResourceKvpInt('standalone_serverId', persistedRoomId)
-			SetConvar(serverIdConvar, tostring(persistedRoomId))
-			return persistedRoomId
-		end
 		local roomId =
 			normalizeRoomId(GetConvarInt(serverIdConvar)) or
 			normalizeRoomId(Config.serverId) or
 			normalizeRoomId(GetResourceKvpInt('standalone_serverId'))
-		persistRoomId(roomId)
+
+		local function useRoomId(val)
+			Config.serverId = val
+			SetResourceKvpInt('standalone_serverId', val) -- save the roomId to the resource KVP as a backup
+			setSonoranRadioClientRoomId(val) -- set the API client's room id
+			Config.init = true
+		end
 
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
@@ -936,7 +931,7 @@ local function initConfigServerId()
 					if attempt == 1 and roomId ~= nil then
 						warnLog('Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
 						Config.init = true
-						persistRoomId(roomId)
+						useRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
 					else
@@ -972,8 +967,7 @@ local function initConfigServerId()
 					end
 				end
 
-				Config.init = true
-				persistRoomId(resolvedRoomId)
+				useRoomId(resolvedRoomId)
 				if not resolved then
 					resolved = true
 					d:resolve(Config.serverId)
@@ -1222,6 +1216,10 @@ AddEventHandler('onResourceStart', function(resourceName)
 		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end
 
+	-- wait for config to be initialized (for roomId to be present)
+	-- this needs to be done before SET-SERVER-SPEAKERS
+	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+
 	-- set the speakers via the API
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
@@ -1240,7 +1238,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end)
 
-	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	-- provide client config/environment to all players in server
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
 
 	-- Push Event Handling for Geo Zones

@@ -41,15 +41,8 @@ function getSonoranRadioClient()
 	sonoranRadioClientKey = key
 	return sonoranRadioClient
 end
-
-local function configureRadioRoomId(client, roomId)
-	local resolvedRoomId = tonumber(roomId or Config.serverId)
-	if resolvedRoomId == nil or resolvedRoomId < 1 then
-		return false, 'roomId is required for Radio v2 room-scoped requests.'
-	end
-
-	client:setRoomId(resolvedRoomId)
-	return true, nil
+function setSonoranRadioClientRoomId(roomId)
+	sonoranRadioClient:setRoomId(roomId)
 end
 
 local function encodeApiResponse(data)
@@ -95,54 +88,17 @@ end
 
 local function callApiEndpoint(type, postData)
 	local client = getSonoranRadioClient()
+	local payload = postData or {}
 
 	if type == 'SET-SERVER-IP' then
-		local payload = {}
-		for key, value in pairs(postData or {}) do
-			payload[key] = value
-		end
-		payload.serverId = Config.comId
-		payload.roomId = payload.roomId or Config.serverId
-		local ok, reason = configureRadioRoomId(client, payload.roomId)
-		if not ok then
-			return { success = false, reason = reason }
-		end
 		return client:setServerIpV2(payload)
 	elseif type == 'SET-SERVER-SPEAKERS' then
-		local ok, reason = configureRadioRoomId(client)
-		if not ok then
-			return { success = false, reason = reason }
-		end
-		return client:setInGameSpeakerLocationsV2((postData or {}).locations or {}, Config.comId)
+		return client:setInGameSpeakerLocationsV2(payload.locations or {}, Config.comId)
 	elseif type == 'SET-USER-DISPLAY-NAME' then
-		local payload = {}
-		for key, value in pairs(postData or {}) do
-			payload[key] = value
-		end
-		payload.serverId = Config.comId
-		local ok, reason = configureRadioRoomId(client, payload.roomId)
-		if not ok then
-			return { success = false, reason = reason }
-		end
 		return client:setUserDisplayNameV2(payload)
 	elseif type == 'PLAY-TONE' then
-		local payload = postData or {}
-		local ok, reason = configureRadioRoomId(client, payload.roomId)
-		if not ok then
-			return { success = false, reason = reason }
-		end
 		return client:playToneV2(payload.tones or {}, payload.playTo, Config.comId)
 	elseif type == 'SET-ZONES' then
-		local payload = {}
-		for key, value in pairs(postData or {}) do
-			payload[key] = value
-		end
-		payload.serverId = Config.comId
-		payload.roomId = payload.roomId or Config.serverId
-		local ok, reason = configureRadioRoomId(client, payload.roomId)
-		if not ok then
-			return { success = false, reason = reason }
-		end
 		return client:setZonesV2(payload)
 	end
 end
