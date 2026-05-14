@@ -76,9 +76,10 @@ local function createEmergencyRedial(source, requestContext)
         return
     end
 
+    local emergencyCallNumber = tostring(Config.emergencyCallCommand or "911")
     local callId = exports["lb-phone"]:CreateCall({
         source = source,
-        phoneNumber = "Emergency Services"
+        phoneNumber = emergencyCallNumber
     }, phoneNumber)
 
     if not callId then
