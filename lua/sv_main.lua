@@ -18,6 +18,90 @@ local DevEvents = DeveloperEvents or {}
 local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
+local cadTowerSyncTracker = {}
+local cadLiveMapSyncFlushIntervalMs = 60000
+local cadLiveMapSyncMaxBatchSize = 29
+local cadLiveMapSyncState = {
+	buffer = {},
+	timerActive = false
+}
+
+function BuildSonoranCadTowerSyncData()
+	local sonoradData = {}
+
+	for _, t in ipairs(CellRepeaters or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	for _, t in ipairs(Servers or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	for _, t in ipairs(Towers or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	return sonoradData
+end
+
+local function DispatchSonoranCadLiveMapSync()
+	local sendCount = math.min(#cadLiveMapSyncState.buffer, cadLiveMapSyncMaxBatchSize)
+	for _ = 1, sendCount do
+		table.remove(cadLiveMapSyncState.buffer, 1)
+	end
+	TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+end
+
+local function QueueNextSonoranCadLiveMapSyncFlush()
+	if cadLiveMapSyncState.timerActive then
+		return
+	end
+
+	cadLiveMapSyncState.timerActive = true
+	SetTimeout(cadLiveMapSyncFlushIntervalMs, function()
+		cadLiveMapSyncState.timerActive = false
+		if #cadLiveMapSyncState.buffer > 0 then
+			DispatchSonoranCadLiveMapSync()
+			if #cadLiveMapSyncState.buffer > 0 then
+				QueueNextSonoranCadLiveMapSyncFlush()
+			end
+		end
+	end)
+end
+
+function SyncSonoranCadLiveMap()
+	table.insert(cadLiveMapSyncState.buffer, {
+		queuedAt = os.time()
+	})
+
+	QueueNextSonoranCadLiveMapSyncFlush()
+end
+
+RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
+AddEventHandler('SonoranRadio:QueueCadTowerSync', function(syncType)
+	if type(syncType) ~= 'string' then
+		return
+	end
+
+	local src = source
+	if type(src) ~= 'number' then
+		src = 0
+	end
+
+	local syncState = cadTowerSyncTracker[src] or {}
+	syncState[syncType] = true
+	cadTowerSyncTracker[src] = syncState
+
+	if syncState.cell and syncState.racks and syncState.towers then
+		cadTowerSyncTracker[src] = nil
+		SyncSonoranCadLiveMap()
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	cadTowerSyncTracker[source] = nil
+end)
+
 local function isGeoZoneOptions(options)
 	if type(options) ~= 'table' then
 		return false
@@ -1010,6 +1094,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 		critError = true
 		return
 	end
+
+	local cApiKey = GetConvar('sonoranradio_apiKey', 'NONE')
+
+	if cApiKey == 'NONE' then
+		warnLog('apiKey convar value NOT initialized - has sonoranradio.cfg been executed?')
+	elseif cApiKey == 'protection_initialized' then
+		SetConvar('sonoranradio_apiKey', tostring(Config.apiKey))
+	end
+
+	SetConvar('sonoranradio_communityID', tostring(Config.comId))
+
 	Config.init = false
 	if Config.frames == nil or not Config.frames then
 		errorLog('Config.frames is not set. Please check your configuration.')
@@ -1300,6 +1395,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)

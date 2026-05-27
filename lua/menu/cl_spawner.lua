@@ -1,4 +1,12 @@
+local menuInitialized = false
+
 function initMenu()
+	if menuInitialized then
+		DebugPrint('[Init] initMenu already ran, skipping duplicate registration')
+		return
+	end
+	menuInitialized = true
+
 	local state = {
 		index = 1,
 		repeaterId = nil,

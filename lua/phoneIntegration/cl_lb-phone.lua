@@ -19,7 +19,7 @@ function initLbPhone()
         inEmergencyCall = false,
         totalCallLength = 0,
     }
-    local number911 = Config.emergencyCallCommand or "911"
+    local number911 = tostring(Config.emergencyCallCommand or "911")
     local function CanCallEmergencyNumber()
         local number = exports["lb-phone"]:GetEquippedPhoneNumber()
         local hasRequiredItem = exports["lb-phone"]:HasPhoneItem(number)
@@ -77,7 +77,7 @@ function initLbPhone()
         onCall = function(incomingCall)
             local callID = incomingCall.id
             if CallData.callID == nil then
-                incomingCall.setName('Emergency Services')
+                incomingCall.setName(number911)
                 exports['sonoranradio']:setEmergencyCall(true, GetFormattedCallerName())
                 CallData = {
                     status = "callStarted",
