@@ -10,6 +10,7 @@ lua54 'yes'
 
 server_script 'config.lua'
 server_script 'lua/utils.js'
+server_script 'lua/sonoran/init.lua'
 
 shared_script 'lua/**/sh_*.lua'
 server_script 'lua/**/sv_*.lua'
@@ -27,5 +28,5 @@ files {
 ui_page 'dist/ui.html'
 
 -- build webpack page automatically when resource is started for the first time
-dependencies {'Sonoran.Lua', 'yarn', 'webpack'}
+dependencies {'yarn', 'webpack'}
 webpack_config 'webpack.config.js'

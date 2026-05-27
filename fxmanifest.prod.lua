@@ -6,12 +6,11 @@ author 'Sonoran Software Systems LLC'
 description 'Sonoran Radio FiveM Integration'
 version '$RESOURCE_VERSION'
 
-dependency 'Sonoran.Lua'
-
 server_script 'config.lua'
 server_script 'lua/utils.js'
 server_script 'lua/update/unzip.js'
 server_script 'lua/update/updater.lua'
+server_script 'lua/sonoran/init.lua'
 
 shared_script 'lua/**/sh_*.lua'
 server_script 'lua/**/sv_*.lua'
