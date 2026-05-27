@@ -622,27 +622,26 @@ AddEventHandler('playerDropped', function()
 end)
 
 local function fetchCommunityChannels(cb)
-	if not Config or not Config.apiUrl or not Config.apiKey or not Config.comId then
-		errorLog('API request failed: API key, community ID, or apiUrl is not set.')
+	if not Config or not Config.apiKey or not Config.comId then
+		errorLog('API request failed: API key or community ID is not set.')
 		if cb then
 			cb(-1, nil, nil)
 		end
 		return
 	end
 
-	local url = Config.apiUrl .. 'api/radio/get-community-channels/' .. tostring(Config.comId) .. '/' .. tostring(Config.apiKey)
-	PerformHttpRequest(url, function(statusCode, data, headers)
-		local payload = nil
-		if statusCode == 200 and data then
-			local ok, parsed = pcall(json.decode, data)
-			if ok and type(parsed) == 'table' then
-				payload = parsed
-			end
-		end
+	local result = getSonoranRadioClient():getCommunityChannelsV2(Config.comId)
+	if result.success then
+		local raw = type(result.data) == 'string' and result.data or json.encode(result.data)
 		if cb then
-			cb(statusCode, payload, data, headers)
+			cb(200, result.data, raw)
 		end
-	end, 'GET', '', {['Content-Type'] = 'application/json'})
+	else
+		local reason = formatSonoranApiReason(result.reason)
+		if cb then
+			cb(-1, nil, reason)
+		end
+	end
 end
 
 local function getCommunityChannelsCached(cb)
@@ -972,22 +971,17 @@ local function initConfigServerId()
 			end
 			return val
 		end
-		local function persistRoomId(val)
-			local persistedRoomId = normalizeRoomId(val)
-			if persistedRoomId == nil then
-				return nil
-			end
-
-			Config.serverId = persistedRoomId
-			SetResourceKvpInt('standalone_serverId', persistedRoomId)
-			SetConvar(serverIdConvar, tostring(persistedRoomId))
-			return persistedRoomId
-		end
 		local roomId =
 			normalizeRoomId(GetConvarInt(serverIdConvar)) or
 			normalizeRoomId(Config.serverId) or
 			normalizeRoomId(GetResourceKvpInt('standalone_serverId'))
-		persistRoomId(roomId)
+
+		local function useRoomId(val)
+			Config.serverId = val
+			SetResourceKvpInt('standalone_serverId', val) -- save the roomId to the resource KVP as a backup
+			setSonoranRadioClientRoomId(val) -- set the API client's room id
+			Config.init = true
+		end
 
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
@@ -1021,7 +1015,7 @@ local function initConfigServerId()
 					if attempt == 1 and roomId ~= nil then
 						warnLog('Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
 						Config.init = true
-						persistRoomId(roomId)
+						useRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
 					else
@@ -1057,8 +1051,7 @@ local function initConfigServerId()
 					end
 				end
 
-				Config.init = true
-				persistRoomId(resolvedRoomId)
+				useRoomId(resolvedRoomId)
 				if not resolved then
 					resolved = true
 					d:resolve(Config.serverId)
@@ -1318,6 +1311,10 @@ AddEventHandler('onResourceStart', function(resourceName)
 		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end
 
+	-- wait for config to be initialized (for roomId to be present)
+	-- this needs to be done before SET-SERVER-SPEAKERS
+	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+
 	-- set the speakers via the API
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
@@ -1336,7 +1333,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end)
 
-	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	-- provide client config/environment to all players in server
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
 
 	-- Push Event Handling for Geo Zones
