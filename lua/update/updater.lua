@@ -15,15 +15,17 @@ local function doUnzip(path)
     local unzipPath = GetResourcePath(GetCurrentResourceName()).."/../"
     print("Unzipping to " .. unzipPath .. ". Waiting for unzip to complete.")
     exports[GetCurrentResourceName()]:UnzipFile(path, unzipPath)
-    if not Config.allowUpdateWithPlayers and GetNumPlayerIndices() > 0 then
-        pendingRestart = true
-        print("Delaying auto-update until server is empty.")
-        return
-    end
 end
 
 AddEventHandler("UnzipFileComplete", function(success, err)
 	if success then
+        -- Defer only the restart; the update has already been downloaded and unzipped.
+        -- The updater thread below will pick this up once the server is empty.
+        if not Config.allowUpdateWithPlayers and GetNumPlayerIndices() > 0 then
+            pendingRestart = true
+            print("Delaying auto-update until server is empty.")
+            return
+        end
 		print("Update Decompressed Successfully...")
 		print("Auto-restarting...")
 		signalUpdateHelper()
@@ -115,8 +117,9 @@ end
 CreateThread(function()
     while true do
         if pendingRestart then
+            -- A completed update is waiting for a resource restart.
             if GetNumPlayerIndices() > 0 then
-                print("An update has been applied to SonoranCAD but requires a resource restart. Restart delayed until server is empty.")
+                print("An update has been applied to Sonoran Radio but requires a resource restart. Restart delayed until server is empty.")
             else
                 print("Server is empty, restarting resources...")
                 signalUpdateHelper()
