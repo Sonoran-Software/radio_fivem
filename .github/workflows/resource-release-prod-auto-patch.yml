@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - standalone
+  workflow_dispatch:
 
 permissions:
   contents: write

@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: sync-sonoran-lua-standalone
@@ -38,9 +39,11 @@ jobs:
           cp -R _sonoran_lua/lua/sonoran lua/sonoran
 
       - name: Commit synced files
+        id: commit
         run: |
           if [ -z "$(git status --porcelain -- lua/sonoran)" ]; then
             echo "No Sonoran.lua changes to sync."
+            echo "synced=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -49,3 +52,11 @@ jobs:
           git add lua/sonoran
           git commit -m "chore: sync Sonoran.lua"
           git push origin HEAD:standalone
+          echo "synced=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger production release
+        if: steps.commit.outputs.synced == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run resource-release-prod-auto-patch.yml --ref standalone
