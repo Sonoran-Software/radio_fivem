@@ -59,7 +59,7 @@ function getSonoranRadioClient()
 		clientConfig.roomId = Config.serverId
 	end
 
-	sonoranRadioClient = exports['Sonoran.Lua']:createClient(clientConfig)
+	sonoranRadioClient = create_client(clientConfig, create_fivem_adapter())
 	sonoranRadioClientKey = key
 	return sonoranRadioClient
 end
