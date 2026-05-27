@@ -1082,7 +1082,7 @@ local function createClientConfig()
 		-- create the client config
 		local clConfig = {}
 		for k, v in pairs(Config) do
-			if k ~= 'apiKey' and k ~= 'pushUrl' and k ~= 'init' then -- filter out sensitive data
+			if k ~= 'apiKey' and k ~= 'pushUrl' and k ~= 'init' and type(v) ~= 'function' then -- filter out sensitive/server-only data
 				clConfig[k] = v
 			end
 		end
