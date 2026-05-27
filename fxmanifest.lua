@@ -28,5 +28,5 @@ files {
 ui_page 'dist/ui.html'
 
 -- build webpack page automatically when resource is started for the first time
-dependencies {'Sonoran.Lua', 'yarn', 'webpack'}
+dependencies {'yarn', 'webpack'}
 webpack_config 'webpack.config.js'
