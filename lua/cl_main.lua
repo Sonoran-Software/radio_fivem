@@ -654,6 +654,10 @@ function initClient()
 			end
 			setGeoAutoSwitch(not autoGeoSwitchEnabled, true)
 		elseif action == 'tablet' then
+			if not tabletHasPermission() then
+				SendNotification('Tablet/Dispatch: ~r~No Permission~r~')
+				return
+			end
 			setDispatchVisible(true)
 		else
 			radioToggle()
@@ -665,6 +669,10 @@ function initClient()
 	end)
 
 	RegisterCommand('showdispatch', function()
+		if not tabletHasPermission() then
+			SendNotification('Tablet/Dispatch: ~r~No Permission~r~')
+			return
+		end
 		if dispatchOpen then
 			SetNuiFocus(true, true)
 			return
@@ -1085,6 +1093,17 @@ function initClient()
 	RegisterKeyMapping(geoCommand, 'Toggle Geo Channels Auto-Switch', 'keyboard', getConfigKeybind('toggleGeoSwitch'))
 	TriggerEvent('chat:addSuggestion', '/' .. geoCommand, 'Toggle geo channel auto-switch', {})
 
+	function tabletHasPermission()
+		if not Config.acePermsForRadioTablet then
+			return true
+		end
+		if IsPlayerAceAllowed then
+			local playerId = PlayerId()
+			local serverId = GetPlayerServerId(playerId)
+			return IsPlayerAceAllowed(playerId, 'sonoranradio.tablet') or IsPlayerAceAllowed(serverId, 'sonoranradio.tablet')
+		end
+		return false
+	end
 
 	local function emergencyCallRedialNotif()
 		local crashout = false
