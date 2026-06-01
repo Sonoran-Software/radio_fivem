@@ -23,6 +23,7 @@ Config.acePermsForScanners = false -- Restrict using the scanner to an ace permi
 Config.acePermsForRadio = false -- Restrict usage of the radio to an ace permission
 Config.acePermsForRadioGuests = false -- Restrict users joining the radio as a guest to an ace permission
 Config.acePermsForRadioUsers = false -- Restrict usage of /radiousers to an ace permission
+Config.syncPlayerNameToRadio = false -- Sync the player's in-game character name to their Sonoran Radio display name
 Config.enforceRadioItem = false
 Config.RadioItem = {		 -- Note: Changes to this item will require a server restart to take effect
 	name = 'sonoran_radio',  -- Item name in your inventory
@@ -87,6 +88,13 @@ Config.notifications = {
 -- Customize Radio Guest Display Names
 Config.getGuestDisplayName = function(source)
 	-- return ('Guest %s'):format(source)
+	return nil
+end
+
+-- Optional override for Config.syncPlayerNameToRadio. If unset, the sync uses
+-- Config.getGuestDisplayName, then common framework character names, then GetPlayerName.
+Config.getRadioDisplayName = function(source)
+	-- return ('Unit %s'):format(source)
 	return nil
 end
 

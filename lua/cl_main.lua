@@ -1370,6 +1370,7 @@ function initClient()
 				end
 			end
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.config.myself.accId, profilesInfo, false)
+			TriggerServerEvent('SonoranRadio::SyncPlayerDisplayName', data.config.myself.accId)
 			calledSyncAcePerms = true
 		elseif data.type == 'radioNeedsAuth' then
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.accId, {}, true)
