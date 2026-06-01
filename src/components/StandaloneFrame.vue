@@ -35,9 +35,13 @@ function push(key, el, src) {
     const frameEl = frameData.el;
     if (frameEl.src !== src)
         frameEl.src = src;
-    frameEl.style.pointerEvents = 'auto';
     // the caller wants the frame to exist, but not be visible
-    if (!el) return void (frameEl.style.opacity = '0%');
+    if (!el) {
+        frameEl.style.opacity = '0%';
+        frameEl.style.pointerEvents = 'none';
+        return;
+    }
+    frameEl.style.pointerEvents = 'auto';
 
     // scale iframe based on guide font size
     const elStyles = window.getComputedStyle(el);
@@ -94,6 +98,7 @@ export default {
         url: { type: String, default: 'https://sonoranradio.com' },
         feature: { type: String, default: 'radio' },
         query: { type: Object, default: () => ({}) },
+        visible: { type: Boolean, default: false },
         iframePersistent: { type: Boolean, default: false },
     },
     data: () => ({
@@ -112,7 +117,7 @@ export default {
     },
     computed: {
         shouldBeVisible() {
-            return this.feature === 'radio';
+            return this.feature === 'radio' || this.visible;
         },
         frameSrc() {
             const pages = {
@@ -134,6 +139,9 @@ export default {
     },
     watch: {
         frameSrc() {
+            this.flush();
+        },
+        shouldBeVisible() {
             this.flush();
         },
     },

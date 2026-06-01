@@ -40,9 +40,12 @@ function showNotification(notification, urgent)
 end
 
 function notifyClient(notification, urgent, colorCode)
+	local notifications = (Config and Config.notifications) or {}
+	local configuredType = notifications.type or 'native'
+
 	-- Automatically select notification method if set to auto
 	local AutoSelectedNotifyMethod = "native"
-	if Config.notifications.type == "auto" then
+	if configuredType == "auto" then
 		if GetResourceState("lation_ui") == "started" then
 			AutoSelectedNotifyMethod = "lation_ui"
 		elseif GetResourceState("ox_lib") == "started" then
@@ -62,8 +65,7 @@ function notifyClient(notification, urgent, colorCode)
 		end
 		return cfgValue
 	end
-	local notifications = Config and Config['notifications'] or {}
-	local notificationType = ResolveNotifyMethod(Config.notifications.type)
+	local notificationType = ResolveNotifyMethod(configuredType)
 	local title = notifications['notificationTitle'] or 'SonoranRadio'
 	local prefix = ('[%s] '):format(title)
 	local formattedNotification = notification
