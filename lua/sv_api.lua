@@ -97,9 +97,9 @@ local function finalizeApiRequest(type, result, cb)
 	end
 
 	local reason = formatSonoranApiReason(result and result.reason)
-	warnLog(('Radio API request failed (%s): %s'):format(tostring(type), tostring(reason)))
+	warnLog('WRN_API_REQUEST_FAILED', ('Radio API request failed (%s): %s'):format(tostring(type), tostring(reason)))
 	if reason == 'INVALID COMMUNITY ID' or reason == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(tostring(reason), 'IS NOT ENABLED FOR THIS COMMUNITY') or reason == 'INVALID API KEY' then
-		errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason))
+		errorLog('ERR_API_FATAL_DISABLED', 'Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason))
 		Config.critError = true
 		sendCritError()
 	end
@@ -127,15 +127,15 @@ end
 
 function performApiRequest(postData, type, cb)
 	if Config.apiKey == nil or Config.comId == nil then
-		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
+		errorLog('ERR_API_CREDENTIALS_MISSING', 'API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
 		return
 	end
 	if ApiEndpoints[type] == nil then
-		return warnLog(('API request failed: endpoint %s is not registered. Use the registerApiType function to register this endpoint with the appropriate type.'):format(type))
+		return warnLog('WRN_API_ENDPOINT_UNREGISTERED', ('API request failed: endpoint %s is not registered. Use the registerApiType function to register this endpoint with the appropriate type.'):format(type))
 	end
 	assert(type ~= nil, 'No type specified, invalid request.')
 	if Config.critError then
-		errorLog('API request failed: critical error encountered, API version too low, aborting request.')
+		errorLog('ERR_API_CRITICAL_ABORTED', 'API request failed: critical error encountered, API version too low, aborting request.')
 		return
 	end
 

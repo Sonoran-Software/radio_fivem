@@ -139,7 +139,7 @@ local function checkJammerPermissions(src)
         end
         return false
     else
-        errorLog('SonoranRadio: Invalid permission mode for radio jammers - ' .. tostring(permMode))
+        errorLog('ERR_JAMMERS_PERMISSION_MODE_INVALID', 'SonoranRadio: Invalid permission mode for radio jammers - ' .. tostring(permMode))
         return false
     end
 end

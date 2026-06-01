@@ -215,7 +215,7 @@ local function sendZonesToApi(reason)
 		['degradeZones'] = tunnels
 	}, 'SET-ZONES', function(data, success)
 		if not success then
-			warnLog('Failed to set geo and degrade zones for radio service.')
+			warnLog('WRN_GEO_ZONE_SYNC_FAILED')
 		elseif reason then
 			debugLog(('Uploaded geo and degrade zones (%s).'):format(reason))
 		end
@@ -349,7 +349,7 @@ else
 			QBCore = exports['qb-core']:GetCoreObject()
 
 			if Config.RadioItem == nil then
-				errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				errorLog('ERR_RADIO_ITEM_CONFIG_MISSING', 'Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 				Config.RadioItem = {
 					name = 'sonoran_radio',
 					label = 'Sonoran Radio',
@@ -385,7 +385,7 @@ else
 			end)
 
 			if Config.ScannerItem == nil then
-				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				errorLog('ERR_SCANNER_ITEM_CONFIG_MISSING', 'Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 				Config.ScannerItem = {
 					name = 'sonoran_radio_scanner', -- Item ID
 					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
@@ -465,7 +465,7 @@ else
 			end
 		elseif frameworkEnum == 2 then
 			if Config.RadioItem == nil then
-				errorLog('Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				errorLog('ERR_RADIO_ITEM_CONFIG_MISSING', 'Radio item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 				Config.RadioItem = {
 					name = 'sonoran_radio',
 					label = 'Sonoran Radio',
@@ -474,7 +474,7 @@ else
 				}
 			end
 			if Config.ScannerItem == nil then
-				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				errorLog('ERR_SCANNER_ITEM_CONFIG_MISSING', 'Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
 				Config.ScannerItem = {
 					name = 'sonoran_radio_scanner', -- Item ID
 					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
@@ -483,11 +483,11 @@ else
 				}
 			end
 			if not exports.ox_inventory:Items(Config.RadioItem.name) then
-				errorLog('Ox_Inventory detected on Qbox, ' .. Config.RadioItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
+				errorLog('ERR_QBOX_OX_RADIO_ITEM_MISSING', 'Ox_Inventory detected on Qbox, ' .. Config.RadioItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
 				return
 			end
 			if not exports.ox_inventory:Items(Config.ScannerItem.name) then
-				errorLog('Ox_Inventory detected on Qbox, ' .. Config.ScannerItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
+				errorLog('ERR_QBOX_OX_SCANNER_ITEM_MISSING', 'Ox_Inventory detected on Qbox, ' .. Config.ScannerItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
 				return
 			end
 			exports.qbx_core:CreateUseableItem(Config.RadioItem.name, function(source, item)
@@ -543,7 +543,7 @@ else
 				local chunk = LoadResourceFile('ox_lib', 'init.lua')
 
 				if not chunk then
-					errorLog('failed to load resource file @ox_lib/init.lua', 0)
+					errorLog('ERR_OX_LIB_INIT_LOAD_FAILED')
 				end
 
 				load(chunk, '@@ox_lib/init.lua', 't')()
@@ -641,7 +641,7 @@ end)
 
 local function fetchCommunityChannels(cb)
 	if not Config or not Config.apiKey or not Config.comId then
-		errorLog('API request failed: API key or community ID is not set.')
+		errorLog('ERR_API_CREDENTIALS_MISSING', 'API request failed: API key or community ID is not set.')
 		if cb then
 			cb(-1, nil, nil)
 		end
@@ -693,7 +693,7 @@ RegisterNetEvent('SonoranRadio::RequestCommunityChannels', function()
 		if statusCode == 200 and payload then
 			TriggerClientEvent('SonoranRadio::CommunityChannels', src, payload)
 		else
-			warnLog(('Failed to fetch community channels for %s (status %s).'):format(tostring(src), tostring(statusCode)))
+			warnLog('WRN_COMMUNITY_CHANNELS_FETCH_FAILED', ('Failed to fetch community channels for %s (status %s).'):format(tostring(src), tostring(statusCode)))
 		end
 	end)
 end)
@@ -718,7 +718,7 @@ SonoranRadio Help
 	elseif args[1] == 'getchannels' then
 		getCommunityChannelsCached(function(statusCode, payload, raw)
 			if statusCode ~= 200 or not payload then
-				errorLog(('Get community channels failed (status %s).'):format(tostring(statusCode)))
+				errorLog('ERR_COMMUNITY_CHANNELS_FETCH_FAILED', ('Get community channels failed (status %s).'):format(tostring(statusCode)))
 				if raw then
 					print(raw)
 				end
@@ -875,7 +875,7 @@ end)
 RegisterNetEvent('SonoranRadio::SaveSkinConfig', function(configPath, config)
 	local src = source
 	if not Config.debug then
-		warnLog(('Player id:%s is attempting to save a radio skin config, even though debug is not enabled (possible security issue)'):format(source))
+		warnLog('WRN_SKIN_SAVE_DEBUG_BLOCKED', ('Player id:%s is attempting to save a radio skin config, even though debug is not enabled (possible security issue)'):format(source))
 		return
 	end
 
@@ -884,7 +884,7 @@ RegisterNetEvent('SonoranRadio::SaveSkinConfig', function(configPath, config)
 		infoLog(('Successfully saved %s'):format(configPath))
 		TriggerClientEvent('SonoranRadio::DisplayInfo', src, 'Successfully saved skin.json')
 	else
-		errorLog(('Could not save %s, skin settings will not be saved'):format(configPath))
+		errorLog('ERR_SKIN_SAVE_FAILED', ('Could not save %s, skin settings will not be saved'):format(configPath))
 		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Could not save skin.json (see server log for more info)')
 	end
 end)
@@ -943,7 +943,7 @@ function LoadJsonConfig(file)
 		if success then
 			infoLog(('Successfully renamed %s to %s'):format(defaultFile, file))
 		else
-			warnLog(('Failed to rename %s to %s'):format(defaultFile, file))
+			warnLog('WRN_CONFIG_RENAME_FAILED', ('Failed to rename %s to %s'):format(defaultFile, file))
 			file = defaultFile -- when loading below, use the default file
 		end
 	end
@@ -959,12 +959,12 @@ function SaveJsonConfig(file, obj)
 		-- try to write to default file with warning
 		local defaultFile = defaultJsonConfigFiles[file]
 		if not defaultFile then error('no default json config found for '..file) end
-		warnLog(('Could not save updated %s, trying to write changes to %s (NOTE: If auto-update is enabled, this file will be replaced during an update)'):format(file, defaultFile))
+		warnLog('WRN_CONFIG_SAVE_FALLBACK', ('Could not save updated %s, trying to write changes to %s (NOTE: If auto-update is enabled, this file will be replaced during an update)'):format(file, defaultFile))
 		success = SaveResourceFile(resourceName, defaultFile, contents, -1)
 	end
 	if not success then
 		-- could not write to default file, write error
-		errorLog(('Could not save updated %s. Changes are not saved'):format(defaultJsonConfigFiles[file]))
+		errorLog('ERR_CONFIG_SAVE_FAILED', ('Could not save updated %s. Changes are not saved'):format(defaultJsonConfigFiles[file]))
 	end
 	return success
 end
@@ -1018,7 +1018,7 @@ local function initConfigServerId()
 			}, 'SET-SERVER-IP', function(data, success)
 				if not success then
 					if attempt >= maxAttempts then
-						errorLog(('Failed to set server IP for radio service after %d attempts. Please check the comId and apiKey in your config file.'):format(maxAttempts))
+						errorLog('ERR_SERVER_IP_SET_FAILED', ('Failed to set server IP for radio service after %d attempts. Please check the comId and apiKey in your config file.'):format(maxAttempts))
 						if not resolved then
 							d:reject('failed to update server IP')
 						end
@@ -1031,13 +1031,13 @@ local function initConfigServerId()
 					-- if we already have a roomId from a previous successful call, short-circuit to success
 					-- but keep retrying in the background so the server IP eventually gets updated
 					if attempt == 1 and roomId ~= nil then
-						warnLog('Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
+						warnLog('WRN_SERVER_IP_USING_EXISTING_ROOM', 'Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
 						Config.init = true
 						useRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
 					else
-						warnLog(('Failed to set server IP for radio service (attempt %d/%d). Retrying...'):format(attempt, maxAttempts))
+						warnLog('WRN_SERVER_IP_RETRYING', ('Failed to set server IP for radio service (attempt %d/%d). Retrying...'):format(attempt, maxAttempts))
 					end
 					return
 				end
@@ -1045,7 +1045,7 @@ local function initConfigServerId()
 				data = json.decode(data) or {}
 				local resolvedRoomId = normalizeRoomId(data.roomId)
 				if resolvedRoomId == nil then
-					errorLog('Failed to set server IP for radio service: invalid roomId returned.')
+					errorLog('ERR_SERVER_IP_INVALID_ROOM', 'Failed to set server IP for radio service: invalid roomId returned.')
 					if not resolved then
 						d:reject('invalid roomId returned')
 					end
@@ -1065,7 +1065,7 @@ local function initConfigServerId()
 					local configWriteSuccess = SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
 					if not configWriteSuccess then
 						-- couldn't write the file, but this is recoverable (kvp is used as backup)
-						warnLog('Failed to write "Config.serverId = '..resolvedRoomId..'" to config.lua. Is the file read-only?')
+						warnLog('WRN_SERVER_ID_CONFIG_WRITE_FAILED', 'Failed to write "Config.serverId = '..resolvedRoomId..'" to config.lua. Is the file read-only?')
 					end
 				end
 
@@ -1108,7 +1108,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		return
 	end
 	if critError or not Config or not Config.apiKey or not Config.comId then
-		errorLog('API Key or Community ID not set. Please check your configuration.')
+		errorLog('ERR_API_CREDENTIALS_MISSING', 'API Key or Community ID not set. Please check your configuration.')
 		critError = true
 		return
 	end
@@ -1116,7 +1116,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 	local cApiKey = GetConvar('sonoranradio_apiKey', 'NONE')
 
 	if cApiKey == 'NONE' then
-		warnLog('apiKey convar value NOT initialized - has sonoranradio.cfg been executed?')
+		warnLog('WRN_APIKEY_CONVAR_UNINITIALIZED')
 	elseif cApiKey == 'protection_initialized' then
 		SetConvar('sonoranradio_apiKey', tostring(Config.apiKey))
 	end
@@ -1125,7 +1125,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	Config.init = false
 	if Config.frames == nil or not Config.frames then
-		errorLog('Config.frames is not set. Please check your configuration.')
+		errorLog('ERR_FRAMES_CONFIG_MISSING', 'Config.frames is not set. Please check your configuration.')
 		critError = true
 		return
 	end
@@ -1319,14 +1319,14 @@ AddEventHandler('onResourceStart', function(resourceName)
 	chatterConfig = chatter
 	-- Save updated earpieces.json if changes were made
 	if updated then
-		warnLog('Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
+		warnLog('WRN_CHATTER_EXCLUSIONS_OVERWRITE_DEPRECATED', 'Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
 		SaveJsonConfig('earpieces.json', luaConfig)
 		chatterConfig = luaConfig
 	end
 
 	DebugPrint('Loaded chatterConfig ' .. json.encode(chatterConfig))
 	if Config.chatterExclusion then
-		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
+		warnLog('WRN_CHATTER_EXCLUSIONS_DEPRECATED', 'Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end
 
 	-- wait for config to be initialized (for roomId to be present)
@@ -1347,7 +1347,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
-			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+			errorLog('ERR_SERVER_SPEAKERS_SET_FAILED', 'Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
 
@@ -1440,7 +1440,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
-			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+			errorLog('ERR_SERVER_SPEAKERS_SET_FAILED', 'Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
 	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
@@ -1579,17 +1579,17 @@ RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
 	sendZonesToApi('geo_delete')
 end)
 
-AddEventHandler('SonoranRadio::core:writeLog', function(level, message)
+AddEventHandler('SonoranRadio::core:writeLog', function(level, codeOrMessage, message)
 	if level == 'debug' then
-		debugLog(message)
+		debugLog(message or codeOrMessage)
 	elseif level == 'info' then
-		infoLog(message)
+		infoLog(message or codeOrMessage)
 	elseif level == 'error' then
-		errorLog(message)
+		sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
 	elseif level == 'warn' then
-		warnLog(message)
+		sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
 	else
-		debugLog(message)
+		debugLog(message or codeOrMessage)
 	end
 end)
 
@@ -1629,26 +1629,16 @@ function debugLog(message)
 	sendConsole('DEBUG', '^7', message)
 end
 
-local ErrorCodes = {
-	['INVALID_COMMUNITY_ID'] = 'You have set an invalid community ID, please check your Config and SonoranCMS integration'
-}
-
 function logError(err, msg)
-	local o = ''
-	if msg == nil then
-		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, ErrorCodes[err])
-	else
-		o = ('ERR %s: %s - See https://sonoran.software/errorcodes for more information.'):format(err, msg)
-	end
-	sendConsole('ERROR', '^1', o)
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(err, msg))
 end
 
-function errorLog(message)
-	sendConsole('ERROR', '^1', message)
+function errorLog(codeOrMessage, message)
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
 end
 
-function warnLog(message)
-	sendConsole('WARNING', '^3', message)
+function warnLog(codeOrMessage, message)
+	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
 end
 
 function infoLog(message)
@@ -1667,7 +1657,7 @@ function serverNameChange(data)
 				debugLog('Failed to set display name, user not found.')
 				return
 			else
-				errorLog('Failed to set server name for radio service. Please check your configuration.')
+				errorLog('ERR_SERVER_NAME_SET_FAILED', 'Failed to set server name for radio service. Please check your configuration.')
 			end
 		end
 	end)
