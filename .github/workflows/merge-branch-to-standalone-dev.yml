@@ -1,0 +1,199 @@
+name: Merge Branch to Standalone Dev
+run-name: Merge ${{ github.ref_name }} to standalone_dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_name:
+        description: "Optional feature name for radio-panel-frontend staging changelog"
+        required: false
+        type: string
+        default: ""
+      description:
+        description: "Optional short description for the changelog entry"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  merge:
+    if: github.ref_name != 'standalone_dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      TARGET_BRANCH: standalone_dev
+      CHANGELOG_REPO: Sonoran-Software/radio-panel-frontend
+      CHANGELOG_BRANCH: staging
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Configure Git user
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge selected branch into standalone_dev
+        shell: bash
+        env:
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          FEATURE_NAME: ${{ inputs.feature_name }}
+          FEATURE_DESCRIPTION: ${{ inputs.description }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$SOURCE_BRANCH" "$TARGET_BRANCH"
+          git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+
+          if git merge-base --is-ancestor "origin/$SOURCE_BRANCH" HEAD; then
+            echo "standalone_dev already contains $SOURCE_BRANCH."
+            exit 0
+          fi
+
+          merge_subject="${FEATURE_NAME:-$SOURCE_BRANCH}"
+          merge_description="${FEATURE_DESCRIPTION:-Merge $SOURCE_BRANCH into $TARGET_BRANCH}"
+          git merge --no-ff "origin/$SOURCE_BRANCH" -m "Merge ${merge_subject}: ${merge_description}"
+
+      - name: Validate changelog request
+        id: changelog_request
+        shell: bash
+        env:
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          FEATURE_NAME: ${{ inputs.feature_name }}
+          FRONTEND_PAT: ${{ secrets.RADIO_PANEL_FRONTEND_PAT }}
+        run: |
+          set -euo pipefail
+
+          feature_name="$(printf '%s' "${FEATURE_NAME:-}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          branch_prefix="${SOURCE_BRANCH%%/*}"
+
+          echo "feature_name=$feature_name" >> "$GITHUB_OUTPUT"
+          echo "branch_prefix=$branch_prefix" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$feature_name" ]; then
+            echo "should_update=false" >> "$GITHUB_OUTPUT"
+            echo "No feature name provided; skipping radio-panel-frontend changelog update."
+            exit 0
+          fi
+
+          case "$branch_prefix" in
+            feat|fix|tweak) ;;
+            *)
+              echo "Feature name was provided, but branch '$SOURCE_BRANCH' does not use feat/, fix/, or tweak/." >&2
+              exit 1
+              ;;
+          esac
+
+          if [ -z "${FRONTEND_PAT:-}" ]; then
+            echo "RADIO_PANEL_FRONTEND_PAT is required when feature_name is provided." >&2
+            exit 1
+          fi
+
+          echo "should_update=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout radio-panel-frontend staging
+        if: steps.changelog_request.outputs.should_update == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CHANGELOG_REPO }}
+          ref: ${{ env.CHANGELOG_BRANCH }}
+          token: ${{ secrets.RADIO_PANEL_FRONTEND_PAT }}
+          path: radio-panel-frontend
+          fetch-depth: 0
+
+      - name: Configure Git user for radio-panel-frontend
+        if: steps.changelog_request.outputs.should_update == 'true'
+        shell: bash
+        working-directory: radio-panel-frontend
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update radio-panel-frontend changelog text files
+        if: steps.changelog_request.outputs.should_update == 'true'
+        shell: bash
+        working-directory: radio-panel-frontend
+        env:
+          BRANCH_PREFIX: ${{ steps.changelog_request.outputs.branch_prefix }}
+          FEATURE_NAME: ${{ steps.changelog_request.outputs.feature_name }}
+          FEATURE_DESCRIPTION: ${{ inputs.description }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const labelMap = {
+            feat: 'release_notes_new.txt',
+            tweak: 'release_notes_changed.txt',
+            fix: 'release_notes_fixed.txt'
+          };
+
+          const fileName = labelMap[process.env.BRANCH_PREFIX];
+          if (!fileName) {
+            throw new Error(`Unsupported changelog branch prefix: ${process.env.BRANCH_PREFIX}`);
+          }
+
+          const featureName = (process.env.FEATURE_NAME || '').trim();
+          const description = (process.env.FEATURE_DESCRIPTION || '').replace(/\s+/g, ' ').trim();
+          if (!featureName) {
+            console.log('Feature name not provided; skipping changelog update.');
+            process.exit(0);
+          }
+
+          const entry = [featureName, description ? `- ${description}` : ''].filter(Boolean).join('\n');
+          const existing = fs.existsSync(fileName)
+            ? fs.readFileSync(fileName, 'utf8').replace(/\r\n/g, '\n').trimEnd()
+            : '';
+
+          const updated = existing ? `${existing}\n\n${entry}\n` : `${entry}\n`;
+          fs.writeFileSync(fileName, updated);
+          NODE
+
+      - name: Commit radio-panel-frontend changelog update
+        if: steps.changelog_request.outputs.should_update == 'true'
+        shell: bash
+        working-directory: radio-panel-frontend
+        env:
+          FEATURE_NAME: ${{ steps.changelog_request.outputs.feature_name }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- release_notes_new.txt release_notes_changed.txt release_notes_fixed.txt; then
+            echo "No changelog changes to commit."
+            exit 0
+          fi
+
+          git add release_notes_new.txt release_notes_changed.txt release_notes_fixed.txt
+          git commit -m "chore: update ${FEATURE_NAME} from radio_fivem"
+          git push origin "$CHANGELOG_BRANCH"
+
+      - name: Push standalone_dev
+        shell: bash
+        run: git push origin "$TARGET_BRANCH"
+
+      - name: Show summary
+        shell: bash
+        env:
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          FEATURE_NAME: ${{ steps.changelog_request.outputs.feature_name }}
+          FEATURE_DESCRIPTION: ${{ inputs.description }}
+          SHOULD_UPDATE: ${{ steps.changelog_request.outputs.should_update }}
+        run: |
+          {
+            echo "## Merge complete"
+            echo ""
+            echo "- Source branch: \`${SOURCE_BRANCH}\`"
+            echo "- Target branch: \`${TARGET_BRANCH}\`"
+            echo "- radio-panel-frontend changelog updated: \`${SHOULD_UPDATE}\`"
+            if [ -n "${FEATURE_NAME:-}" ]; then
+              echo "- Feature: \`${FEATURE_NAME}\`"
+            fi
+            if [ -n "${FEATURE_DESCRIPTION:-}" ]; then
+              echo "- Description: ${FEATURE_DESCRIPTION}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
