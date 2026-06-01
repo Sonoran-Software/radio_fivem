@@ -207,14 +207,6 @@ Citizen.CreateThread(function()
 	end
 
 	local QBCore
-	if Config.enforceRadioItem then
-		if frameworkEnum == 1 then
-			repeat
-				Citizen.Wait(1000)
-				QBCore = exports['qb-core']:GetCoreObject({'Functions'})
-			until QBCore ~= nil
-		end
-	end
 
 	local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 	while Config.enforceRadioItem do
@@ -222,7 +214,10 @@ Citizen.CreateThread(function()
 
         -- Retrieve players based on the active framework
         if frameworkEnum == 1 then
-            QBPlayers = QBCore.Functions.GetQBPlayers()
+			QBCore = QBCore or exports['qb-core']:GetCoreObject({'Functions'})
+			if QBCore and QBCore.Functions then
+				QBPlayers = QBCore.Functions.GetQBPlayers()
+			end
         elseif frameworkEnum == 2 then
             QBPlayers = exports.qbx_core:GetQBPlayers()
         end
@@ -305,8 +300,13 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-	Wait(5000)
-	if inventoryEnum == 2 then
+	local oxScannerHookRegistered = false
+	local function registerOxScannerHook()
+		if oxScannerHookRegistered or inventoryEnum ~= 2 then
+			return
+		end
+
+		oxScannerHookRegistered = true
 		local hookId = exports.ox_inventory:registerHook('swapItems', function(payload)
 			local scannerItemName = Config.ScannerItem and Config.ScannerItem.name or 'sonoran_radio_scanner'
 			if payload.action == 'move' and payload.fromType == 'player' and payload.toType == 'drop' then
@@ -321,5 +321,13 @@ Citizen.CreateThread(function()
 		end, {
 			print = false,
 		})
+	end
+
+	if Config.enforceRadioItem then
+		Citizen.CreateThread(function()
+			if waitForFrameworkInventory() then
+				registerOxScannerHook()
+			end
+		end)
 	end
 end)

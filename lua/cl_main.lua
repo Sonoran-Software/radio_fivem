@@ -8,6 +8,7 @@ local emergencyCallMicWarningState = {
 
 local thisUnit = {}
 local unitStatus = nil
+local clientInitialized = false
 
 isTalking = false
 isEmergCallActive = false
@@ -160,9 +161,12 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	if Config.heavySignalDegradeInWater == nil then
+		Config.heavySignalDegradeInWater = true
+	end
 	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
-	getFramework()
-	getInventory()
+	getFramework(true)
+	getInventory(true)
 	initCell()
 	initChatter()
 	initMiniRadio()
@@ -256,6 +260,12 @@ RegisterNetEvent('SonoranRadio::GeoPerms', function(payload)
 end)
 
 function initClient()
+	if clientInitialized then
+		DebugPrint('[Init] initClient already ran, skipping duplicate registration')
+		return
+	end
+	clientInitialized = true
+
 	local comId = Config.comId or Config.communityId or Config.standaloneId
 	TriggerEvent('SonoranRadio::ClientReady')
 	RegisterNetEvent('SonoranCAD::sonrad:GetUnitInfo:Return')
@@ -342,19 +352,27 @@ function initClient()
 		Radio.TalkAnim = true
 	end
 
-	local QBCore = nil
+	QBCore = QBCore or nil
 	local PlayerData = nil
+	local function getQBCoreObject()
+		if frameworkEnum == 1 and GetResourceState('qb-core') == 'started' then
+			QBCore = QBCore or exports['qb-core']:GetCoreObject()
+		end
+		return QBCore
+	end
 	if Config.enforceRadioItem then
 		if frameworkEnum == 1 then
-			QBCore = exports['qb-core']:GetCoreObject()
+			getQBCoreObject()
 		end
 	end
 
 	Citizen.CreateThread(function()
 		if Config.enforceRadioItem then
 			if frameworkEnum == 1 then
-				while QBCore.Functions.GetPlayerData() == nil do
+				local qb = getQBCoreObject()
+				while qb and qb.Functions.GetPlayerData() == nil do
 					Citizen.Wait(10)
+					qb = getQBCoreObject()
 				end
 			end
 		end
@@ -465,18 +483,23 @@ function initClient()
 		end
 		if inventoryEnum == 1 then
 			-- qb-inventory (QBCore functions)
+			local qb = getQBCoreObject()
+			if not qb or not qb.Functions then
+				return false
+			end
+
 			local hasItem = false
-			if type(QBCore.Functions.GetItemByName) == 'table' then
-				hasItem = not not QBCore.Functions.GetItemByName(itemName)
-			elseif type(QBCore.Functions.HasItem) == 'table' then
-				hasItem = not not QBCore.Functions.HasItem(itemName)
+			if type(qb.Functions.GetItemByName) == 'table' then
+				hasItem = not not qb.Functions.GetItemByName(itemName)
+			elseif type(qb.Functions.HasItem) == 'table' then
+				hasItem = not not qb.Functions.HasItem(itemName)
 			end
 
 			if not hasItem then
 				return false
 			end
 
-			local playerData = QBCore.Functions.GetPlayerData()
+			local playerData = qb.Functions.GetPlayerData()
 			return playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 
 		elseif inventoryEnum == 2 then
@@ -490,9 +513,10 @@ function initClient()
 					if frameworkEnum == 2 then
 						playerData = exports.qbx_core:GetPlayerData()
 					elseif frameworkEnum == 1 then
-						playerData = QBCore.Functions.GetPlayerData()
+						local qb = getQBCoreObject()
+						playerData = qb and qb.Functions.GetPlayerData()
 					end
-					result = not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+					result = playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 				else
 					result = false
 				end
@@ -514,6 +538,19 @@ function initClient()
 			itemName = Config.RadioItem.name
 		end
 		return playerHasItem(itemName)
+	end
+
+	local function logRadioKeybindPress(commandName, details)
+		local suffix = ''
+		if details ~= nil and details ~= '' then
+			suffix = ' | ' .. tostring(details)
+		end
+		DebugPrint(('[Keybind] Pressed %s%s'):format(commandName, suffix))
+	end
+
+	local function sendRadioFrameMessage(sourceAction, payload)
+		DebugPrint(('[Keybind] Sending to radio frame from %s: %s'):format(sourceAction, json.encode(payload)))
+		SendNUIMessage(payload)
 	end
 
 	function setRadioVisible(visible, frame)
@@ -561,6 +598,11 @@ function initClient()
 		end
 
 		radActive = not radActive
+		DebugPrint(('[Keybind] Sending to radio frame from sonradradio: %s'):format(json.encode({
+			type = 'setVisible',
+			visibility = radActive,
+			pttKey = getPttKey()
+		})))
 		setRadioVisible(radActive, frame)
 		updateNuiFocus()
 		Radio:Toggle(radActive)
@@ -693,7 +735,10 @@ function initClient()
 			radioToggle()
 		end
 	end)
-	RegisterCommand('sonradradio', function() radioToggle() end)
+	RegisterCommand('sonradradio', function()
+		logRadioKeybindPress('sonradradio')
+		radioToggle()
+	end)
 
 	RegisterCommand('showdispatch', function()
 		if dispatchOpen then
@@ -772,7 +817,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:NextPreset')
 	AddEventHandler('SonoranRadio::API:NextPreset', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradnext', {
 			type = 'pushButton',
 			button = 'next'
 		})
@@ -780,7 +825,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:PrevPreset')
 	AddEventHandler('SonoranRadio::API:PrevPreset', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradprev', {
 			type = 'pushButton',
 			button = 'prev'
 		})
@@ -788,7 +833,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:GroupNext')
 	AddEventHandler('SonoranRadio::API:GroupNext', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradgroupnext', {
 			type = 'pushButton',
 			button = 'group_next'
 		})
@@ -796,7 +841,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:GroupPrev')
 	AddEventHandler('SonoranRadio::API:GroupPrev', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradgroupprev', {
 			type = 'pushButton',
 			button = 'group_prev'
 		})
@@ -804,7 +849,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:VolumeUp')
 	AddEventHandler('SonoranRadio::API:VolumeUp', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradvolup', {
 			type = 'pushButton',
 			button = 'vol_up'
 		})
@@ -812,7 +857,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:VolumeDown')
 	AddEventHandler('SonoranRadio::API:VolumeDown', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradvoldown', {
 			type = 'pushButton',
 			button = 'vol_down'
 		})
@@ -820,7 +865,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:PowerToggle')
 	AddEventHandler('SonoranRadio::API:PowerToggle', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradpower', {
 			type = 'pushButton',
 			button = 'power'
 		})
@@ -828,7 +873,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:PanicButton')
 	AddEventHandler('SonoranRadio::API:PanicButton', function()
-		SendNUIMessage({
+		sendRadioFrameMessage('sonradpanic', {
 			type = 'pushButton',
 			button = 'panic'
 		})
@@ -836,7 +881,7 @@ function initClient()
 
 	RegisterNetEvent('SonoranRadio::API:SetPreset')
 	AddEventHandler('SonoranRadio::API:SetPreset', function(number)
-		SendNUIMessage({
+		sendRadioFrameMessage('SonoranRadio::API:SetPreset', {
 			type = 'goToPreset',
 			preset = number
 		})
@@ -844,42 +889,51 @@ function initClient()
 
 	-- Next
 	RegisterCommand('sonradnext', function()
+		logRadioKeybindPress('sonradnext')
 		TriggerEvent('SonoranRadio::API:NextPreset')
 	end)
 
 	-- Previous
 	RegisterCommand('sonradprev', function()
+		logRadioKeybindPress('sonradprev')
 		TriggerEvent('SonoranRadio::API:PrevPreset')
 	end)
 
 	RegisterCommand('sonradgroupnext', function()
+		logRadioKeybindPress('sonradgroupnext')
 		TriggerEvent('SonoranRadio::API:GroupNext')
 	end)
 
 	RegisterCommand('sonradgroupprev', function()
+		logRadioKeybindPress('sonradgroupprev')
 		TriggerEvent('SonoranRadio::API:GroupPrev')
 	end)
 
 	-- Power
 	RegisterCommand('sonradpower', function()
+		logRadioKeybindPress('sonradpower')
 		TriggerEvent('SonoranRadio::API:PowerToggle')
 	end)
 
 	-- Panic
 	RegisterCommand('sonradpanic', function()
+		logRadioKeybindPress('sonradpanic')
 		TriggerEvent('SonoranRadio::API:PanicButton')
 	end)
 
 	RegisterCommand('sonradvolup', function()
+		logRadioKeybindPress('sonradvolup')
 		TriggerEvent('SonoranRadio::API:VolumeUp')
 	end)
 
 	RegisterCommand('sonradvoldown', function()
+		logRadioKeybindPress('sonradvoldown')
 		TriggerEvent('SonoranRadio::API:VolumeDown')
 	end)
 
 	RegisterCommand('sonradtoggleai', function()
-		SendNUIMessage({
+		logRadioKeybindPress('sonradtoggleai')
+		sendRadioFrameMessage('sonradtoggleai', {
 			type = 'toggle_ai'
 		})
 	end)
@@ -898,13 +952,15 @@ function initClient()
 
 	-- add PTT for the standalone radio
 	RegisterCommand('+sonradptt', function()
-		SendNUIMessage({
+		logRadioKeybindPress('+sonradptt', 'state=true')
+		sendRadioFrameMessage('+sonradptt', {
 			type = 'ptt',
 			state = true
 		})
 	end)
 	RegisterCommand('-sonradptt', function()
-		SendNUIMessage({
+		logRadioKeybindPress('-sonradptt', 'state=false')
+		sendRadioFrameMessage('-sonradptt', {
 			type = 'ptt',
 			state = false
 		})
@@ -1438,6 +1494,20 @@ function initClient()
 
 		if data.type == 'emergencyCallMicWarning' then
 			handleEmergencyCallMicWarning(data)
+		end
+
+		if data.type == 'toggleRadio' then
+			radioToggle()
+		end
+
+		if data.type == 'toggleConnectedUsers' then
+			setActiveUsers(activeChannels)
+			openradiousers()
+			SendNUIMessage({
+				type = 'setMiniRadioUIPosition',
+				data = json.decode(GetResourceKvpString('miniradioui_pos_dic') or '{}'),
+				miniradio = true
+			})
 		end
 
 		cb('OK')

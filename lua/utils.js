@@ -1,53 +1,104 @@
 (() => {
+    const https = require("https");
+    const url = require("url");
+    const zlib = require("zlib");
     const fs = require("fs");
+
+    function byteCount(s) {
+        return encodeURI(s).split(/%..|./).length - 1;
+    }
+
+    function hasHeader(headers, name) {
+        const normalized = name.toLowerCase();
+        return Object.keys(headers || {}).some((key) => key.toLowerCase() === normalized);
+    }
+
+    function setVersionHeaders(headers) {
+        const version = GetResourceMetadata(GetCurrentResourceName(), "version", 0);
+        if (!version) {
+            return;
+        }
+
+        if (!hasHeader(headers, "X-SonoranRadio-Version")) {
+            headers["X-SonoranRadio-Version"] = version;
+        }
+        if (!hasHeader(headers, "X-FiveM-Resource-Version")) {
+            headers["X-FiveM-Resource-Version"] = version;
+        }
+    }
 
     exports('HandleHttpRequest', (dest, callback, method, data, headers) => {
         emit("SonoranRadio::core:writeLog", "debug", "[http] to: " + dest + " - data: " + dest, JSON.stringify(data));
-        const destInfo = new URL(dest);
+        const urlObj = url.parse(dest)
+        const normalizedMethod = (method || "GET").toUpperCase();
+        const requestHeaders = Object.assign({}, headers || {});
         const options = {
-            hostname: destInfo.hostname,
-            path: destInfo.pathname,
-            port: destInfo.port,
-            method: method,
-            headers: headers != null && typeof headers == 'object' && !Array.isArray(headers) ? headers : {},
-        };
-        options.headers['X-User-Agent'] = 'Sonoran Radio FiveM Resource'
-        options.headers['X-SonoranRadio-Version'] = GetResourceMetadata(GetCurrentResourceName(), "version", 0)
-
-        if (method === "POST" && !options.headers['Content-Type'])
-            options.headers['Content-Type'] = 'application/json'
-        if (method !== "GET" && method !== 'POST') {
-            console.error("Invalid request. Only GET/POST supported. Method: " + method);
-            if (callback) callback(-1, "", {});
-            return void (callback = undefined);
+            hostname: urlObj.hostname,
+            path: urlObj.path || urlObj.pathname,
+            method: normalizedMethod,
+            headers: requestHeaders
         }
-
-        const client = destInfo.protocol === 'http:' ? require('http') : require('https');
-        const req = client.request(options, (res) => {
-            res.setEncoding('utf-8');
-
-            let output = "";
-            res.on('data', (chunk) => {
-                output += chunk.toString()
-            });
+        if (data !== undefined && data !== null && data !== "") {
+            if (!options.headers['Content-Type']) {
+                options.headers['Content-Type'] = 'application/json'
+            }
+        }
+        setVersionHeaders(options.headers);
+        const req = https.request(options, (res) => {
+            const chunks = [];
+            res.on('data', (d) => {
+                chunks.push(Buffer.from(d))
+            }),
             res.on('end', () => {
-                if (callback) callback(res.statusCode, output, res.headers);
-                callback = undefined;
-            });
-        });
+                const body = Buffer.concat(chunks);
+                const encoding = String(res.headers["content-encoding"] || "").toLowerCase();
+                const finish = (decoded) => callback(res.statusCode, decoded, res.headers);
+
+                if (encoding.includes("gzip")) {
+                    zlib.gunzip(body, (error, decoded) => {
+                        if (error) {
+                            console.debug("HTTP gzip decode failed: " + JSON.stringify(error));
+                            finish(body.toString());
+                            return;
+                        }
+                        finish(decoded.toString());
+                    });
+                    return;
+                }
+
+                if (encoding.includes("deflate")) {
+                    zlib.inflate(body, (error, decoded) => {
+                        if (error) {
+                            console.debug("HTTP deflate decode failed: " + JSON.stringify(error));
+                            finish(body.toString());
+                            return;
+                        }
+                        finish(decoded.toString());
+                    });
+                    return;
+                }
+
+                finish(body.toString());
+            })
+          })
+
         req.on('error', (error) => {
-            if (callback) callback(-1, error, {});
-            callback = undefined;
+            let ignore_ids = ["EAI_AGAIN", "ETIMEOUT", "ENOTFOUND"]
+            if (!ignore_ids.includes(error.code))
+                console.debug("HTTP error caught: " + JSON.stringify(error));
+            callback(0, JSON.stringify({
+                error: "HTTP_REQUEST_FAILED",
+                code: error.code || "UNKNOWN",
+                message: error.message || "HTTP request failed.",
+                host: error.host || urlObj.hostname || null,
+                port: error.port || urlObj.port || 443,
+                path: error.path || null
+            }), {"content-type": "application/json"});
         })
-        if (method == "POST") {
+        if (data !== undefined && data !== null && data !== "") {
             req.write(data);
         }
         req.end();
-
-        setTimeout(() => {
-            if (callback) callback(-1, {}, {});
-            callback = undefined;
-        }, 30000);
     });
 
     // Synchronously read only top‑level directories under skins/

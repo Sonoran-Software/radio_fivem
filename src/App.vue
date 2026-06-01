@@ -218,6 +218,27 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
+            streamDeck: {
+                healthUrl: 'http://127.0.0.1:39112/streamdeck/fivem/health',
+                socketUrl: 'ws://127.0.0.1:39112/streamdeck/fivem/socket',
+                healthPollMs: 5000,
+                reconnectMs: 3000,
+                healthTimer: null,
+                reconnectTimer: null,
+                socket: null,
+                latestSnapshot: {
+                    channels: [],
+                    state: {
+                        connected: false,
+                        aiEnabled: false,
+                        micOpen: false,
+                        primaryChIds: [],
+                        scannedChIds: [],
+                        sfxVolume: 0,
+                        agentGain: 0,
+                    }
+                },
+            },
             emergencyCall: {
                 status: 'closed', // closed, open, idle (for redial)
                 token: '',
@@ -253,6 +274,7 @@ export default {
     mounted() {
         setInterval(() => this.loop20(), 20000);
         this.selectSkin('default', true);
+        this.startStreamDeckHealthPolling();
 
         window.addEventListener('message', (event) => {
             if (event.data.type === 'keyup' || event.data.type === 'keydown')
@@ -273,6 +295,10 @@ export default {
         });
 
         this.postClient({ type: 'ready' });
+    },
+    beforeDestroy() {
+        this.stopStreamDeckHealthPolling();
+        this.closeStreamDeckSocket();
     },
     computed: {
         radioVisible() {
@@ -453,6 +479,179 @@ export default {
             const msg = await res.json();
             if (typeof msg === 'string' && msg !== "OK") throw new Error(`failed request with message: ${data}`);
             return msg;
+        },
+        normalizeStreamDeckIds(ids) {
+            if (!Array.isArray(ids)) return [];
+            return ids
+                .map((id) => Number(id))
+                .filter((id) => Number.isFinite(id));
+        },
+        getStreamDeckDefaultSnapshot() {
+            return {
+                channels: [],
+                state: {
+                    connected: false,
+                    aiEnabled: false,
+                    micOpen: false,
+                    primaryChIds: [],
+                    scannedChIds: [],
+                    sfxVolume: 0,
+                    agentGain: 0,
+                }
+            };
+        },
+        buildStreamDeckSnapshot() {
+            const radioConfig = this.$store.state.radioConfig;
+            const radioState = this.$store.state.radioState;
+            const profiles = Array.isArray(radioConfig?.profiles) ? radioConfig.profiles : [];
+            const channels = profiles
+                .map((profile) => {
+                    const id = Number(profile?.id);
+                    if (!Number.isFinite(id)) return null;
+                    return {
+                        id,
+                        label: profile?.displayName || profile?.name || String(id),
+                        groupId: Number.isFinite(Number(profile?.groupId)) ? Number(profile.groupId) : 0,
+                        groupName: profile?.groupName || profile?.group || profile?.groupLabel || '',
+                    };
+                })
+                .filter(Boolean);
+
+            return {
+                channels,
+                state: {
+                    connected: !!this.$store.state.connected,
+                    aiEnabled: !!(radioState?.aiEnabled),
+                    micOpen: !!this.$store.state.talking,
+                    primaryChIds: this.normalizeStreamDeckIds(radioState?.primaryChIds),
+                    scannedChIds: this.normalizeStreamDeckIds(radioState?.scannedChIds),
+                    sfxVolume: Number.isFinite(Number(radioState?.sfxVolume)) ? Number(radioState.sfxVolume) : 0,
+                    agentGain: Number.isFinite(Number(radioState?.agentGain)) ? Number(radioState.agentGain) : 0,
+                }
+            };
+        },
+        publishStreamDeckSnapshot(snapshot) {
+            const nextSnapshot = snapshot || this.buildStreamDeckSnapshot();
+            this.streamDeck.latestSnapshot = nextSnapshot;
+            const socket = this.streamDeck.socket;
+            if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+            socket.send(JSON.stringify({
+                type: 'streamdeck_snapshot',
+                snapshot: nextSnapshot,
+            }));
+        },
+        requestStreamDeckSnapshotFromRadio() {
+            this.postRadioFrame({ type: 'streamdeck_snapshot_request' });
+        },
+        handleStreamDeckCommand(payload) {
+            if (!payload || typeof payload.command !== 'string') return;
+            this.postRadioFrame({
+                type: 'streamdeck_command',
+                payload,
+            });
+        },
+        handleStreamDeckDesktopMessage(message) {
+            if (!message || typeof message.type !== 'string') return;
+
+            switch (message.type) {
+                case 'hello':
+                    this.publishStreamDeckSnapshot(this.buildStreamDeckSnapshot());
+                    this.requestStreamDeckSnapshotFromRadio();
+                    break;
+                case 'streamdeck_command':
+                    if (message.payload.command == "desktop.toggleRadio" || message.payload.command == "desktop.focusRadio") {
+                        this.postClient({ type: 'toggleRadio' });
+                    }
+                    if (message.payload.command == 'desktop.connectedUsers') {
+                        this.postClient({ type: 'toggleConnectedUsers' });
+                    }
+                    this.handleStreamDeckCommand(message.payload);
+                    break;
+                case 'streamdeck_snapshot':
+                    if (message.snapshot) this.streamDeck.latestSnapshot = message.snapshot;
+                    break;
+                case 'streamdeck_snapshot_request':
+                    this.publishStreamDeckSnapshot(this.buildStreamDeckSnapshot());
+                    this.requestStreamDeckSnapshotFromRadio();
+                    break;
+            }
+        },
+        scheduleStreamDeckReconnect() {
+            if (this.streamDeck.reconnectTimer) return;
+            this.streamDeck.reconnectTimer = window.setTimeout(() => {
+                this.streamDeck.reconnectTimer = null;
+                this.connectStreamDeckSocket();
+            }, this.streamDeck.reconnectMs);
+        },
+        closeStreamDeckSocket() {
+            if (this.streamDeck.reconnectTimer) {
+                window.clearTimeout(this.streamDeck.reconnectTimer);
+                this.streamDeck.reconnectTimer = null;
+            }
+
+            const socket = this.streamDeck.socket;
+            this.streamDeck.socket = null;
+            if (!socket) return;
+
+            socket.onopen = null;
+            socket.onmessage = null;
+            socket.onerror = null;
+            socket.onclose = null;
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+                socket.close();
+        },
+        async pollStreamDeckHealth() {
+            try {
+                const response = await fetch(this.streamDeck.healthUrl);
+                if (!response.ok) throw new Error(`health check failed with ${response.status}`);
+                const health = await response.json();
+                if (health?.ok) {
+                    this.connectStreamDeckSocket();
+                    return;
+                }
+            } catch (_err) {
+                this.closeStreamDeckSocket();
+            }
+        },
+        startStreamDeckHealthPolling() {
+            if (this.streamDeck.healthTimer) return;
+            this.pollStreamDeckHealth();
+            this.streamDeck.healthTimer = window.setInterval(() => {
+                this.pollStreamDeckHealth();
+            }, this.streamDeck.healthPollMs);
+        },
+        stopStreamDeckHealthPolling() {
+            if (!this.streamDeck.healthTimer) return;
+            window.clearInterval(this.streamDeck.healthTimer);
+            this.streamDeck.healthTimer = null;
+        },
+        connectStreamDeckSocket() {
+            const existingSocket = this.streamDeck.socket;
+            if (existingSocket && (existingSocket.readyState === WebSocket.OPEN || existingSocket.readyState === WebSocket.CONNECTING))
+                return;
+
+            const socket = new WebSocket(this.streamDeck.socketUrl);
+            this.streamDeck.socket = socket;
+
+            socket.onopen = () => {
+                this.publishStreamDeckSnapshot(this.buildStreamDeckSnapshot());
+                this.requestStreamDeckSnapshotFromRadio();
+            };
+            socket.onmessage = (event) => {
+                try {
+                    this.handleStreamDeckDesktopMessage(JSON.parse(event.data));
+                } catch (error) {
+                    console.error('Failed to parse Stream Deck desktop bridge message', error);
+                }
+            };
+            socket.onerror = () => {
+                this.scheduleStreamDeckReconnect();
+            };
+            socket.onclose = () => {
+                if (this.streamDeck.socket === socket) this.streamDeck.socket = null;
+                this.scheduleStreamDeckReconnect();
+            };
         },
         onClientEvent(event) {
             switch (event.type) {
@@ -661,10 +860,12 @@ export default {
                     console.log('radio connected');
                     this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
+                    this.publishStreamDeckSnapshot();
                     this.onStandaloneConnected();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', { connected: false });
+                    this.publishStreamDeckSnapshot(this.getStreamDeckDefaultSnapshot());
                     break;
                 case "pending_approval":
                     this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
@@ -679,16 +880,22 @@ export default {
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
+                    this.publishStreamDeckSnapshot();
                     break;
                 case 'state_updated':
                     // include the identity in the state (used for audio ducking)
                     const state = {...event.state, identity: this.$store.state.identity};
                     this.$store.commit('setRadioState', state);
                     this.postClient({ type: 'stateUpdated', state });
+                    this.publishStreamDeckSnapshot();
                     break;
                 case 'mic_status':
                     this.$store.commit('setRadioTalking', event.micOpen);
                     this.postClient({ type: 'talking', talking: event.micOpen });
+                    this.publishStreamDeckSnapshot();
+                    break;
+                case 'streamdeck_snapshot':
+                    if (event.snapshot) this.publishStreamDeckSnapshot(event.snapshot);
                     break;
                 case 'peer_talk_status':
                     this.$store.commit('setPeerTalkStatus', event.peer);

@@ -18,6 +18,90 @@ local DevEvents = DeveloperEvents or {}
 local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
+local cadTowerSyncTracker = {}
+local cadLiveMapSyncFlushIntervalMs = 60000
+local cadLiveMapSyncMaxBatchSize = 29
+local cadLiveMapSyncState = {
+	buffer = {},
+	timerActive = false
+}
+
+function BuildSonoranCadTowerSyncData()
+	local sonoradData = {}
+
+	for _, t in ipairs(CellRepeaters or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	for _, t in ipairs(Servers or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	for _, t in ipairs(Towers or {}) do
+		table.insert(sonoradData, t)
+	end
+
+	return sonoradData
+end
+
+local function DispatchSonoranCadLiveMapSync()
+	local sendCount = math.min(#cadLiveMapSyncState.buffer, cadLiveMapSyncMaxBatchSize)
+	for _ = 1, sendCount do
+		table.remove(cadLiveMapSyncState.buffer, 1)
+	end
+	TriggerEvent('SonoranCAD::sonrad:SyncTowers', BuildSonoranCadTowerSyncData())
+end
+
+local function QueueNextSonoranCadLiveMapSyncFlush()
+	if cadLiveMapSyncState.timerActive then
+		return
+	end
+
+	cadLiveMapSyncState.timerActive = true
+	SetTimeout(cadLiveMapSyncFlushIntervalMs, function()
+		cadLiveMapSyncState.timerActive = false
+		if #cadLiveMapSyncState.buffer > 0 then
+			DispatchSonoranCadLiveMapSync()
+			if #cadLiveMapSyncState.buffer > 0 then
+				QueueNextSonoranCadLiveMapSyncFlush()
+			end
+		end
+	end)
+end
+
+function SyncSonoranCadLiveMap()
+	table.insert(cadLiveMapSyncState.buffer, {
+		queuedAt = os.time()
+	})
+
+	QueueNextSonoranCadLiveMapSyncFlush()
+end
+
+RegisterNetEvent('SonoranRadio:QueueCadTowerSync')
+AddEventHandler('SonoranRadio:QueueCadTowerSync', function(syncType)
+	if type(syncType) ~= 'string' then
+		return
+	end
+
+	local src = source
+	if type(src) ~= 'number' then
+		src = 0
+	end
+
+	local syncState = cadTowerSyncTracker[src] or {}
+	syncState[syncType] = true
+	cadTowerSyncTracker[src] = syncState
+
+	if syncState.cell and syncState.racks and syncState.towers then
+		cadTowerSyncTracker[src] = nil
+		SyncSonoranCadLiveMap()
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	cadTowerSyncTracker[source] = nil
+end)
+
 local function isGeoZoneOptions(options)
 	if type(options) ~= 'table' then
 		return false
@@ -126,8 +210,6 @@ local function sendZonesToApi(reason)
 		return
 	end
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['roomId'] = Config.serverId or 1,
 		['geoZones'] = geoChannels,
 		['degradeZones'] = tunnels
@@ -179,6 +261,9 @@ else
 
 	if Config.acePermsForServerRepair ~= nil then
 		acePermsForServerRepair = Config.acePermsForServerRepair
+	end
+	if Config.heavySignalDegradeInWater == nil then
+		Config.heavySignalDegradeInWater = true
 	end
 	if not Config.radioJammers or Config.radioJammers == nil then
 		Config.radioJammers = {
@@ -247,9 +332,19 @@ else
 			}
 		}
 		end
-	if Config.enforceRadioItem then
-		getFramework()
-		getInventory()
+	local enforcedInventoryItemsInitialized = false
+	local function setupEnforcedInventoryItems()
+		if enforcedInventoryItemsInitialized or not Config.enforceRadioItem then
+			return
+		end
+
+		getFramework(true)
+		getInventory(true)
+		if not hasFrameworkInventory() then
+			return
+		end
+
+		enforcedInventoryItemsInitialized = true
 		if frameworkEnum == 1 then
 			QBCore = exports['qb-core']:GetCoreObject()
 
@@ -378,6 +473,15 @@ else
 					description = 'Communicate with others through the Sonoran Radio',
 				}
 			end
+			if Config.ScannerItem == nil then
+				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
+				Config.ScannerItem = {
+					name = 'sonoran_radio_scanner', -- Item ID
+					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
+					weight = 1, -- Weight of the item in your inventory
+					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
+				}
+			end
 			if not exports.ox_inventory:Items(Config.RadioItem.name) then
 				errorLog('Ox_Inventory detected on Qbox, ' .. Config.RadioItem.name .. ' could not be found, please ensure you have added it to your /ox_inventory/data/items.lua')
 				return
@@ -400,15 +504,6 @@ else
 				end
 			end)
 
-			if Config.ScannerItem == nil then
-				errorLog('Scanner item is enforced but no item is defined. Please update your configuration. Using default item variables.')
-				Config.ScannerItem = {
-					name = 'sonoran_radio_scanner', -- Item ID
-					label = 'Sonoran Radio Scanner', -- Label for the item in your inventory
-					weight = 1, -- Weight of the item in your inventory
-					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
-				}
-			end
 			exports.qbx_core:CreateUseableItem(Config.ScannerItem.name, function(source, item)
 				TriggerClientEvent('qb-sonrad:use-scanner', source)
 			end)
@@ -457,6 +552,14 @@ else
 				return scanners
 			end)
 		end
+	end
+
+	if Config.enforceRadioItem then
+		Citizen.CreateThread(function()
+			if waitForFrameworkInventory() then
+				setupEnforcedInventoryItems()
+			end
+		end)
 	end
 end
 
@@ -537,27 +640,26 @@ AddEventHandler('playerDropped', function()
 end)
 
 local function fetchCommunityChannels(cb)
-	if not Config or not Config.apiUrl or not Config.apiKey or not Config.comId then
-		errorLog('API request failed: API key, community ID, or apiUrl is not set.')
+	if not Config or not Config.apiKey or not Config.comId then
+		errorLog('API request failed: API key or community ID is not set.')
 		if cb then
 			cb(-1, nil, nil)
 		end
 		return
 	end
 
-	local url = Config.apiUrl .. 'api/radio/get-community-channels/' .. tostring(Config.comId) .. '/' .. tostring(Config.apiKey)
-	PerformHttpRequest(url, function(statusCode, data, headers)
-		local payload = nil
-		if statusCode == 200 and data then
-			local ok, parsed = pcall(json.decode, data)
-			if ok and type(parsed) == 'table' then
-				payload = parsed
-			end
-		end
+	local result = getSonoranRadioClient():getCommunityChannelsV2(Config.comId)
+	if result.success then
+		local raw = type(result.data) == 'string' and result.data or json.encode(result.data)
 		if cb then
-			cb(statusCode, payload, data, headers)
+			cb(200, result.data, raw)
 		end
-	end, 'GET', '', {['Content-Type'] = 'application/json'})
+	else
+		local reason = formatSonoranApiReason(result.reason)
+		if cb then
+			cb(-1, nil, reason)
+		end
+	end
 end
 
 local function getCommunityChannelsCached(cb)
@@ -879,11 +981,25 @@ local function initConfigServerId()
 		end
 
 		-- get the current serverId (from a previous) as defined in the convar, config, or kvp
-		local function nonZero(val) if val == 0 then return nil else return val end end
+		local serverIdConvar = 'sonoranradio_serverId'
+		local function normalizeRoomId(val)
+			val = tonumber(val)
+			if val == nil or val == 0 then
+				return nil
+			end
+			return val
+		end
 		local roomId =
-			nonZero(GetConvarInt('sonoranradio_serverId')) or
-			nonZero(Config.serverId) or
-			nonZero(GetResourceKvpInt('standalone_serverId'))
+			normalizeRoomId(GetConvarInt(serverIdConvar)) or
+			normalizeRoomId(Config.serverId) or
+			normalizeRoomId(GetResourceKvpInt('standalone_serverId'))
+
+		local function useRoomId(val)
+			Config.serverId = val
+			SetResourceKvpInt('standalone_serverId', val) -- save the roomId to the resource KVP as a backup
+			setSonoranRadioClientRoomId(val) -- set the API client's room id
+			Config.init = true
+		end
 
 		-- to create the client config, we must wait for the server-ip to be set so
 		-- we have a roomId. If this is the initial setup, then roomId == nil and a new
@@ -895,8 +1011,6 @@ local function initConfigServerId()
 			attempt = attempt + 1
 			print('[SonoranRadio] - Attempting to set server IP for radio service...')
 			exports['sonoranradio']:performApiRequest({
-				['id'] = Config.comId,
-				['key'] = Config.apiKey,
 				['roomId'] = roomId,
 				['serverPort'] = GetConvarInt('netPort', 30120),
 				['overridePushUrl'] = overridePushUrl,
@@ -919,7 +1033,7 @@ local function initConfigServerId()
 					if attempt == 1 and roomId ~= nil then
 						warnLog('Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
 						Config.init = true
-						Config.serverId = roomId
+						useRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
 					else
@@ -928,28 +1042,34 @@ local function initConfigServerId()
 					return
 				end
 
-				data = json.decode(data)
+				data = json.decode(data) or {}
+				local resolvedRoomId = normalizeRoomId(data.roomId)
+				if resolvedRoomId == nil then
+					errorLog('Failed to set server IP for radio service: invalid roomId returned.')
+					if not resolved then
+						d:reject('invalid roomId returned')
+					end
+					return
+				end
 
 				-- if the room id doesn't match the one in the convar or config, update the config file
-				if data.roomId ~= GetConvarInt('sonoranradio_serverId') and data.roomId ~= Config.serverId then
+				if resolvedRoomId ~= normalizeRoomId(GetConvarInt(serverIdConvar)) and resolvedRoomId ~= normalizeRoomId(Config.serverId) then
 					local configFile = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
 					configFile = configFile:gsub("[\n^]Config%.serverId%s*=[^\n]*", "") -- remove other "serverId" instances
 
 					-- insert the new serverId below the apiKey
 					configFile = configFile:gsub("Config%.apiKey%s*=%s*.-\n", function(line)
-						return line .. 'Config.serverId = '..data.roomId..'\n'
+						return line .. 'Config.serverId = '..resolvedRoomId..'\n'
 					end, 1)
 
 					local configWriteSuccess = SaveResourceFile(GetCurrentResourceName(), 'config.lua', configFile, -1)
 					if not configWriteSuccess then
 						-- couldn't write the file, but this is recoverable (kvp is used as backup)
-						warnLog('Failed to write "Config.serverId = '..data.roomId..'" to config.lua. Is the file read-only?')
+						warnLog('Failed to write "Config.serverId = '..resolvedRoomId..'" to config.lua. Is the file read-only?')
 					end
 				end
 
-				SetResourceKvpInt('standalone_serverId', data.roomId) -- save the roomId to the resource KVP as a backup
-				Config.init = true
-				Config.serverId = data.roomId
+				useRoomId(resolvedRoomId)
 				if not resolved then
 					resolved = true
 					d:resolve(Config.serverId)
@@ -992,6 +1112,17 @@ AddEventHandler('onResourceStart', function(resourceName)
 		critError = true
 		return
 	end
+
+	local cApiKey = GetConvar('sonoranradio_apiKey', 'NONE')
+
+	if cApiKey == 'NONE' then
+		warnLog('apiKey convar value NOT initialized - has sonoranradio.cfg been executed?')
+	elseif cApiKey == 'protection_initialized' then
+		SetConvar('sonoranradio_apiKey', tostring(Config.apiKey))
+	end
+
+	SetConvar('sonoranradio_communityID', tostring(Config.comId))
+
 	Config.init = false
 	if Config.frames == nil or not Config.frames then
 		errorLog('Config.frames is not set. Please check your configuration.')
@@ -1198,6 +1329,10 @@ AddEventHandler('onResourceStart', function(resourceName)
 		warnLog('Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
 	end
 
+	-- wait for config to be initialized (for roomId to be present)
+	-- this needs to be done before SET-SERVER-SPEAKERS
+	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+
 	-- set the speakers via the API
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
@@ -1209,8 +1344,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 	DebugPrint("Setting up speakers to send to radio API upon first start " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
@@ -1218,7 +1351,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		end
 	end)
 
-	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	-- provide client config/environment to all players in server
 	TriggerClientEvent('SonoranRadio::core::ReceiveEnvironment', -1, clientConfig)
 
 	-- Push Event Handling for Geo Zones
@@ -1240,6 +1373,19 @@ end)
 exports('performApiRequest', performApiRequest)
 
 RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+	-- Strip client-only fields (entity handles, blip handles, spawn state) that must
+	-- not be stored on the server or forwarded to other clients, where the handle
+	-- values would be meaningless or could accidentally match unrelated local objects.
+	local clientOnlyFields = { 'Handle', 'Dishes', 'Servers', 'Ladder', 'Spawned', 'DebugBlip' }
+	local function stripClientFields(t)
+		for _, field in ipairs(clientOnlyFields) do
+			t[field] = nil
+		end
+	end
+	for _, t in ipairs(towers) do stripClientFields(t) end
+	for _, t in ipairs(racks) do stripClientFields(t) end
+	for _, t in ipairs(cell) do stripClientFields(t) end
+
 	DebugPrint('Processing towers to file ' .. json.encode(towers))
 	DebugPrint('Processing racks to file ' .. json.encode(racks))
 	DebugPrint('Processing cell to file ' .. json.encode(cell))
@@ -1267,6 +1413,7 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
 	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
 	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+	SyncSonoranCadLiveMap()
 end)
 
 RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
@@ -1290,8 +1437,6 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 	end
 	DebugPrint("Setting up speakers to send to radio API upon SonoranRadio::MoveSpeaker " .. json.encode(locations))
 	exports['sonoranradio']:performApiRequest({
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
@@ -1512,8 +1657,6 @@ end
 
 function serverNameChange(data)
 	local postData = {
-		['id'] = Config.comId,
-		['key'] = Config.apiKey,
 		['accId'] = data.identity,
 		['displayName'] = data.name
 	}

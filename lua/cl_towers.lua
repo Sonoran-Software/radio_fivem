@@ -52,11 +52,14 @@ function initTowers()
 	function AddTowerRange(t)
 		if not Config.debug then
 			return
+		elseif t.DebugBlip then
+			RemoveBlip(t.DebugBlip)
 		end
 		-- create a radius blip that indicates the range of the tower (where edge of circle = 50% capacity)
 		local blip = AddBlipForRadius(t.PropPosition.x, t.PropPosition.y, t.PropPosition.z, t.Range * 0.7937)
 		SetBlipAlpha(blip, 127)
 		SetBlipColour(blip, 1)
+		t.DebugBlip = blip
 	end
 
 	-- creates one dish on a tower
@@ -171,6 +174,7 @@ function initTowers()
 		end
 		SyncDishStatus(tower, false)
 		CreateTowerLadder(tower)
+		AddTowerRange(tower)
 		tower.Spawned = true
 	end
 	-- delete the physical tower entities
@@ -188,6 +192,9 @@ function initTowers()
 			DebugPrint('Tower with ID ' .. tower.Id .. ' has dishs, deleting dish #' .. j .. ' handle: ' .. tower.Dishes[j])
 			DeleteEntity(tower.Dishes[j])
 		end
+		if tower.DebugBlip and DoesBlipExist(tower.DebugBlip) then
+			RemoveBlip(tower.DebugBlip)
+		end
 		tower.Dishes = {}
 		tower.Spawned = false
 	end
@@ -200,9 +207,7 @@ function initTowers()
 		end
 
 		Towers = towers
-		for i = 1, #Towers do
-			AddTowerRange(Towers[i])
-		end
+		-- spawning towers is handled in cl_threads.lua
 		DebugPrint(('synced %s'):format(json.encode(towers)))
 	end)
 
@@ -222,7 +227,6 @@ function initTowers()
 	AddEventHandler('RadioTower:SpawnTower', function(tower)
 		DebugPrint(('spawned %s'):format(json.encode(tower)))
 		table.insert(Towers, tower)
-		AddTowerRange(tower)
 		DebugPrint('new tower spawned', tower.Id)
 	end)
 

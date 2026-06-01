@@ -1,4 +1,12 @@
+local menuInitialized = false
+
 function initMenu()
+	if menuInitialized then
+		DebugPrint('[Init] initMenu already ran, skipping duplicate registration')
+		return
+	end
+	menuInitialized = true
+
 	local state = {
 		index = 1,
 		repeaterId = nil,
@@ -992,30 +1000,21 @@ function initMenu()
 			DrawMarker(0, foundHandle.PropPosition.x, foundHandle.PropPosition.y, foundHandle.PropPosition.z + 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 255, 0, 0, 200, true, true, 2, false, nil, nil,
 					false)
 			if WarMenu.Button('Delete Repeater') then
-				DeleteEntity(foundHandle.Handle)
 				for k, repeater in ipairs(CellRepeaters) do
 					if repeater.Id == state.repeaterId then
+						DestroyCellRepeater(repeater)
 						table.remove(CellRepeaters, k)
 					end
 				end
 				for k, repeater in ipairs(Towers) do
 					if repeater.Id == state.repeaterId then
-						if DoesEntityExist(repeater.Ladder) then
-							DeleteEntity(repeater.Ladder)
-						end
-						local n = repeater.Dishes and #repeater.Dishes or 0
-						for j = 1, n do
-							DeleteEntity(repeater.Dishes[j])
-						end
+						DestroyTower(repeater)
 						table.remove(Towers, k)
 					end
 				end
 				for k, repeater in ipairs(racks) do
 					if repeater.Id == state.repeaterId then
-						local n = repeater.Servers and #repeater.Servers or 0
-						for j = 1, n do
-							DeleteEntity(repeater.Servers[j])
-						end
+						DestroyRack(repeater)
 						table.remove(racks, k)
 					end
 				end
@@ -1035,6 +1034,7 @@ function initMenu()
 				state.index = 1
 				state.lastCoordUpdate = nil
 
+				-- sync the radio repeaters
 				confirmRadioPlacement()
 				WarMenu.OpenMenu('repeaterMenu')
 			end
