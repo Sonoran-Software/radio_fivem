@@ -4,6 +4,9 @@ local function playerHasSingleJammerItem(itemName)
     if frameworkEnum == 0 or inventoryEnum == 0 then return false end
 
     if inventoryEnum == 1 then
+        if not QBCore and GetResourceState('qb-core') == 'started' then
+            QBCore = exports['qb-core']:GetCoreObject()
+        end
         if not QBCore or not QBCore.Functions then return false end
         if type(QBCore.Functions.GetItemByName) == 'table' then
             return not not QBCore.Functions.GetItemByName(itemName)
@@ -203,7 +206,13 @@ function initJammers()
         end
     end)
 
-    if Config.enforceRadioItem and frameworkEnum == 1 and inventoryEnum == 1 then
+    local qbJammerDropWatcherStarted = false
+    local function startQbJammerDropWatcher()
+        if qbJammerDropWatcherStarted or not Config.enforceRadioItem or frameworkEnum ~= 1 or inventoryEnum ~= 1 then
+            return
+        end
+
+        qbJammerDropWatcherStarted = true
         Citizen.CreateThread(function()
             while Config.radioJammers and Config.radioJammers.enabled ~= false do
                 QBCore = QBCore or (exports['qb-core'] and exports['qb-core']:GetCoreObject()) or QBCore
@@ -249,6 +258,14 @@ function initJammers()
                     end)
                 end
                 Citizen.Wait(1000)
+            end
+        end)
+    end
+
+    if Config.enforceRadioItem then
+        Citizen.CreateThread(function()
+            if waitForFrameworkInventory() then
+                startQbJammerDropWatcher()
             end
         end)
     end
@@ -1190,4 +1207,3 @@ function initJammers()
 
     TriggerServerEvent('SonoranRadio::Jammers::RequestSync')
 end
-

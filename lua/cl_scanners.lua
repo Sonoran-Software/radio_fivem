@@ -114,13 +114,27 @@ function initScanners()
 	end
 
 	local scannerDrops = {}
-	if frameworkEnum == 1 and inventoryEnum == 1 then
-		-- qb-inventory INTEGRATION
-		if Config.enforceRadioItem then
-			RegisterNetEvent('qb-sonrad:use-scanner', function()
-				openLocalScanner()
-			end)
+	local scannerUseEventRegistered = false
+	local scannerInventoryThreadStarted = false
+	local function registerScannerUseEvent()
+		if scannerUseEventRegistered then
+			return
+		end
 
+		scannerUseEventRegistered = true
+		RegisterNetEvent('qb-sonrad:use-scanner', function()
+			openLocalScanner()
+		end)
+	end
+
+	local function setupInventoryScannerIntegration()
+		if scannerInventoryThreadStarted or not Config.enforceRadioItem or not hasFrameworkInventory() then
+			return
+		end
+
+		if frameworkEnum == 1 and inventoryEnum == 1 then
+			registerScannerUseEvent()
+			scannerInventoryThreadStarted = true
 			Citizen.CreateThread(function()
 				local QBCore = exports['qb-core']:GetCoreObject()
 				while Config.enforceRadioItem do
@@ -155,12 +169,9 @@ function initScanners()
 					Citizen.Wait(1000)
 				end
 			end)
-		end
-	elseif inventoryEnum == 2 then
-		if Config.enforceRadioItem then
-			RegisterNetEvent('qb-sonrad:use-scanner', function()
-				openLocalScanner()
-			end)
+		elseif inventoryEnum == 2 then
+			registerScannerUseEvent()
+			scannerInventoryThreadStarted = true
 			if not lib then
 				if GetResourceState('ox_lib') ~= 'started' then
 					error('ox_lib must be started before this resource.', 0)
@@ -197,6 +208,14 @@ function initScanners()
 				end
 			end)
 		end
+	end
+
+	if Config.enforceRadioItem then
+		Citizen.CreateThread(function()
+			if waitForFrameworkInventory() then
+				setupInventoryScannerIntegration()
+			end
+		end)
 	end
 
 	local function getClosestWorldScanner(maxDistance)
