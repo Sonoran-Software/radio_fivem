@@ -135,7 +135,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 			initLbPhone()
 		else
 			-- lb-phone is not started, so we need to wait for it to start
-			warnLog('The resource lb-phone is not started. Waiting for it to start to initialize phone integration.')
+			warnLog('WRN_LB_PHONE_NOT_STARTED')
 			AddEventHandler('onResourceStart', function(resourceName)
 				if resourceName == 'lb-phone' then
 					initLbPhone()
@@ -146,7 +146,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	TriggerServerEvent('SonoranRadio::RequestSirens')
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
 	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
-		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
+		warnLog('WRN_LUXART_RESOURCE_DEFAULTED')
 		Config.luxartResourceName = 'lvc'
 	end
 end)
@@ -2233,10 +2233,10 @@ local function sendConsole(level, color, message)
 	end
 end
 
-function errorLog(message)
-	sendConsole('ERROR', '^1', message)
+function errorLog(codeOrMessage, message)
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
 end
 
-function warnLog(message)
-	sendConsole('WARNING', '^3', message)
+function warnLog(codeOrMessage, message)
+	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
 end

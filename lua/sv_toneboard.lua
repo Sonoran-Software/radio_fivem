@@ -39,7 +39,7 @@ AddEventHandler('SonoranRadio::SyncSpeakers', function()
 		['locations'] = locations
 	}, 'SET-SERVER-SPEAKERS', function(data, success)
 		if not success then
-			errorLog('Failed to set server speakers for radio service. Please check your configuration.')
+			errorLog('ERR_SERVER_SPEAKERS_SET_FAILED', 'Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
 end)

@@ -26,8 +26,8 @@ function DebugPrint(...)
 	end
 end
 
-function errorLog(message)
-	print('[Sonoran Radio - ERROR]:', '^1', message, '^0')
+function errorLog(codeOrMessage, message)
+	print('[Sonoran Radio - ERROR]:', '^1', formatStructuredLogMessage(codeOrMessage, message), '^0')
 end
 
 function showNotification(notification, urgent)
@@ -83,12 +83,12 @@ function notifyClient(notification, urgent, colorCode)
 	elseif notificationType == 'ox_lib' then
 		if not lib then
 			if GetResourceState('ox_lib') ~= 'started' then
-				errorLog('ox_lib must be started before this resource.')
+				errorLog('ERR_OX_LIB_NOT_STARTED')
 				return
 			end
 			local chunk = LoadResourceFile('ox_lib', 'init.lua')
 			if not chunk then
-				errorLog('failed to load resource file @ox_lib/init.lua')
+				errorLog('ERR_OX_LIB_INIT_LOAD_FAILED')
 				return
 			end
 			load(chunk, '@@ox_lib/init.lua', 't')()
@@ -108,7 +108,7 @@ function notifyClient(notification, urgent, colorCode)
 			end
 			lib.notify(oxNotify)
 		else
-			errorLog('ox_lib notification selected but lib.notify is unavailable. Ensure ox_lib is started.')
+			errorLog('ERR_OX_LIB_NOTIFY_UNAVAILABLE')
 		end
 	elseif notificationType == 'pNotify' then
 		print('Using pNotify for notifications')
@@ -183,7 +183,7 @@ function getInventory(silent)
 	if inventoryEnum == 0 then
 		if enforceRadioItemEnabled() and not silent and not depState.inventoryMissingLogged then
 			depState.inventoryMissingLogged = true
-			errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. Sonoran Radio will re-check after 30 seconds. https://sonoran.link/radiocodes')
+			errorLog('ERR_RADIO_ITEM_INVENTORY_MISSING', 'No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. Sonoran Radio will re-check after 30 seconds.')
 		end
 	else
 		local loggedMissing = depState.frameworkMissingLogged or depState.inventoryMissingLogged
@@ -209,7 +209,7 @@ function getFramework(silent)
 	if frameworkEnum == 0 then
 		if enforceRadioItemEnabled() and not silent and not depState.frameworkMissingLogged then
 			depState.frameworkMissingLogged = true
-			errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. Sonoran Radio will re-check after 30 seconds. https://sonoran.link/radiocodes')
+			errorLog('ERR_RADIO_ITEM_FRAMEWORK_MISSING', 'No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. Sonoran Radio will re-check after 30 seconds.')
 		end
 	else
 		local loggedMissing = depState.frameworkMissingLogged or depState.inventoryMissingLogged
