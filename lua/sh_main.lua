@@ -26,8 +26,8 @@ function DebugPrint(...)
 	end
 end
 
-function errorLog(message)
-	print('[Sonoran Radio - ERROR]:', '^1', message, '^0')
+function errorLog(codeOrMessage, message)
+	print('[Sonoran Radio - ERROR]:', '^1', formatStructuredLogMessage(codeOrMessage, message), '^0')
 end
 
 function showNotification(notification, urgent)
@@ -40,9 +40,12 @@ function showNotification(notification, urgent)
 end
 
 function notifyClient(notification, urgent, colorCode)
+	local notifications = (Config and Config.notifications) or {}
+	local configuredType = notifications.type or 'native'
+
 	-- Automatically select notification method if set to auto
 	local AutoSelectedNotifyMethod = "native"
-	if Config.notifications.type == "auto" then
+	if configuredType == "auto" then
 		if GetResourceState("lation_ui") == "started" then
 			AutoSelectedNotifyMethod = "lation_ui"
 		elseif GetResourceState("ox_lib") == "started" then
@@ -62,8 +65,7 @@ function notifyClient(notification, urgent, colorCode)
 		end
 		return cfgValue
 	end
-	local notifications = Config and Config['notifications'] or {}
-	local notificationType = ResolveNotifyMethod(Config.notifications.type)
+	local notificationType = ResolveNotifyMethod(configuredType)
 	local title = notifications['notificationTitle'] or 'SonoranRadio'
 	local prefix = ('[%s] '):format(title)
 	local formattedNotification = notification
@@ -83,12 +85,12 @@ function notifyClient(notification, urgent, colorCode)
 	elseif notificationType == 'ox_lib' then
 		if not lib then
 			if GetResourceState('ox_lib') ~= 'started' then
-				errorLog('ox_lib must be started before this resource.')
+				errorLog('ERR_OX_LIB_NOT_STARTED')
 				return
 			end
 			local chunk = LoadResourceFile('ox_lib', 'init.lua')
 			if not chunk then
-				errorLog('failed to load resource file @ox_lib/init.lua')
+				errorLog('ERR_OX_LIB_INIT_LOAD_FAILED')
 				return
 			end
 			load(chunk, '@@ox_lib/init.lua', 't')()
@@ -108,7 +110,7 @@ function notifyClient(notification, urgent, colorCode)
 			end
 			lib.notify(oxNotify)
 		else
-			errorLog('ox_lib notification selected but lib.notify is unavailable. Ensure ox_lib is started.')
+			errorLog('ERR_OX_LIB_NOTIFY_UNAVAILABLE')
 		end
 	elseif notificationType == 'pNotify' then
 		print('Using pNotify for notifications')
@@ -144,10 +146,30 @@ function notifyClient(notification, urgent, colorCode)
 end
 
 
-frameworkEnum = 0;
-inventoryEnum = 0;
--- Enums | 0 = None, 1 = QBCore, 2 = Ox_Inventory
-function getInventory()
+-- Framework enums | 0 = None, 1 = QBCore, 2 = Qbox
+-- Inventory enums | 0 = None, 1 = QB-compatible, 2 = Ox_Inventory
+frameworkEnum = 0
+inventoryEnum = 0
+
+local depState = {
+	frameworkMissingLogged = false,
+	inventoryMissingLogged = false,
+	resolvedLogged = false,
+}
+
+local function enforceRadioItemEnabled()
+	return Config and Config.enforceRadioItem == true
+end
+
+local function dependencyInfoLog(message)
+	if type(infoLog) == 'function' then
+		infoLog(message)
+	else
+		print('[Sonoran Radio - INFO]:', '^5', message, '^0')
+	end
+end
+
+function getInventory(silent)
 	if GetResourceState('qb-inventory') == 'started' then
 		inventoryEnum = 1
 	elseif GetResourceState('ox_inventory') == 'started' then
@@ -156,21 +178,106 @@ function getInventory()
 		inventoryEnum = 1
 	elseif GetResourceState('core_inventory') == 'started' then
 		inventoryEnum = 1
-	elseif Config.enforceRadioItem then
+	else
 		inventoryEnum = 0
-		errorLog('[ERR-104] No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. https://sonoran.link/radiocodes')
 	end
+
+	if inventoryEnum == 0 then
+		if enforceRadioItemEnabled() and not silent and not depState.inventoryMissingLogged then
+			depState.inventoryMissingLogged = true
+			errorLog('ERR_RADIO_ITEM_INVENTORY_MISSING', 'No inventory detected but enforceRadioItem is enabled. Ensure you have either qb-inventory or ox_inventory installed. Sonoran Radio will re-check after 30 seconds.')
+		end
+	else
+		local loggedMissing = depState.frameworkMissingLogged or depState.inventoryMissingLogged
+		local shouldLogResolved = hasFrameworkInventory() and not depState.resolvedLogged and loggedMissing
+		if shouldLogResolved then
+			depState.resolvedLogged = true
+			dependencyInfoLog('Framework and inventory dependencies detected. Sonoran Radio item integrations are now initializing.')
+		end
+	end
+
+	return inventoryEnum
 end
 
-function getFramework()
+function getFramework(silent)
 	if GetResourceState('qbx_core') == 'started' then
 		frameworkEnum = 2
-		return
 	elseif GetResourceState('qb-core') == 'started' then
 		frameworkEnum = 1
-		return
-	elseif Config.enforceRadioItem then
+	else
 		frameworkEnum = 0
-		errorLog('[ERR-104] No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. https://sonoran.link/radiocodes')
 	end
+
+	if frameworkEnum == 0 then
+		if enforceRadioItemEnabled() and not silent and not depState.frameworkMissingLogged then
+			depState.frameworkMissingLogged = true
+			errorLog('ERR_RADIO_ITEM_FRAMEWORK_MISSING', 'No framework detected but enforceRadioItem is enabled. Ensure you have either qb-core or qbx_core installed. Sonoran Radio will re-check after 30 seconds.')
+		end
+	else
+		local loggedMissing = depState.frameworkMissingLogged or depState.inventoryMissingLogged
+		local shouldLogResolved = hasFrameworkInventory() and not depState.resolvedLogged and loggedMissing
+		if shouldLogResolved then
+			depState.resolvedLogged = true
+			dependencyInfoLog('Framework and inventory dependencies detected. Sonoran Radio item integrations are now initializing.')
+		end
+	end
+
+	return frameworkEnum
 end
+
+function hasFrameworkInventory()
+	if not enforceRadioItemEnabled() then
+		return true
+	end
+
+	return frameworkEnum ~= 0 and inventoryEnum ~= 0
+end
+
+local frameworkInventoryWatcherStarted = false
+local function startFrameworkInventoryWatcher()
+	if not enforceRadioItemEnabled() then
+		return
+	end
+
+	getFramework()
+	getInventory()
+
+	if frameworkInventoryWatcherStarted or hasFrameworkInventory() then
+		return
+	end
+
+	frameworkInventoryWatcherStarted = true
+	Citizen.CreateThread(function()
+		while enforceRadioItemEnabled() and not hasFrameworkInventory() do
+			Citizen.Wait(30000)
+			getFramework(true)
+			getInventory(true)
+		end
+	end)
+end
+
+function waitForFrameworkInventory()
+	startFrameworkInventoryWatcher()
+	while enforceRadioItemEnabled() and not hasFrameworkInventory() do
+		Citizen.Wait(1000)
+	end
+	return hasFrameworkInventory()
+end
+
+AddEventHandler('onResourceStart', function(resourceName)
+	if not enforceRadioItemEnabled() then
+		return
+	end
+
+	if
+		resourceName == 'qb-core' or
+		resourceName == 'qbx_core' or
+		resourceName == 'qb-inventory' or
+		resourceName == 'ox_inventory' or
+		resourceName == 'qs-inventory' or
+		resourceName == 'core_inventory'
+	then
+		getFramework(true)
+		getInventory(true)
+	end
+end)

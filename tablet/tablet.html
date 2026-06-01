@@ -91,13 +91,43 @@
   <script>
     const tabletEl = document.getElementById('tablet');
     const homeButtonEl = document.getElementById('homeButton');
+    const tabletCameraEl = document.getElementById('tabletCamera');
+    const radioFrameEl = document.getElementById('radioFrame');
     let isTabletVisible = false;
+
+    function getFrameBounds() {
+      const rects = [tabletEl, homeButtonEl, tabletCameraEl]
+        .map((el) => el.getBoundingClientRect());
+
+      const top = Math.min(...rects.map((rect) => rect.top));
+      const left = Math.min(...rects.map((rect) => rect.left));
+      const right = Math.max(...rects.map((rect) => rect.right));
+      const bottom = Math.max(...rects.map((rect) => rect.bottom));
+
+      return {
+        top,
+        left,
+        width: right - left,
+        height: bottom - top,
+      };
+    }
+
+    function syncFrameState() {
+      const visible = isTabletVisible && tabletEl.style.display !== 'none';
+      parent.postMessage({
+        sonoranradioFrameControl: true,
+        frame: 'tablet',
+        visible,
+        bounds: visible ? getFrameBounds() : null,
+      }, '*');
+    }
 
     function setDisplay(enable) {
       const shouldShow = typeof enable === "boolean" ? enable : !isTabletVisible;
       isTabletVisible = shouldShow;
       tabletEl.style.display = shouldShow ? '' : 'none';
       document.body.style.pointerEvents = shouldShow ? '' : 'none';
+      requestAnimationFrame(syncFrameState);
     }
 
     function postTabletClose(reason) {
@@ -117,6 +147,9 @@
       parent.postMessage({ type: 'keyup', key: ev.which, code: ev.code }, '*');
     });
     homeButtonEl.addEventListener('click', () => parent.postMessage({ type: 'keyup', code: 'Escape' }));
+    radioFrameEl.addEventListener('load', syncFrameState);
+    window.addEventListener('resize', syncFrameState);
+    syncFrameState();
   </script>
 </body>
 

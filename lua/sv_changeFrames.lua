@@ -9,7 +9,7 @@ function checkFramePermissions(player)
 			}
 		}
 	elseif not Config.frames.departments then
-		errorLog('No departments defined in Config.frames.departments for permission mode: ' .. Config.frames.permissionMode .. ' - returning default frame list')
+		errorLog('ERR_FRAMES_DEPARTMENTS_MISSING', 'No departments defined in Config.frames.departments for permission mode: ' .. Config.frames.permissionMode .. ' - returning default frame list')
 		local frames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
 		Config.frames.departments = {
 			['common'] = {

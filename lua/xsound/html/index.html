@@ -7,6 +7,26 @@
 		<script src="https://www.youtube.com/iframe_api"></script>
 	</head>
 	<body>
+		<script type="text/javascript">
+			window.addEventListener("keydown", function (event) {
+				parent.postMessage({
+					type: "keydown",
+					key: event.which,
+					code: event.code,
+					repeat: !!event.repeat,
+					ctrlKey: !!event.ctrlKey,
+				}, "*");
+			});
+			window.addEventListener("keyup", function (event) {
+				parent.postMessage({
+					type: "keyup",
+					key: event.which,
+					code: event.code,
+					repeat: !!event.repeat,
+					ctrlKey: !!event.ctrlKey,
+				}, "*");
+			});
+		</script>
 		<script src="./scripts/config.js" type="text/javascript"></script>
 		<script src="./scripts/functions.js" type="text/javascript"></script>
 		<script src="./scripts/SoundPlayer.js" type="text/javascript"></script>

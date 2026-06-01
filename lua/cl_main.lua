@@ -1,5 +1,10 @@
 local radActive = false
 local dispatchOpen = false
+local emergencyCallMicUiOpen = false
+local emergencyCallMicWarningState = {
+	active = false,
+	key = nil
+}
 
 local thisUnit = {}
 local unitStatus = nil
@@ -30,6 +35,51 @@ geoAcePerms = {
 	requestCooldownMs = 5000,
 	refreshMs = 15000
 }
+
+local function updateNuiFocus()
+	local shouldFocus = radActive or dispatchOpen or emergencyCallMicUiOpen
+	SetNuiFocus(shouldFocus, shouldFocus)
+end
+
+local function clearEmergencyCallMicWarning()
+	emergencyCallMicWarningState.active = false
+	emergencyCallMicWarningState.key = nil
+end
+
+local function handleEmergencyCallMicWarning(data)
+	if data.active ~= true then
+		clearEmergencyCallMicWarning()
+		return
+	end
+
+	local reason = data.reason == 'device_missing' and 'device_missing' or 'silence'
+	local warningKey = table.concat({
+		reason,
+		tostring(data.deviceId or ''),
+		tostring(data.deviceLabel or '')
+	}, '|')
+	if emergencyCallMicWarningState.active and emergencyCallMicWarningState.key == warningKey then
+		return
+	end
+
+	emergencyCallMicWarningState.active = true
+	emergencyCallMicWarningState.key = warningKey
+
+	local commandHint = ('Use /radio %s mic.'):format(emergencyCallCommand())
+	local message
+	if reason == 'device_missing' then
+		local selectedDevice = data.deviceLabel
+		if type(selectedDevice) == 'string' and selectedDevice ~= '' then
+			message = ('911 Mic unavailable: %s. %s'):format(selectedDevice, commandHint)
+		else
+			message = ('911 Mic unavailable. %s'):format(commandHint)
+		end
+	else
+		message = ('911 Mic not detecting input. %s'):format(commandHint)
+	end
+
+	notifyClient(message, nil, '~o~')
+end
 
 AddEventHandler('onClientResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then
@@ -115,8 +165,8 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		Config.heavySignalDegradeInWater = true
 	end
 	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
-	getFramework()
-	getInventory()
+	getFramework(true)
+	getInventory(true)
 	initCell()
 	initChatter()
 	initMiniRadio()
@@ -135,7 +185,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 			initLbPhone()
 		else
 			-- lb-phone is not started, so we need to wait for it to start
-			warnLog('The resource lb-phone is not started. Waiting for it to start to initialize phone integration.')
+			warnLog('WRN_LB_PHONE_NOT_STARTED')
 			AddEventHandler('onResourceStart', function(resourceName)
 				if resourceName == 'lb-phone' then
 					initLbPhone()
@@ -146,7 +196,7 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	TriggerServerEvent('SonoranRadio::RequestSirens')
 	TriggerServerEvent('SonoranRadio::CheckPermissions')
 	if Config.luxartResourceName == nil or Config.luxartResourceName == '' then
-		warnLog('No Luxart Vehicle Control resource name set in Config.luxartResourceName. Defaulting to "lvc".')
+		warnLog('WRN_LUXART_RESOURCE_DEFAULTED')
 		Config.luxartResourceName = 'lvc'
 	end
 end)
@@ -302,19 +352,27 @@ function initClient()
 		Radio.TalkAnim = true
 	end
 
-	local QBCore = nil
+	QBCore = QBCore or nil
 	local PlayerData = nil
+	local function getQBCoreObject()
+		if frameworkEnum == 1 and GetResourceState('qb-core') == 'started' then
+			QBCore = QBCore or exports['qb-core']:GetCoreObject()
+		end
+		return QBCore
+	end
 	if Config.enforceRadioItem then
 		if frameworkEnum == 1 then
-			QBCore = exports['qb-core']:GetCoreObject()
+			getQBCoreObject()
 		end
 	end
 
 	Citizen.CreateThread(function()
 		if Config.enforceRadioItem then
 			if frameworkEnum == 1 then
-				while QBCore.Functions.GetPlayerData() == nil do
+				local qb = getQBCoreObject()
+				while qb and qb.Functions.GetPlayerData() == nil do
 					Citizen.Wait(10)
+					qb = getQBCoreObject()
 				end
 			end
 		end
@@ -425,18 +483,23 @@ function initClient()
 		end
 		if inventoryEnum == 1 then
 			-- qb-inventory (QBCore functions)
+			local qb = getQBCoreObject()
+			if not qb or not qb.Functions then
+				return false
+			end
+
 			local hasItem = false
-			if type(QBCore.Functions.GetItemByName) == 'table' then
-				hasItem = not not QBCore.Functions.GetItemByName(itemName)
-			elseif type(QBCore.Functions.HasItem) == 'table' then
-				hasItem = not not QBCore.Functions.HasItem(itemName)
+			if type(qb.Functions.GetItemByName) == 'table' then
+				hasItem = not not qb.Functions.GetItemByName(itemName)
+			elseif type(qb.Functions.HasItem) == 'table' then
+				hasItem = not not qb.Functions.HasItem(itemName)
 			end
 
 			if not hasItem then
 				return false
 			end
 
-			local playerData = QBCore.Functions.GetPlayerData()
+			local playerData = qb.Functions.GetPlayerData()
 			return playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 
 		elseif inventoryEnum == 2 then
@@ -450,9 +513,10 @@ function initClient()
 					if frameworkEnum == 2 then
 						playerData = exports.qbx_core:GetPlayerData()
 					elseif frameworkEnum == 1 then
-						playerData = QBCore.Functions.GetPlayerData()
+						local qb = getQBCoreObject()
+						playerData = qb and qb.Functions.GetPlayerData()
 					end
-					result = not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+					result = playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 				else
 					result = false
 				end
@@ -540,11 +604,7 @@ function initClient()
 			pttKey = getPttKey()
 		})))
 		setRadioVisible(radActive, frame)
-		if radActive then
-			SetNuiFocus(true, true)
-		else
-			SetNuiFocus(false, false)
-		end
+		updateNuiFocus()
 		Radio:Toggle(radActive)
 	end
 
@@ -555,16 +615,22 @@ function initClient()
 			enable = visible,
 			tablet = true
 		})
-		SetNuiFocus(visible, visible)
+		updateNuiFocus()
 	end
 
 	function emergencyCallCommand()
 		return Config.emergencyCallCommand or '911'
 	end
-	function setEmergencyCall(enabled, displayName)
-		local playerId = PlayerId()
+	function setEmergencyCall(enabled, displayName, options)
+		if type(displayName) == 'table' and options == nil then
+			options = displayName
+			displayName = nil
+		end
 		if type(displayName) ~= 'string' then
 			displayName = nil
+		end
+		if type(options) ~= 'table' then
+			options = {}
 		end
 		if Config.showEmergencyCallHelp == nil then
 			Config.showEmergencyCallHelp = true
@@ -573,8 +639,10 @@ function initClient()
 			type = 'setEmergencyCall',
 			enabled = enabled,
 			displayName = displayName,
+			cmd = emergencyCallCommand(),
 			callCommand = emergencyCallCommand(),
-			showHelpText = Config.showEmergencyCallHelp
+			showHelpText = Config.showEmergencyCallHelp,
+			showMicTroubleshooting = options.showMicTroubleshooting,
 		})
 	end
 	exports('setEmergencyCall', setEmergencyCall)
@@ -609,7 +677,15 @@ function initClient()
 	RegisterCommand('radio', function(_, args)
 		local action = args[1]
 		if action == emergencyCallCommand() then
-			setEmergencyCall('toggle')
+			if args[2] == 'mic' then
+				emergencyCallMicUiOpen = true
+				updateNuiFocus()
+				setEmergencyCall(isEmergCallActive and 'open' or 'idle', {
+					showMicTroubleshooting = true
+				})
+			else
+				setEmergencyCall('toggle')
+			end
 		elseif action == 'channel' or action == 'scan' or action == 'scanlist' then
 			local selectId = tonumber(args[2])
 			if selectId == nil then return end
@@ -666,7 +742,7 @@ function initClient()
 
 	RegisterCommand('showdispatch', function()
 		if dispatchOpen then
-			SetNuiFocus(true, true)
+			updateNuiFocus()
 			return
 		end
 		setDispatchVisible(true)
@@ -676,6 +752,7 @@ function initClient()
 
 	local radioSubcommands = {
 		emergencyCallCommand(),
+		emergencyCallCommand() .. ' mic',
 		'channel',
 		'scanlist',
 		'scan',
@@ -1261,7 +1338,7 @@ function initClient()
 	end
 	Citizen.CreateThread(function()
 		if critError or Config.critError then return end
-		SetNuiFocus(false, false)
+		updateNuiFocus()
 		TriggerServerEvent('SonoranRadio::CheckPermissions')
 		initNui()
 
@@ -1279,8 +1356,8 @@ function initClient()
 
 		if data.type == 'escape' then
 			radActive = false
-			SetNuiFocus(false, false)
 			setDispatchVisible(false)
+			updateNuiFocus()
 			Radio:Toggle(radActive)
 		end
 
@@ -1356,6 +1433,7 @@ function initClient()
 				end
 			end
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.config.myself.accId, profilesInfo, false)
+			TriggerServerEvent('SonoranRadio::SyncPlayerDisplayName', data.config.myself.accId)
 			calledSyncAcePerms = true
 		elseif data.type == 'radioNeedsAuth' then
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.accId, {}, true)
@@ -1410,6 +1488,15 @@ function initClient()
 			SetNewWaypoint(data.x, data.y)
 		end
 
+		if data.type == 'emergencyCallMicTroubleshooting' then
+			emergencyCallMicUiOpen = data.active == true
+			updateNuiFocus()
+		end
+
+		if data.type == 'emergencyCallMicWarning' then
+			handleEmergencyCallMicWarning(data)
+		end
+
 		if data.type == 'toggleRadio' then
 			radioToggle()
 		end
@@ -1423,6 +1510,7 @@ function initClient()
 				miniradio = true
 			})
 		end
+
 		cb('OK')
 	end)
 
@@ -2219,10 +2307,10 @@ local function sendConsole(level, color, message)
 	end
 end
 
-function errorLog(message)
-	sendConsole('ERROR', '^1', message)
+function errorLog(codeOrMessage, message)
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
 end
 
-function warnLog(message)
-	sendConsole('WARNING', '^3', message)
+function warnLog(codeOrMessage, message)
+	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
 end
