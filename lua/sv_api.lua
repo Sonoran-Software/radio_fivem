@@ -1,22 +1,128 @@
-local ApiEndpoints = {
-	['SET-SERVER-IP'] = 'radio',
-	['SET-SERVER-SPEAKERS'] = 'api',
-	['SET-USER-DISPLAY-NAME'] = 'api',
-	['PLAY-TONE'] = 'api',
-	['SET-ZONES'] = 'api'
-}
-local rateLimitedEndpoints = {}
+local sonoranRadioClient = nil
+local sonoranRadioClientKey = nil
 
-local function buildApiRequestPayload(postData)
-	local payload = {}
-	if type(postData) == 'table' then
-		for key, value in pairs(postData) do
-			payload[key] = value
-		end
+local ApiEndpoints = {
+	['SET-SERVER-IP'] = true,
+	['SET-SERVER-SPEAKERS'] = true,
+	['SET-USER-DISPLAY-NAME'] = true,
+	['PLAY-TONE'] = true,
+	['SET-ZONES'] = true
+}
+
+local function getSonoranRadioClientKey()
+	return table.concat({
+		tostring(Config.apiKey or ''),
+		tostring(Config.comId or ''),
+		tostring(Config.apiUrl or ''),
+		tostring(Config.serverId or ''),
+		tostring(Config.debug or false)
+	}, '|')
+end
+
+local function load_module(path)
+  if LoadResourceFile and GetCurrentResourceName then
+    local resource_name = GetCurrentResourceName()
+    local source = LoadResourceFile(resource_name, path)
+    if not source then
+      error(("Unable to load module: %s"):format(path))
+    end
+
+    local chunk, load_error = load(source, ("@@%s/%s"):format(resource_name, path))
+    if not chunk then
+      error(load_error)
+    end
+
+    return chunk()
+  end
+
+  local module_name = path:gsub("^lua/", ""):gsub("%.lua$", ""):gsub("/", ".")
+  return require(module_name)
+end
+
+local create_client = load_module("lua/sonoran/client.lua")
+local create_fivem_adapter = load_module("lua/sonoran/adapters/fivem.lua")
+function getSonoranRadioClient()
+	local key = getSonoranRadioClientKey()
+	if sonoranRadioClient ~= nil and sonoranRadioClientKey == key then
+		return sonoranRadioClient
 	end
-	payload.id = Config.comId
-	payload.key = Config.apiKey
-	return payload
+
+	local clientConfig = {
+		product = 2,
+		apiKey = Config.apiKey,
+		communityId = Config.comId,
+		apiUrl = Config.apiUrl,
+		defaultServerId = Config.comId,
+		logLevel = Config.debug and 'DEBUG' or 'ERROR'
+	}
+	if Config.serverId ~= nil then
+		clientConfig.roomId = Config.serverId
+	end
+
+	sonoranRadioClient = create_client(clientConfig, create_fivem_adapter())
+	sonoranRadioClientKey = key
+	return sonoranRadioClient
+end
+function setSonoranRadioClientRoomId(roomId)
+	sonoranRadioClient:setRoomId(roomId)
+end
+
+local function encodeApiResponse(data)
+	if data == nil then
+		return nil
+	end
+	if type(data) == 'string' then
+		return data
+	end
+	return json.encode(data)
+end
+
+function formatSonoranApiReason(reason)
+	if reason == nil then
+		return nil
+	end
+	if type(reason) == 'string' then
+		return reason
+	end
+	return json.encode(reason)
+end
+
+local function finalizeApiRequest(type, result, cb)
+	if result and result.success then
+		local data = encodeApiResponse(result.data)
+		if cb then
+			cb(data, true)
+		end
+		return
+	end
+
+	local reason = formatSonoranApiReason(result and result.reason)
+	warnLog(('Radio API request failed (%s): %s'):format(tostring(type), tostring(reason)))
+	if reason == 'INVALID COMMUNITY ID' or reason == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(tostring(reason), 'IS NOT ENABLED FOR THIS COMMUNITY') or reason == 'INVALID API KEY' then
+		errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason))
+		Config.critError = true
+		sendCritError()
+	end
+	if cb then
+		cb(reason, false)
+	end
+end
+
+local function callApiEndpoint(type, postData)
+	local client = getSonoranRadioClient()
+	local payload = postData or {}
+
+	if type == 'SET-SERVER-IP' then
+		return client:setServerIpV2(payload)
+	elseif type == 'SET-SERVER-SPEAKERS' then
+		return client:setInGameSpeakerLocationsV2(payload.locations or {}, Config.comId)
+	elseif type == 'SET-USER-DISPLAY-NAME' then
+		return client:setUserDisplayNameV2(payload)
+	elseif type == 'PLAY-TONE' then
+		return client:playToneV2(payload.tones or {}, payload.playTo, Config.comId)
+	elseif type == 'SET-ZONES' then
+		return client:setZonesV2(payload)
+	end
 end
 
 function performApiRequest(postData, type, cb)
@@ -24,73 +130,17 @@ function performApiRequest(postData, type, cb)
 		errorLog('API request failed: API key or community ID is not set. Please ensure you have set these values in your configuration.')
 		return
 	end
-	local endpoint = nil
-	if ApiEndpoints[type] ~= nil then
-		endpoint = ApiEndpoints[type]
-	else
+	if ApiEndpoints[type] == nil then
 		return warnLog(('API request failed: endpoint %s is not registered. Use the registerApiType function to register this endpoint with the appropriate type.'):format(type))
 	end
-	local requestPayload = buildApiRequestPayload(postData)
-	local url = Config.apiUrl .. tostring(endpoint) .. '/' .. tostring(type:lower())
 	assert(type ~= nil, 'No type specified, invalid request.')
 	if Config.critError then
 		errorLog('API request failed: critical error encountered, API version too low, aborting request.')
 		return
 	end
-	if rateLimitedEndpoints[type] == nil then
-		local requestCb = function(statusCode, res, headers)
-			debugLog(('type %s called with post data %s to url %s'):format(type, json.encode(requestPayload), url))
-			if statusCode == 200 or statusCode == 201 and res ~= nil then
-				debugLog('result: ' .. tostring(res))
-				if res == 'Sonoran Radio: Backend Service Reached' or res == 'Backend Service Reached' then
-					errorLog(('API ERROR: Invalid endpoint (URL: %s). Ensure you\'re using a valid endpoint.'):format(url))
-				else
-					if res == nil then
-						res = {}
-						debugLog('Warning: Response had no result, setting to empty table.')
-					end
-					cb(res, true)
-				end
-			elseif statusCode == 400 then
-				warnLog('Bad request was sent to the API. Enable debug mode and retry your request. Response: ' .. tostring(res))
-				-- additional safeguards
-				if res == 'INVALID COMMUNITY ID' or res == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(res, 'IS NOT ENABLED FOR THIS COMMUNITY') or res == 'INVALID API KEY' then
-					errorLog('Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(res))
-					Config.critError = true
-					sendCritError()
-				end
-				cb(res, false)
-			elseif statusCode == 404 then -- handle 404 requests, like from CHECK_APIID
-				warnLog('WARN_404: 404 response from API: ' .. tostring(res))
-				cb(res, false)
-			elseif statusCode == 429 then -- rate limited :(
-				cb(nil, false)
-				if rateLimitedEndpoints[type] then
-					-- don't warn again, it's spammy. Instead, just print a debug
-					debugLog(('Endpoint %s ratelimited. Dropping request.'))
-					return
-				end
-				rateLimitedEndpoints[type] = true
-				warnLog(
-								('WARN_RATELIMIT: You are being ratelimited (last request made to %s) - Ignoring all API requests to this endpoint for 60 seconds. If this is happening frequently, please review your configuration to ensure you\'re not sending data too quickly.'):format(
-												type))
-				SetTimeout(60000, function()
-					rateLimitedEndpoints[type] = nil
-					infoLog(('Endpoint %s no longer ignored.'):format(type))
-				end)
-			elseif string.match(tostring(statusCode), '50') then
-				errorLog(('API error returned (%s). Check status.sonoransoftware.com or our Discord to see if there\'s an outage.'):format(statusCode))
-				debugLog(('API_ERROR Error returned: %s %s'):format(statusCode, res))
-				cb(nil, false)
-			else
-				errorLog(('Radio API ERROR (from %s): %s %s'):format(url, statusCode, json.encode(res)))
-				cb(nil, false)
-			end
-		end
-		exports['sonoranradio']:HandleHttpRequest(url, requestCb, 'POST', json.encode(requestPayload), {['Content-Type'] = 'application/json'})
-	else
-		debugLog(('Endpoint %s is ratelimited. Dropped request: %s'):format(type, json.encode(requestPayload)))
-	end
+
+	debugLog(('type %s called Sonoran.Lua'):format(type))
+	finalizeApiRequest(type, callApiEndpoint(type, postData or {}), cb)
 end
 
 AddEventHandler('playerJoining', function()

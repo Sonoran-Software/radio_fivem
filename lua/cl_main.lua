@@ -115,8 +115,8 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		Config.heavySignalDegradeInWater = true
 	end
 	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
-	getFramework()
-	getInventory()
+	getFramework(true)
+	getInventory(true)
 	initCell()
 	initChatter()
 	initMiniRadio()
@@ -302,19 +302,27 @@ function initClient()
 		Radio.TalkAnim = true
 	end
 
-	local QBCore = nil
+	QBCore = QBCore or nil
 	local PlayerData = nil
+	local function getQBCoreObject()
+		if frameworkEnum == 1 and GetResourceState('qb-core') == 'started' then
+			QBCore = QBCore or exports['qb-core']:GetCoreObject()
+		end
+		return QBCore
+	end
 	if Config.enforceRadioItem then
 		if frameworkEnum == 1 then
-			QBCore = exports['qb-core']:GetCoreObject()
+			getQBCoreObject()
 		end
 	end
 
 	Citizen.CreateThread(function()
 		if Config.enforceRadioItem then
 			if frameworkEnum == 1 then
-				while QBCore.Functions.GetPlayerData() == nil do
+				local qb = getQBCoreObject()
+				while qb and qb.Functions.GetPlayerData() == nil do
 					Citizen.Wait(10)
+					qb = getQBCoreObject()
 				end
 			end
 		end
@@ -425,18 +433,23 @@ function initClient()
 		end
 		if inventoryEnum == 1 then
 			-- qb-inventory (QBCore functions)
+			local qb = getQBCoreObject()
+			if not qb or not qb.Functions then
+				return false
+			end
+
 			local hasItem = false
-			if type(QBCore.Functions.GetItemByName) == 'table' then
-				hasItem = not not QBCore.Functions.GetItemByName(itemName)
-			elseif type(QBCore.Functions.HasItem) == 'table' then
-				hasItem = not not QBCore.Functions.HasItem(itemName)
+			if type(qb.Functions.GetItemByName) == 'table' then
+				hasItem = not not qb.Functions.GetItemByName(itemName)
+			elseif type(qb.Functions.HasItem) == 'table' then
+				hasItem = not not qb.Functions.HasItem(itemName)
 			end
 
 			if not hasItem then
 				return false
 			end
 
-			local playerData = QBCore.Functions.GetPlayerData()
+			local playerData = qb.Functions.GetPlayerData()
 			return playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 
 		elseif inventoryEnum == 2 then
@@ -450,9 +463,10 @@ function initClient()
 					if frameworkEnum == 2 then
 						playerData = exports.qbx_core:GetPlayerData()
 					elseif frameworkEnum == 1 then
-						playerData = QBCore.Functions.GetPlayerData()
+						local qb = getQBCoreObject()
+						playerData = qb and qb.Functions.GetPlayerData()
 					end
-					result = not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
+					result = playerData and not playerData.metadata['isdead'] and not playerData.metadata['inlaststand']
 				else
 					result = false
 				end
