@@ -2065,7 +2065,6 @@ function initClient()
 
 		-- Emit NUI event
 		local function ToggleAudio(start, trackId, volume)
-			print("Toggling audio", start, trackId, volume)
 			SendNUIMessage({
 				type = "toggle_background_audio",
 				start = start,
