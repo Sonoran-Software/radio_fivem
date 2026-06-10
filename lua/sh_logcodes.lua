@@ -163,6 +163,115 @@ local function getStructuredLogDefinition(key)
 	return ErrorCodes[key] or WarningCodes[key]
 end
 
+local function getCurrentResourceFramePrefix()
+	if type(GetCurrentResourceName) ~= 'function' then
+		return '@@sonoranradio'
+	end
+
+	local resourceName = GetCurrentResourceName()
+	if type(resourceName) ~= 'string' or resourceName == '' then
+		return '@@sonoranradio'
+	end
+
+	return '@@' .. resourceName
+end
+
+local function normalizeLogFrameSource(infoSource)
+	if type(infoSource) ~= 'string' or infoSource == '' then
+		return nil
+	end
+
+	local resourcePrefix = getCurrentResourceFramePrefix()
+	if infoSource:find(resourcePrefix, 1, true) ~= 1 then
+		return nil
+	end
+
+	return infoSource:gsub('^@@[^/\\]+[/\\]?', '')
+end
+
+local function buildLogFrameLocation(info)
+	if type(info) ~= 'table' then
+		return nil
+	end
+
+	local relativePath = normalizeLogFrameSource(info.source)
+	if not relativePath or relativePath == '' then
+		return nil
+	end
+
+	local lineNumber = tonumber(info.currentline) or tonumber(info.linedefined)
+	if lineNumber and lineNumber > 0 then
+		return ('%s:%d'):format(relativePath, lineNumber)
+	end
+
+	return relativePath
+end
+
+function getStructuredLogSourceLabel(stackLevel)
+	local ok, info = pcall(debug.getinfo, stackLevel or 2, 'nSl')
+	if not ok or type(info) ~= 'table' then
+		return '.'
+	end
+
+	return buildLogFrameLocation(info) or '.'
+end
+
+function buildStructuredLogBreadcrumbs(stackLevel, maxFrames)
+	local frames = {}
+	local startLevel = tonumber(stackLevel) or 2
+	local frameLimit = tonumber(maxFrames) or 4
+
+	for level = startLevel, startLevel + frameLimit - 1 do
+		local ok, info = pcall(debug.getinfo, level, 'nSl')
+		if ok and type(info) == 'table' then
+			local relativePath = normalizeLogFrameSource(info.source)
+			if relativePath and relativePath ~= 'lua/sh_logcodes.lua' then
+				local location = buildLogFrameLocation(info)
+				local functionName = type(info.name) == 'string' and info.name ~= '' and info.name or nil
+				if location then
+					local line = ('[%d] %s'):format(#frames + 1, location)
+					if functionName then
+						line = ('%s in `%s`'):format(line, functionName)
+					end
+					frames[#frames + 1] = line
+				end
+			end
+		end
+	end
+
+	if #frames == 0 then
+		return nil
+	end
+
+	local sections = {
+		('Likely cause: %s'):format(frames[1]:gsub('^%[%d+%] ', '')),
+		'Trace:',
+		table.concat(frames, '\n')
+	}
+	return table.concat(sections, '\n')
+end
+
+function appendStructuredLogBreadcrumbs(level, message, stackLevel, maxFrames)
+	if level ~= 'ERROR' and level ~= 'WARNING' then
+		return message
+	end
+
+	if type(message) ~= 'string' then
+		message = tostring(message)
+	end
+
+	if message:find('\nTrace:\n', 1, true) or message:find('\nLikely cause:', 1, true) then
+		return message
+	end
+
+	local breadcrumbs = buildStructuredLogBreadcrumbs(stackLevel, maxFrames)
+	if not breadcrumbs then
+		return message
+	end
+
+	return ('%s\n%s'):format(message, breadcrumbs)
+end
+
 function formatStructuredLogMessage(keyOrMessage, message)
 	local definition = getStructuredLogDefinition(keyOrMessage)
 	if not definition then
@@ -178,4 +287,3 @@ function formatStructuredLogMessage(keyOrMessage, message)
 	end
 	return ('[%s] %s'):format(definition.code, tostring(resolvedMessage))
 end
-

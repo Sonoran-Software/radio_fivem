@@ -1598,12 +1598,9 @@ local function sendConsole(level, color, message)
 	if Config ~= nil then
 		debugging = (Config.debug == true and Config.debug ~= 'false')
 	end
-	local info = debug.getinfo(3, 'S')
-	local source = '.'
-	if info.source:find('@@sonoranradio') then
-		source = info.source:gsub('@@sonoranradio/', '') .. ':' .. info.linedefined
-	end
-	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, message)
+	local source = getStructuredLogSourceLabel(4)
+	local payload = appendStructuredLogBreadcrumbs(level, message, 4)
+	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, payload)
 	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
 		print(msg)
 	end
