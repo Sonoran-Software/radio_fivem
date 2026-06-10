@@ -27,7 +27,9 @@ function DebugPrint(...)
 end
 
 function errorLog(codeOrMessage, message)
-	print('[Sonoran Radio - ERROR]:', '^1', formatStructuredLogMessage(codeOrMessage, message), '^0')
+	local source = getStructuredLogSourceLabel(3)
+	local payload = appendStructuredLogBreadcrumbs('ERROR', formatStructuredLogMessage(codeOrMessage, message), 3)
+	print(('[%s:^1ERROR^7]^1 %s^0'):format(source, payload))
 end
 
 function showNotification(notification, urgent)
