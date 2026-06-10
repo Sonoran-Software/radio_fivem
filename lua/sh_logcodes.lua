@@ -208,8 +208,8 @@ local function buildLogFrameLocation(info)
 end
 
 function getStructuredLogSourceLabel(stackLevel)
-	local ok, info = pcall(debug.getinfo, stackLevel or 2, 'nSl')
-	if not ok or type(info) ~= 'table' then
+	local info = debug.getinfo(stackLevel or 2, 'nSl')
+	if type(info) ~= 'table' then
 		return '.'
 	end
 
@@ -222,8 +222,8 @@ function buildStructuredLogBreadcrumbs(stackLevel, maxFrames)
 	local frameLimit = tonumber(maxFrames) or 4
 
 	for level = startLevel, startLevel + frameLimit - 1 do
-		local ok, info = pcall(debug.getinfo, level, 'nSl')
-		if ok and type(info) == 'table' then
+		local info = debug.getinfo(level, 'nSl')
+		if type(info) == 'table' then
 			local relativePath = normalizeLogFrameSource(info.source)
 			if relativePath and relativePath ~= 'lua/sh_logcodes.lua' then
 				local location = buildLogFrameLocation(info)
