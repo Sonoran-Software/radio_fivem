@@ -264,7 +264,7 @@ function appendStructuredLogBreadcrumbs(level, message, stackLevel, maxFrames)
 		return message
 	end
 
-	local breadcrumbs = buildStructuredLogBreadcrumbs(stackLevel, maxFrames)
+	local breadcrumbs = buildStructuredLogBreadcrumbs((tonumber(stackLevel) or 2) + 1, maxFrames)
 	if not breadcrumbs then
 		return message
 	end
