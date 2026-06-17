@@ -156,14 +156,14 @@ ErrorCodes = {
 	}
 }
 
-local function getStructuredLogDefinition(key)
+function getStructuredLogDefinition(key)
 	if type(key) ~= 'string' then
 		return nil
 	end
 	return ErrorCodes[key] or WarningCodes[key]
 end
 
-local function getCurrentResourceFramePrefix()
+function getCurrentResourceFramePrefix()
 	if type(GetCurrentResourceName) ~= 'function' then
 		return '@@sonoranradio'
 	end
@@ -176,7 +176,7 @@ local function getCurrentResourceFramePrefix()
 	return '@@' .. resourceName
 end
 
-local function normalizeLogFrameSource(infoSource)
+function normalizeLogFrameSource(infoSource)
 	if type(infoSource) ~= 'string' or infoSource == '' then
 		return nil
 	end
@@ -189,7 +189,7 @@ local function normalizeLogFrameSource(infoSource)
 	return infoSource:gsub('^@@[^/\\]+[/\\]?', '')
 end
 
-local function buildLogFrameLocation(info)
+function buildLogFrameLocation(info)
 	if type(info) ~= 'table' then
 		return nil
 	end

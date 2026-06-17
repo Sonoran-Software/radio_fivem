@@ -759,6 +759,10 @@ export default {
                 case 'unitStatus':
                     this.$store.commit('setUnitStatus', event.status);
                     break;
+                case 'cadCommunityUserId':
+                    this.$store.commit('setCadCommunityUserId', event.communityUserId ?? null);
+                    this.updateGamestate();
+                    break;
                 case 'inVehicle':
                     this.inVehicleClass = event.vehClass;
                     break;
@@ -880,6 +884,7 @@ export default {
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
+                    this.updateGamestate();
                     this.publishStreamDeckSnapshot();
                     break;
                 case 'state_updated':
@@ -1177,9 +1182,15 @@ export default {
             this.postClient({ type: "notify", message: message, colorCode: colorCode });
         },
         updateGamestate() {
+            const communityUserId = this.$store.state.cadCommunityUserId ?? null;
             this.postRadioFrame({
                 type: "set_gamestate",
-                state: { tower_quality: this.towerQuality, is_jammed: this.isJammed, jammer_strength: this.jammerStrength },
+                state: {
+                    tower_quality: this.towerQuality,
+                    is_jammed: this.isJammed,
+                    jammer_strength: this.jammerStrength,
+                    communityUserId,
+                },
             });
         },
         nextPreset() {

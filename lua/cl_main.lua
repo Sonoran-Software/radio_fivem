@@ -293,6 +293,14 @@ function initClient()
 		-- end
 	end)
 
+	RegisterNetEvent('SonoranRadio::CadCommunityUserId')
+	AddEventHandler('SonoranRadio::CadCommunityUserId', function(communityUserId)
+		SendNUIMessage({
+			type = 'cadCommunityUserId',
+			communityUserId = communityUserId
+		})
+	end)
+
 	if Config.geoChannels == nil then
 		Config.geoChannels = {
 			enabled = true,
@@ -1434,6 +1442,7 @@ function initClient()
 			end
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.config.myself.accId, profilesInfo, false)
 			TriggerServerEvent('SonoranRadio::SyncPlayerDisplayName', data.config.myself.accId)
+			TriggerServerEvent('SonoranRadio::RequestCadCommunityUserId')
 			calledSyncAcePerms = true
 		elseif data.type == 'radioNeedsAuth' then
 			TriggerServerEvent('SonoranRadio::SyncAcePerms', data.accId, {}, true)
@@ -1460,6 +1469,7 @@ function initClient()
 
 		if data.type == 'refreshScreen' then
 			calledSyncAcePerms = false
+			TriggerServerEvent('SonoranRadio::RequestCadCommunityUserId')
 			handleRefreshScreen()
 		end
 

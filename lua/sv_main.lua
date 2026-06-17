@@ -26,6 +26,29 @@ local cadLiveMapSyncState = {
 	timerActive = false
 }
 
+local function getCadCommunityUserIdForPlayer(playerSource)
+	if type(playerSource) ~= 'number' or playerSource <= 0 then
+		return nil
+	end
+
+	if GetResourceState('sonorancad') ~= 'started' then
+		return nil
+	end
+
+	local ok, communityUserId = pcall(function()
+		return exports.sonorancad:getPlayerCommunityUserId(playerSource)
+	end)
+	if not ok or communityUserId == nil then
+		return nil
+	end
+
+	communityUserId = tostring(communityUserId)
+	if communityUserId == '' then
+		return nil
+	end
+	return communityUserId
+end
+
 function BuildSonoranCadTowerSyncData()
 	local sonoradData = {}
 
@@ -100,6 +123,12 @@ end)
 
 AddEventHandler('playerDropped', function()
 	cadTowerSyncTracker[source] = nil
+end)
+
+RegisterNetEvent('SonoranRadio::RequestCadCommunityUserId')
+AddEventHandler('SonoranRadio::RequestCadCommunityUserId', function()
+	local src = source
+	TriggerClientEvent('SonoranRadio::CadCommunityUserId', src, getCadCommunityUserIdForPlayer(src))
 end)
 
 local function isGeoZoneOptions(options)
