@@ -12,6 +12,7 @@ export default new Vuex.Store({
     state: {
         connected: false,
         identity: null,
+        cadCommunityUserId: null,
 
         radioConfig: null,
         radioState: null,
@@ -79,6 +80,7 @@ export default new Vuex.Store({
             state.connected = connected;
             state.identity = identity;
             if (!connected) {
+                state.cadCommunityUserId = null;
                 state.radioConfig = null;
                 state.radioState = null;
                 state.talking = false;
@@ -104,6 +106,9 @@ export default new Vuex.Store({
         },
         setUnitStatus(state, status) {
             state.unitStatus = status;
+        },
+        setCadCommunityUserId(state, communityUserId) {
+            state.cadCommunityUserId = communityUserId;
         },
         setChatterConfig(state, config) {
             state.chatterConfig = config;
