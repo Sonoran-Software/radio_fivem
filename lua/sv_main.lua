@@ -46,7 +46,6 @@ local function getCadCommunityUserIdForPlayer(playerSource)
 	if communityUserId == '' then
 		return nil
 	end
-
 	return communityUserId
 end
 
