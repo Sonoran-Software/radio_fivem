@@ -203,6 +203,29 @@ RegisterNetEvent('SonoranRadio::lb-phone:CreateDispatcherRedial', function(reque
     createEmergencyRedial(source, requestContext)
 end)
 
+Citizen.CreateThread(function()
+    TriggerEvent('sonoranradio::RegisterPushEvent', 'emergency_dial', function(body)
+        if GetResourceState('lb-phone') ~= 'started' then
+            TriggerEvent('SonoranRadio::core:writeLog', 'debug', 'emergency_dial: lb-phone is not started')
+            return
+        end
+
+        local phoneNumber = body.payload and body.payload.phoneNumber
+        if not phoneNumber then
+            TriggerEvent('SonoranRadio::core:writeLog', 'debug', 'emergency_dial: missing phoneNumber in payload')
+            return
+        end
+
+        local targetSource = exports["lb-phone"]:GetSourceFromNumber(phoneNumber)
+        if not targetSource then
+            TriggerEvent('SonoranRadio::core:writeLog', 'debug', 'emergency_dial: no player found with phone number ' .. tostring(phoneNumber))
+            return
+        end
+
+        createEmergencyRedial(targetSource)
+    end)
+end)
+
 RegisterNetEvent('SonoranRadio::lb-phone:EndDispatcherRedial', function(callId)
     if not callId then
         return
