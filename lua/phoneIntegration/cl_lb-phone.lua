@@ -223,4 +223,7 @@ function initLbPhone()
         CallData.inEmergencyCall = false
         EndCall()
     end)
+    RegisterNetEvent('SonoranRadio::lb-phone:EmergencyDial', function()
+        TriggerEvent('SonoranRadio::API:EmergencyCall', true)
+    end)
 end
