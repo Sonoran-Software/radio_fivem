@@ -97,9 +97,10 @@ local function finalizeApiRequest(type, result, cb)
 	end
 
 	local reason = formatSonoranApiReason(result and result.reason)
-	warnLog('WRN_API_REQUEST_FAILED', ('Radio API request failed (%s): %s'):format(tostring(type), tostring(reason)))
+	local supportRefText = result and result.supportRef and (' Support ref: ' .. tostring(result.supportRef)) or ''
+	warnLog('WRN_API_REQUEST_FAILED', ('Radio API request failed (%s): %s%s'):format(tostring(type), tostring(reason), supportRefText))
 	if reason == 'INVALID COMMUNITY ID' or reason == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(tostring(reason), 'IS NOT ENABLED FOR THIS COMMUNITY') or reason == 'INVALID API KEY' then
-		errorLog('ERR_API_FATAL_DISABLED', 'Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason))
+		errorLog('ERR_API_FATAL_DISABLED', 'Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason) .. supportRefText)
 		Config.critError = true
 		sendCritError()
 	end

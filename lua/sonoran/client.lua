@@ -192,6 +192,33 @@ local function normalize_headers(headers)
   return normalized
 end
 
+local function first_header_value(value)
+  if type(value) == "table" then
+    return value[1]
+  end
+  return value
+end
+
+local function resolve_support_reference(response, parsed)
+  local headers = normalize_headers(response and response.headers)
+  local trace_id = first_header_value(headers["x-kong-request-id"])
+    or first_header_value(headers["x-trace-id"])
+    or first_header_value(headers["trace-id"])
+
+  if (trace_id == nil or trace_id == "") and type(parsed) == "table" then
+    trace_id = parsed.traceId
+      or parsed.traceID
+      or parsed.requestId
+      or parsed.requestID
+  end
+
+  if trace_id == nil or tostring(trace_id) == "" then
+    return nil
+  end
+
+  return "RAD-" .. tostring(trace_id)
+end
+
 local function append_query_parts(parts, encode, key, value)
   if value == nil then
     return
@@ -629,7 +656,11 @@ function Client:_error_log_http_failure(request_options, response, parsed, attem
     return
   end
 
+  local support_ref = resolve_support_reference(response, parsed)
   print("[Sonoran.lua][ERROR] " .. tostring(message))
+  if support_ref then
+    print("[Sonoran.lua][ERROR]   support ref: " .. support_ref)
+  end
   print("[Sonoran.lua][ERROR]   attempt: " .. tostring((attempt or 0) + 1))
   print("[Sonoran.lua][ERROR]   method: " .. tostring(request_options.method))
   print("[Sonoran.lua][ERROR]   url: " .. tostring(request_options.url))
@@ -740,20 +771,23 @@ function Client:_request(method, path, options)
       else
         return {
           success = false,
-          reason = parsed ~= nil and parsed or "Request was rate limited."
+          reason = parsed ~= nil and parsed or "Request was rate limited.",
+          supportRef = resolve_support_reference(response, parsed)
         }
       end
     elseif tonumber(response and response.status) == 429 then
       self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP 429 rate limit received. Automatic retries have been exhausted.")
       return {
         success = false,
-        reason = parsed ~= nil and parsed or "Request was rate limited."
+        reason = parsed ~= nil and parsed or "Request was rate limited.",
+        supportRef = resolve_support_reference(response, parsed)
       }
     else
       self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP request failed.")
       return {
         success = false,
-        reason = parsed
+        reason = parsed,
+        supportRef = resolve_support_reference(response, parsed)
       }
     end
 
