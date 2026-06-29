@@ -192,33 +192,6 @@ local function normalize_headers(headers)
   return normalized
 end
 
-local function first_header_value(value)
-  if type(value) == "table" then
-    return value[1]
-  end
-  return value
-end
-
-local function resolve_support_reference(response, parsed)
-  local headers = normalize_headers(response and response.headers)
-  local trace_id = first_header_value(headers["x-kong-request-id"])
-    or first_header_value(headers["x-trace-id"])
-    or first_header_value(headers["trace-id"])
-
-  if (trace_id == nil or trace_id == "") and type(parsed) == "table" then
-    trace_id = parsed.traceId
-      or parsed.traceID
-      or parsed.requestId
-      or parsed.requestID
-  end
-
-  if trace_id == nil or tostring(trace_id) == "" then
-    return nil
-  end
-
-  return "RAD-" .. tostring(trace_id)
-end
-
 local function append_query_parts(parts, encode, key, value)
   if value == nil then
     return
@@ -656,11 +629,7 @@ function Client:_error_log_http_failure(request_options, response, parsed, attem
     return
   end
 
-  local support_ref = resolve_support_reference(response, parsed)
   print("[Sonoran.lua][ERROR] " .. tostring(message))
-  if support_ref then
-    print("[Sonoran.lua][ERROR]   support ref: " .. support_ref)
-  end
   print("[Sonoran.lua][ERROR]   attempt: " .. tostring((attempt or 0) + 1))
   print("[Sonoran.lua][ERROR]   method: " .. tostring(request_options.method))
   print("[Sonoran.lua][ERROR]   url: " .. tostring(request_options.url))
@@ -771,23 +740,20 @@ function Client:_request(method, path, options)
       else
         return {
           success = false,
-          reason = parsed ~= nil and parsed or "Request was rate limited.",
-          supportRef = resolve_support_reference(response, parsed)
+          reason = parsed ~= nil and parsed or "Request was rate limited."
         }
       end
     elseif tonumber(response and response.status) == 429 then
       self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP 429 rate limit received. Automatic retries have been exhausted.")
       return {
         success = false,
-        reason = parsed ~= nil and parsed or "Request was rate limited.",
-        supportRef = resolve_support_reference(response, parsed)
+        reason = parsed ~= nil and parsed or "Request was rate limited."
       }
     else
       self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP request failed.")
       return {
         success = false,
-        reason = parsed,
-        supportRef = resolve_support_reference(response, parsed)
+        reason = parsed
       }
     end
 
@@ -919,10 +885,11 @@ local function create_client(config, adapter)
   instance.getTurnCredentialsV2 = function(self, query)
     return self:_request("GET", "v2/general/turn", { query = query or {} })
   end
-  instance.getServersV2 = function(self)
+  local cad_get_servers_v2 = function(self)
     return self:_request("GET", "v2/general/servers")
   end
-  instance.setServersV2 = function(self, servers, deploy_map)
+  instance.getServersV2 = cad_get_servers_v2
+  local cad_set_servers_v2 = function(self, servers, deploy_map)
     return self:_request("PUT", "v2/general/servers", {
       body = {
         servers = servers,
@@ -930,6 +897,7 @@ local function create_client(config, adapter)
       }
     })
   end
+  instance.setServersV2 = cad_set_servers_v2
   instance.verifySecretV2 = function(self, secret)
     return self:_request("POST", "v2/general/secrets/verify", { body = { secret = secret } })
   end
@@ -1513,6 +1481,12 @@ local function create_client(config, adapter)
   end
   instance.cancelSessionV2 = function(self, data)
     return self:_request("DELETE", "v2/community/sessions", { body = data })
+  end
+
+  if product == 0 then
+    -- CMS server helpers share these public names, so restore the CAD routes when this client is created for CAD.
+    instance.getServersV2 = cad_get_servers_v2
+    instance.setServersV2 = cad_set_servers_v2
   end
 
   local public_methods = {
