@@ -164,7 +164,7 @@ end
 local function calculateRadioProfilePerms(source, profileInfos)
 	local perms = {}
 	for _, profile in ipairs(profileInfos) do
-		if profile.visibility ~= 'public' then
+		if profile.id ~= nil and profile.visibility ~= 'public' then
 			local allowed = IsPlayerAceAllowed(source, 'sonoranradio.channel.'..profile.id)
 			if not allowed and profile.displayName then
 				allowed = IsPlayerAceAllowed(source, 'sonoranradio.channel.'..profile.displayName)
@@ -174,6 +174,29 @@ local function calculateRadioProfilePerms(source, profileInfos)
 		end
 	end
 	return perms
+end
+
+local function getRadioProfileInfos()
+	local res = getSonoranRadioClient():getCommunityChannelsV2(Config.comId)
+	if not res.success then
+		print('failed to get radio channel permissions', formatSonoranApiReason(res.reason))
+		return {}
+	end
+
+	local channels = {}
+	if type(res.data) == 'table' then
+		channels = res.data.channels or res.data.profiles or {}
+	end
+
+	local profileInfos = {}
+	for _, profile in ipairs(channels) do
+		table.insert(profileInfos, {
+			id = profile.id,
+			displayName = profile.displayName,
+			visibility = profile.visibility,
+		})
+	end
+	return profileInfos
 end
 
 -- called from the client after their radio initializes
@@ -190,6 +213,9 @@ RegisterNetEvent('SonoranRadio::SyncAcePerms', function(accId, profiles, authori
 			TriggerClientEvent('SonoranRadio::RefreshScreen', src)
 		end
 	else
+		accId = trimString(accId)
+		if not accId then return end
+
 		local perm = calculateRadioPerm(src)
 		local profilePerms = calculateRadioProfilePerms(src, profiles or {})
 		setRadioUserPerms(accId, perm, profilePerms)
@@ -253,8 +279,16 @@ RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
 		return
 	end
 
+	local permission = 0
+	local profilePerms = {}
+	if Config.acePermSync then
+		permission = calculateRadioPerm(src)
+		profilePerms = calculateRadioProfilePerms(src, getRadioProfileInfos())
+	end
+
 	local payload = createGuestToken({
-		permission = calculateRadioPerm(src),
+		permission = permission,
+		profilePerms = profilePerms,
 		expiresInSeconds = 24 * 60 * 60, -- one day
 	})
 	if payload ~= nil then

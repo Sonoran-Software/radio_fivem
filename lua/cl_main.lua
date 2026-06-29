@@ -1432,6 +1432,10 @@ function initClient()
 				cb('OK')
 				return
 			end
+			if not data.config.myself.accId then
+				cb('OK')
+				return
+			end
 			-- we don't want to send all profiles since there could be a lot of data,
 			-- so just extract the data we need
 			local profilesInfo = {}
