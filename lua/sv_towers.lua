@@ -20,6 +20,7 @@ RadioTower = {
 }
 
 Towers = {}
+local towerClientSyncDebugCounts = {}
 function GetTower(coords)
 	for i = 1, #Towers do
 		if Towers[i].PropPosition == coords then
@@ -131,11 +132,23 @@ end)
 RegisterNetEvent('RadioTower:clientTowerSync')
 AddEventHandler('RadioTower:clientTowerSync', function()
 	local source = source
+	towerClientSyncDebugCounts[source] = (towerClientSyncDebugCounts[source] or 0) + 1
+	DebugPrint(
+		('[TowerSync] RadioTower:clientTowerSync from src=%s name=%s count=%s'):format(
+			tostring(source),
+			tostring(GetPlayerName(source) or 'unknown'),
+			tostring(towerClientSyncDebugCounts[source])
+		)
+	)
 	while #Towers == 0 do
 		Wait(10)
 	end
 	TriggerLatentClientEvent('RadioTower:SyncTowers', source, 10000, Towers)
 	TriggerEvent('SonoranRadio:QueueCadTowerSync', 'towers')
+end)
+
+AddEventHandler('playerDropped', function()
+	towerClientSyncDebugCounts[source] = nil
 end)
 
 RegisterNetEvent('RadioTower:KillDish')

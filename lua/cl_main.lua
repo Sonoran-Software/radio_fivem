@@ -9,6 +9,7 @@ local emergencyCallMicWarningState = {
 local thisUnit = {}
 local unitStatus = nil
 local clientInitialized = false
+local clientEnvironmentInitialized = false
 
 isTalking = false
 isEmergCallActive = false
@@ -165,32 +166,35 @@ RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 		Config.heavySignalDegradeInWater = true
 	end
 	frame = GetResourceKvpString('sonoranradio_skin') or Config.defaultSkinId or 'default'
-	getFramework(true)
-	getInventory(true)
-	initCell()
-	initChatter()
-	initMiniRadio()
-	initRacks()
-	initRepeaters()
-	initThreads()
-	initToneboard()
-	initTowers()
-	initClient()
-	initScanners()
-	initMenu()
-	initJammers()
-	if Config.phoneResource and Config.phoneResource == 'lb-phone' then
-		if GetResourceState('lb-phone') == 'started' then
-			-- lb-phone is started, so we can initialize the phone integration
-			initLbPhone()
-		else
-			-- lb-phone is not started, so we need to wait for it to start
-			warnLog('WRN_LB_PHONE_NOT_STARTED')
-			AddEventHandler('onResourceStart', function(resourceName)
-				if resourceName == 'lb-phone' then
-					initLbPhone()
-				end
-			end)
+	if not clientEnvironmentInitialized then
+		clientEnvironmentInitialized = true
+		getFramework(true)
+		getInventory(true)
+		initCell()
+		initChatter()
+		initMiniRadio()
+		initRacks()
+		initRepeaters()
+		initThreads()
+		initToneboard()
+		initTowers()
+		initClient()
+		initScanners()
+		initMenu()
+		initJammers()
+		if Config.phoneResource and Config.phoneResource == 'lb-phone' then
+			if GetResourceState('lb-phone') == 'started' then
+				-- lb-phone is started, so we can initialize the phone integration
+				initLbPhone()
+			else
+				-- lb-phone is not started, so we need to wait for it to start
+				warnLog('WRN_LB_PHONE_NOT_STARTED')
+				AddEventHandler('onResourceStart', function(resourceName)
+					if resourceName == 'lb-phone' then
+						initLbPhone()
+					end
+				end)
+			end
 		end
 	end
 	TriggerServerEvent('SonoranRadio::RequestSirens')
