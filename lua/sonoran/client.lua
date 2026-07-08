@@ -255,6 +255,20 @@ local function build_url(base_url, path, query, encode)
   return url .. "?" .. table.concat(parts, "&")
 end
 
+local function has_status_code(status_codes, status)
+  if type(status_codes) ~= "table" then
+    return false
+  end
+
+  for _, status_code in pairs(status_codes) do
+    if tonumber(status_code) == status then
+      return true
+    end
+  end
+
+  return false
+end
+
 local CAD_V2_RATE_LIMIT_MAX_RETRIES = 2
 local CAD_V2_RATE_LIMIT_DEFAULT_DELAY_MS = 1000
 local CAD_V2_RATE_LIMIT_MAX_AUTO_RETRY_DELAY_MS = 10000
@@ -764,6 +778,7 @@ function Client:_request(method, path, options)
         return {
           success = false,
           reason = parsed ~= nil and parsed or "Request was rate limited.",
+          statusCode = tonumber(response and response.status) or 0,
           traceId = extract_response_trace_id(response, parsed)
         }
       end
@@ -772,13 +787,18 @@ function Client:_request(method, path, options)
       return {
         success = false,
         reason = parsed ~= nil and parsed or "Request was rate limited.",
+        statusCode = tonumber(response and response.status) or 0,
         traceId = extract_response_trace_id(response, parsed)
       }
     else
-      self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP request failed.")
+      local status_code = tonumber(response and response.status) or 0
+      if not has_status_code(options.quietStatusCodes, status_code) then
+        self:_error_log_http_failure(request_options, response, parsed, attempt, "HTTP request failed.")
+      end
       return {
         success = false,
         reason = parsed,
+        statusCode = status_code,
         traceId = extract_response_trace_id(response, parsed)
       }
     end
@@ -1265,7 +1285,8 @@ local function create_client(config, adapter)
   instance.setUserDisplayNameV2 = function(self, data)
     local resolved_community_id = self:_resolve_radio_community_id(data and data.communityId)
     return self:_request("PATCH", "v2/servers/" .. tostring(resolved_community_id) .. "/users/display-name", {
-      body = self:_with_radio_room_id(strip_keys(data, { "serverId", "communityId" }))
+      body = self:_with_radio_room_id(strip_keys(data, { "serverId", "communityId" })),
+      quietStatusCodes = { 404 }
     })
   end
   instance.approveMembersV2 = function(self, acc_ids, community_id)

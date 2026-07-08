@@ -98,6 +98,13 @@ local function finalizeApiRequest(type, result, cb)
 
 	local reason = formatSonoranApiReason(result and result.reason)
 	local supportRefText = result and result.supportRef and (' Support ref: ' .. tostring(result.supportRef)) or ''
+	if type == 'SET-USER-DISPLAY-NAME' and result and tonumber(result.statusCode) == 404 then
+		debugLog('Radio display name sync skipped: user is not a member of this radio community.')
+		if cb then
+			cb('USER NOT FOUND', false)
+		end
+		return
+	end
 	warnLog('WRN_API_REQUEST_FAILED', ('Radio API request failed (%s): %s%s'):format(tostring(type), tostring(reason), supportRefText))
 	if reason == 'INVALID COMMUNITY ID' or reason == 'API IS NOT ENABLED FOR THIS COMMUNITY' or string.find(tostring(reason), 'IS NOT ENABLED FOR THIS COMMUNITY') or reason == 'INVALID API KEY' then
 		errorLog('ERR_API_FATAL_DISABLED', 'Fatal: Disabling API - an error was encountered that must be resolved. Please restart the resource after resolving: ' .. tostring(reason) .. supportRefText)
