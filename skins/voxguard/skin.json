@@ -123,6 +123,7 @@
         }
       ],
       "screen": {
+        "style": "modern",
         "top": 4.275,
         "height": 13.7,
         "left": 5,

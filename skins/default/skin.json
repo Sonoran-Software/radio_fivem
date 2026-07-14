@@ -52,6 +52,7 @@
         }
       ],
       "screen": {
+        "style": "modern",
         "bottom": 5.875,
         "height": 18.125,
         "left": 3.2185,
@@ -125,6 +126,7 @@
         }
       ],
       "screen": {
+        "style": "modern",
         "top": 4.275,
         "height": 13.7,
         "left": 5,
@@ -186,6 +188,7 @@
         }
       ],
       "screen": {
+        "style": "modern",
         "top": 2.65,
         "height": 10.2,
         "left": 11,
