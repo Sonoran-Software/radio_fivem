@@ -2012,9 +2012,11 @@ function initClient()
 		}
 
 		local DIST_THRESHOLD = 0.05  -- 5% change
+		local LOOPING_AUDIO_REFRESH_MS = 2000
 		local lastSentState, lastSentVol = false, nil
 		local remoteSirens = {}  -- [playerId] = {vol = number, coords = vector3}
 		local MAX_DIST = 100.0
+		local lastLoopingAudioRefresh = {}
 
 		-- Define weapon categories
 		local WeaponCategories = {
@@ -2083,12 +2085,25 @@ function initClient()
 
 		-- Emit NUI event
 		local function ToggleAudio(start, trackId, volume)
+			if start then
+				lastLoopingAudioRefresh[trackId] = GetGameTimer()
+			else
+				lastLoopingAudioRefresh[trackId] = nil
+			end
 			SendNUIMessage({
 				type = "toggle_background_audio",
 				start = start,
 				trackId = trackId,
 				volume = volume
 			})
+		end
+
+		local function RefreshLoopingAudio(trackId, volume)
+			local now = GetGameTimer()
+			if now - (lastLoopingAudioRefresh[trackId] or 0) < LOOPING_AUDIO_REFRESH_MS then return end
+			-- The frontend treats looped SFX as a short lease, so refresh active sounds
+			-- periodically without adding more ACK/retry state.
+			ToggleAudio(true, trackId, volume)
 		end
 
 		RegisterNetEvent('SonoranRadio::API:BackgroundAudio', function(start, trackId)
@@ -2202,6 +2217,8 @@ function initClient()
 							ToggleAudio(true,  "siren", sirenDist)
 							dists["VEHICLE_SIREN"] = sirenDist
 							lastSentVol = sirenDist
+						else
+							RefreshLoopingAudio("siren", sirenDist)
 						end
 
 					elseif sirenDist == 0 and currentLoopingSounds["siren"] then
@@ -2220,6 +2237,8 @@ function initClient()
 						if math.abs(old - boatDist) > DIST_THRESHOLD then
 							ToggleAudio(true,  "boat_engine", boatDist)
 							dists["BOAT"] = boatDist
+						else
+							RefreshLoopingAudio("boat_engine", boatDist)
 						end
 
 					elseif not anyBoat and currentLoopingSounds["boat_engine"] then
@@ -2236,6 +2255,8 @@ function initClient()
 						if math.abs(old - heliDist) > DIST_THRESHOLD then
 							ToggleAudio(true,  "helicopter_rotors", heliDist)
 							dists["HELI"] = heliDist
+						else
+							RefreshLoopingAudio("helicopter_rotors", heliDist)
 						end
 
 					elseif not anyHeli and currentLoopingSounds["helicopter_rotors"] then

@@ -130,7 +130,6 @@
                         :url="standaloneUrl"
                         :query="{
                             roomId: standaloneRoomId,
-                            screen: frame.screen.style,
                             guestok: allowedGuest,
                         }"
                         iframe-persistent
@@ -320,6 +319,9 @@ export default {
             // find portable frame, or return first frame if not found
             return this.curSkin.frames.find(x => x.type === 'portable') ?? this.curSkin.frames[0];
         },
+        activeRadioScreenStyle() {
+            return this.activeRadioFrame?.screen?.style === 'text' ? 'text' : 'modern';
+        },
         activeScannerFrame() {
             if (!this.scannerMenu.open) return null;
             if (this.curSkin) {
@@ -446,6 +448,9 @@ export default {
         },
         skinNames() {
             this.updateAvailableSkins();
+        },
+        activeRadioScreenStyle() {
+            this.updateRadioScreenStyle();
         },
         isPanicking(status) {
             this.postClient({
@@ -858,6 +863,9 @@ export default {
         postRadioFrame(data) {
             getRadioFrameEl('radio')?.contentWindow.postMessage(data, '*');
         },
+        updateRadioScreenStyle() {
+            this.postRadioFrame({ type: 'screen_style', style: this.activeRadioScreenStyle });
+        },
         onRadioFrameEvent(event) {
             switch (event.type) {
                 case "radio_connected":
@@ -866,6 +874,7 @@ export default {
                     this.$store.commit('setRadioConfig', event.config);
                     this.publishStreamDeckSnapshot();
                     this.onStandaloneConnected();
+                    this.updateRadioScreenStyle();
                     break;
                 case "radio_disconnected":
                     this.$store.commit('setConnected', { connected: false });
