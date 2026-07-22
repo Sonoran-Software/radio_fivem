@@ -1,6 +1,6 @@
 local pendingRestart = false
-local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/latest.zip'
-local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/version.json'
+local releaseDownloadUrl = 'https://download.sonoransoftware.com/sonoranradio/fivem/enhanced/latest.zip'
+local releaseVersionUrl  = 'https://download.sonoransoftware.com/sonoranradio/fivem/enhanced/version.json'
 local helperSignalKey = "sonoranradio_updatehelper_action"
 
 local function signalUpdateHelper()
@@ -49,7 +49,7 @@ local function doUpdate(latest)
             doUnzip(savePath)
         else
             if not Config.enableCanary then
-                print(("Failed to download from %s: %s %s"):format(realUrl, code, data))
+                print(("Failed to download from %s: %s %s"):format(releaseUrl, code, data))
             end
         end
     end, "GET")

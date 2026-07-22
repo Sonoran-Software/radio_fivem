@@ -3,7 +3,7 @@ name: Resource Release Production Auto Patch
 on:
   push:
     branches:
-      - standalone
+      - enhanced
   workflow_dispatch:
 
 permissions:
@@ -11,13 +11,13 @@ permissions:
   actions: read
 
 concurrency:
-  group: resource-release-prod-auto-patch
+  group: resource-release-enhanced-auto-patch
   cancel-in-progress: false
 
 env:
   BUCKET_HOST: download.sonoransoftware.com
   BUCKET_NAME: download
-  BASE_PREFIX: sonoranradio
+  BASE_PREFIX: sonoranradio/fivem/enhanced
   CF_ZONE_ID: 5e892b9b03facaf059df71c6154a823b
 
 jobs:
@@ -45,35 +45,37 @@ jobs:
 
           git fetch --tags --force --prune >/dev/null 2>&1 || true
 
-          latest_tag="$(git tag --list --sort=-v:refname | head -n1)"
-          if [[ -z "$latest_tag" ]]; then
-            latest_tag="0.0.0"
+          latest_release_tag="$(git tag --merged HEAD --list 'enhanced-[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+          if [[ -n "$latest_release_tag" ]]; then
+            latest_version="${latest_release_tag#enhanced-}"
+          else
+            latest_version="$(git tag --merged HEAD --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+            latest_version="${latest_version:-0.0.0}"
           fi
 
-          if [[ ! "$latest_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Latest tag '$latest_tag' is not a semantic version (x.y.z)." >&2
+          if [[ ! "$latest_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Latest enhanced version '$latest_version' is not semantic version format x.y.z." >&2
             exit 1
           fi
 
-          IFS='.' read -r major minor patch <<< "$latest_tag"
+          IFS='.' read -r major minor patch <<< "$latest_version"
           patch=$((patch + 1))
 
           new_version="${major}.${minor}.${patch}"
           release_prefix="$BASE_PREFIX"
-          public_prefix="https://${BUCKET_HOST}/sonoranradio"
-          if [[ ! "$new_version" =~ ^1\. ]]; then
-            release_prefix="${BASE_PREFIX}/fivem"
-            public_prefix="${public_prefix}/fivem"
-          fi
+          public_prefix="https://${BUCKET_HOST}/${BASE_PREFIX}"
+          release_tag="enhanced-${new_version}"
 
-          echo "previous_version=$latest_tag" >> "$GITHUB_OUTPUT"
+          echo "previous_version=$latest_version" >> "$GITHUB_OUTPUT"
           echo "release_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
           echo "release_prefix=$release_prefix" >> "$GITHUB_OUTPUT"
           echo "public_prefix=$public_prefix" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
         env:
           RELEASE_VERSION: ${{ steps.metadata.outputs.release_version }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
         run: |
           set -euo pipefail
 
@@ -82,13 +84,13 @@ jobs:
             exit 1
           fi
 
-          if git rev-parse "${RELEASE_VERSION}" >/dev/null 2>&1; then
-            echo "Tag '${RELEASE_VERSION}' already exists." >&2
+          if git rev-parse "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Tag '$RELEASE_TAG' already exists." >&2
             exit 1
           fi
 
-          git tag "${RELEASE_VERSION}"
-          git push origin "${RELEASE_VERSION}"
+          git tag "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
 
       - uses: actions/setup-node@v4
         with:
@@ -169,7 +171,7 @@ jobs:
       - name: Upload release to R2
         id: upload
         env:
-          TAG_NAME: ${{ steps.metadata.outputs.release_version }}
+          TAG_NAME: ${{ steps.metadata.outputs.release_tag }}
           RELEASE_PREFIX: ${{ steps.metadata.outputs.release_prefix }}
           PUBLIC_PREFIX: ${{ steps.metadata.outputs.public_prefix }}
           R2_ENDPOINT_URL: ${{ secrets.S3_UPLOAD_URL }}

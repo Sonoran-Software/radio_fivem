@@ -1,6 +1,6 @@
 {
     "resource": "$RESOURCE_VERSION",
-    "check_url": "https://download.sonoransoftware.com/sonoranradio/version.json",
-    "download_url": "https://download.sonoransoftware.com/sonoranradio/",
+    "check_url": "https://download.sonoransoftware.com/sonoranradio/fivem/enhanced/version.json",
+    "download_url": "https://download.sonoransoftware.com/sonoranradio/fivem/enhanced/",
     "configVersion": "2.0"
 }

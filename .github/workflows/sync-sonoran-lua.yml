@@ -11,7 +11,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: sync-sonoran-lua-standalone
+  group: sync-sonoran-lua-enhanced
   cancel-in-progress: false
 
 jobs:
@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout radio_fivem standalone
+      - name: Checkout radio_fivem enhanced
         uses: actions/checkout@v4
         with:
-          ref: standalone
+          ref: enhanced
           fetch-depth: 0
 
       - name: Checkout Sonoran.lua
@@ -51,7 +51,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lua/sonoran
           git commit -m "chore: sync Sonoran.lua"
-          git push origin HEAD:standalone
+          git push origin HEAD:enhanced
           echo "synced=true" >> "$GITHUB_OUTPUT"
 
       - name: Trigger production release
@@ -59,4 +59,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run resource-release-prod-auto-patch.yml --ref standalone
+          gh workflow run resource-release-prod-auto-patch.yml --ref enhanced
