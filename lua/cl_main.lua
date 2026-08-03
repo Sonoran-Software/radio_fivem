@@ -37,6 +37,36 @@ geoAcePerms = {
 	refreshMs = 15000
 }
 
+local function isFrameAllowed(frameId, frames)
+	if type(frameId) ~= 'string' or type(frames) ~= 'table' then
+		return false
+	end
+
+	for _, allowedFrame in ipairs(frames) do
+		if allowedFrame == frameId then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function resolveRadioFrame(preferredFrame, frames)
+	if isFrameAllowed(preferredFrame, frames) then
+		return preferredFrame
+	end
+
+	if isFrameAllowed(Config.defaultSkinId, frames) then
+		return Config.defaultSkinId
+	end
+
+	if type(frames) == 'table' and type(frames[1]) == 'string' then
+		return frames[1]
+	end
+
+	return preferredFrame or Config.defaultSkinId or 'default'
+end
+
 local function updateNuiFocus()
 	local shouldFocus = radActive or dispatchOpen or emergencyCallMicUiOpen
 	SetNuiFocus(shouldFocus, shouldFocus)
@@ -669,7 +699,8 @@ function initClient()
 			allowed = guest,
 		})
 
-		allowedFrames = frames
+		allowedFrames = type(frames) == 'table' and frames or {}
+		frame = resolveRadioFrame(frame, allowedFrames)
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame,
@@ -721,7 +752,7 @@ function initClient()
 			print('skin', GetResourceKvpString('sonoranradio_skin'))
 			print('pos', GetResourceKvpString('ui_pos_dic'))
 
-			frame = Config.defaultSkinId or 'default'
+			frame = resolveRadioFrame(Config.defaultSkinId, allowedFrames)
 			DeleteResourceKvp('sonoranradio_skin')
 			SetResourceKvp('ui_pos_dic', '{}')
 			SendNUIMessage({ type = 'reset', skin = frame })

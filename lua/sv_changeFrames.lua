@@ -1,20 +1,35 @@
+local function filterInstalledFrames(frames, installedFrames)
+	local installedFrameLookup = {}
+	for _, installedFrame in ipairs(installedFrames) do
+		installedFrameLookup[installedFrame] = true
+	end
+
+	local filteredFrames = {}
+	for _, frame in ipairs(frames) do
+		if installedFrameLookup[frame] then
+			table.insert(filteredFrames, frame)
+		end
+	end
+
+	return filteredFrames
+end
+
 function checkFramePermissions(player)
 	local allowedFrames = {}
+	local installedFrames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
 	if not Config.frames or not Config.frames.permissionMode or Config.frames.permissionMode == 'none' then
-		local frames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
 		Config.frames.departments = {
 			['common'] = {
 				label = 'Common',
-				allowedFrames = frames
+				allowedFrames = installedFrames
 			}
 		}
 	elseif not Config.frames.departments then
 		errorLog('ERR_FRAMES_DEPARTMENTS_MISSING', 'No departments defined in Config.frames.departments for permission mode: ' .. Config.frames.permissionMode .. ' - returning default frame list')
-		local frames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio').. '/skins')
 		Config.frames.departments = {
 			['common'] = {
 				label = 'Common',
-				allowedFrames = frames
+				allowedFrames = installedFrames
 			}
 		}
 	end
@@ -101,5 +116,5 @@ function checkFramePermissions(player)
 			end
 		end
 	end
-	return allowedFrames
+	return filterInstalledFrames(allowedFrames, installedFrames)
 end
