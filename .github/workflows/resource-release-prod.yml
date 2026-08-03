@@ -1,0 +1,279 @@
+name: Resource Release Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Choose the semantic version bump to apply
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  BUCKET_HOST: download.sonoransoftware.com
+  BUCKET_NAME: download
+  BASE_PREFIX: sonoranradio
+  CF_ZONE_ID: 5e892b9b03facaf059df71c6154a823b
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine release metadata
+        id: metadata
+        env:
+          BUMP_TYPE: ${{ github.event.inputs.bump }}
+          BASE_PREFIX: ${{ env.BASE_PREFIX }}
+          BUCKET_HOST: ${{ env.BUCKET_HOST }}
+        run: |
+          set -euo pipefail
+
+          bump_type="${BUMP_TYPE:-patch}"
+          case "$bump_type" in
+            major|minor|patch) ;;
+            *) echo "Unsupported bump type '$bump_type'." >&2; exit 1 ;;
+          esac
+
+          git fetch --tags --force --prune >/dev/null 2>&1 || true
+
+          latest_tag=""
+          while IFS= read -r candidate_tag; do
+            if [[ "$candidate_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              latest_tag="$candidate_tag"
+              break
+            fi
+          done < <(git tag --merged HEAD --list --sort=-v:refname)
+
+          if [[ -z "$latest_tag" ]]; then
+            latest_tag="0.0.0"
+          fi
+
+          if [[ ! "$latest_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Latest tag '$latest_tag' is not a semantic version (x.y.z)." >&2
+            exit 1
+          fi
+
+          IFS='.' read -r major minor patch <<< "$latest_tag"
+          case "$bump_type" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          new_version="${major}.${minor}.${patch}"
+          release_prefix="$BASE_PREFIX"
+          public_prefix="https://${BUCKET_HOST}/sonoranradio"
+          if [[ ! "$new_version" =~ ^1\. ]]; then
+            release_prefix="${BASE_PREFIX}/fivem"
+            public_prefix="${public_prefix}/fivem"
+          fi
+
+          echo "previous_version=$latest_tag" >> "$GITHUB_OUTPUT"
+          echo "release_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "release_prefix=$release_prefix" >> "$GITHUB_OUTPUT"
+          echo "public_prefix=$public_prefix" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag
+        env:
+          RELEASE_VERSION: ${{ steps.metadata.outputs.release_version }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${RELEASE_VERSION:-}" ]]; then
+            echo "RELEASE_VERSION not provided; cannot create tag." >&2
+            exit 1
+          fi
+
+          if git rev-parse "${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "Tag '${RELEASE_VERSION}' already exists." >&2
+            exit 1
+          fi
+
+          git tag "${RELEASE_VERSION}"
+          git push origin "${RELEASE_VERSION}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext-base
+
+      - name: Install production dependencies
+        run: yarn install --production
+
+      - name: Prepare build directory
+        run: |
+          mkdir -p build/sonoranradio
+          cp -R node_modules build/sonoranradio
+
+      - name: Install all dependencies
+        run: yarn install
+
+      - name: Build application
+        env:
+          NODE_ENV: production
+        run: yarn build
+
+      - name: Copy resource files
+        run: |
+          cp -R sonrad_tower/stream sonrad_tower/data build/sonoranradio
+          cp -R lua dist miniradio skins tablet towers.DEFAULT.json tunnels.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json jammers.DEFAULT.json geochannels.DEFAULT.json sonoranradio.cfg build/sonoranradio
+
+      - name: Generate version files
+        env:
+          RESOURCE_VERSION: ${{ steps.metadata.outputs.release_version }}
+        run: |
+          envsubst < version.json > build/version.json
+          envsubst < fxmanifest.prod.lua > build/sonoranradio/fxmanifest.lua
+
+      - name: Package release archive
+        run: |
+          set -euo pipefail
+          cd build
+          if [ ! -d "sonoranradio" ]; then
+            echo "Expected sonoranradio directory in build artifact." >&2
+            exit 1
+          fi
+
+          zip_targets=(sonoranradio)
+          if [ -d "sonoranradio_updatehelper" ]; then
+            zip_targets+=(sonoranradio_updatehelper)
+          fi
+
+          rm -f latest.zip
+          zip -r latest.zip "${zip_targets[@]}"
+
+      - name: Verify release files
+        run: |
+          set -euo pipefail
+          if [ ! -f "build/version.json" ]; then
+            echo "Missing build/version.json for release." >&2
+            exit 1
+          fi
+
+          if [ ! -f "build/latest.zip" ]; then
+            echo "Missing build/latest.zip for release." >&2
+            exit 1
+          fi
+
+      - name: Install AWS CLI
+        run: |
+          curl -sSLo awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          rm -rf aws awscliv2.zip
+
+      - name: Upload release to R2
+        id: upload
+        env:
+          TAG_NAME: ${{ steps.metadata.outputs.release_version }}
+          RELEASE_PREFIX: ${{ steps.metadata.outputs.release_prefix }}
+          PUBLIC_PREFIX: ${{ steps.metadata.outputs.public_prefix }}
+          R2_ENDPOINT_URL: ${{ secrets.S3_UPLOAD_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$R2_ENDPOINT_URL" ] || [ -z "$R2_ACCESS_KEY_ID" ] || [ -z "$R2_SECRET_ACCESS_KEY" ]; then
+            echo "Missing required R2 upload secrets." >&2
+            exit 1
+          fi
+
+          if [ -z "$TAG_NAME" ]; then
+            echo "TAG_NAME is required to determine release target." >&2
+            exit 1
+          fi
+
+          if [ -z "$RELEASE_PREFIX" ] || [ -z "$PUBLIC_PREFIX" ]; then
+            echo "Release routing information missing." >&2
+            exit 1
+          fi
+
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          export AWS_S3_FORCE_PATH_STYLE="true"
+
+          archive_key="${RELEASE_PREFIX}/latest.zip"
+          version_key="${RELEASE_PREFIX}/version.json"
+
+          aws s3 cp "build/latest.zip" "s3://${BUCKET_NAME}/${archive_key}" \
+            --endpoint-url "$R2_ENDPOINT_URL" \
+            --content-type "application/zip"
+
+          aws s3 cp "build/version.json" "s3://${BUCKET_NAME}/${version_key}" \
+            --endpoint-url "$R2_ENDPOINT_URL" \
+            --content-type "application/json"
+
+          {
+            echo "archive_key=$archive_key"
+            echo "archive_url=${PUBLIC_PREFIX}/latest.zip"
+            echo "version_key=$version_key"
+            echo "version_url=${PUBLIC_PREFIX}/version.json"
+          } >> "$GITHUB_OUTPUT"
+
+      #- name: Purge Cloudflare cache
+      #  env:
+      #    CF_CACHE_KEY: ${{ secrets.CF_CACHE_KEY }}
+      #  run: |
+      #    set -euo pipefail
+      #
+      #    if [ -z "$CF_CACHE_KEY" ]; then
+      #      echo "CF_CACHE_KEY secret is required to purge the Cloudflare cache." >&2
+      #      exit 1
+      #    fi
+      #
+      #    curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+      #      -H "Authorization: Bearer ${CF_CACHE_KEY}" \
+      #      -H "Content-Type: application/json" \
+      #      --data "{\"files\":[\"https://${BUCKET_HOST}/sonoranradio/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/version.json\",\"https://${BUCKET_HOST}/sonoranradio/fivem/archive/latest.zip\",\"https://${BUCKET_HOST}/sonoranradio/fivem/version.json\"]}"
+
+      - name: Summary
+        env:
+          RELEASE_VERSION: ${{ steps.metadata.outputs.release_version }}
+          PREVIOUS_VERSION: ${{ steps.metadata.outputs.previous_version }}
+        run: |
+          {
+            echo "## Release ${RELEASE_VERSION}"
+            echo ""
+            echo "- Previous version: ${PREVIOUS_VERSION}"
+            echo "- Archive uploaded to: \`${{ steps.upload.outputs.archive_key }}\`"
+            echo "- Public archive URL: ${{ steps.upload.outputs.archive_url }}"
+            echo ""
+            echo "- Version manifest uploaded to: \`${{ steps.upload.outputs.version_key }}\`"
+            echo "- Public manifest URL: ${{ steps.upload.outputs.version_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
