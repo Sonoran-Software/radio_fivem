@@ -55,7 +55,14 @@ jobs:
 
           git fetch --tags --force --prune >/dev/null 2>&1 || true
 
-          latest_tag="$(git tag --list --sort=-v:refname | head -n1)"
+          latest_tag=""
+          while IFS= read -r candidate_tag; do
+            if [[ "$candidate_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              latest_tag="$candidate_tag"
+              break
+            fi
+          done < <(git tag --merged HEAD --list --sort=-v:refname)
+
           if [[ -z "$latest_tag" ]]; then
             latest_tag="0.0.0"
           fi
