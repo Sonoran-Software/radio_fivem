@@ -425,6 +425,88 @@ function initClient()
 		radioToggle(frame)
 	end)
 
+	local specialKeyCodes = {
+		['b_100'] = 'MouseClick.LeftClick',
+		['b_101'] = 'MouseClick.RightClick',
+		['b_102'] = 'MouseClick.MiddleClick',
+		['b_103'] = 'MouseClick.ExtraBtn1',
+		['b_104'] = 'MouseClick.ExtraBtn2',
+		['b_105'] = 'MouseClick.ExtraBtn3',
+		['b_106'] = 'MouseClick.ExtraBtn4',
+		['b_107'] = 'MouseClick.ExtraBtn5',
+		['b_108'] = 'MouseClick.ExtraBtn6',
+		['b_109'] = 'MouseClick.ExtraBtn7',
+		['b_110'] = 'MouseClick.ExtraBtn8',
+		['b_115'] = 'WheelMouseMove.Up',
+		['b_116'] = 'WheelMouseMove.Up',
+		['b_130'] = 'NumpadSubstract',
+		['b_131'] = 'NumpadAdd',
+		['b_132'] = 'NumpadDecimal',
+		['b_134'] = 'NumpadMultiply',
+		['b_135'] = 'NumpadEnter',
+		['b_136'] = 'Numpad0',
+		['b_137'] = 'Numpad1',
+		['b_138'] = 'Numpad2',
+		['b_139'] = 'Numpad3',
+		['b_140'] = 'Numpad4',
+		['b_142'] = 'Numpad6',
+		['b_144'] = 'Numpad8',
+		['b_141'] = 'Numpad5',
+		['b_143'] = 'Numpad7',
+		['b_145'] = 'Numpad9',
+		['b_170'] = 'F1',
+		['b_171'] = 'F2',
+		['b_172'] = 'F3',
+		['b_173'] = 'F4',
+		['b_174'] = 'F5',
+		['b_175'] = 'F6',
+		['b_176'] = 'F7',
+		['b_177'] = 'F8',
+		['b_178'] = 'F9',
+		['b_179'] = 'F10',
+		['b_180'] = 'F11',
+		['b_181'] = 'F12',
+		['b_194'] = 'ArrowUp',
+		['b_195'] = 'ArrowDown',
+		['b_196'] = 'ArrowLeft',
+		['b_197'] = 'ArrowRight',
+		['b_198'] = 'Delete',
+		['b_199'] = 'Escape',
+		['b_200'] = 'Insert',
+		['b_210'] = 'Delete',
+		['b_211'] = 'Insert',
+		['b_212'] = 'End',
+		['b_1000'] = 'ShiftLeft',
+		['b_1001'] = 'ShiftRight',
+		['b_1002'] = 'Tab',
+		['b_1003'] = 'Enter',
+		['b_1004'] = 'Backspace',
+		['b_1006'] = 'ScrollLock',
+		['b_1007'] = 'Pause',
+		['b_1008'] = 'Home',
+		['b_1009'] = 'PageUp',
+		['b_1010'] = 'PageDown',
+		['b_1011'] = 'NumLock',
+		['b_1012'] = 'CapsLock',
+		['b_1013'] = 'ControlLeft',
+		['b_1014'] = 'ControlRight',
+		['b_1015'] = 'AltLeft',
+		['b_1016'] = 'AltRight',
+		['b_2000'] = 'Space',
+		['t_/'] = 'Slash',
+		['t_\\'] = 'Backslash',
+	}
+	local function getPttKey()
+		local key = GetControlInstructionalButton(0, 0xE364B8EC, true)
+		if specialKeyCodes[key] then
+			return 'SpecialKey.' .. specialKeyCodes[key], key
+		elseif key:sub(1, 2) == 't_' then
+			return key:sub(3)
+		else
+			print('warning: unknown ptt key code ' .. key)
+			return nil
+		end
+	end
 	local function getConfigKeybind(name)
 		if Config.keybinds and Config.keybinds[name] then
 			return Config.keybinds[name]
@@ -529,7 +611,8 @@ function initClient()
 		})
 		SendNUIMessage({
 			type = 'setVisible',
-			visibility = visible
+			visibility = visible,
+			pttKey = getPttKey()
 		})
 	end
 	function radioToggle(frame)
@@ -559,7 +642,8 @@ function initClient()
 		radActive = not radActive
 		DebugPrint(('[Keybind] Sending to radio frame from sonradradio: %s'):format(json.encode({
 			type = 'setVisible',
-			visibility = radActive
+			visibility = radActive,
+			pttKey = getPttKey()
 		})))
 		setRadioVisible(radActive, frame)
 		updateNuiFocus()

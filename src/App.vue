@@ -193,6 +193,7 @@ export default {
             standaloneServerId: null,
             standaloneRoomId: null,
             standaloneUrl: null,
+            pttKeyName: null,
             pttActive: false,
 
             showRadio: false,
@@ -678,6 +679,7 @@ export default {
                     break;
                 case 'setVisible':
                     this.showRadio = event.visibility;
+                    this.pttKeyName = event.pttKey;
                     break;
                 case 'reset':
                     localStorage.clear();
@@ -864,8 +866,13 @@ export default {
         },
         setPttState(state) {
             const active = state === true;
-            this.pttActive = active;
-            if (active && !this.radioPower) return;
+            if (active) {
+                if (this.pttActive || !this.radioPower) return;
+                this.pttActive = true;
+            } else {
+                // Releases are intentionally repeated so a missed message cannot leave PTT active.
+                this.pttActive = false;
+            }
             this.postRadioFrame({ type: 'ptt', state: active });
         },
         updateRadioScreenStyle() {
@@ -1049,6 +1056,12 @@ export default {
                     this.debugMoveFrameComponent(dir);
                 else
                     this.debugResizeFrameComponent(dir);
+            }
+
+            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
+            if (matchesPtt && !e.repeat) {
+                if (e.preventDefault) e.preventDefault();
+                this.setPttState(type === 'keydown');
             }
         },
 
