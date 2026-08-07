@@ -194,6 +194,7 @@ export default {
             standaloneRoomId: null,
             standaloneUrl: null,
             pttKeyName: null,
+            pttActive: false,
 
             showRadio: false,
             showTopRadio: false,
@@ -296,6 +297,7 @@ export default {
         this.postClient({ type: 'ready' });
     },
     beforeDestroy() {
+        this.setPttState(false);
         this.stopStreamDeckHealthPolling();
         this.closeStreamDeckSocket();
     },
@@ -700,8 +702,7 @@ export default {
                     this.setEmergencyCall(event.enabled, event);
                     break;
                 case 'ptt':
-                    if (!this.radioPower) return;
-                    this.postRadioFrame({ type: 'ptt', state: event.state });
+                    this.setPttState(event.state);
                     break;
                 case 'setVolume':
                     this.postRadioFrame({ type: 'set_global_volume', volume: Math.min(event.volume, 250) });
@@ -863,6 +864,17 @@ export default {
         postRadioFrame(data) {
             getRadioFrameEl('radio')?.contentWindow.postMessage(data, '*');
         },
+        setPttState(state) {
+            const active = state === true;
+            if (active) {
+                if (this.pttActive || !this.radioPower) return;
+                this.pttActive = true;
+            } else {
+                // Releases are intentionally repeated so a missed message cannot leave PTT active.
+                this.pttActive = false;
+            }
+            this.postRadioFrame({ type: 'ptt', state: active });
+        },
         updateRadioScreenStyle() {
             this.postRadioFrame({ type: 'screen_style', style: this.activeRadioScreenStyle });
         },
@@ -872,11 +884,13 @@ export default {
                     console.log('radio connected');
                     this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
+                    this.postRadioFrame({ type: 'ptt', state: this.pttActive && this.radioPower });
                     this.publishStreamDeckSnapshot();
                     this.onStandaloneConnected();
                     this.updateRadioScreenStyle();
                     break;
                 case "radio_disconnected":
+                    this.pttActive = false;
                     this.$store.commit('setConnected', { connected: false });
                     this.publishStreamDeckSnapshot(this.getStreamDeckDefaultSnapshot());
                     break;
@@ -1047,7 +1061,7 @@ export default {
             const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
-                this.postRadioFrame({ type: 'ptt', state: type === 'keydown' });
+                this.setPttState(type === 'keydown');
             }
         },
 
@@ -1291,6 +1305,7 @@ export default {
             );
 
             if (this.radioPower) return;
+            this.setPttState(false);
             // we need to remove the frame to "disconnect" from the radio
             // normally the iframe persists because it is only hidden, not disconnected
             this.$nextTick(() => {
