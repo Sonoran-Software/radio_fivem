@@ -764,6 +764,8 @@ function initClient()
 				type = 'set_display_name',
 				name = name
 			})
+		elseif action == 'repeater' then
+			WarMenu.OpenMenu('mobileRepeaterActivationMenu')
 		elseif action == Config.radioJammers.menuCommand then
 			TriggerServerEvent('SonoranRadio::Request::OpenJammerMenu')
 		elseif action == Config.geoChannels.friendlyCommand then
@@ -803,6 +805,7 @@ function initClient()
 		'refresh',
 		'reset',
 		'displayname',
+		'repeater',
 		Config.radioJammers.menuCommand,
 		Config.geoChannels.friendlyCommand,
 		'tablet'

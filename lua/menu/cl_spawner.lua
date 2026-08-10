@@ -97,6 +97,10 @@ function initMenu()
 		WarMenu.SetTitleColor('sonoranRadioMenu', 0, 0, 0, 255)
 		WarMenu.SetMenuTitleBackgroundSprite('sonoranRadioMenu', 'radio_menu_header', 'option_1')
 		WarMenu.SetSubTitle('sonoranRadioMenu', 'Sonoran Software')
+		WarMenu.CreateMenu('mobileRepeaterActivationMenu', ' SonoranRadio Menu')
+		WarMenu.SetTitleColor('mobileRepeaterActivationMenu', 0, 0, 0, 255)
+		WarMenu.SetMenuTitleBackgroundSprite('mobileRepeaterActivationMenu', 'radio_menu_header', 'option_1')
+		WarMenu.SetSubTitle('mobileRepeaterActivationMenu', 'Mobile Repeater')
 
 		local function defineMenu(id, parent, title)
 			WarMenu.CreateSubMenu(id, parent, title)
@@ -155,7 +159,10 @@ function initMenu()
 		end
 
 		while true do
-			if WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
+			if WarMenu.IsMenuOpened('mobileRepeaterActivationMenu') then
+				mobileRepeaterActivationMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 				WarMenu.MenuButton('Radio Repeaters', 'repeaterMenu')
 				if Config.chatter ~= false then
 					WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
@@ -515,18 +522,7 @@ function initMenu()
 	end
 
 	function mobileRepeaterMenu()
-		if Config.enableVehicleRepeaters then
-			local target, isTrailer, enabled = getCurrentMobileRepeaterState()
-			if target ~= 0 then
-				local subject = isTrailer and 'Attached Trailer Repeater' or 'Current Vehicle Repeater'
-				local action = enabled and ('Disable ' .. subject) or ('Enable ' .. subject)
-				if WarMenu.Button(action, enabled and 'Active' or 'Inactive') then
-					toggleCurrentMobileRepeater()
-				end
-			else
-				WarMenu.Button('No Compatible Vehicle Detected', 'Activation Unavailable')
-			end
-		end
+		mobileRepeaterActivationMenu()
 
 		local ped = PlayerPedId()
 		local vehicle = GetVehiclePedIsIn(ped, false)
@@ -553,6 +549,24 @@ function initMenu()
 			WarMenu.MenuButton('Remove Configured Vehicle', 'deleteMobileRepeaterMenu', tostring(#MobileRepeaterVehicles) .. ' configured')
 		else
 			WarMenu.Button('No Vehicles Configured')
+		end
+	end
+
+	function mobileRepeaterActivationMenu()
+		if not Config.enableVehicleRepeaters then
+			WarMenu.Button('Vehicle Repeaters Disabled')
+			return
+		end
+
+		local target, isTrailer, enabled = getCurrentMobileRepeaterState()
+		if target ~= 0 then
+			local subject = isTrailer and 'Attached Trailer Repeater' or 'Current Vehicle Repeater'
+			local action = enabled and ('Disable ' .. subject) or ('Enable ' .. subject)
+			if WarMenu.Button(action, enabled and 'Active' or 'Inactive') then
+				toggleCurrentMobileRepeater()
+			end
+		else
+			WarMenu.Button('No Compatible Vehicle Detected', 'Activation Unavailable')
 		end
 	end
 

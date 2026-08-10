@@ -179,7 +179,7 @@ function initRepeaters()
 					local notificationKey = ('%s:%s'):format(target, tostring(enabled))
 					if notificationKey ~= lastNotificationKey then
 						local subject = isTrailer and 'Your trailer' or 'This vehicle'
-						notifyClient(('%s is equipped with a radio repeater; use /radiomenu to %s it'):format(subject, enabled and 'disable' or 'enable'), nil, enabled and '~o~' or '~g~')
+						notifyClient(('%s is equipped with a radio repeater; use /radio repeater to %s it'):format(subject, enabled and 'disable' or 'enable'), nil, enabled and '~o~' or '~g~')
 						lastNotificationKey = notificationKey
 					end
 				else
