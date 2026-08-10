@@ -171,12 +171,6 @@ Config.frames = {
 
 -- Enable mobile repeaters
 Config.enableVehicleRepeaters = true
--- Mobile repeater keybinds
-Config.mobileRepeaterKeybind = {
-	mapperType = 'keyboard', -- See: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/
-	map = 'g', -- See: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/
-	label = 'Toggle Radio Repeater'
-}
 -- Mobile repeater vehicles are configured from /radiomenu and saved in
 -- mobileRepeaters.json. Existing Config.repeaterVehicleSpawncodes entries are
 -- imported automatically once, then managed by the menu.

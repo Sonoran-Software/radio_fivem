@@ -97,6 +97,48 @@ local function getPlayerRepeaterTarget()
 	return 0, false
 end
 
+function getCurrentMobileRepeaterState()
+	if Config.enableVehicleRepeaters ~= true then
+		return 0, false, false
+	end
+
+	local target, isTrailer = getPlayerRepeaterTarget()
+	if target == 0 then
+		return 0, false, false
+	end
+
+	ensureRepeaterDecor(target)
+	return target, isTrailer, DecorGetBool(target, 'RepeaterActive')
+end
+
+function toggleCurrentMobileRepeater()
+	if Config.enableVehicleRepeaters ~= true then
+		return false
+	end
+
+	local ped = PlayerPedId()
+	local occupiedVehicle = GetVehiclePedIsIn(ped, false)
+	if occupiedVehicle == 0 or (GetPedInVehicleSeat(occupiedVehicle, -1) ~= ped and GetPedInVehicleSeat(occupiedVehicle, 0) ~= ped) then
+		notifyClient('You must be in the driver or front passenger seat to toggle the radio repeater', nil, '~r~')
+		return false
+	end
+
+	local target, isTrailer, enabled = getCurrentMobileRepeaterState()
+	if target == 0 then
+		notifyClient('This vehicle is not equipped with radio repeaters', nil, '~r~')
+		return false
+	end
+
+	enabled = not enabled
+	if not setRepeaterEnabled(target, enabled) then
+		return false
+	end
+
+	local subject = isTrailer and 'Trailer radio repeater' or 'Radio repeater'
+	notifyClient(('%s %s'):format(subject, enabled and 'enabled' or 'disabled'), nil, enabled and '~g~' or '~o~')
+	return true
+end
+
 function initRepeaters()
 	RepeaterVehicles = {}
 	local lastNotificationKey = nil
@@ -137,7 +179,7 @@ function initRepeaters()
 					local notificationKey = ('%s:%s'):format(target, tostring(enabled))
 					if notificationKey ~= lastNotificationKey then
 						local subject = isTrailer and 'Your trailer' or 'This vehicle'
-						notifyClient(('%s is equipped with a radio repeater; use the repeater keybind to %s it'):format(subject, enabled and 'disable' or 'enable'), nil, enabled and '~o~' or '~g~')
+						notifyClient(('%s is equipped with a radio repeater; use /radiomenu to %s it'):format(subject, enabled and 'disable' or 'enable'), nil, enabled and '~o~' or '~g~')
 						lastNotificationKey = notificationKey
 					end
 				else
@@ -146,38 +188,6 @@ function initRepeaters()
 			end
 		end
 	end)
-
-	RegisterCommand('togglerepeater', function()
-		if not Config.enableVehicleRepeaters then
-			return
-		end
-
-		local ped = PlayerPedId()
-		local occupiedVehicle = GetVehiclePedIsIn(ped, false)
-		if occupiedVehicle == 0 or (GetPedInVehicleSeat(occupiedVehicle, -1) ~= ped and GetPedInVehicleSeat(occupiedVehicle, 0) ~= ped) then
-			return notifyClient('You must be in the driver or front passenger seat to toggle the radio repeater', nil, '~r~')
-		end
-
-		local target, isTrailer = getPlayerRepeaterTarget()
-		if target == 0 then
-			return notifyClient('This vehicle is not equipped with radio repeaters', nil, '~r~')
-		end
-
-		ensureRepeaterDecor(target)
-		local enabled = not DecorGetBool(target, 'RepeaterActive')
-		if setRepeaterEnabled(target, enabled) then
-			local subject = isTrailer and 'Trailer radio repeater' or 'Radio repeater'
-			notifyClient(('%s %s'):format(subject, enabled and 'enabled' or 'disabled'), nil, enabled and '~g~' or '~o~')
-		end
-	end)
-
-	if Config.enableVehicleRepeaters then
-		Config.mobileRepeaterKeybind = Config.mobileRepeaterKeybind or {}
-		Config.mobileRepeaterKeybind.label = Config.mobileRepeaterKeybind.label or 'Toggle Radio Repeater'
-		Config.mobileRepeaterKeybind.mapperType = Config.mobileRepeaterKeybind.mapperType or 'keyboard'
-		Config.mobileRepeaterKeybind.map = Config.mobileRepeaterKeybind.map or 'g'
-		RegisterKeyMapping('togglerepeater', Config.mobileRepeaterKeybind.label, Config.mobileRepeaterKeybind.mapperType, Config.mobileRepeaterKeybind.map)
-	end
 
 	TriggerServerEvent('SonoranRadio::RequestMobileRepeaters')
 end

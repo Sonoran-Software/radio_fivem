@@ -515,6 +515,19 @@ function initMenu()
 	end
 
 	function mobileRepeaterMenu()
+		if Config.enableVehicleRepeaters then
+			local target, isTrailer, enabled = getCurrentMobileRepeaterState()
+			if target ~= 0 then
+				local subject = isTrailer and 'Attached Trailer Repeater' or 'Current Vehicle Repeater'
+				local action = enabled and ('Disable ' .. subject) or ('Enable ' .. subject)
+				if WarMenu.Button(action, enabled and 'Active' or 'Inactive') then
+					toggleCurrentMobileRepeater()
+				end
+			else
+				WarMenu.Button('No Compatible Vehicle Detected', 'Activation Unavailable')
+			end
+		end
+
 		local ped = PlayerPedId()
 		local vehicle = GetVehiclePedIsIn(ped, false)
 		if vehicle ~= 0 then
@@ -552,7 +565,7 @@ function initMenu()
 
 		WarMenu.Button('Detected Vehicle', getFriendlyVehicleLabel(vehicle))
 		local labelPressed, labelInput = WarMenu.InputButton('Menu Label', 'Mobile Repeater Vehicle Label', mobileRepeaterState.label, 64, mobileRepeaterState.label)
-		if labelPressed and labelInput ~= '' then
+		if labelPressed and labelInput ~= nil and labelInput ~= '' then
 			mobileRepeaterState.label = labelInput
 		end
 
