@@ -7,6 +7,7 @@ local mobileRepeaterConfig = {
 local mobileRepeatersInitialized = false
 local activeRepeaterTrackerStarted = false
 local mobileRepeaterConfigFile = 'mobileRepeaters.json'
+local destroyedEngineHealth = -1000.0
 
 local function trim(value)
 	return tostring(value or ''):gsub('^%s+', ''):gsub('%s+$', '')
@@ -194,7 +195,9 @@ local function startActiveRepeaterTracker()
 			for networkId, activeRepeater in pairs(activeRepeaters) do
 				local vehicle = getNetworkVehicle(0, networkId, false)
 				local vehicleConfig = getVehicleRepeaterConfig(vehicle)
-				if not vehicleConfig or vehicleConfig.modelHash ~= activeRepeater.modelHash then
+				local engineHealth = vehicle and GetVehicleEngineHealth(vehicle) or nil
+				if not vehicleConfig or vehicleConfig.modelHash ~= activeRepeater.modelHash or
+					(engineHealth and engineHealth < destroyedEngineHealth) then
 					disableActiveRepeater(networkId)
 				else
 					exports['sonoranradio']:updateTower(activeRepeater.towerId, buildRepeaterTower(vehicle, vehicleConfig))
