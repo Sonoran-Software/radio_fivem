@@ -37,6 +37,13 @@ function initMenu()
 		calculatedHeading = nil
 	}
 
+	local mobileRepeaterState = {
+		targetVehicle = 0,
+		label = '',
+		range = '200',
+		removeIndex = 1
+	}
+
 	local selectedConfig = {
 		componentId = nil,
 		drawableId = nil,
@@ -101,6 +108,9 @@ function initMenu()
 		defineMenu('spawnRadioMenu', 'repeaterMenu', 'Spawn Repeater')
 		defineMenu('moveRadioMenu', 'repeaterMenu', 'Move Repeater')
 		defineMenu('deleteRadioMenu', 'repeaterMenu', 'Delete Repeater')
+		defineMenu('mobileRepeaterMenu', 'repeaterMenu', 'Mobile Repeater Vehicles')
+		defineMenu('configureMobileRepeaterMenu', 'mobileRepeaterMenu', 'Configure Vehicle')
+		defineMenu('deleteMobileRepeaterMenu', 'mobileRepeaterMenu', 'Remove Vehicle')
 
 		-- permanent scanner menus
 		defineMenu('staticScannerMenu', 'sonoranRadioMenu', 'Permanent Scanners')
@@ -161,6 +171,9 @@ function initMenu()
 				WarMenu.MenuButton('Spawn Repeater', 'spawnRadioMenu')
 				WarMenu.MenuButton('Move Repeater', 'moveRadioMenu')
 				WarMenu.MenuButton('Delete Repeater', 'deleteRadioMenu')
+				if WarMenu.MenuButton('Mobile Repeater Vehicles', 'mobileRepeaterMenu') then
+					TriggerServerEvent('SonoranRadio::RequestMobileRepeaters')
+				end
 				if WarMenu.Button('Repair All Repeaters') then
 					TriggerServerEvent('RadioTower:RepairAllTowers')
 				end
@@ -173,6 +186,15 @@ function initMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('deleteRadioMenu') then
 				deletingRadioRepeater()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('mobileRepeaterMenu') then
+				mobileRepeaterMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('configureMobileRepeaterMenu') then
+				configureMobileRepeaterMenu()
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('deleteMobileRepeaterMenu') then
+				deleteMobileRepeaterMenu()
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('staticScannerMenu') then
 				WarMenu.MenuButton('Spawn Scanner', 'staticScannerSpawnMenu')
@@ -455,6 +477,144 @@ function initMenu()
 
 			Wait(0)
 		end
+	end)
+
+	local function getConfiguredMobileRepeater(modelHash)
+		for _, vehicleConfig in ipairs(MobileRepeaterVehicles or {}) do
+			if tonumber(vehicleConfig.modelHash) == modelHash then
+				return vehicleConfig
+			end
+		end
+		return nil
+	end
+
+	local function getFriendlyVehicleLabel(vehicle)
+		local displayName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
+		local label = displayName and GetLabelText(displayName) or nil
+		if not label or label == '' or label == 'NULL' then
+			label = displayName
+		end
+		if not label or label == '' or label == 'CARNOTFOUND' then
+			label = 'Vehicle ' .. tostring(GetEntityModel(vehicle))
+		end
+		return label
+	end
+
+	local function beginMobileRepeaterConfiguration(vehicle)
+		if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
+			notifyClient('Enter the vehicle you want to configure first', nil, '~r~')
+			return
+		end
+
+		local modelHash = GetEntityModel(vehicle)
+		local existing = getConfiguredMobileRepeater(modelHash)
+		mobileRepeaterState.targetVehicle = vehicle
+		mobileRepeaterState.label = existing and existing.label or getFriendlyVehicleLabel(vehicle)
+		mobileRepeaterState.range = tostring(existing and existing.range or 200)
+		WarMenu.OpenMenu('configureMobileRepeaterMenu')
+	end
+
+	function mobileRepeaterMenu()
+		local ped = PlayerPedId()
+		local vehicle = GetVehiclePedIsIn(ped, false)
+		if vehicle ~= 0 then
+			local existing = getConfiguredMobileRepeater(GetEntityModel(vehicle))
+			local action = existing and 'Update Current Vehicle' or 'Add Current Vehicle'
+			if WarMenu.Button(action, getFriendlyVehicleLabel(vehicle)) then
+				beginMobileRepeaterConfiguration(vehicle)
+			end
+
+			local hasTrailer, trailer = GetVehicleTrailerVehicle(vehicle)
+			if hasTrailer and trailer ~= 0 then
+				local trailerExisting = getConfiguredMobileRepeater(GetEntityModel(trailer))
+				local trailerAction = trailerExisting and 'Update Attached Trailer' or 'Add Attached Trailer'
+				if WarMenu.Button(trailerAction, getFriendlyVehicleLabel(trailer)) then
+					beginMobileRepeaterConfiguration(trailer)
+				end
+			end
+		else
+			WarMenu.Button('Enter a Vehicle to Add')
+		end
+
+		if #(MobileRepeaterVehicles or {}) > 0 then
+			WarMenu.MenuButton('Remove Configured Vehicle', 'deleteMobileRepeaterMenu', tostring(#MobileRepeaterVehicles) .. ' configured')
+		else
+			WarMenu.Button('No Vehicles Configured')
+		end
+	end
+
+	function configureMobileRepeaterMenu()
+		local vehicle = mobileRepeaterState.targetVehicle
+		if vehicle == 0 or not DoesEntityExist(vehicle) then
+			WarMenu.Button('Selected Vehicle Unavailable')
+			return
+		end
+
+		WarMenu.Button('Detected Vehicle', getFriendlyVehicleLabel(vehicle))
+		local labelPressed, labelInput = WarMenu.InputButton('Menu Label', 'Mobile Repeater Vehicle Label', mobileRepeaterState.label, 64, mobileRepeaterState.label)
+		if labelPressed and labelInput ~= '' then
+			mobileRepeaterState.label = labelInput
+		end
+
+		local rangePressed, rangeInput = WarMenu.InputButton('Repeater Range', 'Mobile Repeater Range (1-10000)', mobileRepeaterState.range, 10, mobileRepeaterState.range .. 'm')
+		if rangePressed and rangeInput ~= nil then
+			local numericRange = tonumber(rangeInput)
+			if numericRange and numericRange >= 1 and numericRange <= 10000 then
+				mobileRepeaterState.range = tostring(numericRange)
+			else
+				notifyClient('Repeater range must be a number from 1 to 10000', nil, '~r~')
+			end
+		end
+
+		if WarMenu.Button('Save Vehicle Repeater', 'Confirm') then
+			if mobileRepeaterState.label == '' then
+				return notifyClient('Enter a label for this vehicle', nil, '~r~')
+			end
+			if not NetworkGetEntityIsNetworked(vehicle) then
+				return notifyClient('This vehicle is not networked and cannot be configured', nil, '~r~')
+			end
+			local networkId = NetworkGetNetworkIdFromEntity(vehicle)
+			if not networkId or networkId <= 0 then
+				return notifyClient('Could not identify this vehicle on the server', nil, '~r~')
+			end
+			TriggerServerEvent('SonoranRadio::SaveMobileRepeaterVehicle', networkId, mobileRepeaterState.label, tonumber(mobileRepeaterState.range))
+		end
+	end
+
+	function deleteMobileRepeaterMenu()
+		local vehicles = MobileRepeaterVehicles or {}
+		if #vehicles == 0 then
+			mobileRepeaterState.removeIndex = 1
+			WarMenu.Button('No Vehicles Configured')
+			return
+		end
+
+		if mobileRepeaterState.removeIndex > #vehicles then
+			mobileRepeaterState.removeIndex = #vehicles
+		end
+		local labels = {}
+		for _, vehicleConfig in ipairs(vehicles) do
+			table.insert(labels, ('%s (%sm)'):format(vehicleConfig.label, vehicleConfig.range))
+		end
+		WarMenu.ComboBox('Configured Vehicle:', labels, mobileRepeaterState.removeIndex, mobileRepeaterState.removeIndex, function(current)
+			mobileRepeaterState.removeIndex = current
+		end)
+
+		local selected = vehicles[mobileRepeaterState.removeIndex]
+		if selected and WarMenu.Button('Remove Vehicle Repeater', 'Confirm') then
+			TriggerServerEvent('SonoranRadio::DeleteMobileRepeaterVehicle', selected.modelHash)
+		end
+	end
+
+	RegisterNetEvent('SonoranRadio::MobileRepeaterSaved', function(vehicleConfig, updated)
+		notifyClient(('%s %s as a mobile repeater vehicle'):format(vehicleConfig.label, updated and 'updated' or 'added'), nil, '~g~')
+		WarMenu.OpenMenu('mobileRepeaterMenu')
+	end)
+
+	RegisterNetEvent('SonoranRadio::MobileRepeaterDeleted', function()
+		mobileRepeaterState.removeIndex = 1
+		notifyClient('Mobile repeater vehicle removed', nil, '~g~')
+		WarMenu.OpenMenu('mobileRepeaterMenu')
 	end)
 
 	function spawningRadioRepeater()

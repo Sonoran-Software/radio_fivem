@@ -894,51 +894,21 @@ function initThreads()
             --     DebugPrint(('best cell repeater quality:%.4f'):format(
             --                    bestCellRepeaterQuality))
             -- end
-            -- Check if the players vehicle's radio repeater is active and if the player has control of the vehicle (not in a cutscene, etc.)
-            if DecorGetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                            'RepeaterActive') and
-                NetworkHasControlOfEntity(
-                    GetVehiclePedIsIn(GetPlayerPed(-1), false)) then
-                -- Check if the vehicle is not damaged beyond repair. | 0 and below: Engine catches fire and health rapidly declines | 300: Engine is smoking and losing functionality | 1000: Engine is perfectly fine
-                if GetVehicleEngineHealth(
-                    GetVehiclePedIsIn(GetPlayerPed(-1, false))) < -1000 then
-                    -- If the vehicle is damaged beyond repair, disable the repeater and notify the player
-                    -- Set the decor bool to false
-                    DecorSetBool(GetVehiclePedIsIn(GetPlayerPed(-1), false),
-                                 'RepeaterActive', false)
-                    -- Trigger the server event to toggle the repeater. Parameters: vehicle network ID, repeater status, vehicle position, repeater range
-                    TriggerServerEvent('sonoranscripts::togglerepeater',
-                                       NetworkGetNetworkIdFromEntity(
-                                           GetVehiclePedIsIn(GetPlayerPed(-1),
-                                                             false)))
-                    -- Show a notification to the player
-                    notifyClient(
-                        'Radio repeater disabled due to engine damage', nil, '~o~')
-                    -- Remove the vehicle from the repeater table
-                    RepeaterVehicles[GetVehiclePedIsIn(GetPlayerPed(-1), false)] =
-                        nil
-                end
-                -- Update the repeater position every 100ms
-                TriggerServerEvent('sonoranscripts::updatepos',
-                                   NetworkGetNetworkIdFromEntity(
-                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-                                   GetEntityCoords(
-                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)),
-                                   getVehicleConfig(
-                                       GetVehiclePedIsIn(GetPlayerPed(-1), false)).range)
-            end
-            -- Loop through the repeater table and check if the vehicle still exists and if it is damaged beyond repair
-            for k, _ in pairs(RepeaterVehicles) do
-                if not DoesEntityExist(k) then
-                    RepeaterVehicles[k] = nil
-                end
-                if GetVehicleEngineHealth(k) < -1000 then
-                    DecorSetBool(k, 'RepeaterActive', false)
-                    TriggerServerEvent('sonoranscripts::togglerepeater',
-                                       NetworkGetNetworkIdFromEntity(k))
-                    notifyClient(
-                        'Radio repeater disabled due to engine damage', nil, '~o~')
-                    RepeaterVehicles[k] = nil
+            -- Disable damaged vehicle and trailer repeaters. Position updates are
+            -- tracked server-side from the networked entity.
+            for vehicle in pairs(RepeaterVehicles) do
+                if not DoesEntityExist(vehicle) then
+                    RepeaterVehicles[vehicle] = nil
+                elseif GetVehicleEngineHealth(vehicle) < -1000 then
+                    DecorSetBool(vehicle, 'RepeaterActive', false)
+                    if NetworkGetEntityIsNetworked(vehicle) then
+                        local networkId = NetworkGetNetworkIdFromEntity(vehicle)
+                        if networkId and networkId > 0 then
+                            TriggerServerEvent('sonoranscripts::togglerepeater', networkId, false)
+                        end
+                    end
+                    notifyClient('Radio repeater disabled due to engine damage', nil, '~o~')
+                    RepeaterVehicles[vehicle] = nil
                 end
             end
             Wait(3000)

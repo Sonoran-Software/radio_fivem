@@ -49,4 +49,4 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | WRN-213 | WRN_APIKEY_CONVAR_UNINITIALIZED | The `apiKey` convar was not initialized from `sonoranradio.cfg`. | Ensure `sonoranradio.cfg` is executed before the resource starts. |
 | WRN-214 | WRN_CHATTER_EXCLUSIONS_OVERWRITE_DEPRECATED | `Config.chatterExclusions` overwrote `earpieces.json` even though the config path is deprecated. | Remove `Config.chatterExclusions` from config and migrate to `earpieces.json`. |
 | WRN-215 | WRN_CHATTER_EXCLUSIONS_DEPRECATED | `Config.chatterExclusions` is deprecated. | Move chatter exclusion management to `earpieces.json` or the in-game menu. |
-
+| WRN-216 | WRN_MOBILE_REPEATERS_CONFIG_MIGRATED | Legacy `Config.repeaterVehicleSpawncodes` entries were imported into `mobileRepeaters.json`. | Remove the deprecated `Config.repeaterVehicleSpawncodes` block and use `/radiomenu` for future changes. |
