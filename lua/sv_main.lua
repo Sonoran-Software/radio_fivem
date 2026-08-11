@@ -957,6 +957,7 @@ local defaultJsonConfigFiles = {
 	['towers.json']    = 'towers.DEFAULT.json',
 	['geochannels.json'] = 'geochannels.DEFAULT.json',
 	['tunnels.json']   = 'tunnels.DEFAULT.json',
+	['mobileRepeaters.json'] = 'mobileRepeaters.DEFAULT.json',
 }
 function LoadJsonConfig(file)
 	local resourceName = GetCurrentResourceName()
@@ -1160,6 +1161,9 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 	getInventory()
 	getFramework()
+	if type(InitMobileRepeaters) == 'function' then
+		InitMobileRepeaters()
+	end
 	local initConfigPromise = createClientConfig()
 
 	-- initialize towers

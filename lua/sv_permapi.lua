@@ -251,7 +251,7 @@ RegisterNetEvent('SonoranRadio::SyncPlayerDisplayName', function(accId)
 			debugLog('Failed to sync display name, user not found.')
 			return
 		end
-		errorLog('Failed to sync player name to radio display name. Please check your configuration.')
+		errorLog('ERR_SERVER_NAME_SET_FAILED', 'Failed to sync player name to radio display name. Please check your configuration.')
 	end)
 end)
 

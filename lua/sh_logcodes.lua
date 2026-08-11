@@ -58,6 +58,10 @@ WarningCodes = {
 	['WRN_CHATTER_EXCLUSIONS_DEPRECATED'] = {
 		code = 'WRN-215',
 		message = 'Config.chatterExclusions is deprecated.'
+	},
+	['WRN_MOBILE_REPEATERS_CONFIG_MIGRATED'] = {
+		code = 'WRN-216',
+		message = 'Legacy Config.repeaterVehicleSpawncodes entries were migrated to mobileRepeaters.json.'
 	}
 }
 
