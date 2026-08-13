@@ -1607,6 +1607,16 @@ function initMenu()
 		return closestPoint, minDistance
 	end
 
+	local function getDistanceToZone(zone, playerCoords)
+		if zone.isCircleZone and zone.center and zone.radius then
+			local dx = playerCoords.x - zone.center.x
+			local dy = playerCoords.y - zone.center.y
+			return math.abs(math.sqrt((dx * dx) + (dy * dy)) - zone.radius)
+		end
+		local _, distance = getClosestPointOnPolygon(zone.points or {}, playerCoords)
+		return distance
+	end
+
 	function degradeEditMenu()
 		local buttonLabel = zoneVisibility and "Hide Zones" or "Show Zones"
 
@@ -1656,7 +1666,7 @@ function initMenu()
 				local playerCoords = GetEntityCoords(playerPed)
 
 				-- Get closest distance
-				local _, distance = getClosestPointOnPolygon(zone.points, playerCoords)
+				local distance = getDistanceToZone(zone, playerCoords)
 
 				if WarMenu.Button('Distance to ' .. polyzoneState.zoneId .. ': ' .. string.format("%.1f", distance) .. 'm') then
 				end
@@ -1967,7 +1977,7 @@ function initMenu()
 				zone:toggleDraw(true, {255, 0, 0})
 				local playerPed = PlayerPedId()
 				local playerCoords = GetEntityCoords(playerPed)
-				local _, distance = getClosestPointOnPolygon(zone.points, playerCoords)
+				local distance = getDistanceToZone(zone, playerCoords)
 				if WarMenu.Button('Distance to ' .. geoZoneState.zoneId .. ': ' .. string.format("%.1f", distance) .. 'm') then
 				end
 				if WarMenu.MenuButton('Transmit Channels', 'geoTransmitMenu') then
