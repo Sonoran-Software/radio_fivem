@@ -6,7 +6,10 @@ local ApiEndpoints = {
 	['SET-SERVER-SPEAKERS'] = true,
 	['SET-USER-DISPLAY-NAME'] = true,
 	['PLAY-TONE'] = true,
-	['SET-ZONES'] = true
+	['GET-ZONES'] = true,
+	['CREATE-ZONE'] = true,
+	['UPDATE-ZONE'] = true,
+	['DELETE-ZONE'] = true
 }
 
 local function getSonoranRadioClientKey()
@@ -128,8 +131,14 @@ local function callApiEndpoint(type, postData)
 		return client:setUserDisplayNameV2(payload)
 	elseif type == 'PLAY-TONE' then
 		return client:playToneV2(payload.tones or {}, payload.playTo, Config.comId)
-	elseif type == 'SET-ZONES' then
-		return client:setZonesV2(payload)
+	elseif type == 'GET-ZONES' then
+		return client:getZonesV2()
+	elseif type == 'CREATE-ZONE' then
+		return client:createZoneV2(payload.zoneType, payload.zone)
+	elseif type == 'UPDATE-ZONE' then
+		return client:updateZoneV2(payload.zoneType, payload.zoneName, payload.zone)
+	elseif type == 'DELETE-ZONE' then
+		return client:deleteZoneV2(payload.zoneType, payload.zoneName)
 	end
 end
 
