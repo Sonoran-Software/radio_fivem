@@ -46,6 +46,10 @@ Config.heavySignalDegradeInWater = { -- Heavily degrade radio signal while the p
 	pedUnderWaterDegredation = 0.3 -- Signal strength multiplier when the player is underwater (e.g. 0.3 would reduce signal strength to 30% of normal)
 }
 Config.disableAnimation = false -- Disable the radio animation if you are using a custom radio animation script
+Config.pttAnimation = {
+	dictionary = 'random@arrests', -- Animation dictionary used while transmitting with the radio closed
+	name = 'generic_radio_chatter' -- Animation name used while transmitting with the radio closed
+}
 Config.noPhysicalCellRepeaters = false -- Set to true to hide physical cell repeaters
 Config.noPhysicalRacks = false -- Set to true to hide physical server racks
 Config.noPhysicalTowers = false -- Set to true to hide physical towers

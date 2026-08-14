@@ -361,6 +361,12 @@ function initClient()
 		end
 	end)
 
+	local pttAnimationConfig = type(Config.pttAnimation) == 'table' and Config.pttAnimation or {}
+	local pttAnimationDictionary = type(pttAnimationConfig.dictionary) == 'string' and
+		pttAnimationConfig.dictionary ~= '' and pttAnimationConfig.dictionary or 'random@arrests'
+	local pttAnimationName = type(pttAnimationConfig.name) == 'string' and pttAnimationConfig.name ~= '' and
+		pttAnimationConfig.name or 'generic_radio_chatter'
+
 	Radio = {
 		HasItem = false,
 		Open = false,
@@ -384,6 +390,8 @@ function initClient()
 			'cellphone_call_listen_a',
 			'generic_radio_chatter'
 		},
+		PttAnimationDictionary = pttAnimationDictionary,
+		PttAnimationName = pttAnimationName,
 		Clicks = true, -- Radio clicks
 		TalkAnim = false
 	}
@@ -1258,11 +1266,11 @@ function initClient()
 
 					isTalking = true
 				else
-					RequestAnimDict('random@arrests')
-					while not HasAnimDictLoaded('random@arrests') do
+					RequestAnimDict(self.PttAnimationDictionary)
+					while not HasAnimDictLoaded(self.PttAnimationDictionary) do
 						Citizen.Wait(5)
 					end
-					TaskPlayAnim(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+					TaskPlayAnim(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, 8.0, 0.0, -1, 49, 0, 0, 0, 0)
 					isTalking = true
 				end
 			else
@@ -1284,14 +1292,14 @@ function initClient()
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
 					isTalking = false
 				else
-					StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
+					StopAnimTask(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, -4.0)
 					isTalking = false
 				end
 			end
 		else
 			if isTalking then
 				StopAnimTask(PlayerPedId(), 'cellphone@str', 'cellphone_call_listen_a', -4.0)
-				StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
+				StopAnimTask(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, -4.0)
 				isTalking = false
 			end
 		end
