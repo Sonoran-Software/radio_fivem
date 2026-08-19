@@ -2,7 +2,8 @@
     "name": "sonoranradio_nui",
     "private": true,
     "scripts": {
-        "build": "webpack --mode production"
+        "build": "webpack --mode production",
+        "test": "node tests/inputCodes.test.js"
     },
     "browserslist": [
         "chrome >= 91"
