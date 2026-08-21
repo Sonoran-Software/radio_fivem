@@ -848,6 +848,9 @@ local function create_client(config, adapter)
   instance.banUserV2 = function(self, data)
     return self:_request("POST", "v2/general/account-bans", { body = normalize_v2_target_aliases(data) })
   end
+  instance.getPenalCodesV2 = function(self)
+    return self:_request("GET", "v2/general/penal-codes")
+  end
   instance.setPenalCodesV2 = function(self, codes)
     return self:_request("PUT", "v2/general/penal-codes", { body = { codes = codes } })
   end
@@ -1106,9 +1109,22 @@ local function create_client(config, adapter)
     self:_assert_positive_integer(call_id, "callId")
     return self:_request("DELETE", "v2/emergency/servers/" .. tostring(resolved_server_id) .. "/calls/911/" .. tostring(call_id))
   end
+  instance.getDispatchTemplatesV2 = function(self, template_id)
+    if template_id ~= nil then
+      self:_assert_positive_integer(template_id, "templateId")
+      return self:_request("GET", "v2/emergency/dispatch-templates/" .. tostring(template_id))
+    end
+    return self:_request("GET", "v2/emergency/dispatch-templates")
+  end
   instance.createDispatchCallV2 = function(self, data)
     local resolved_server_id = self:_resolve_server_id(data and data.serverId)
     return self:_request("POST", "v2/emergency/servers/" .. tostring(resolved_server_id) .. "/dispatch-calls", {
+      body = normalize_v2_target_aliases(strip_keys(data, { "serverId" }))
+    })
+  end
+  instance.createCustomDispatchCallV2 = function(self, data)
+    local resolved_server_id = self:_resolve_server_id(data and data.serverId)
+    return self:_request("POST", "v2/emergency/servers/" .. tostring(resolved_server_id) .. "/custom-dispatch-calls", {
       body = normalize_v2_target_aliases(strip_keys(data, { "serverId" }))
     })
   end
@@ -1344,6 +1360,10 @@ local function create_client(config, adapter)
     return self:_request("GET", "v2/server-subscriptions/by-ip", {
       authenticated = false
     })
+  end
+  instance.getServerSubscriptionV2 = function(self, community_id)
+    local resolved_community_id = self:_resolve_radio_community_id(community_id)
+    return self:_request("GET", "v2/servers/" .. tostring(resolved_community_id) .. "/subscription")
   end
   instance.setServerIpV2 = function(self, data)
     local resolved_community_id = self:_resolve_radio_community_id(data and data.communityId)
