@@ -222,7 +222,7 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
-            listenerEntitled: false,
+            subscription: 0,
             streamDeck: {
                 healthUrl: 'http://127.0.0.1:39112/streamdeck/fivem/health',
                 socketUrl: 'ws://127.0.0.1:39112/streamdeck/fivem/socket',
@@ -420,7 +420,7 @@ export default {
             return skinNames;
         },
         chatterEnabled() {
-            return this.chatterFeatureEnabled && this.listenerEntitled && !!this.standaloneServerId && !this.radioPower;
+            return this.chatterFeatureEnabled && this.subscription >= 2 && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
             return !!this.standaloneServerId;
@@ -677,14 +677,12 @@ export default {
                     this.standaloneUrl = event.standaloneUrl;
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
-                    this.listenerEntitled = event.listenerEntitled === true;
+                    this.subscription = Number(event.subscription) || 0;
                     this.debug.enabled = event.debug;
                     this.emergencyCall.name = event.displayName;
                     break;
-                case 'setListenerEntitlement':
-                    this.listenerEntitled = event.allowed === true;
-                    if (!this.listenerEntitled && this.scannerMenu.open)
-                        this.scannerMenu.open = false;
+                case 'setSubscription':
+                    this.subscription = Number(event.subscription) || 0;
                     break;
                 case 'setDebug':
                     this.debug.enabled = !!event.enabled;
@@ -1016,13 +1014,11 @@ export default {
                     this.requestScannerProfilePerms();
                     break;
                 case 'listener_access_denied':
-                    this.listenerEntitled = false;
                     this.scannerMenu.open = false;
                     this.notifyPlayer(
                         event.error || 'Radio scanners require a Sonoran Radio Pro subscription.',
                         '~r~'
                     );
-                    this.postClient({ type: 'listenerAccessDenied' }, 'scanners');
                     break;
             }
         },
@@ -1366,10 +1362,6 @@ export default {
             });
         },
         scannerPower() {
-            if (!this.listenerEntitled) {
-                this.notifyPlayer('Radio scanners require a Sonoran Radio Pro subscription.', '~r~');
-                return;
-            }
             this.scannerMenu.state = {
                 powered: !this.scannerMenu.state?.powered,
                 channelId: this.$store.getters.chatterDefaultProfileId
@@ -1377,10 +1369,6 @@ export default {
             this.postClient({ type: 'setScanner', id: this.scannerMenu.id, state: this.scannerMenu.state }, 'scanners');
         },
         scannerAdvChannel(offset) {
-            if (!this.listenerEntitled) {
-                this.notifyPlayer('Radio scanners require a Sonoran Radio Pro subscription.', '~r~');
-                return;
-            }
             if (!this.scannerMenu.state) return;
             const profiles = this.$store.getters.chatterProfilesSorted.filter(x =>
                 x.visibility === 'public' || this.scannerMenu.allowedProfileIds.includes(x.id)

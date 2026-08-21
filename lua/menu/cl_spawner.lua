@@ -165,23 +165,13 @@ function initMenu()
 			elseif WarMenu.IsMenuOpened('sonoranRadioMenu') then -- Main menu processing
 				WarMenu.MenuButton('Radio Repeaters', 'repeaterMenu')
 				if Config.chatter ~= false then
-					if SonoranRadioListenerEntitledClient() then
-						WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
-					elseif WarMenu.Button('Permanent Scanners', '~r~Pro Required') then
-						RequestSonoranRadioListenerEntitlement()
-						NotifySonoranRadioListenerProRequired()
-					end
+					WarMenu.MenuButton('Permanent Scanners', 'staticScannerMenu')
 				end
 				WarMenu.MenuButton('Degradation Zones', 'degradeMenu')
 				WarMenu.MenuButton('Geo Channels', 'geoMenu')
 				WarMenu.MenuButton('Toneboard Speaker Menu', 'toneboardMenu')
 				if Config.chatter ~= false then
-					if SonoranRadioListenerEntitledClient() then
-						WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
-					elseif WarMenu.Button('Configure Earpiece Chatter', '~r~Pro Required') then
-						RequestSonoranRadioListenerEntitlement()
-						NotifySonoranRadioListenerProRequired()
-					end
+					WarMenu.MenuButton('Configure Earpiece Chatter', 'chatterMenu')
 				end
 				WarMenu.Display()
 			elseif WarMenu.IsMenuOpened('repeaterMenu') then

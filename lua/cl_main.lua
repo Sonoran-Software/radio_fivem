@@ -29,9 +29,7 @@ communityChannelsCache = nil
 communityChannelsUpdatedAt = 0
 autoGeoSwitchEnabled = true
 Config = {}
-local listenerEntitled = false
-local listenerSubscription = 0
-local listenerProNotificationAt = 0
+local subscriptionLevel = 0
 geoAcePerms = {
 	ready = false,
 	perms = {},
@@ -40,22 +38,8 @@ geoAcePerms = {
 	refreshMs = 15000
 }
 
-function SonoranRadioListenerEntitledClient()
-	return listenerEntitled
-end
-
-function RequestSonoranRadioListenerEntitlement()
-	TriggerServerEvent('SonoranRadio::RequestListenerEntitlement')
-end
-
-function NotifySonoranRadioListenerProRequired()
-	local now = GetGameTimer()
-	local elapsed = now - listenerProNotificationAt
-	if listenerProNotificationAt > 0 and elapsed >= 0 and elapsed < 5000 then
-		return
-	end
-	listenerProNotificationAt = now
-	notifyClient('Radio scanners require a Sonoran Radio Pro subscription.', nil, '~r~')
+function SonoranRadioHasSubscription(minimumLevel)
+	return subscriptionLevel >= (tonumber(minimumLevel) or 0)
 end
 
 local function isFrameAllowed(frameId, frames)
@@ -212,23 +196,15 @@ RegisterNetEvent('SonoranRadio::core::DebugMode', function(data)
 	SendNUIMessage({ type = 'setDebug', enabled = data })
 end)
 
-RegisterNetEvent('SonoranRadio::ListenerEntitlement', function(allowed, subscription)
-	listenerEntitled = allowed == true
-	listenerSubscription = tonumber(subscription) or 0
-	Config.listenerEntitled = listenerEntitled
-	Config.listenerSubscription = listenerSubscription
-	SendNUIMessage({
-		type = 'setListenerEntitlement',
-		allowed = listenerEntitled,
-		subscription = listenerSubscription
-	})
-	TriggerEvent('SonoranRadio::ListenerEntitlementUpdated', listenerEntitled, listenerSubscription)
+RegisterNetEvent('SonoranRadio::SubscriptionUpdated', function(subscription)
+	subscriptionLevel = tonumber(subscription) or 0
+	Config.subscription = subscriptionLevel
+	SendNUIMessage({ type = 'setSubscription', subscription = subscriptionLevel })
 end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
-	listenerEntitled = Config.listenerEntitled == true
-	listenerSubscription = tonumber(Config.listenerSubscription) or 0
+	subscriptionLevel = tonumber(Config.subscription) or 0
 	if Config.heavySignalDegradeInWater == nil then
 		Config.heavySignalDegradeInWater = true
 	end
@@ -1423,8 +1399,7 @@ function initClient()
 			standaloneUrl = Config.radioUrl,
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
-			listenerEntitled = listenerEntitled,
-			listenerSubscription = listenerSubscription,
+			subscription = subscriptionLevel,
 			debug = Config.debug,
 			displayName = GetPlayerName(PlayerId()),
 		})

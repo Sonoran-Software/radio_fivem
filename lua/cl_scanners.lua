@@ -85,7 +85,6 @@ function initScanners()
 	-- SCANNER MENU LOGIC
 	local scanners = {}
 	local inventoryScannerId = 0
-	local pendingScannerOpen = nil
 	local function pushScanner(id)
 		if id ~= 0 then
 			TriggerServerEvent('SonoranRadio::pushScanner', id, scanners[id])
@@ -107,13 +106,11 @@ function initScanners()
 			DebugPrint(('[Scanner] Open denied scannerId=%s'):format(tostring(scannerId)))
 			return
 		end
-		if not SonoranRadioListenerEntitledClient() then
+		if not SonoranRadioHasSubscription(2) then
 			DebugPrint(('[Scanner] Open denied by subscription scannerId=%s'):format(tostring(scannerId)))
-			pendingScannerOpen = {id = scannerId, coords = scannerCoords}
-			RequestSonoranRadioListenerEntitlement()
+			notifyClient('Radio scanners require a Sonoran Radio Pro subscription.', nil, '~r~')
 			return
 		end
-		pendingScannerOpen = nil
 		local scanner = scanners[scannerId]
 		DebugPrint(('[Scanner] Opening scannerId=%s stateFound=%s powered=%s channelId=%s'):format(
 			tostring(scannerId),
@@ -125,16 +122,6 @@ function initScanners()
 		SendNUIMessage({ type = 'openScanner', id = scannerId, state = scanner })
 		SetNuiFocus(true, true)
 	end
-	AddEventHandler('SonoranRadio::ListenerEntitlementUpdated', function(entitled)
-		if not pendingScannerOpen then return end
-		local pending = pendingScannerOpen
-		pendingScannerOpen = nil
-		if entitled then
-			openScannerMenu(pending.id, pending.coords)
-		else
-			NotifySonoranRadioListenerProRequired()
-		end
-	end)
 	function openLocalScanner()
 		if inventoryScannerId ~= nil then
 			openScannerMenu(inventoryScannerId)
@@ -331,9 +318,6 @@ function initScanners()
 	local sDefaultProfileId = 0
 	function getScannerChatterSources()
 		local sources = {}
-		if not SonoranRadioListenerEntitledClient() then
-			return sources
-		end
 		for id, scanner, coords in poweredScanners() do
 			local chId = scanner.channelId
 			if chId == 0 then
@@ -366,10 +350,6 @@ function initScanners()
 	end)
 
 	RegisterNUICallback('scanners', function(data, cb)
-		if data.type == 'listenerAccessDenied' then
-			RequestSonoranRadioListenerEntitlement()
-		end
-
 		if data.type == 'setChatterConfig' then
 			DebugPrint(('[Scanner] Chatter config callback profiles=%s defaultProfileId=%s'):format(
 				tostring(data.config and data.config.profiles and #data.config.profiles or 0),
