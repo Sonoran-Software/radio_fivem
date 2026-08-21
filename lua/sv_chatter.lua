@@ -100,6 +100,18 @@ end)
 local staticScanners
 local globalScanners = {}
 RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
+	for _, scanner in ipairs(staticScanners or {}) do
+		if scanner.Id == id then
+			local previousChannelId = scanner.ChannelId
+			scanner.ChannelId = data.channelId
+			if not SaveJsonConfig('scanners.json', staticScanners) then
+				scanner.ChannelId = previousChannelId
+				return TriggerClientEvent('SonoranRadio::DisplayError', source, 'An error prevents your changes from saving (see server log for more)')
+			end
+			break
+		end
+	end
+
 	globalScanners[id] = data
 	TriggerLatentClientEvent('SonoranRadio::receiveScanners', -1, 10000, globalScanners)
 end)
