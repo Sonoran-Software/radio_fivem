@@ -283,7 +283,7 @@ end)
 
 RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
-	for _, info in ipairs(profileInfos) do
+	for _, info in ipairs(profileInfos or {}) do
 		local allowed =
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.id)
@@ -292,6 +292,11 @@ RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos
 		end
 	end
 
+	DebugPrint(('[Scanner] ACE check player=%s profiles=%s allowedProfileIds=%s'):format(
+		tostring(source),
+		tostring(profileInfos and #profileInfos or 0),
+		json.encode(allowedProfileIds)
+	))
 	TriggerClientEvent('SonoranRadio::allowScannerProfiles', source, allowedProfileIds)
 end)
 Citizen.CreateThread(function()
