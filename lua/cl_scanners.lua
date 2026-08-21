@@ -106,6 +106,11 @@ function initScanners()
 			DebugPrint(('[Scanner] Open denied scannerId=%s'):format(tostring(scannerId)))
 			return
 		end
+		if not SonoranRadioHasSubscription(2) then
+			DebugPrint(('[Scanner] Open denied by subscription scannerId=%s'):format(tostring(scannerId)))
+			notifyClient('Radio scanners require a Sonoran Radio Pro subscription.', nil, '~r~')
+			return
+		end
 		local scanner = scanners[scannerId]
 		DebugPrint(('[Scanner] Opening scannerId=%s stateFound=%s powered=%s channelId=%s'):format(
 			tostring(scannerId),

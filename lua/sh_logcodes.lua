@@ -62,6 +62,10 @@ WarningCodes = {
 	['WRN_MOBILE_REPEATERS_CONFIG_MIGRATED'] = {
 		code = 'WRN-216',
 		message = 'Legacy Config.repeaterVehicleSpawncodes entries were migrated to mobileRepeaters.json.'
+	},
+	['WRN_LISTENER_PRO_REQUIRED'] = {
+		code = 'WRN-217',
+		message = 'Nearby radio chatter and scanners are disabled because they require a Sonoran Radio Pro subscription.'
 	}
 }
 

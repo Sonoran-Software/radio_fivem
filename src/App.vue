@@ -222,6 +222,7 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
+            subscription: 0,
             streamDeck: {
                 healthUrl: 'http://127.0.0.1:39112/streamdeck/fivem/health',
                 socketUrl: 'ws://127.0.0.1:39112/streamdeck/fivem/socket',
@@ -419,7 +420,7 @@ export default {
             return skinNames;
         },
         chatterEnabled() {
-            return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
+            return this.chatterFeatureEnabled && this.subscription >= 2 && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
             return !!this.standaloneServerId;
@@ -676,8 +677,12 @@ export default {
                     this.standaloneUrl = event.standaloneUrl;
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
+                    this.subscription = Number(event.subscription) || 0;
                     this.debug.enabled = event.debug;
                     this.emergencyCall.name = event.displayName;
+                    break;
+                case 'setSubscription':
+                    this.subscription = Number(event.subscription) || 0;
                     break;
                 case 'setDebug':
                     this.debug.enabled = !!event.enabled;
@@ -1007,6 +1012,13 @@ export default {
                     this.$store.commit('setChatterConfig', event.config);
                     this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
                     this.requestScannerProfilePerms();
+                    break;
+                case 'listener_access_denied':
+                    this.scannerMenu.open = false;
+                    this.notifyPlayer(
+                        event.error || 'Radio scanners require a Sonoran Radio Pro subscription.',
+                        '~r~'
+                    );
                     break;
             }
         },

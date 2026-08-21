@@ -19,6 +19,50 @@ local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
 local cadTowerSyncTracker = {}
+
+local SUBSCRIPTION_CACHE_MS = 300000
+local subscriptionLevel = 0
+
+local function publishSubscription(level)
+	level = tonumber(level) or 0
+	local changed = subscriptionLevel ~= level
+	subscriptionLevel = level
+	Config.subscription = subscriptionLevel
+
+	if clientConfig then
+		clientConfig.subscription = subscriptionLevel
+	end
+
+	if changed then
+		TriggerClientEvent('SonoranRadio::SubscriptionUpdated', -1, subscriptionLevel)
+	end
+end
+
+function SonoranRadioGetSubscription()
+	return subscriptionLevel
+end
+
+function SonoranRadioHasSubscription(minimumLevel)
+	return subscriptionLevel >= (tonumber(minimumLevel) or 0)
+end
+
+function RefreshSonoranRadioSubscription()
+	local refresh = promise.new()
+	exports['sonoranradio']:performApiRequest({}, 'GET-SERVER-SUBSCRIPTION', function(data, success)
+		if success then
+			local decoded = type(data) == 'string' and json.decode(data) or data
+			local level = decoded and tonumber(decoded.subscription)
+			if level ~= nil then
+				publishSubscription(level)
+			else
+				warnLog('WRN_API_REQUEST_FAILED', 'Radio API request failed (GET-SERVER-SUBSCRIPTION): invalid subscription response')
+			end
+		end
+
+		refresh:resolve(SonoranRadioGetSubscription())
+	end)
+	return refresh
+end
 local cadLiveMapSyncFlushIntervalMs = 60000
 local cadLiveMapSyncMaxBatchSize = 29
 local cadLiveMapSyncState = {
@@ -1156,6 +1200,10 @@ local function createClientConfig()
 	Citizen.CreateThreadNow(function()
 		-- we need Config.serverId valid before creating the client config
 		Citizen.Await(initConfigServerId())
+		Citizen.Await(RefreshSonoranRadioSubscription())
+		if Config.chatter ~= false and not SonoranRadioHasSubscription(2) then
+			warnLog('WRN_LISTENER_PRO_REQUIRED')
+		end
 
 		-- create the client config
 		local clConfig = {}
@@ -1322,6 +1370,12 @@ AddEventHandler('onResourceStart', function(resourceName)
 	-- wait for config to be initialized (for roomId to be present)
 	-- this needs to be done before SET-SERVER-SPEAKERS
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	Citizen.CreateThread(function()
+		while true do
+			Citizen.Wait(SUBSCRIPTION_CACHE_MS)
+			Citizen.Await(RefreshSonoranRadioSubscription())
+		end
+	end)
 
 	-- The backend is authoritative for GEO and degradation zones. Push events
 	-- provide immediate updates; this periodic read repairs any missed event.

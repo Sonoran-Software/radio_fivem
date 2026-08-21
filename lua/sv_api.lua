@@ -3,6 +3,7 @@ local sonoranRadioClientKey = nil
 
 local ApiEndpoints = {
 	['SET-SERVER-IP'] = true,
+	['GET-SERVER-SUBSCRIPTION'] = true,
 	['SET-SERVER-SPEAKERS'] = true,
 	['SET-USER-DISPLAY-NAME'] = true,
 	['PLAY-TONE'] = true,
@@ -125,6 +126,8 @@ local function callApiEndpoint(type, postData)
 
 	if type == 'SET-SERVER-IP' then
 		return client:setServerIpV2(payload)
+	elseif type == 'GET-SERVER-SUBSCRIPTION' then
+		return client:getServerSubscriptionV2()
 	elseif type == 'SET-SERVER-SPEAKERS' then
 		return client:setInGameSpeakerLocationsV2(payload.locations or {}, Config.comId)
 	elseif type == 'SET-USER-DISPLAY-NAME' then
