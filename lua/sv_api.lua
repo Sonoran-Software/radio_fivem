@@ -127,7 +127,7 @@ local function callApiEndpoint(type, postData)
 	if type == 'SET-SERVER-IP' then
 		return client:setServerIpV2(payload)
 	elseif type == 'GET-SERVER-SUBSCRIPTION' then
-		return client:getServerSubscriptionFromIpV2()
+		return client:_request('GET', 'v2/servers/' .. tostring(Config.comId) .. '/subscription')
 	elseif type == 'SET-SERVER-SPEAKERS' then
 		return client:setInGameSpeakerLocationsV2(payload.locations or {}, Config.comId)
 	elseif type == 'SET-USER-DISPLAY-NAME' then
