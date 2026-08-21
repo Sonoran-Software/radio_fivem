@@ -884,6 +884,7 @@ export default {
                     console.log('radio connected');
                     this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
+                    if (this.scannerMenu.open) this.requestScannerProfilePerms();
                     this.postRadioFrame({ type: 'ptt', state: this.pttActive && this.radioPower });
                     this.publishStreamDeckSnapshot();
                     this.onStandaloneConnected();
@@ -907,6 +908,7 @@ export default {
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
+                    if (this.scannerMenu.open) this.requestScannerProfilePerms();
                     this.updateGamestate();
                     this.publishStreamDeckSnapshot();
                     break;
@@ -1324,6 +1326,7 @@ export default {
             const profiles = this.$store.getters.chatterProfilesSorted.filter(x =>
                 x.visibility === 'public' || this.scannerMenu.allowedProfileIds.includes(x.id)
             );
+            if (!profiles.length) return;
             const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
             const idx = profiles.findIndex(x => x.id === chId) || 0;
 
@@ -1379,7 +1382,7 @@ export default {
             }
         },
         requestScannerProfilePerms() {
-            const profiles = this.$store.state.chatterConfig?.profiles || [];
+            const profiles = this.$store.getters.chatterProfilesSorted;
             this.postClient({
                 type: 'requestProfilePerms',
                 profiles: profiles.map(x => ({
