@@ -102,9 +102,19 @@ function initScanners()
 
 	-- SCANNER MENUS
 	local function openScannerMenu(scannerId, scannerCoords)
-		if not allowed then return end
+		if not allowed then
+			DebugPrint(('[Scanner] Open denied scannerId=%s'):format(tostring(scannerId)))
+			return
+		end
+		local scanner = scanners[scannerId]
+		DebugPrint(('[Scanner] Opening scannerId=%s stateFound=%s powered=%s channelId=%s'):format(
+			tostring(scannerId),
+			tostring(scanner ~= nil),
+			tostring(scanner and scanner.powered),
+			tostring(scanner and scanner.channelId)
+		))
 		PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
-		SendNUIMessage({ type = 'openScanner', id = scannerId, state = scanners[scannerId] })
+		SendNUIMessage({ type = 'openScanner', id = scannerId, state = scanner })
 		SetNuiFocus(true, true)
 	end
 	function openLocalScanner()
@@ -336,6 +346,10 @@ function initScanners()
 
 	RegisterNUICallback('scanners', function(data, cb)
 		if data.type == 'setChatterConfig' then
+			DebugPrint(('[Scanner] Chatter config callback profiles=%s defaultProfileId=%s'):format(
+				tostring(data.config and data.config.profiles and #data.config.profiles or 0),
+				tostring(data.config and data.config.defaultProfileId)
+			))
 			sDefaultProfileId = data.config.defaultProfileId or data.config.profiles[1].id
 		end
 
@@ -350,12 +364,16 @@ function initScanners()
 		end
 
 		if data.type == 'requestProfilePerms' then
+			DebugPrint(('[Scanner] Requesting ACE permissions profiles=%s'):format(
+				tostring(data.profiles and #data.profiles or 0)
+			))
 			TriggerServerEvent('SonoranRadio::checkScannerProfilePerms', data.profiles)
 		end
 
 		cb('OK')
 	end)
 	RegisterNetEvent('SonoranRadio::allowScannerProfiles', function(allowedProfileIds)
+		DebugPrint(('[Scanner] ACE response allowedProfileIds=%s'):format(json.encode(allowedProfileIds or {})))
 		SendNUIMessage({ type = 'allowScannerProfiles', profileIds = allowedProfileIds })
 	end)
 end

@@ -188,6 +188,7 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::DebugMode', function(data)
 	Config.debug = data
+	SendNUIMessage({ type = 'setDebug', enabled = data })
 end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
