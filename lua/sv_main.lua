@@ -19,6 +19,92 @@ local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
 local cadTowerSyncTracker = {}
+
+local LISTENER_MIN_SUBSCRIPTION = 2
+local LISTENER_REFRESH_INTERVAL_MS = 300000
+local LISTENER_INTERACTION_CACHE_MS = 30000
+local listenerSubscription = 0
+local listenerEntitled = false
+local listenerEntitlementReady = false
+local listenerEntitlementCheckedAt = 0
+local listenerEntitlementRefresh = nil
+
+local function resolvedPromise(value)
+	local result = promise.new()
+	result:resolve(value)
+	return result
+end
+
+local function publishListenerEntitlement(level)
+	level = tonumber(level) or 0
+	local wasReady = listenerEntitlementReady
+	local wasEntitled = listenerEntitled
+
+	listenerSubscription = level
+	listenerEntitled = level >= LISTENER_MIN_SUBSCRIPTION
+	listenerEntitlementReady = true
+	Config.listenerSubscription = listenerSubscription
+	Config.listenerEntitled = listenerEntitled
+
+	if clientConfig then
+		clientConfig.listenerSubscription = listenerSubscription
+		clientConfig.listenerEntitled = listenerEntitled
+	end
+
+	if not wasReady or wasEntitled ~= listenerEntitled then
+		TriggerClientEvent('SonoranRadio::ListenerEntitlement', -1, listenerEntitled, listenerSubscription)
+		if Config.chatter ~= false and not listenerEntitled then
+			warnLog('WRN_LISTENER_PRO_REQUIRED')
+		end
+	end
+end
+
+function SonoranRadioListenerEntitled()
+	return listenerEntitlementReady and listenerEntitled
+end
+
+function SonoranRadioListenerSubscription()
+	return listenerSubscription
+end
+
+function RefreshSonoranRadioListenerEntitlement(maxAgeMs)
+	maxAgeMs = tonumber(maxAgeMs) or LISTENER_REFRESH_INTERVAL_MS
+	local now = GetGameTimer()
+	if listenerEntitlementRefresh then
+		return listenerEntitlementRefresh
+	end
+	local cacheAge = now - listenerEntitlementCheckedAt
+	if listenerEntitlementCheckedAt > 0 and cacheAge >= 0 and cacheAge <= maxAgeMs then
+		return resolvedPromise(SonoranRadioListenerEntitled())
+	end
+
+	local refresh = promise.new()
+	listenerEntitlementRefresh = refresh
+	exports['sonoranradio']:performApiRequest({}, 'GET-SERVER-SUBSCRIPTION', function(data, success)
+		listenerEntitlementCheckedAt = GetGameTimer()
+		if success then
+			local decoded = type(data) == 'string' and json.decode(data) or data
+			local level = decoded and tonumber(decoded.subscription)
+			if level ~= nil then
+				publishListenerEntitlement(level)
+			else
+				warnLog('WRN_LISTENER_SUBSCRIPTION_INVALID')
+			end
+		end
+
+		listenerEntitlementRefresh = nil
+		refresh:resolve(SonoranRadioListenerEntitled())
+	end)
+	return refresh
+end
+
+RegisterNetEvent('SonoranRadio::RequestListenerEntitlement', function()
+	local src = source
+	Citizen.CreateThread(function()
+		Citizen.Await(RefreshSonoranRadioListenerEntitlement(LISTENER_INTERACTION_CACHE_MS))
+		TriggerClientEvent('SonoranRadio::ListenerEntitlement', src, listenerEntitled, listenerSubscription)
+	end)
+end)
 local cadLiveMapSyncFlushIntervalMs = 60000
 local cadLiveMapSyncMaxBatchSize = 29
 local cadLiveMapSyncState = {
@@ -848,6 +934,7 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	if scannersAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
 	end
+	TriggerClientEvent('SonoranRadio::ListenerEntitlement', source, listenerEntitled, listenerSubscription)
 	sendGeoPerms(source)
 end)
 
@@ -1156,6 +1243,12 @@ local function createClientConfig()
 	Citizen.CreateThreadNow(function()
 		-- we need Config.serverId valid before creating the client config
 		Citizen.Await(initConfigServerId())
+		if Config.chatter ~= false then
+			Citizen.Await(RefreshSonoranRadioListenerEntitlement(0))
+		else
+			Config.listenerSubscription = 0
+			Config.listenerEntitled = false
+		end
 
 		-- create the client config
 		local clConfig = {}
@@ -1322,6 +1415,14 @@ AddEventHandler('onResourceStart', function(resourceName)
 	-- wait for config to be initialized (for roomId to be present)
 	-- this needs to be done before SET-SERVER-SPEAKERS
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	if Config.chatter ~= false then
+		Citizen.CreateThread(function()
+			while true do
+				Citizen.Wait(LISTENER_REFRESH_INTERVAL_MS)
+				Citizen.Await(RefreshSonoranRadioListenerEntitlement(0))
+			end
+		end)
+	end
 
 	-- The backend is authoritative for GEO and degradation zones. Push events
 	-- provide immediate updates; this periodic read repairs any missed event.

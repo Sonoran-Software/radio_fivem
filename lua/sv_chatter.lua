@@ -4,6 +4,19 @@ local radioStates = {}
 local lastRadioStatesPush = 0
 local DevEvents = DeveloperEvents or {}
 
+local function listenerEntitlementAllows(sourceId)
+	if SonoranRadioListenerEntitled() then
+		return true
+	end
+	TriggerClientEvent(
+		'SonoranRadio::ListenerEntitlement',
+		sourceId,
+		false,
+		SonoranRadioListenerSubscription()
+	)
+	return false
+end
+
 local function emitDeveloperEvent(suffix, payload)
 	if DevEvents.emit then
 		DevEvents.emit(suffix, payload)
@@ -100,6 +113,7 @@ end)
 local staticScanners
 local globalScanners = {}
 RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
+	if not listenerEntitlementAllows(source) then return end
 	for _, scanner in ipairs(staticScanners or {}) do
 		if scanner.Id == id then
 			local previousChannelId = scanner.ChannelId
@@ -132,6 +146,7 @@ end
 
 RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
 	local src = source
+	if not listenerEntitlementAllows(src) then return end
 	local scannerInfo = {
 		Id = uuid(),
 		Note = note,
@@ -162,6 +177,7 @@ RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPos
 end)
 RegisterNetEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosition)
 	local src = source
+	if not listenerEntitlementAllows(src) then return end
 
 	-- update the scanners.json
 	local newStaticScanners = {}
@@ -190,6 +206,7 @@ RegisterNetEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosi
 end)
 RegisterNetEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
 	local src = source
+	if not listenerEntitlementAllows(src) then return end
 
 	-- remove from the scanners.json
 	local newStaticScanners = {}
@@ -283,6 +300,9 @@ end)
 
 RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
+	if not listenerEntitlementAllows(source) then
+		return TriggerClientEvent('SonoranRadio::allowScannerProfiles', source, allowedProfileIds)
+	end
 	for _, info in ipairs(profileInfos or {}) do
 		local allowed =
 			IsPlayerAceAllowed(source, 'sonoranradio.channel.'..info.displayName) or
