@@ -1225,6 +1225,10 @@ local function create_client(config, adapter)
     local resolved_community_id = self:_resolve_radio_community_id(community_id)
     return self:_request("GET", "v2/servers/" .. tostring(resolved_community_id) .. "/channels")
   end
+  instance.getRadioFramesV2 = function(self, community_id)
+    local resolved_community_id = self:_resolve_radio_community_id(community_id)
+    return self:_request("GET", "v2/servers/" .. tostring(resolved_community_id) .. "/frames")
+  end
   instance.getZonesV2 = function(self, community_id)
     local resolved_community_id = self:_resolve_radio_community_id(community_id)
     local room_id = self:_resolve_radio_room_id()

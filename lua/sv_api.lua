@@ -6,6 +6,7 @@ local ApiEndpoints = {
 	['SET-SERVER-SPEAKERS'] = true,
 	['SET-USER-DISPLAY-NAME'] = true,
 	['PLAY-TONE'] = true,
+	['GET-FRAMES'] = true,
 	['GET-ZONES'] = true,
 	['CREATE-ZONE'] = true,
 	['UPDATE-ZONE'] = true,
@@ -131,6 +132,8 @@ local function callApiEndpoint(type, postData)
 		return client:setUserDisplayNameV2(payload)
 	elseif type == 'PLAY-TONE' then
 		return client:playToneV2(payload.tones or {}, payload.playTo, Config.comId)
+	elseif type == 'GET-FRAMES' then
+		return client:getRadioFramesV2(Config.comId)
 	elseif type == 'GET-ZONES' then
 		return client:getZonesV2()
 	elseif type == 'CREATE-ZONE' then

@@ -141,9 +141,11 @@ Config.geoChannels = {
 	permRefreshMs = 15000
 }
 
--- Radio Item Settings --
+-- Custom radio frames are managed in the Radio web panel's customization menu.
+-- FiveM frame permissions remain configured here. Local skins use their folder
+-- name (for example 'default'); backend frames use 'frame:<frame id>'.
 Config.frames = {
-	permissionMode = 'none', -- ace, qbcore, esx or none
+	permissionMode = 'none', -- ace, qbcore, qbox, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
 	departments = {
 		['sahp'] = {
@@ -158,16 +160,17 @@ Config.frames = {
 						}
 					}
 				},
-				ace = { -- ACE Permissions that can use this department | ONLY EFFECTIVE IN ACE PERMISSION MODE
+				ace = { -- ACE permissions used only in ACE permission mode
 					'sonoranradio.sahp'
 				}
 			},
-			-- Radio frames that can be used by this department
+			-- Local skin folder names and/or backend community frame IDs
 			allowedFrames = {
 				'default',
 				'signalpro',
 				'voxguard',
-				'hi-vis'
+				'hi-vis',
+				'frame:1'
 			}
 		}
 	}

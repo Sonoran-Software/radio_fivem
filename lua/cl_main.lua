@@ -17,6 +17,7 @@ allowedMiniRadio = false
 local tunnels = {}
 local authorized = false
 local allowedFrames = {}
+local backendFrameDefinitions = {}
 local critError = false
 local calledSyncAcePerms = false
 local frame
@@ -608,7 +609,8 @@ function initClient()
 			SendNUIMessage({
 				type = 'setCurrentSkin',
 				skin = frame,
-				skins = allowedFrames
+				skins = allowedFrames,
+				skinDefinitions = backendFrameDefinitions
 			})
 		end
 		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -698,7 +700,7 @@ function initClient()
 	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest)
+	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest, frameDefinitions)
 		DebugPrint('Authorized for Radio Usage')
 		authorized = true
 		allowedMiniRadio = miniRadio
@@ -708,11 +710,13 @@ function initClient()
 		})
 
 		allowedFrames = type(frames) == 'table' and frames or {}
+		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
 		frame = resolveRadioFrame(frame, allowedFrames)
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame,
-			skins = allowedFrames
+			skins = allowedFrames,
+			skinDefinitions = backendFrameDefinitions
 		})
 
 		if not Radio.Restored and LocalPlayer.state['sonoranradio_restore'] == true then
@@ -723,6 +727,25 @@ function initClient()
 			})
 		end
 		Radio.Restored = true
+	end)
+
+	RegisterNetEvent('SonoranRadio::BackendFramesUpdated')
+	AddEventHandler('SonoranRadio::BackendFramesUpdated', function(frames, frameDefinitions)
+		if not authorized then
+			return
+		end
+
+		allowedFrames = type(frames) == 'table' and frames or {}
+		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
+		-- Keep the stored choice through a temporary backend outage. If that
+		-- community frame returns on a later refresh, restore it automatically.
+		frame = resolveRadioFrame(GetResourceKvpString('sonoranradio_skin') or frame, allowedFrames)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame,
+			skins = allowedFrames,
+			skinDefinitions = backendFrameDefinitions
+		})
 	end)
 
 	RegisterCommand('radio', function(_, args)
@@ -1529,10 +1552,6 @@ function initClient()
 			print('setting current frame', frame)
 		end
 
-		if data.type == 'saveSkinConfig' then
-			TriggerServerEvent('SonoranRadio::SaveSkinConfig', data.configPath, data.config)
-		end
-
 		if data.type == 'chatterInit' then
 			chatterForceUpdate() -- force a resend of important chatter info
 		end
@@ -1820,7 +1839,7 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or Config.defaultSkinId or 'default'
 
-		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
+		if Config.frames and Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
 			TriggerEvent('chat:addMessage', {
 				color = {
 					255,

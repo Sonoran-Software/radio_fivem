@@ -14,18 +14,16 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | ERR-106 | ERR_API_CREDENTIALS_MISSING | The API key or community ID is missing from configuration. | Set `apiKey` and `comId` in the resource configuration and reload the resource. |
 | ERR-107 | ERR_API_FATAL_DISABLED | A fatal API error disabled the resource until configuration is corrected and the resource is restarted. | Fix the reported API credential or community issue, then restart the resource. |
 | ERR-108 | ERR_API_CRITICAL_ABORTED | A request was aborted because the resource is already in a critical API error state. | Resolve the earlier fatal API issue before retrying requests. |
-| ERR-109 | ERR_FRAMES_DEPARTMENTS_MISSING | `Config.frames.departments` is missing for the selected permission mode. | Add the required departments list under `Config.frames.departments`. |
+| ERR-109 | ERR_FRAMES_DEPARTMENTS_MISSING | `Config.frames` is missing its departments for the selected permission mode. | Restore the departments list or set `permissionMode` to `none` to allow all available frames. |
 | ERR-110 | ERR_JAMMERS_PERMISSION_MODE_INVALID | The configured permission mode for radio jammers is invalid. | Check the jammer permission mode value in config and change it to a supported option. |
 | ERR-111 | ERR_RADIO_ITEM_CONFIG_MISSING | Radio item enforcement is enabled, but `Config.RadioItem` is missing. | Define `Config.RadioItem` in configuration or disable radio item enforcement. |
 | ERR-112 | ERR_SCANNER_ITEM_CONFIG_MISSING | Scanner item enforcement is enabled, but `Config.ScannerItem` is missing. | Define `Config.ScannerItem` in configuration or disable scanner item enforcement. |
 | ERR-113 | ERR_QBOX_OX_RADIO_ITEM_MISSING | The configured radio item does not exist in Ox Inventory on Qbox. | Add the configured radio item to `/ox_inventory/data/items.lua` or fix the item name. |
 | ERR-114 | ERR_QBOX_OX_SCANNER_ITEM_MISSING | The configured scanner item does not exist in Ox Inventory on Qbox. | Add the configured scanner item to `/ox_inventory/data/items.lua` or fix the item name. |
 | ERR-115 | ERR_COMMUNITY_CHANNELS_FETCH_FAILED | Community channels could not be fetched from the radio service. | Check the status code in the server log and verify API connectivity. |
-| ERR-116 | ERR_SKIN_SAVE_FAILED | A radio skin configuration file could not be saved. | Verify the target file path is writable by the server process. |
 | ERR-117 | ERR_CONFIG_SAVE_FAILED | A JSON configuration file could not be saved. | Check file permissions and confirm the resource directory is writable. |
 | ERR-118 | ERR_SERVER_IP_SET_FAILED | The resource could not register or update the server IP with the radio service. | Verify `apiKey`, `comId`, and outbound API connectivity. |
 | ERR-119 | ERR_SERVER_IP_INVALID_ROOM | The radio service returned an invalid `roomId` while setting the server IP. | Check the API response and confirm the configured community is valid for radio. |
-| ERR-120 | ERR_FRAMES_CONFIG_MISSING | `Config.frames` is missing. | Add the `Config.frames` block to the configuration. |
 | ERR-121 | ERR_SERVER_SPEAKERS_SET_FAILED | The resource could not synchronize server speaker locations with the radio service. | Check the API response and confirm speaker configuration is valid. |
 | ERR-122 | ERR_SERVER_NAME_SET_FAILED | The resource could not update a user display name in the radio service. | Verify API connectivity and confirm the target user exists in the linked community. |
 | ERR-123 | ERR_INVALID_COMMUNITY_ID | The configured community ID is invalid or not enabled for the API. | Confirm the configured community ID matches a community with radio API access. |
@@ -40,7 +38,6 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | WRN-204 | WRN_API_ENDPOINT_UNREGISTERED | An API request was attempted for an endpoint type that is not registered. | Register the endpoint type before making that request. |
 | WRN-205 | WRN_GEO_ZONE_SYNC_FAILED | Geo and degrade zones could not be synchronized with the radio service. | Check the earlier API response details for the zone sync request. |
 | WRN-206 | WRN_COMMUNITY_CHANNELS_FETCH_FAILED | Community channels could not be fetched for a player request. | Check the HTTP status in the warning and verify the player has valid access to radio data. |
-| WRN-207 | WRN_SKIN_SAVE_DEBUG_BLOCKED | A client attempted to save a radio skin while debug mode was disabled. | Verify the caller is expected and only enable the save path during debugging. |
 | WRN-208 | WRN_CONFIG_RENAME_FAILED | A default configuration file could not be renamed to its writable target path. | Check whether the destination file already exists or is locked by the OS. |
 | WRN-209 | WRN_CONFIG_SAVE_FALLBACK | Saving a configuration file failed, so the resource fell back to writing the default file. | Check permissions on the preferred config file path. |
 | WRN-210 | WRN_SERVER_IP_USING_EXISTING_ROOM | The server IP update failed, but an existing `roomId` was reused while retrying in the background. | Confirm the existing `roomId` is still valid and investigate the underlying API failure. |
