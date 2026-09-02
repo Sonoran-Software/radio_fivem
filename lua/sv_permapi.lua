@@ -147,6 +147,7 @@ local function calculateRadioPerm(src)
 		['sonoranradio.setnickname'] = 128,
 		['sonoranradio.radiotones'] = 256,
 		['sonoranradio.radiotalkover'] = 512,
+		['sonoranradio.radiostun'] = 1024,
 	}
 
 	local perm = 0
