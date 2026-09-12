@@ -301,13 +301,20 @@ RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos
 end)
 Citizen.CreateThread(function()
 	local aceCache = {}
+	AddEventHandler('playerDropped', function()
+		-- Player IDs can be reused; a new connection must receive its own authorization.
+		aceCache[tostring(source)] = nil
+	end)
 	while true do
-		for i = 0, GetNumPlayerIndices() - 1 do
-			local playerId = GetPlayerFromIndex(i)
-			local hasScannerPerm = not Config.acePermsForScanners or not not IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
-			if aceCache[playerId] ~= hasScannerPerm then
-				aceCache[playerId] = hasScannerPerm
-				TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, hasScannerPerm)
+		-- Snapshot IDs before yielding: disconnects can invalidate live player indices.
+		for _, playerId in ipairs(GetPlayers()) do
+			-- A player in the snapshot may have disconnected during the previous wait.
+			if GetPlayerName(playerId) then
+				local hasScannerPerm = not Config.acePermsForScanners or not not IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
+				if aceCache[playerId] ~= hasScannerPerm then
+					aceCache[playerId] = hasScannerPerm
+					TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, hasScannerPerm)
+				end
 			end
 
 			Citizen.Wait(100)
