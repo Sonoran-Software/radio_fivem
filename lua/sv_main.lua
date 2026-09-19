@@ -446,6 +446,25 @@ else
 		}
 		end
 	local enforcedInventoryItemsInitialized = false
+
+	-- ox_inventory does not populate QBCore.Shared.Items the way qb-inventory/qs-inventory do,
+	-- so calling exports['qb-core']:AddItem() directly throws ("attempt to index a nil value
+	-- (field 'Items')") when QBCore is paired with ox_inventory. That uncaught error previously
+	-- aborted setupEnforcedInventoryItems() before it reached the getScanners registration below,
+	-- so the client's per-second getScanners poll (cl_scanners.lua) failed for the entire session.
+	-- Mirror the existing Qbox/ox_inventory handling: verify the item was added to
+	-- ox_inventory/data/items.lua instead of calling the incompatible QBCore export.
+	local function registerQBCoreEnforcedItem(itemName, itemDefinition)
+		if inventoryEnum == 2 then
+			if not exports.ox_inventory:Items(itemName) then
+				errorLog('ERR_QBCORE_OX_ITEM_MISSING', ('Ox_Inventory detected on QBCore, %s could not be found, please ensure you have added it to your /ox_inventory/data/items.lua'):format(itemName))
+			end
+			return
+		end
+
+		exports['qb-core']:AddItem(itemName, itemDefinition)
+	end
+
 	local function setupEnforcedInventoryItems()
 		if enforcedInventoryItemsInitialized or not Config.enforceRadioItem then
 			return
@@ -458,6 +477,33 @@ else
 		end
 
 		enforcedInventoryItemsInitialized = true
+
+		-- Register scanner support before any framework/inventory-specific item setup below, so a
+		-- failure there (e.g. an incompatible inventory export) can never again prevent getScanners
+		-- from being registered.
+		RegisterNetEvent('SonoranRadio::RemoveDrop::Scanner', function(scanner)
+			for k, v in pairs(scanners) do
+				if v.dropId == scanner.dropId then
+					table.remove(scanners, k)
+				end
+			end
+		end)
+
+		if inventoryEnum == 2 then
+			if not lib then
+				local chunk = LoadResourceFile('ox_lib', 'init.lua')
+
+				if not chunk then
+					errorLog('ERR_OX_LIB_INIT_LOAD_FAILED')
+				end
+
+				load(chunk, '@@ox_lib/init.lua', 't')()
+			end
+			lib.callback.register('getScanners', function(source)
+				return scanners
+			end)
+		end
+
 		if frameworkEnum == 1 then
 			QBCore = exports['qb-core']:GetCoreObject()
 
@@ -470,7 +516,7 @@ else
 					description = 'Communicate with others through the Sonoran Radio',
 				}
 			end
-			exports['qb-core']:AddItem(Config.RadioItem.name, {
+			registerQBCoreEnforcedItem(Config.RadioItem.name, {
 				name = Config.RadioItem.name,
 				label = Config.RadioItem.label,
 				weight = Config.RadioItem.weight,
@@ -506,7 +552,7 @@ else
 					description = 'Listen to radio chatter with the Sonoran Radio Scanner', -- Description of the item in your inventory
 				}
 			end
-			exports['qb-core']:AddItem(Config.ScannerItem.name, {
+			registerQBCoreEnforcedItem(Config.ScannerItem.name, {
 				name = Config.ScannerItem.name,
 				label = Config.ScannerItem.label,
 				weight = Config.ScannerItem.weight,
@@ -527,7 +573,7 @@ else
 			for _, jammer in ipairs((Config.radioJammers and Config.radioJammers.jammers) or {}) do
 				if jammer.type == 'handheld' and jammer.name then
 					if jammer.itemName and jammer.itemName ~= '' and not registeredJammerItems[jammer.itemName] then
-						exports['qb-core']:AddItem(jammer.itemName, {
+						registerQBCoreEnforcedItem(jammer.itemName, {
 							name = jammer.itemName,
 							label = jammer.label or jammer.name,
 							weight = jammer.weight or 1,
@@ -551,7 +597,7 @@ else
 						end)
 					end
 					if jammer.poweredItemName and jammer.poweredItemName ~= '' and not registeredJammerItems[jammer.poweredItemName] then
-						exports['qb-core']:AddItem(jammer.poweredItemName, {
+						registerQBCoreEnforcedItem(jammer.poweredItemName, {
 							name = jammer.poweredItemName,
 							label = jammer.poweredLabel or (jammer.label or (jammer.name .. ' (Active)')),
 							weight = jammer.poweredWeight or jammer.weight or 1,
@@ -642,28 +688,6 @@ else
 					end
 				end
 			end
-		end
-		RegisterNetEvent('SonoranRadio::RemoveDrop::Scanner', function(scanner)
-			for k, v in pairs(scanners) do
-				if v.dropId == scanner.dropId then
-					table.remove(scanners, k)
-				end
-			end
-		end)
-
-		if inventoryEnum == 2 then
-			if not lib then
-				local chunk = LoadResourceFile('ox_lib', 'init.lua')
-
-				if not chunk then
-					errorLog('ERR_OX_LIB_INIT_LOAD_FAILED')
-				end
-
-				load(chunk, '@@ox_lib/init.lua', 't')()
-			end
-			lib.callback.register('getScanners', function(source)
-				return scanners
-			end)
 		end
 	end
 
