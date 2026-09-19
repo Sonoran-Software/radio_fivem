@@ -6,6 +6,7 @@ local QBCore = nil
 local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
+local SupportErrorBuffer = {}
 local tunnels = {}
 local geoChannels = {}
 scanners = {}
@@ -825,8 +826,11 @@ SonoranRadio Help
     help - shows this message
 	debugmode - Toggles debugging mode
 	getchannels - fetch community channels (add "raw" to print full JSON)
+    support <ticket ID> - upload diagnostics requested by support
     update - attempt to update the radio script
 ]])
+	elseif args[1] == 'support' then
+		UploadRadioSupportLogs(args[2])
 	elseif args[1] == 'getchannels' then
 		getCommunityChannelsCached(function(statusCode, payload, raw)
 			if statusCode ~= 200 or not payload then
@@ -1585,21 +1589,7 @@ RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
 	mutateZoneApi('DELETE-ZONE', 'geo', zoneName)
 end)
 
-AddEventHandler('SonoranRadio::core:writeLog', function(level, codeOrMessage, message)
-	if level == 'debug' then
-		debugLog(message or codeOrMessage)
-	elseif level == 'info' then
-		infoLog(message or codeOrMessage)
-	elseif level == 'error' then
-		sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
-	elseif level == 'warn' then
-		sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
-	else
-		debugLog(message or codeOrMessage)
-	end
-end)
-
-local function sendConsole(level, color, message)
+local function sendConsole(level, color, message, codeKey)
 	local debugging = true
 	if Config ~= nil then
 		debugging = (Config.debug == true and Config.debug ~= 'false')
@@ -1612,6 +1602,18 @@ local function sendConsole(level, color, message)
 	end
 	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
 		table.insert(ErrorBuffer, 1, msg)
+		local definition = getStructuredLogDefinition(codeKey)
+		table.insert(SupportErrorBuffer, 1, {
+			timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+			level = level,
+			key = codeKey,
+			code = definition and definition.code or nil,
+			message = message,
+			source = source,
+			actionTraceText = payload,
+			docs = definition and ('https://sonoranradio.com/error/' .. definition.code) or nil
+		})
+		if #SupportErrorBuffer > 250 then table.remove(SupportErrorBuffer) end
 	end
 	if level == 'DEBUG' and IsDuplicityVersion() then
 		if #DebugBuffer > 50 then
@@ -1628,25 +1630,47 @@ local function sendConsole(level, color, message)
 	end
 end
 
+function getSupportErrorBuffer()
+	return SupportErrorBuffer
+end
+
+function getDebugBuffer()
+	return DebugBuffer
+end
+
 function debugLog(message)
 	sendConsole('DEBUG', '^7', message)
 end
 
 function logError(err, msg)
-	sendConsole('ERROR', '^1', formatStructuredLogMessage(err, msg))
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(err, msg), err)
 end
 
 function errorLog(codeOrMessage, message)
-	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
 end
 
 function warnLog(codeOrMessage, message)
-	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
+	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
 end
 
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
+
+AddEventHandler('SonoranRadio::core:writeLog', function(level, codeOrMessage, message)
+	if level == 'debug' then
+		debugLog(message or codeOrMessage)
+	elseif level == 'info' then
+		infoLog(message or codeOrMessage)
+	elseif level == 'error' then
+		sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
+	elseif level == 'warn' then
+		sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
+	else
+		debugLog(message or codeOrMessage)
+	end
+end)
 
 function serverNameChange(data)
 	local postData = {

@@ -30,6 +30,11 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | ERR-122 | ERR_SERVER_NAME_SET_FAILED | The resource could not update a user display name in the radio service. | Verify API connectivity and confirm the target user exists in the linked community. |
 | ERR-123 | ERR_INVALID_COMMUNITY_ID | The configured community ID is invalid or not enabled for the API. | Confirm the configured community ID matches a community with radio API access. |
 
+| ERR-124 | ERR_SUPPORT_INVALID_ID | The support ticket ID is invalid. | Use the positive ticket number provided by support. |
+| ERR-125 | ERR_SUPPORT_COLLECT_FAILED | Support diagnostics could not be collected. | Check the resource configuration and restart it, then retry the support command. |
+| ERR-126 | ERR_SUPPORT_TOO_LARGE | Support diagnostics exceed the 1 MB upload limit. | Ask support for another way to send the log. |
+| ERR-127 | ERR_SUPPORT_UPLOAD_FAILED | Support diagnostics could not be uploaded. | Verify the ticket ID, ask support to enable debug uploads, and check outbound HTTPS connectivity. |
+
 ## Warnings
 
 | Code | Internal Key | Meaning | First Troubleshooting Step |
@@ -51,3 +56,9 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | WRN-215 | WRN_CHATTER_EXCLUSIONS_DEPRECATED | `Config.chatterExclusions` is deprecated. | Move chatter exclusion management to `earpieces.json` or the in-game menu. |
 | WRN-216 | WRN_MOBILE_REPEATERS_CONFIG_MIGRATED | Legacy `Config.repeaterVehicleSpawncodes` entries were imported into `mobileRepeaters.json`. | Remove the deprecated `Config.repeaterVehicleSpawncodes` block and use `/radiomenu` for future changes. |
 | WRN-217 | WRN_LISTENER_PRO_REQUIRED | Nearby radio chatter and scanners were disabled because the community does not have a Pro subscription. | Upgrade the Radio community to Pro, or set `Config.chatter` to `false`. |
+
+## Support uploads
+
+When requested by staff, run `sonoranradio support <ticket ID>` in the **server console**. The upload contains the current console buffer, up to 250 structured error/warning entries, the last 50 debug messages, resource version, and configuration with credential fields redacted. Debug mode does not need to be enabled and is left unchanged. Uploads require staff to enable debug uploads on the ticket.
+
+Each structured log includes a link such as `https://sonoranradio.com/error/ERR-101` to the matching troubleshooting section.
