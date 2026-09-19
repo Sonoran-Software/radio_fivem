@@ -59,6 +59,6 @@ This file is the source-of-truth registry for structured log codes emitted by th
 
 ## Support uploads
 
-When requested by staff, run `sonoranradio support <ticket ID>` in the **server console**. The upload contains the current console buffer, up to 250 structured error/warning entries, the last 50 debug messages, resource version, and configuration with credential fields redacted. Debug mode does not need to be enabled and is left unchanged. Uploads require staff to enable debug uploads on the ticket.
+When requested by staff, run `sonoranradio support <ticket ID>` in the **server console**. The upload contains the effective core configuration, all six JSON configuration files with fallback/status labels, dependency states/versions, player count, uptime, runtime Radio state, and credential-redacted console/error/debug buffers. It normally includes up to 250 structured entries and 50 debug messages; oversized data is explicitly omitted or clipped to keep recent diagnostics deliverable. Counts describe the retained buffer. Debug mode does not need to be enabled and is left unchanged. Uploads require staff to enable debug uploads on the ticket.
 
 Each structured log includes a link such as `https://sonoranradio.com/error/ERR-101` to the matching troubleshooting section.

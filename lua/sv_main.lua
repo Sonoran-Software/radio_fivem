@@ -1630,6 +1630,19 @@ local function sendConsole(level, color, message, codeKey)
 	end
 end
 
+function GetSupportRuntimeInfo()
+    return {
+        initialized = Config and Config.init == true,
+        criticalApiError = critError,
+        subscriptionLevel = subscriptionLevel,
+        geoZones = geoChannels,
+        degradeZones = tunnels,
+        towerCount = type(Towers) == 'table' and #Towers or 0,
+        rackCount = type(Servers) == 'table' and #Servers or 0,
+        cellRepeaterCount = type(CellRepeaters) == 'table' and #CellRepeaters or 0
+    }
+end
+
 function getSupportErrorBuffer()
 	return SupportErrorBuffer
 end
