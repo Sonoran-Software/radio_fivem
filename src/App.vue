@@ -172,6 +172,7 @@ import StandaloneFrame, {
     removePersistentFrame as removeRadioFrame
 } from './components/StandaloneFrame.vue'
 import defaultScannerFrame from './assets/scannerFrame'
+const { getInputCode, getPttInputCode } = require('./inputCodes')
 
 export default {
     components: {
@@ -273,6 +274,12 @@ export default {
             this.onKeyPressed(event, 'keyup');
         });
         window.addEventListener('keydown', (event) => {
+            this.onKeyPressed(event, 'keydown');
+        });
+        window.addEventListener('mouseup', (event) => {
+            this.onKeyPressed(event, 'keyup');
+        });
+        window.addEventListener('mousedown', (event) => {
             this.onKeyPressed(event, 'keydown');
         });
     },
@@ -1087,7 +1094,9 @@ export default {
         },
 
         onKeyPressed(e, type) {
-            if (type === 'keyup' && e.code === 'Escape') {
+            const inputCode = getInputCode(e);
+
+            if (type === 'keyup' && inputCode === 'Escape') {
                 if (this.dragMode)
                     this.dragMode = false;
                 else
@@ -1099,7 +1108,7 @@ export default {
                     'ArrowLeft': 'left',
                     'ArrowRight': 'right'
                 };
-                const dir = dirs[e.code];
+                const dir = dirs[inputCode];
                 if (!dir) { /* pass */ }
                 else if (!e.ctrlKey)
                     this.debugMoveFrameComponent(dir);
@@ -1107,7 +1116,8 @@ export default {
                     this.debugResizeFrameComponent(dir);
             }
 
-            const matchesPtt = e.code === this.pttKeyName || (this.pttKeyName?.startsWith('SpecialKey.') && e.code === this.pttKeyName.split('.')[1]);
+            const pttInputCode = getPttInputCode(this.pttKeyName);
+            const matchesPtt = inputCode === pttInputCode;
             if (matchesPtt && !e.repeat) {
                 if (e.preventDefault) e.preventDefault();
                 this.setPttState(type === 'keydown');
