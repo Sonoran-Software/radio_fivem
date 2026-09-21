@@ -17,6 +17,7 @@ allowedMiniRadio = false
 local tunnels = {}
 local authorized = false
 local allowedFrames = {}
+local backendFrameDefinitions = {}
 local critError = false
 local calledSyncAcePerms = false
 local frame
@@ -361,6 +362,12 @@ function initClient()
 		end
 	end)
 
+	local pttAnimationConfig = type(Config.pttAnimation) == 'table' and Config.pttAnimation or {}
+	local pttAnimationDictionary = type(pttAnimationConfig.dictionary) == 'string' and
+		pttAnimationConfig.dictionary ~= '' and pttAnimationConfig.dictionary or 'random@arrests'
+	local pttAnimationName = type(pttAnimationConfig.name) == 'string' and pttAnimationConfig.name ~= '' and
+		pttAnimationConfig.name or 'generic_radio_chatter'
+
 	Radio = {
 		HasItem = false,
 		Open = false,
@@ -384,6 +391,8 @@ function initClient()
 			'cellphone_call_listen_a',
 			'generic_radio_chatter'
 		},
+		PttAnimationDictionary = pttAnimationDictionary,
+		PttAnimationName = pttAnimationName,
 		Clicks = true, -- Radio clicks
 		TalkAnim = false
 	}
@@ -600,7 +609,8 @@ function initClient()
 			SendNUIMessage({
 				type = 'setCurrentSkin',
 				skin = frame,
-				skins = allowedFrames
+				skins = allowedFrames,
+				skinDefinitions = backendFrameDefinitions
 			})
 		end
 		local uiPositions = json.decode(GetResourceKvpString('ui_pos_dic') or '{}')
@@ -690,7 +700,7 @@ function initClient()
 	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest)
+	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest, frameDefinitions)
 		DebugPrint('Authorized for Radio Usage')
 		authorized = true
 		allowedMiniRadio = miniRadio
@@ -700,11 +710,13 @@ function initClient()
 		})
 
 		allowedFrames = type(frames) == 'table' and frames or {}
+		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
 		frame = resolveRadioFrame(frame, allowedFrames)
 		SendNUIMessage({
 			type = 'setCurrentSkin',
 			skin = frame,
-			skins = allowedFrames
+			skins = allowedFrames,
+			skinDefinitions = backendFrameDefinitions
 		})
 
 		if not Radio.Restored and LocalPlayer.state['sonoranradio_restore'] == true then
@@ -715,6 +727,25 @@ function initClient()
 			})
 		end
 		Radio.Restored = true
+	end)
+
+	RegisterNetEvent('SonoranRadio::BackendFramesUpdated')
+	AddEventHandler('SonoranRadio::BackendFramesUpdated', function(frames, frameDefinitions)
+		if not authorized then
+			return
+		end
+
+		allowedFrames = type(frames) == 'table' and frames or {}
+		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
+		-- Keep the stored choice through a temporary backend outage. If that
+		-- community frame returns on a later refresh, restore it automatically.
+		frame = resolveRadioFrame(GetResourceKvpString('sonoranradio_skin') or frame, allowedFrames)
+		SendNUIMessage({
+			type = 'setCurrentSkin',
+			skin = frame,
+			skins = allowedFrames,
+			skinDefinitions = backendFrameDefinitions
+		})
 	end)
 
 	RegisterCommand('radio', function(_, args)
@@ -1258,11 +1289,11 @@ function initClient()
 
 					isTalking = true
 				else
-					RequestAnimDict('random@arrests')
-					while not HasAnimDictLoaded('random@arrests') do
+					RequestAnimDict(self.PttAnimationDictionary)
+					while not HasAnimDictLoaded(self.PttAnimationDictionary) do
 						Citizen.Wait(5)
 					end
-					TaskPlayAnim(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', 8.0, 0.0, -1, 49, 0, 0, 0, 0)
+					TaskPlayAnim(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, 8.0, 0.0, -1, 49, 0, 0, 0, 0)
 					isTalking = true
 				end
 			else
@@ -1284,14 +1315,14 @@ function initClient()
 					TaskPlayAnim(PlayerPedId(), 'cellphone@', 'cellphone_call_to_text', 4.0, -1, -1, 50, 0, false, false, false)
 					isTalking = false
 				else
-					StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
+					StopAnimTask(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, -4.0)
 					isTalking = false
 				end
 			end
 		else
 			if isTalking then
 				StopAnimTask(PlayerPedId(), 'cellphone@str', 'cellphone_call_listen_a', -4.0)
-				StopAnimTask(PlayerPedId(), 'random@arrests', 'generic_radio_chatter', -4.0)
+				StopAnimTask(PlayerPedId(), self.PttAnimationDictionary, self.PttAnimationName, -4.0)
 				isTalking = false
 			end
 		end
@@ -1521,10 +1552,6 @@ function initClient()
 			print('setting current frame', frame)
 		end
 
-		if data.type == 'saveSkinConfig' then
-			TriggerServerEvent('SonoranRadio::SaveSkinConfig', data.configPath, data.config)
-		end
-
 		if data.type == 'chatterInit' then
 			chatterForceUpdate() -- force a resend of important chatter info
 		end
@@ -1724,9 +1751,45 @@ function initClient()
 
 	local QBDeath = false
 
+	local function createSyncedZone(zoneData, options)
+		local center = zoneData.center
+		local radius = tonumber(zoneData.radius)
+		if type(center) == 'table' and tonumber(center.x) and tonumber(center.y) and radius and radius > 0 then
+			return CircleZone:Create(vector2(tonumber(center.x), tonumber(center.y)), radius, {
+				name = options.name,
+				minZ = options.minZ,
+				maxZ = options.maxZ,
+				debugPoly = Config.debug
+			})
+		end
+
+		local points = {}
+		for _, point in pairs(zoneData.points or {}) do
+			if tonumber(point.x) and tonumber(point.y) then
+				table.insert(points, vector2(tonumber(point.x), tonumber(point.y)))
+			end
+		end
+		if #points < 3 then
+			DebugPrint(('Skipping zone %s because it has no supported shape'):format(tostring(options.name)))
+			return nil
+		end
+
+		return PolyZone:Create(points, {
+			name = options.name,
+			minZ = options.minZ,
+			maxZ = options.maxZ,
+			degradeStrength = options.degradeStrength,
+			debugGrid = Config.debug
+		})
+	end
+
 	RegisterNetEvent('SonoranRadio:SyncTunnels', function(TunnelsServer)
-		tunnels = TunnelsServer
-		for _, zoneData in pairs (tunnels) do
+		tunnels = TunnelsServer or {}
+		for _, zone in pairs(polyZonesTable) do
+			zone:destroy()
+		end
+		polyZonesTable = {}
+		for _, zoneData in pairs(tunnels) do
 			local options = zoneData.options or {}
 			if options.zoneType == 'geo' or options.transmitChannels ~= nil or options.scanChannels ~= nil or options.acePerms ~= nil then
 				goto continueTunnels
@@ -1735,20 +1798,10 @@ function initClient()
 				goto continueTunnels
 			end
 			DebugPrint('Attempting to create zone: ' .. options.name)
-			if not polyZonesTable[options.name] then
-				DebugPrint('Zone was not found, creating...')
-				local points = {}
-				for _, point in pairs (zoneData.points) do
-					table.insert(points, vector2(point.x, point.y))
-				end
-				DebugPrint('Creating zone with ' .. #points .. ' points', json.encode(points))
-				polyZonesTable[options.name] = PolyZone:Create(points, {
-					name = options.name,
-					minZ = options.minZ,
-					maxZ = options.maxZ,
-					degradeStrength = options.degradeStrength,
-					debugGrid = Config.debug
-				})
+			local zone = createSyncedZone(zoneData, options)
+			if zone then
+				zone.degradeStrength = options.degradeStrength or 0.0
+				polyZonesTable[options.name] = zone
 				DebugPrint('Zone created: ' .. options.name)
 			end
 			::continueTunnels::
@@ -1770,20 +1823,13 @@ function initClient()
 				goto continueGeoZones
 			end
 			if options.name then
-				local points = {}
-				for _, point in pairs(zoneData.points or {}) do
-					table.insert(points, vector2(point.x, point.y))
+				local zone = createSyncedZone(zoneData, options)
+				if zone then
+					geoZonesTable[options.name] = zone
+					zone.transmitChannels = options.transmitChannels or {}
+					zone.scanChannels = options.scanChannels or {}
+					zone.acePerms = options.acePerms or {}
 				end
-				geoZonesTable[options.name] = PolyZone:Create(points, {
-					name = options.name,
-					minZ = options.minZ,
-					maxZ = options.maxZ,
-					debugGrid = Config.debug
-				})
-				local zone = geoZonesTable[options.name]
-				zone.transmitChannels = options.transmitChannels or {}
-				zone.scanChannels = options.scanChannels or {}
-				zone.acePerms = options.acePerms or {}
 			end
 			::continueGeoZones::
 		end
@@ -1793,7 +1839,7 @@ function initClient()
 	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
 		frame = frame or Config.defaultSkinId or 'default'
 
-		if Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
+		if Config.frames and Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
 			TriggerEvent('chat:addMessage', {
 				color = {
 					255,

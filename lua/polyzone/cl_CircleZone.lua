@@ -2,11 +2,21 @@ CircleZone = {}
 -- Inherits from PolyZone
 setmetatable(CircleZone, { __index = PolyZone })
 
-function CircleZone:draw()
+function CircleZone:draw(show, color)
+  if show ~= nil then
+    self.isDrawing = show
+  end
+  if not self.isDrawing then
+    return
+  end
+
   local center = self.center
-  local debugColor = self.debugColor
+  local debugColor = color or self.debugColor
   local r, g, b = debugColor[1], debugColor[2], debugColor[3]
-  if self.useZ then
+  if self.minZ and self.maxZ then
+    local height = math.max(self.maxZ - self.minZ, 0.01)
+    DrawMarker(1, center.x, center.y, self.minZ + (height / 2.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.diameter, self.diameter, height, r, g, b, 48, false, false, 2, nil, nil, false)
+  elseif self.useZ then
     local radius = self.radius
     DrawMarker(28, center.x, center.y, center.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, radius, radius, radius, r, g, b, 48, false, false, 2, nil, nil, false)
   else
@@ -38,6 +48,9 @@ function CircleZone:new(center, radius, options)
     radius = radius + 0.0,
     diameter = radius * 2.0,
     useZ = options.useZ or false,
+    minZ = tonumber(options.minZ) or nil,
+    maxZ = tonumber(options.maxZ) or nil,
+    isDrawing = options.debugPoly or false,
     debugPoly = options.debugPoly or false,
     debugColor = options.debugColor or {0, 255, 0},
     data = options.data or {},
@@ -66,7 +79,15 @@ function CircleZone:isPointInside(point)
   local center = self.center
   local radius = self.radius
 
-  if self.useZ then
+  local pointZ = point.z
+  if self.minZ and pointZ and pointZ < self.minZ then
+    return false
+  end
+  if self.maxZ and pointZ and pointZ > self.maxZ then
+    return false
+  end
+
+  if self.useZ and not self.minZ and not self.maxZ then
     return #(point - center) < radius
   else
     return #(point.xy - center.xy) < radius

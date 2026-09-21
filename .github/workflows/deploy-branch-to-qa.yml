@@ -79,7 +79,7 @@ jobs:
         shell: bash
         run: |
           cp -R sonrad_tower/stream sonrad_tower/data build/sonoranradio
-          cp -R lua dist miniradio tablet skins towers.DEFAULT.json tunnels.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json jammers.DEFAULT.json geochannels.DEFAULT.json mobileRepeaters.DEFAULT.json sonoranradio.cfg build/sonoranradio
+          cp -R lua dist miniradio tablet skins towers.DEFAULT.json speakers.DEFAULT.json earpieces.DEFAULT.json scanners.DEFAULT.json jammers.DEFAULT.json mobileRepeaters.DEFAULT.json sonoranradio.cfg build/sonoranradio
 
       - name: Generate version files
         shell: bash
