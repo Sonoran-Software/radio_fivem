@@ -6,7 +6,9 @@ Sonoran Radio's FiveM Resource
 
 Custom frames are managed in the Radio web panel's Customize > Overlay menu.
 The resource retrieves those community frames from the Radio backend on startup
-and refreshes them every five minutes.
+and refreshes them every five minutes. Player permission checks use the cached
+frames without making API requests. Failed refreshes retain the last successful
+cache until a later poll succeeds.
 
 Existing folders under `skins/` remain available as read-only legacy skins, so
 upgrading does not remove a community's current custom work. `Config.frames`

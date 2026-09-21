@@ -117,13 +117,12 @@ function refreshBackendFrames(force)
 	return refreshed
 end
 
+-- Player and admin lookups only read the cache; the background loop owns API refreshes.
 function getBackendFrameDefinitions()
-	refreshBackendFrames(false)
 	return backendFrameDefinitions
 end
 
 function getAllAvailableFrames()
-	refreshBackendFrames(false)
 	local installedFrames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio') .. '/skins')
 	local frames = {}
 	appendUnique(frames, installedFrames)
@@ -150,7 +149,6 @@ local function addDepartmentFrames(allowedFrames, department)
 end
 
 function checkFramePermissions(player)
-	refreshBackendFrames(false)
 
 	local installedFrames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio') .. '/skins')
 	local knownFrames = {}
