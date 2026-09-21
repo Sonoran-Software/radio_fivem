@@ -11,7 +11,7 @@ class FrameCacheTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime()
         self.lua.execute('''
-            Config = { frames = { permissionMode = 'none' } }
+            Config = { apiKey = 'test-key', frames = { permissionMode = 'none' } }
             now = 1000
             os.time = function() return now end
             requests = 0
@@ -33,7 +33,16 @@ class FrameCacheTests(unittest.TestCase):
                 requests = requests + 1
                 callback(response, responseSuccess)
             end
-            CreateThread = function(fn) refreshThread = coroutine.create(fn) end
+            threads = {}
+            CreateThread = function(fn)
+                local thread = coroutine.create(fn)
+                table.insert(threads, thread)
+                refreshThread = refreshThread or thread
+            end
+            pushHandlers = {}
+            TriggerEvent = function(event, kind, fn)
+                if event == 'sonoranradio::RegisterPushEvent' then pushHandlers[kind] = fn end
+            end
             Wait = function(ms) coroutine.yield(ms) end
         ''')
         self.lua.execute((ROOT / 'lua/sv_changeFrames.lua').read_text())
@@ -77,6 +86,68 @@ class FrameCacheTests(unittest.TestCase):
             assert(requests == 4 and isKnownFrame('frame:2') and not isKnownFrame('frame:1'))
             assert(#sent == 2)
         ''')
+
+    def test_push_refetches_without_waiting_for_poll_and_keeps_cache_on_failure(self):
+        self.lua.execute("""
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            response = {frames = {{id = 2, body = {}, screen = {}}}}
+            pushHandlers.frames_updated({payload = {frames = 'ignored'}})
+            assert(requests == 1) -- webhook returns before the fetch
+            assert(coroutine.resume(threads[2]))
+            assert(requests == 2 and isKnownFrame('frame:2') and #sent == 2)
+            responseSuccess = false
+            pushHandlers.frames_updated({})
+            assert(coroutine.resume(threads[3]))
+            assert(requests == 3 and isKnownFrame('frame:2') and #sent == 2)
+        """)
+
+    def test_push_during_fetch_queues_one_followup(self):
+        self.lua.execute("""
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            performApiRequest = function(_, _, callback)
+                requests = requests + 1
+                if requests == 2 then coroutine.yield('fetching') end
+                callback({frames = {{id = requests, body = {}, screen = {}}}}, true)
+            end
+            pushHandlers.frames_updated({})
+            local ok, state = coroutine.resume(threads[2])
+            assert(ok and state == 'fetching')
+            pushHandlers.frames_updated({})
+            pushHandlers.frames_updated({})
+            assert(coroutine.resume(threads[3]))
+            assert(coroutine.resume(threads[4]))
+            assert(requests == 2)
+            assert(coroutine.resume(threads[2]))
+            assert(requests == 3 and isKnownFrame('frame:3'))
+        """)
+
+    def test_webhook_requires_api_key(self):
+        self.lua.execute("""
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            RegisterNetEvent = function(_, fn) registerPush = fn end
+            SetHttpHandler = function(fn) httpHandler = fn end
+            json = {decode = function(data) return data end, encode = function() return '{}' end}
+        """)
+        self.lua.execute((ROOT / 'lua/sv_pushevents.lua').read_text())
+        self.lua.execute("""
+            registerPush('frames_updated', pushHandlers.frames_updated)
+            local function deliver(key)
+                local reply
+                httpHandler({path = '/events', method = 'POST', setDataHandler = function(fn)
+                    fn({key = key, type = 'frames_updated'})
+                end}, {send = function(body) reply = body end})
+                return reply
+            end
+            assert(deliver('wrong-key') == 'Bad API Key')
+            assert(#threads == 1 and requests == 1)
+            assert(deliver('test-key') == 'ok')
+            assert(#threads == 2)
+            assert(coroutine.resume(threads[2]))
+            assert(requests == 2)
+        """)
 
     def test_authorization_keeps_original_connection_id(self):
         source = (ROOT / 'lua/sv_main.lua').read_text()

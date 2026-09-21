@@ -5,6 +5,7 @@ local backendFrameDefinitions = {}
 local backendFrameIds = {}
 local backendFramesLastAttempt = 0
 local backendFramesRefreshing = false
+local backendFramesRefreshPending = false
 
 local function appendUnique(target, values)
 	local seen = {}
@@ -78,6 +79,7 @@ end
 function refreshBackendFrames(force)
 	local now = os.time()
 	if backendFramesRefreshing then
+		if force then backendFramesRefreshPending = true end
 		return false
 	end
 	if not force and now - backendFramesLastAttempt < BACKEND_FRAME_REFRESH_SECONDS then
@@ -87,37 +89,41 @@ function refreshBackendFrames(force)
 	backendFramesLastAttempt = now
 	backendFramesRefreshing = true
 	local refreshed = false
-	performApiRequest({}, 'GET-FRAMES', function(data, success)
-		if not success then
-			return
-		end
+	repeat
+		backendFramesRefreshPending = false
+		refreshed = false
+		performApiRequest({}, 'GET-FRAMES', function(data, success)
+			if not success then
+				return
+			end
 
-		local frames = decodeBackendFrames(data)
-		if not frames then
-			warnLog('WRN_API_REQUEST_FAILED', 'Radio API returned an invalid frame payload. Existing frame data will be retained.')
-			return
-		end
+			local frames = decodeBackendFrames(data)
+			if not frames then
+				warnLog('WRN_API_REQUEST_FAILED', 'Radio API returned an invalid frame payload. Existing frame data will be retained.')
+				return
+			end
 
-		buildBackendFrameCache(frames)
-		refreshed = true
-	end)
+			buildBackendFrameCache(frames)
+			refreshed = true
+		end)
+
+		if refreshed then
+			for _, player in ipairs(GetPlayers()) do
+				local playerId = tonumber(player) or player
+				TriggerClientEvent(
+					'SonoranRadio::BackendFramesUpdated',
+					playerId,
+					checkFramePermissions(playerId),
+					backendFrameDefinitions
+				)
+			end
+		end
+	until not backendFramesRefreshPending
 	backendFramesRefreshing = false
-
-	if refreshed then
-		for _, player in ipairs(GetPlayers()) do
-			local playerId = tonumber(player) or player
-			TriggerClientEvent(
-				'SonoranRadio::BackendFramesUpdated',
-				playerId,
-				checkFramePermissions(playerId),
-				backendFrameDefinitions
-			)
-		end
-	end
 	return refreshed
 end
 
--- Player and admin lookups only read the cache; the background loop owns API refreshes.
+-- Player and admin lookups only read the cache; polling and save notifications refresh it.
 function getBackendFrameDefinitions()
 	return backendFrameDefinitions
 end
@@ -149,7 +155,6 @@ local function addDepartmentFrames(allowedFrames, department)
 end
 
 function checkFramePermissions(player)
-
 	local installedFrames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio') .. '/skins')
 	local knownFrames = {}
 	appendUnique(knownFrames, installedFrames)
@@ -232,6 +237,12 @@ end
 
 CreateThread(function()
 	Wait(1000)
+	TriggerEvent('sonoranradio::RegisterPushEvent', 'frames_updated', function()
+		-- Acknowledge the webhook without waiting for the API request.
+		CreateThread(function()
+			refreshBackendFrames(true)
+		end)
+	end)
 	while true do
 		refreshBackendFrames(true)
 		Wait(BACKEND_FRAME_REFRESH_SECONDS * 1000)
