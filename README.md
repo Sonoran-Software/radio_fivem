@@ -4,15 +4,15 @@ Sonoran Radio's FiveM Resource
 
 ## Custom radio frames
 
-Custom frames are managed in the Radio web panel's customization menu. The
-resource retrieves those community frames from the Radio backend and refreshes
-them every five minutes.
+Custom frames are managed in the Radio web panel's Customize > Overlay menu.
+The resource retrieves those community frames from the Radio backend on startup
+and refreshes them every five minutes.
 
 Existing folders under `skins/` remain available as read-only legacy skins, so
 upgrading does not remove a community's current custom work. `Config.frames`
 continues to control per-player frame access for both local and backend-managed
-frames. Use the local folder name for an installed skin and `community:<id>` for
-a backend frame, such as `community:1`. With `permissionMode = 'none'`, all
+frames. Use the local folder name for an installed skin and `frame:<id>` for
+a backend frame, such as `frame:1`. With `permissionMode = 'none'`, all
 available local and backend frames are selectable.
 
 There is no automatic upload migration because a legacy skin may contain local
