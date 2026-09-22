@@ -1,10 +1,14 @@
 local BACKEND_FRAME_PREFIX = 'frame:'
-local BACKEND_FRAME_REFRESH_SECONDS = 300
+local BACKEND_FRAME_REFRESH_SECONDS = 30
 
 local backendFrameDefinitions = {}
 local backendFrameIds = {}
+local backendFrameAliases = {}
 local backendFramesLastAttempt = 0
 local backendFramesRefreshing = false
+
+local DEFAULT_VEHICLE_CLASSES = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22}
+local DEFAULT_AIRCRAFT_CLASSES = {15, 16}
 
 local function appendUnique(target, values)
 	local seen = {}
@@ -27,8 +31,9 @@ local function filterKnownFrames(frames, knownFrames)
 
 	local filteredFrames = {}
 	for _, frame in ipairs(frames) do
-		if knownFrameLookup[frame] then
-			appendUnique(filteredFrames, {frame})
+		local resolvedFrame = backendFrameAliases[frame] or frame
+		if knownFrameLookup[resolvedFrame] then
+			appendUnique(filteredFrames, {resolvedFrame})
 		end
 	end
 
@@ -52,27 +57,57 @@ end
 local function buildBackendFrameCache(frames)
 	local definitions = {}
 	local ids = {}
+	local aliases = {}
 
 	for _, layout in ipairs(frames) do
 		if type(layout) == 'table' and layout.id ~= nil and type(layout.body) == 'table' and type(layout.screen) == 'table' then
 			local frameId = BACKEND_FRAME_PREFIX .. tostring(layout.id)
-			definitions[frameId] = {
-				name = type(layout.name) == 'string' and layout.name or ('Community Frame ' .. tostring(layout.id)),
-				frames = {
-					{
-						type = 'portable',
-						body = layout.body,
-						controls = type(layout.controls) == 'table' and layout.controls or {},
-						screen = layout.screen
-					}
+			local frameLayouts = {
+				{
+					type = 'portable',
+					body = layout.body,
+					controls = type(layout.controls) == 'table' and layout.controls or {},
+					screen = layout.screen
 				}
 			}
+			local variants = type(layout.variants) == 'table' and layout.variants or {}
+			if type(variants.vehicle) == 'table' and type(variants.vehicle.body) == 'table' and type(variants.vehicle.screen) == 'table' then
+				table.insert(frameLayouts, {
+					type = 'vehicle',
+					vehicleClasses = type(variants.vehicle.vehicleClasses) == 'table' and variants.vehicle.vehicleClasses or DEFAULT_VEHICLE_CLASSES,
+					body = variants.vehicle.body,
+					controls = type(variants.vehicle.controls) == 'table' and variants.vehicle.controls or {},
+					screen = variants.vehicle.screen
+				})
+			end
+			if type(variants.aircraft) == 'table' and type(variants.aircraft.body) == 'table' and type(variants.aircraft.screen) == 'table' then
+				table.insert(frameLayouts, {
+					type = 'vehicle',
+					vehicleClasses = type(variants.aircraft.vehicleClasses) == 'table' and variants.aircraft.vehicleClasses or DEFAULT_AIRCRAFT_CLASSES,
+					body = variants.aircraft.body,
+					controls = type(variants.aircraft.controls) == 'table' and variants.aircraft.controls or {},
+					screen = variants.aircraft.screen
+				})
+			end
+			for _, legacyFrame in ipairs(type(layout.fivemLegacyFrames) == 'table' and layout.fivemLegacyFrames or {}) do
+				if type(legacyFrame) == 'table' and (legacyFrame.type == 'hud' or legacyFrame.type == 'scanner') then
+					table.insert(frameLayouts, legacyFrame)
+				end
+			end
+			definitions[frameId] = {
+				name = type(layout.name) == 'string' and layout.name or ('Community Frame ' .. tostring(layout.id)),
+				frames = frameLayouts
+			}
 			table.insert(ids, frameId)
+			if type(layout.legacySkinId) == 'string' and layout.legacySkinId ~= '' then
+				aliases[layout.legacySkinId] = frameId
+			end
 		end
 	end
 
 	backendFrameDefinitions = definitions
 	backendFrameIds = ids
+	backendFrameAliases = aliases
 end
 
 function refreshBackendFrames(force)
@@ -110,7 +145,8 @@ function refreshBackendFrames(force)
 				'SonoranRadio::BackendFramesUpdated',
 				playerId,
 				checkFramePermissions(playerId),
-				backendFrameDefinitions
+				backendFrameDefinitions,
+				backendFrameAliases
 			)
 		end
 	end
@@ -120,6 +156,11 @@ end
 function getBackendFrameDefinitions()
 	refreshBackendFrames(false)
 	return backendFrameDefinitions
+end
+
+function getBackendFrameAliases()
+	refreshBackendFrames(false)
+	return backendFrameAliases
 end
 
 function getAllAvailableFrames()
@@ -135,8 +176,9 @@ function isKnownFrame(frameId)
 	if type(frameId) ~= 'string' then
 		return false
 	end
+	local resolvedFrame = backendFrameAliases[frameId] or frameId
 	for _, knownFrameId in ipairs(getAllAvailableFrames()) do
-		if frameId == knownFrameId then
+		if resolvedFrame == knownFrameId then
 			return true
 		end
 	end
@@ -232,8 +274,133 @@ function checkFramePermissions(player)
 	return filterKnownFrames(allowedFrames, knownFrames)
 end
 
+local function decodeJsonValue(value)
+	if type(value) == 'table' then
+		return value
+	end
+	if type(value) ~= 'string' or value == '' then
+		return nil
+	end
+	local ok, decoded = pcall(json.decode, value)
+	return ok and decoded or nil
+end
+
+local function uploadLegacyFrameImage(image)
+	local contents = LoadResourceFile(GetCurrentResourceName(), image.resourcePath)
+	if type(contents) ~= 'string' then
+		return nil, 'unable to read ' .. tostring(image.resourcePath)
+	end
+	if #contents > 5 * 1024 * 1024 then
+		return nil, tostring(image.resourcePath) .. ' exceeds the 5 MB upload limit'
+	end
+
+	local response = nil
+	local failure = nil
+	performApiRequest({
+		fileName = image.fileName,
+		fileContent = contents,
+		contentType = image.contentType
+	}, 'UPLOAD-FRAME-IMAGE', function(data, success)
+		if success then
+			response = decodeJsonValue(data)
+		else
+			failure = data
+		end
+	end)
+	if type(response) ~= 'table' or type(response.url) ~= 'string' then
+		return nil, failure or ('invalid image upload response for ' .. tostring(image.resourcePath))
+	end
+	return response.url
+end
+
+local function migrateLegacySkins()
+	if Config.autoMigrateLegacySkins == false then
+		infoLog('Legacy radio skin migration is disabled by Config.autoMigrateLegacySkins.')
+		return false
+	end
+
+	local resourceName = GetCurrentResourceName()
+	local skinsPath = GetResourcePath(resourceName) .. '/skins'
+	local scan = decodeJsonValue(exports[resourceName]:GetLegacySkinConfigs(skinsPath))
+	if type(scan) ~= 'table' or not scan.exists then
+		return false
+	end
+	if type(scan.errors) == 'table' and #scan.errors > 0 then
+		warnLog('WRN_API_REQUEST_FAILED', 'Legacy radio skins were not migrated. Fix these issues and restart: ' .. table.concat(scan.errors, '; '))
+		return false
+	end
+	if type(scan.skins) ~= 'table' or #scan.skins == 0 then
+		infoLog('The legacy skins folder is empty; nothing needs to be migrated.')
+		return false
+	end
+
+	infoLog(('Migrating %d legacy radio skin(s) to the Radio backend...'):format(#scan.skins))
+	for _, skin in ipairs(scan.skins) do
+		for _, image in ipairs(type(skin.images) == 'table' and skin.images or {}) do
+			local uploadedUrl, uploadError = uploadLegacyFrameImage(image)
+			if not uploadedUrl then
+				warnLog('WRN_API_REQUEST_FAILED', 'Legacy radio skin migration stopped before archiving: ' .. tostring(uploadError))
+				return false
+			end
+			for _, frame in ipairs(skin.frames or {}) do
+				if type(frame.body) == 'table' and frame.body.image == image.source then
+					frame.body.image = uploadedUrl
+				end
+			end
+		end
+		skin.images = nil
+	end
+
+	local migrationResponse = nil
+	local migrationFailure = nil
+	performApiRequest({skins = scan.skins}, 'MIGRATE-FRAMES', function(data, success)
+		if success then
+			migrationResponse = decodeJsonValue(data)
+		else
+			migrationFailure = data
+		end
+	end)
+	if type(migrationResponse) ~= 'table' or migrationResponse.complete ~= true then
+		warnLog('WRN_API_REQUEST_FAILED', 'Legacy radio skin migration was not committed; the skins folder was retained. ' .. tostring(migrationFailure or 'Invalid migration response.'))
+		return false
+	end
+
+	if not refreshBackendFrames(true) then
+		warnLog('WRN_API_REQUEST_FAILED', 'Legacy frames were saved but could not be verified with a fresh backend read. The skins folder was retained for a safe retry.')
+		return false
+	end
+	for _, skin in ipairs(scan.skins) do
+		if backendFrameAliases[skin.legacySkinId] == nil then
+			warnLog('WRN_API_REQUEST_FAILED', 'Legacy frame verification did not return an alias for ' .. tostring(skin.legacySkinId) .. '. The skins folder was retained.')
+			return false
+		end
+	end
+
+	local archive = decodeJsonValue(exports[resourceName]:ArchiveLegacySkins(skinsPath))
+	if type(archive) ~= 'table' or archive.success ~= true then
+		warnLog('WRN_API_REQUEST_FAILED', 'Legacy frames were migrated and verified, but the skins folder could not be renamed: ' .. tostring(archive and archive.error or 'unknown filesystem error'))
+		return false
+	end
+
+	infoLog('Legacy radio skins were migrated and verified. Original files were archived at ' .. tostring(archive.path) .. '.')
+	return true
+end
+
 CreateThread(function()
+	-- Push handlers are registered from a thread so every server script has
+	-- finished loading before we publish into sv_pushevents' handler registry.
+	-- A forced refresh rebuilds the authoritative cache and immediately sends
+	-- the new definitions to every connected NUI client.
+	Wait(0)
+	TriggerEvent('sonoranradio::RegisterPushEvent', 'frames_updated', function(data)
+		debugLog('Received frames_updated push event: ' .. json.encode(data))
+		if not refreshBackendFrames(true) then
+			warnLog('WRN_API_REQUEST_FAILED', 'Radio frame update push could not be reconciled. Existing frame data will be retained until the next refresh.')
+		end
+	end)
+
 	Wait(1000)
+	migrateLegacySkins()
 	while true do
 		refreshBackendFrames(true)
 		Wait(BACKEND_FRAME_REFRESH_SECONDS * 1000)

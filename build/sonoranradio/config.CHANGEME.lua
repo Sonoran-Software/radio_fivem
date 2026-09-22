@@ -144,6 +144,9 @@ Config.geoChannels = {
 -- Custom radio frames are managed in the Radio web panel's customization menu.
 -- FiveM frame permissions remain configured here. Local skins use their folder
 -- name (for example 'default'); backend frames use 'frame:<frame id>'.
+-- On startup, legacy skins are uploaded, verified, and then the skins folder is
+-- renamed to skins_old. Set this false to perform that migration manually.
+Config.autoMigrateLegacySkins = true
 Config.frames = {
 	permissionMode = 'none', -- ace, qbcore, qbox, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands

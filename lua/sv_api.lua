@@ -7,6 +7,8 @@ local ApiEndpoints = {
 	['SET-USER-DISPLAY-NAME'] = true,
 	['PLAY-TONE'] = true,
 	['GET-FRAMES'] = true,
+	['UPLOAD-FRAME-IMAGE'] = true,
+	['MIGRATE-FRAMES'] = true,
 	['GET-ZONES'] = true,
 	['CREATE-ZONE'] = true,
 	['UPDATE-ZONE'] = true,
@@ -134,6 +136,10 @@ local function callApiEndpoint(type, postData)
 		return client:playToneV2(payload.tones or {}, payload.playTo, Config.comId)
 	elseif type == 'GET-FRAMES' then
 		return client:getRadioFramesV2(Config.comId)
+	elseif type == 'UPLOAD-FRAME-IMAGE' then
+		return client:uploadRadioFrameImageV2(payload, Config.comId)
+	elseif type == 'MIGRATE-FRAMES' then
+		return client:migrateRadioFramesV2(payload.skins or {}, Config.comId)
 	elseif type == 'GET-ZONES' then
 		return client:getZonesV2()
 	elseif type == 'CREATE-ZONE' then

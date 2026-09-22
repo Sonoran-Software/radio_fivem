@@ -18,6 +18,7 @@ local tunnels = {}
 local authorized = false
 local allowedFrames = {}
 local backendFrameDefinitions = {}
+local backendFrameAliases = {}
 local critError = false
 local calledSyncAcePerms = false
 local frame
@@ -52,13 +53,22 @@ local function isFrameAllowed(frameId, frames)
 	return false
 end
 
+local function resolveFrameAlias(frameId)
+	if type(frameId) ~= 'string' then
+		return frameId
+	end
+	return backendFrameAliases[frameId] or frameId
+end
+
 local function resolveRadioFrame(preferredFrame, frames)
+	preferredFrame = resolveFrameAlias(preferredFrame)
 	if isFrameAllowed(preferredFrame, frames) then
 		return preferredFrame
 	end
 
-	if isFrameAllowed(Config.defaultSkinId, frames) then
-		return Config.defaultSkinId
+	local defaultFrame = resolveFrameAlias(Config.defaultSkinId)
+	if isFrameAllowed(defaultFrame, frames) then
+		return defaultFrame
 	end
 
 	if type(frames) == 'table' and type(frames[1]) == 'string' then
@@ -700,7 +710,7 @@ function initClient()
 	exports('setEmergencyCall', setEmergencyCall)
 
 	RegisterNetEvent('SonoranRadio::AuthorizeRadio')
-	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest, frameDefinitions)
+	AddEventHandler('SonoranRadio::AuthorizeRadio', function(frames, miniRadio, guest, frameDefinitions, frameAliases)
 		DebugPrint('Authorized for Radio Usage')
 		authorized = true
 		allowedMiniRadio = miniRadio
@@ -711,6 +721,7 @@ function initClient()
 
 		allowedFrames = type(frames) == 'table' and frames or {}
 		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
+		backendFrameAliases = type(frameAliases) == 'table' and frameAliases or {}
 		frame = resolveRadioFrame(frame, allowedFrames)
 		SendNUIMessage({
 			type = 'setCurrentSkin',
@@ -730,13 +741,14 @@ function initClient()
 	end)
 
 	RegisterNetEvent('SonoranRadio::BackendFramesUpdated')
-	AddEventHandler('SonoranRadio::BackendFramesUpdated', function(frames, frameDefinitions)
+	AddEventHandler('SonoranRadio::BackendFramesUpdated', function(frames, frameDefinitions, frameAliases)
 		if not authorized then
 			return
 		end
 
 		allowedFrames = type(frames) == 'table' and frames or {}
 		backendFrameDefinitions = type(frameDefinitions) == 'table' and frameDefinitions or {}
+		backendFrameAliases = type(frameAliases) == 'table' and frameAliases or {}
 		-- Keep the stored choice through a temporary backend outage. If that
 		-- community frame returns on a later refresh, restore it automatically.
 		frame = resolveRadioFrame(GetResourceKvpString('sonoranradio_skin') or frame, allowedFrames)
@@ -1835,41 +1847,6 @@ function initClient()
 		end
 		requestGeoAcePerms(true)
 	end)
-
-	RegisterNetEvent('SonoranRadio::AdminSkinChange', function(frame)
-		frame = frame or Config.defaultSkinId or 'default'
-
-		if Config.frames and Config.frames.permissionMode == 'qbcore' and Config.enforceRadioItem and not Radio.HasItem then
-			TriggerEvent('chat:addMessage', {
-				color = {
-					255,
-					0,
-					0
-				},
-				multiline = true,
-				args = {'Sonoran Radio','You must have a radio to change frames.'}
-			})
-			return
-		end
-
-		SendNUIMessage({
-			type = 'setCurrentSkin',
-			skin = frame
-		})
-		TriggerEvent('chat:addMessage', {
-			args = {
-				'^1SonoranRadio',
-				'Changed your radio skin to ' .. frame .. ''
-			}
-		})
-	end)
-
-	TriggerEvent('chat:addSuggestion', '/adminskinchange', 'Change your radio skin', {
-		{
-			name = 'frame',
-			help = 'The frame name to change to'
-		}
-	})
 
 	-- TriggerEvent('chat:addSuggestion', '/spawnradiotower', 'Spawn a radio tower')
 	-- TriggerEvent('chat:addSuggestion', '/spawnradiorack', 'Spawn a radio rack', {

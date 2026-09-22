@@ -820,7 +820,7 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(source, 'sonoranradio.radiousers')
 	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(source, 'sonoranradio.guest')
 	if radioAceAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio, allowedGuest, getBackendFrameDefinitions())
+		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio, allowedGuest, getBackendFrameDefinitions(), getBackendFrameAliases())
 	end
 	if acePermsForTowerRepair then
 		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
@@ -851,83 +851,6 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	sendGeoPerms(source)
 end)
 
-function validFrame(frame)
-	return isKnownFrame(frame)
-end
-
-RegisterCommand('adminskinchange', function(source, args, rawCommand)
-	if IsPlayerAceAllowed(source, 'sonoranradio.admin') then
-		local validFrames = getAllAvailableFrames()
-		if not validFrame(args[1]) then
-			TriggerClientEvent('chat:addMessage', source, {
-				args = {
-					'^1SonoranRadio',
-					'Invalid frame name. Valid frames are: ' .. table.concat(validFrames, ', ')
-				}
-			})
-		else
-			TriggerClientEvent('SonoranRadio::AdminSkinChange', source, args[1])
-		end
-	else
-		TriggerClientEvent('chat:addMessage', source, {
-			args = {
-				'^1SonoranRadio',
-				'You do not have permission to use this command.'
-			}
-		})
-	end
-end)
-
-RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
-	if Config.enforceRadioItem then
-		local Player = nil
-		if frameworkEnum == 1 then
-			local QBCore = exports['qb-core']:GetCoreObject()
-			Player = QBCore.Functions.GetPlayer(source)
-		elseif frameworkEnum == 2 then
-			Player = exports.qbx_core:GetPlayer(source)
-		end
-
-		if not Player then
-			return
-		end
-
-		local radio = nil
-		local radioSlot = nil
-
-		if inventoryEnum == 1 then
-			if type(Player.Functions.GetItemByName) == 'function' then
-				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
-			elseif type(Player.Functions.HasItem) == 'function' then
-				radio = Player.Functions.HasItem(Config.RadioItem.name)
-			end
-
-			if radio then
-				radioSlot = radio.slot
-				Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
-				Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
-					frame = newFrame
-				})
-			end
-		elseif inventoryEnum == 2 then
-			local inv = exports.ox_inventory:GetInventory(source) or {}
-			for _, item in ipairs(inv) do
-				if item.name == Config.RadioItem.name then
-					radio = item
-					radioSlot = item.slot
-					break
-				end
-			end
-
-			if radio then
-				exports.ox_inventory:RemoveItem(source, Config.RadioItem.name, 1, radioSlot)
-				exports.ox_inventory:AddItem(source, Config.RadioItem.name, 1, radioSlot, {
-					frame = newFrame
-				})
-			end
-		end
-	end
-end)
 local function CopyFile(old_path, new_path)
 	local old_file = io.open(old_path, 'rb')
 	if not old_file then
