@@ -8,8 +8,7 @@ Custom frames are managed in the Radio web panel's customization menu. The
 resource retrieves those community frames from the Radio backend and refreshes
 them every five minutes.
 
-On startup, the resource safely migrates folders under `skins/` when
-`Config.autoMigrateLegacySkins` is enabled (the default):
+On startup, the resource safely migrates folders under `skins/`:
 
 1. Every skin config is validated and each local frame image is uploaded.
 2. The on-foot, vehicle, and aircraft layouts are merged into one managed frame.
@@ -29,10 +28,6 @@ existing folder entry such as `default` automatically resolves to its migrated
 backend frame, so communities do not need to rewrite permission groups during
 the upgrade. New managed frames can be referenced explicitly as `frame:<id>`.
 With `permissionMode = 'none'`, every available managed frame is selectable.
-
-Set `Config.autoMigrateLegacySkins = false` before the first upgraded start to
-opt out and keep using the read-only local folders while planning a manual
-migration.
 
 ## Mobile vehicle repeaters
 

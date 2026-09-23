@@ -314,11 +314,6 @@ local function uploadLegacyFrameImage(image)
 end
 
 local function migrateLegacySkins()
-	if Config.autoMigrateLegacySkins == false then
-		infoLog('Legacy radio skin migration is disabled by Config.autoMigrateLegacySkins.')
-		return false
-	end
-
 	local resourceName = GetCurrentResourceName()
 	local skinsPath = GetResourcePath(resourceName) .. '/skins'
 	local scan = decodeJsonValue(exports[resourceName]:GetLegacySkinConfigs(skinsPath))
