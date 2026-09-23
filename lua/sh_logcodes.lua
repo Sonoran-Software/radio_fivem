@@ -23,10 +23,6 @@ WarningCodes = {
 		code = 'WRN-206',
 		message = 'Community channels could not be fetched for a player request.'
 	},
-	['WRN_SKIN_SAVE_DEBUG_BLOCKED'] = {
-		code = 'WRN-207',
-		message = 'A client attempted to save a radio skin while debug mode was disabled.'
-	},
 	['WRN_CONFIG_RENAME_FAILED'] = {
 		code = 'WRN-208',
 		message = 'A default configuration file could not be renamed to its writable target path.'
@@ -121,7 +117,7 @@ ErrorCodes = {
 	},
 	['ERR_FRAMES_DEPARTMENTS_MISSING'] = {
 		code = 'ERR-109',
-		message = 'Config.frames.departments is missing for the selected frame permission mode.'
+		message = 'Config.frames is missing departments for the selected permission mode.'
 	},
 	['ERR_JAMMERS_PERMISSION_MODE_INVALID'] = {
 		code = 'ERR-110',
@@ -147,10 +143,6 @@ ErrorCodes = {
 		code = 'ERR-115',
 		message = 'Community channels could not be fetched from the radio service.'
 	},
-	['ERR_SKIN_SAVE_FAILED'] = {
-		code = 'ERR-116',
-		message = 'A radio skin configuration file could not be saved.'
-	},
 	['ERR_CONFIG_SAVE_FAILED'] = {
 		code = 'ERR-117',
 		message = 'A JSON configuration file could not be saved.'
@@ -162,10 +154,6 @@ ErrorCodes = {
 	['ERR_SERVER_IP_INVALID_ROOM'] = {
 		code = 'ERR-119',
 		message = 'The radio service returned an invalid roomId while setting the server IP.'
-	},
-	['ERR_FRAMES_CONFIG_MISSING'] = {
-		code = 'ERR-120',
-		message = 'Config.frames is missing.'
 	},
 	['ERR_SERVER_SPEAKERS_SET_FAILED'] = {
 		code = 'ERR-121',

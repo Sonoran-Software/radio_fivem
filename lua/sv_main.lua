@@ -863,146 +863,41 @@ end, true)
 
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
-	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(source, 'sonoranradio.use')
-	local framePermissions = checkFramePermissions(source)
-	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(source, 'sonoranradio.radiousers')
-	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(source, 'sonoranradio.guest')
+	local playerId = source
+	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(playerId, 'sonoranradio.use')
+	local framePermissions = checkFramePermissions(playerId)
+	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(playerId, 'sonoranradio.radiousers')
+	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(playerId, 'sonoranradio.guest')
 	if radioAceAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio, allowedGuest)
+		TriggerClientEvent('SonoranRadio::AuthorizeRadio', playerId, framePermissions, allowedMiniRadio, allowedGuest, getBackendFrameDefinitions(), getBackendFrameAliases())
 	end
 	if acePermsForTowerRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
-			TriggerClientEvent('SonoranRadio::AuthorizeTowers', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
+			TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeTowers', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 	end
 	if acePermsForServerRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repairservers') then
-			TriggerClientEvent('SonoranRadio::AuthorizeRacks', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repairservers') then
+			TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeRacks', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 	end
 	if acePermsForAntennaRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
-			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
+			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', playerId)
 	end
 
-	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
+	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
 	if scannersAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
+		TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, true)
 	end
-	sendGeoPerms(source)
-end)
-
-function validFrame(frame)
-	for _, department in pairs(Config.frames.departments) do
-		for _, allowedFrame in ipairs(department.allowedFrames or {}) do
-			if allowedFrame == frame then
-				return true
-			end
-		end
-	end
-	return false
-end
-
-RegisterCommand('adminskinchange', function(source, args, rawCommand)
-	if IsPlayerAceAllowed(source, 'sonoranradio.admin') then
-		local validFrames = {};
-		for _, department in pairs(Config.frames.departments) do
-			for _, frame in ipairs(department.allowedFrames or {}) do
-				table.insert(validFrames, frame)
-			end
-		end
-		if not validFrame(args[1]) then
-			TriggerClientEvent('chat:addMessage', source, {
-				args = {
-					'^1SonoranRadio',
-					'Invalid frame name. Valid frames are: ' .. table.concat(validFrames, ', ')
-				}
-			})
-		else
-			TriggerClientEvent('SonoranRadio::AdminSkinChange', source, args[1])
-		end
-	else
-		TriggerClientEvent('chat:addMessage', source, {
-			args = {
-				'^1SonoranRadio',
-				'You do not have permission to use this command.'
-			}
-		})
-	end
-end)
-
-RegisterNetEvent('SonoranRadio::AdminSkinChange_s', function(newFrame)
-	if Config.enforceRadioItem then
-		local Player = nil
-		if frameworkEnum == 1 then
-			local QBCore = exports['qb-core']:GetCoreObject()
-			Player = QBCore.Functions.GetPlayer(source)
-		elseif frameworkEnum == 2 then
-			Player = exports.qbx_core:GetPlayer(source)
-		end
-
-		if not Player then
-			return
-		end
-
-		local radio = nil
-		local radioSlot = nil
-
-		if inventoryEnum == 1 then
-			if type(Player.Functions.GetItemByName) == 'function' then
-				radio = Player.Functions.GetItemByName(Config.RadioItem.name)
-			elseif type(Player.Functions.HasItem) == 'function' then
-				radio = Player.Functions.HasItem(Config.RadioItem.name)
-			end
-
-			if radio then
-				radioSlot = radio.slot
-				Player.Functions.RemoveItem(Config.RadioItem.name, 1, radioSlot)
-				Player.Functions.AddItem(Config.RadioItem.name, 1, radioSlot, {
-					frame = newFrame
-				})
-			end
-		elseif inventoryEnum == 2 then
-			local inv = exports.ox_inventory:GetInventory(source) or {}
-			for _, item in ipairs(inv) do
-				if item.name == Config.RadioItem.name then
-					radio = item
-					radioSlot = item.slot
-					break
-				end
-			end
-
-			if radio then
-				exports.ox_inventory:RemoveItem(source, Config.RadioItem.name, 1, radioSlot)
-				exports.ox_inventory:AddItem(source, Config.RadioItem.name, 1, radioSlot, {
-					frame = newFrame
-				})
-			end
-		end
-	end
-end)
-RegisterNetEvent('SonoranRadio::SaveSkinConfig', function(configPath, config)
-	local src = source
-	if not Config.debug then
-		warnLog('WRN_SKIN_SAVE_DEBUG_BLOCKED', ('Player id:%s is attempting to save a radio skin config, even though debug is not enabled (possible security issue)'):format(source))
-		return
-	end
-
-	local success = SaveResourceFile(GetCurrentResourceName(), configPath, config, -1)
-	if success then
-		infoLog(('Successfully saved %s'):format(configPath))
-		TriggerClientEvent('SonoranRadio::DisplayInfo', src, 'Successfully saved skin.json')
-	else
-		errorLog('ERR_SKIN_SAVE_FAILED', ('Could not save %s, skin settings will not be saved'):format(configPath))
-		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Could not save skin.json (see server log for more info)')
-	end
+	sendGeoPerms(playerId)
 end)
 
 local function CopyFile(old_path, new_path)
@@ -1243,11 +1138,6 @@ AddEventHandler('onResourceStart', function(resourceName)
 	SetConvar('sonoranradio_communityID', tostring(Config.comId))
 
 	Config.init = false
-	if Config.frames == nil or not Config.frames then
-		errorLog('ERR_FRAMES_CONFIG_MISSING', 'Config.frames is not set. Please check your configuration.')
-		critError = true
-		return
-	end
 	getInventory()
 	getFramework()
 	if type(InitMobileRepeaters) == 'function' then

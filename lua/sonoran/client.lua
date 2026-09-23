@@ -96,14 +96,14 @@ end
 
 local function build_multipart_form_data(fields, file_name, file_content, content_type)
   if type(file_name) ~= "string" or file_name == "" then
-    error("fileName is required when uploading a bodycam recording.")
+    error("fileName is required for multipart uploads.")
   end
 
   if type(file_content) ~= "string" then
-    error("fileContent must be a string when uploading a bodycam recording.")
+    error("fileContent must be a string for multipart uploads.")
   end
 
-  local boundary = "----SonoranLuaBodycamBoundary7MA4YWxkTrZu0gW"
+  local boundary = "----SonoranLuaMultipartBoundary7MA4YWxkTrZu0gW"
   local parts = {}
 
   local function append(value)
@@ -127,6 +127,34 @@ local function build_multipart_form_data(fields, file_name, file_content, conten
   append("--" .. boundary .. "--\r\n")
 
   return boundary, table.concat(parts)
+end
+
+local BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local function base64_encode_binary(value)
+  if type(value) ~= "string" then
+    error("base64 input must be a string.")
+  end
+
+  local chunks = {}
+  local block_size = 3 * 4096
+  for block_start = 1, #value, block_size do
+    local encoded = {}
+    local block_end = math.min(#value, block_start + block_size - 1)
+    for index = block_start, block_end, 3 do
+      local a = string.byte(value, index) or 0
+      local b = string.byte(value, index + 1) or 0
+      local c = string.byte(value, index + 2) or 0
+      local combined = a * 65536 + b * 256 + c
+      local remaining = block_end - index + 1
+
+      encoded[#encoded + 1] = BASE64_ALPHABET:sub(math.floor(combined / 262144) % 64 + 1, math.floor(combined / 262144) % 64 + 1)
+      encoded[#encoded + 1] = BASE64_ALPHABET:sub(math.floor(combined / 4096) % 64 + 1, math.floor(combined / 4096) % 64 + 1)
+      encoded[#encoded + 1] = remaining > 1 and BASE64_ALPHABET:sub(math.floor(combined / 64) % 64 + 1, math.floor(combined / 64) % 64 + 1) or "="
+      encoded[#encoded + 1] = remaining > 2 and BASE64_ALPHABET:sub(combined % 64 + 1, combined % 64 + 1) or "="
+    end
+    chunks[#chunks + 1] = table.concat(encoded)
+  end
+  return table.concat(chunks)
 end
 
 local function stringify_table_values(value)
@@ -668,6 +696,9 @@ function Client:_request(method, path, options)
 
   local headers = shallow_copy(self._config.headers)
   headers["Accept"] = "application/json"
+  for key, value in pairs(options.headers or {}) do
+    headers[key] = value
+  end
 
   local authenticated = options.authenticated ~= false
   if authenticated then
@@ -1240,6 +1271,42 @@ local function create_client(config, adapter)
   instance.getCommunityChannelsV2 = function(self, community_id)
     local resolved_community_id = self:_resolve_radio_community_id(community_id)
     return self:_request("GET", "v2/servers/" .. tostring(resolved_community_id) .. "/channels")
+  end
+  instance.getRadioFramesV2 = function(self, community_id)
+    local resolved_community_id = self:_resolve_radio_community_id(community_id)
+    return self:_request("GET", "v2/servers/" .. tostring(resolved_community_id) .. "/frames")
+  end
+  instance.uploadRadioFrameImageV2 = function(self, data, community_id)
+    local resolved_community_id = self:_resolve_radio_community_id(community_id)
+    local payload = shallow_copy(data or {})
+    local file_name = payload.fileName
+    local file_content = payload.fileContent
+    local content_type = payload.contentType or "image/png"
+    payload.fileName = nil
+    payload.fileContent = nil
+    payload.contentType = nil
+
+    -- FiveM's PerformHttpRequest may truncate raw binary strings at NUL bytes.
+    -- Base64 keeps the multipart wire body textual; the API decodes it before storage.
+    local encoded_file_content = base64_encode_binary(file_content)
+    local boundary, multipart_body = build_multipart_form_data(payload, file_name, encoded_file_content, content_type)
+    return self:_request("POST", "v2/servers/" .. tostring(resolved_community_id) .. "/frames/images", {
+      rawBody = multipart_body,
+      contentType = "multipart/form-data; boundary=" .. boundary,
+      headers = { ["X-Sonoran-File-Encoding"] = "base64" },
+      logBody = {
+        fields = payload,
+        fileName = file_name,
+        contentType = content_type,
+        fileSize = type(file_content) == "string" and #file_content or nil
+      }
+    })
+  end
+  instance.migrateRadioFramesV2 = function(self, skins, community_id)
+    local resolved_community_id = self:_resolve_radio_community_id(community_id)
+    return self:_request("PUT", "v2/servers/" .. tostring(resolved_community_id) .. "/frames/migration", {
+      body = { skins = skins }
+    })
   end
   instance.getZonesV2 = function(self, community_id)
     local resolved_community_id = self:_resolve_radio_community_id(community_id)
