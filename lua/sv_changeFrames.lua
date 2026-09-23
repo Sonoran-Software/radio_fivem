@@ -152,23 +152,21 @@ function refreshBackendFrames(force)
 				warnLog('WRN_API_REQUEST_FAILED', 'Radio API returned an invalid frame payload. Existing frame data will be retained.')
 				return
 			end
-        
+
 			buildBackendFrameCache(frames)
 			refreshed = true
 
-	    if refreshed then
-		    for _, player in ipairs(GetPlayers()) do
-			    local playerId = tonumber(player) or player
-			    TriggerClientEvent(
-				    'SonoranRadio::BackendFramesUpdated',
-				    playerId,
-				    checkFramePermissions(playerId),
-				    backendFrameDefinitions,
-				    backendFrameAliases
-			    )
-		    end
-      end
-    end)
+			for _, player in ipairs(GetPlayers()) do
+				local playerId = tonumber(player) or player
+				TriggerClientEvent(
+					'SonoranRadio::BackendFramesUpdated',
+					playerId,
+					checkFramePermissions(playerId),
+					backendFrameDefinitions,
+					backendFrameAliases
+				)
+			end
+		end)
 	until not backendFramesRefreshPending
 	backendFramesRefreshing = false
 	return refreshed
