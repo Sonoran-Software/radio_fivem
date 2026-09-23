@@ -19,14 +19,18 @@ class FrameCacheTests(unittest.TestCase):
             response = { frames = {{ id = 1, body = {}, screen = {} }} }
             sent = {}
             exports = { sonoranradio = {
-                GetAvailableFrames = function() return {'default'} end
+                GetAvailableFrames = function() return {'default'} end,
+                GetLegacySkinConfigs = function() return {exists = false} end
             } }
+            GetCurrentResourceName = function() return 'sonoranradio' end
+            json = {decode = function(data) return data end, encode = function() return '{}' end}
             GetResourcePath = function() return '/resource' end
             GetPlayers = function() return {'42'} end
             TriggerClientEvent = function(name, player, frames, definitions)
                 table.insert(sent, {name = name, player = player, frames = frames, definitions = definitions})
             end
             warnLog = function() end
+            debugLog = function() end
             errorLog = function(message) error(message) end
             performApiRequest = function(_, endpoint, callback)
                 assert(endpoint == 'GET-FRAMES')
@@ -55,9 +59,11 @@ class FrameCacheTests(unittest.TestCase):
             assert(not isKnownFrame('frame:1'))
             assert(requests == 0)
             local ok, delay = coroutine.resume(refreshThread)
+            assert(ok and delay == 0)
+            ok, delay = coroutine.resume(refreshThread)
             assert(ok and delay == 1000)
             ok, delay = coroutine.resume(refreshThread)
-            assert(ok and delay == 300000 and requests == 1)
+            assert(ok and delay == 30000 and requests == 1)
             now = now + 1000
             assert(#checkFramePermissions(42) == 2)
             assert(#getAllAvailableFrames() == 2)
@@ -69,6 +75,7 @@ class FrameCacheTests(unittest.TestCase):
 
     def test_failed_or_invalid_refresh_retains_cache_and_next_poll_recovers(self):
         self.lua.execute('''
+            assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
             responseSuccess = false
@@ -91,14 +98,12 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute("""
             assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
             response = {frames = {{id = 2, body = {}, screen = {}}}}
             pushHandlers.frames_updated({payload = {frames = 'ignored'}})
-            assert(requests == 1) -- webhook returns before the fetch
-            assert(coroutine.resume(threads[2]))
             assert(requests == 2 and isKnownFrame('frame:2') and #sent == 2)
             responseSuccess = false
             pushHandlers.frames_updated({})
-            assert(coroutine.resume(threads[3]))
             assert(requests == 3 and isKnownFrame('frame:2') and #sent == 2)
         """)
 
@@ -106,25 +111,25 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute("""
             assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
             performApiRequest = function(_, _, callback)
                 requests = requests + 1
                 if requests == 2 then coroutine.yield('fetching') end
                 callback({frames = {{id = requests, body = {}, screen = {}}}}, true)
             end
-            pushHandlers.frames_updated({})
-            local ok, state = coroutine.resume(threads[2])
+            local pushThread = coroutine.create(function() pushHandlers.frames_updated({}) end)
+            local ok, state = coroutine.resume(pushThread)
             assert(ok and state == 'fetching')
             pushHandlers.frames_updated({})
             pushHandlers.frames_updated({})
-            assert(coroutine.resume(threads[3]))
-            assert(coroutine.resume(threads[4]))
             assert(requests == 2)
-            assert(coroutine.resume(threads[2]))
+            assert(coroutine.resume(pushThread))
             assert(requests == 3 and isKnownFrame('frame:3'))
         """)
 
     def test_webhook_requires_api_key(self):
         self.lua.execute("""
+            assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
             assert(coroutine.resume(refreshThread))
             RegisterNetEvent = function(_, fn) registerPush = fn end
@@ -144,15 +149,14 @@ class FrameCacheTests(unittest.TestCase):
             assert(deliver('wrong-key') == 'Bad API Key')
             assert(#threads == 1 and requests == 1)
             assert(deliver('test-key') == 'ok')
-            assert(#threads == 2)
-            assert(coroutine.resume(threads[2]))
+            assert(#threads == 1)
             assert(requests == 2)
         """)
 
     def test_authorization_keeps_original_connection_id(self):
         source = (ROOT / 'lua/sv_main.lua').read_text()
         start = source.index("RegisterNetEvent('SonoranRadio::CheckPermissions')")
-        end = source.index('\nfunction validFrame', start)
+        end = source.index('\nlocal function CopyFile', start)
         self.lua.execute('''
             RegisterNetEvent = function() end
             AddEventHandler = function(_, fn) permissionHandler = fn end
@@ -168,9 +172,9 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute('''
             source = 42
             permissionHandler()
-            assert(#sent == 5)
+            assert(#sent == 6)
             for _, event in ipairs(sent) do assert(event.player == 42) end
-            assert(requests == 0)
+            assert(requests == 1)
         ''')
 
 

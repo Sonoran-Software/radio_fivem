@@ -316,12 +316,22 @@ local function uploadLegacyFrameImage(image)
 	return response.url
 end
 
+local function archiveMigratedSkins(resourceName, skinsPath)
+	local archive = decodeJsonValue(exports[resourceName]:ArchiveLegacySkins(skinsPath))
+	if type(archive) ~= 'table' or archive.success ~= true then
+		warnLog('WRN_API_REQUEST_FAILED', 'Legacy frames were migrated and verified, but the skins folder could not be renamed: ' .. tostring(archive and archive.error or 'unknown filesystem error'))
+		return false
+	end
+	infoLog('Legacy radio skins were migrated and verified. Original files were archived at ' .. tostring(archive.path) .. '.')
+	return true
+end
+
 local function migrateLegacySkins()
 	local resourceName = GetCurrentResourceName()
 	local skinsPath = GetResourcePath(resourceName) .. '/skins'
 	local scan = decodeJsonValue(exports[resourceName]:GetLegacySkinConfigs(skinsPath))
 	if type(scan) ~= 'table' or not scan.exists then
-		return false
+		return true
 	end
 	if type(scan.errors) == 'table' and #scan.errors > 0 then
 		warnLog('WRN_API_REQUEST_FAILED', 'Legacy radio skins were not migrated. Fix these issues and restart: ' .. table.concat(scan.errors, '; '))
@@ -329,17 +339,38 @@ local function migrateLegacySkins()
 	end
 	if type(scan.skins) ~= 'table' or #scan.skins == 0 then
 		infoLog('The legacy skins folder is empty; nothing needs to be migrated.')
-		return false
+		return true
+	end
+
+	-- A prior commit may have succeeded even if verification or archiving failed.
+	-- Check the authoritative backend before attempting another Free image upload.
+	if refreshBackendFrames(true) then
+		local alreadyMigrated = true
+		for _, skin in ipairs(scan.skins) do
+			if backendFrameAliases[skin.legacySkinId] == nil then
+				alreadyMigrated = false
+				break
+			end
+		end
+		if alreadyMigrated then
+			return archiveMigratedSkins(resourceName, skinsPath)
+		end
 	end
 
 	infoLog(('Migrating %d legacy radio skin(s) to the Radio backend...'):format(#scan.skins))
+	local uploadedImages = 0
 	for _, skin in ipairs(scan.skins) do
 		for _, image in ipairs(type(skin.images) == 'table' and skin.images or {}) do
+			-- The migration image route allows 60 uploads per minute per API key.
+			if uploadedImages > 0 and uploadedImages % 50 == 0 then
+				Wait(61000)
+			end
 			local uploadedUrl, uploadError = uploadLegacyFrameImage(image)
 			if not uploadedUrl then
 				warnLog('WRN_API_REQUEST_FAILED', 'Legacy radio skin migration stopped before archiving: ' .. tostring(uploadError))
 				return false
 			end
+			uploadedImages = uploadedImages + 1
 			for _, frame in ipairs(skin.frames or {}) do
 				if type(frame.body) == 'table' and frame.body.image == image.source then
 					frame.body.image = uploadedUrl
@@ -374,14 +405,7 @@ local function migrateLegacySkins()
 		end
 	end
 
-	local archive = decodeJsonValue(exports[resourceName]:ArchiveLegacySkins(skinsPath))
-	if type(archive) ~= 'table' or archive.success ~= true then
-		warnLog('WRN_API_REQUEST_FAILED', 'Legacy frames were migrated and verified, but the skins folder could not be renamed: ' .. tostring(archive and archive.error or 'unknown filesystem error'))
-		return false
-	end
-
-	infoLog('Legacy radio skins were migrated and verified. Original files were archived at ' .. tostring(archive.path) .. '.')
-	return true
+	return archiveMigratedSkins(resourceName, skinsPath)
 end
 
 CreateThread(function()
@@ -398,9 +422,14 @@ CreateThread(function()
 	end)
 
 	Wait(1000)
-	migrateLegacySkins()
+	local migrationComplete = migrateLegacySkins()
+	local nextMigrationAttempt = os.time() + 300
 	while true do
 		refreshBackendFrames(true)
+		if not migrationComplete and os.time() >= nextMigrationAttempt then
+			migrationComplete = migrateLegacySkins()
+			nextMigrationAttempt = os.time() + 300
+		end
 		Wait(BACKEND_FRAME_REFRESH_SECONDS * 1000)
 	end
 end)
