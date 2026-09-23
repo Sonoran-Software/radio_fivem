@@ -142,8 +142,7 @@ Config.geoChannels = {
 }
 
 -- Custom radio frames are managed in the Radio web panel's customization menu.
--- FiveM frame permissions remain configured here. Local skins use their folder
--- name (for example 'default'); backend frames use 'frame:<frame id>'.
+-- FiveM frame permissions remain configured here. Backend frames use 'frame:<frame id>'.
 Config.frames = {
 	permissionMode = 'none', -- ace, qbcore, qbox, esx or none
 	adminPermission = 'sonoranradio.admin', -- ACE permission required to use admin commands
@@ -164,12 +163,8 @@ Config.frames = {
 					'sonoranradio.sahp'
 				}
 			},
-			-- Local skin folder names and/or backend community frame IDs
+			-- Backend community frame IDs
 			allowedFrames = {
-				'default',
-				'signalpro',
-				'voxguard',
-				'hi-vis',
 				'frame:1'
 			}
 		}
