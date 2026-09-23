@@ -30,6 +30,7 @@ communityChannelsCache = nil
 communityChannelsUpdatedAt = 0
 autoGeoSwitchEnabled = true
 Config = {}
+local subscriptionLevel = 0
 geoAcePerms = {
 	ready = false,
 	perms = {},
@@ -37,6 +38,10 @@ geoAcePerms = {
 	requestCooldownMs = 5000,
 	refreshMs = 15000
 }
+
+function SonoranRadioHasSubscription(minimumLevel)
+	return subscriptionLevel >= (tonumber(minimumLevel) or 0)
+end
 
 local function isFrameAllowed(frameId, frames)
 	if type(frameId) ~= 'string' or type(frames) ~= 'table' then
@@ -189,10 +194,18 @@ end)
 
 RegisterNetEvent('SonoranRadio::core::DebugMode', function(data)
 	Config.debug = data
+	SendNUIMessage({ type = 'setDebug', enabled = data })
+end)
+
+RegisterNetEvent('SonoranRadio::SubscriptionUpdated', function(subscription)
+	subscriptionLevel = tonumber(subscription) or 0
+	Config.subscription = subscriptionLevel
+	SendNUIMessage({ type = 'setSubscription', subscription = subscriptionLevel })
 end)
 
 RegisterNetEvent('SonoranRadio::core::ReceiveEnvironment', function(data)
 	Config = data
+	subscriptionLevel = tonumber(Config.subscription) or 0
 	if Config.heavySignalDegradeInWater == nil then
 		Config.heavySignalDegradeInWater = true
 	end
@@ -1409,6 +1422,7 @@ function initClient()
 			standaloneUrl = Config.radioUrl,
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
+			subscription = subscriptionLevel,
 			debug = Config.debug,
 			displayName = GetPlayerName(PlayerId()),
 		})

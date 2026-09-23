@@ -46,7 +46,10 @@
             ref="standaloneFrame"
             :server-id="standaloneServerId"
             :url="standaloneUrl"
-            :query="{ roomId: standaloneRoomId }"
+            :query="{
+                roomId: standaloneRoomId,
+                debug: debug.enabled ? 'true' : null,
+            }"
             feature="chatter"
         />
 
@@ -152,6 +155,7 @@ export default {
             positions: {},
 
             chatterFeatureEnabled: false,
+            subscription: 0,
             streamDeck: {
                 healthUrl: 'http://127.0.0.1:39112/streamdeck/fivem/health',
                 socketUrl: 'ws://127.0.0.1:39112/streamdeck/fivem/socket',
@@ -325,7 +329,7 @@ export default {
             return skinNames;
         },
         chatterEnabled() {
-            return this.chatterFeatureEnabled && !!this.standaloneServerId && !this.radioPower;
+            return this.chatterFeatureEnabled && this.subscription >= 2 && !!this.standaloneServerId && !this.radioPower;
         },
         emergencyCallEnabled() {
             return !!this.standaloneServerId;
@@ -390,8 +394,12 @@ export default {
                 method: "POST",
                 body: JSON.stringify(data),
             });
-            if (res.status !== 200)
-                return console.error(`failed request with code: ${res.status}`);
+            if (res.status !== 200) {
+                console.error(
+                    `[Sonoran Radio NUI] Request failed route=${route} type=${data?.type ?? 'unknown'} status=${res.status}`
+                );
+                return;
+            }
 
             const msg = await res.json();
             if (typeof msg === 'string' && msg !== "OK") throw new Error(`failed request with message: ${data}`);
@@ -578,8 +586,16 @@ export default {
                     this.standaloneUrl = event.standaloneUrl;
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
+                    this.subscription = Number(event.subscription) || 0;
                     this.debug.enabled = event.debug;
                     this.emergencyCall.name = event.displayName;
+                    break;
+                case 'setSubscription':
+                    this.subscription = Number(event.subscription) || 0;
+                    break;
+                case 'setDebug':
+                    this.debug.enabled = !!event.enabled;
+                    this.scannerDebug('debug mode changed', { enabled: this.debug.enabled });
                     break;
                 case 'setGuestAllowed':
                     this.allowedGuest = event.allowed;
@@ -603,10 +619,17 @@ export default {
                     this.scannerMenu.open = true;
                     this.scannerMenu.id = event.id;
                     this.scannerMenu.state = event.state;
+                    this.scannerDebugState('scanner opened');
                     this.requestScannerProfilePerms();
                     break;
                 case 'allowScannerProfiles':
                     this.scannerMenu.allowedProfileIds = event.profileIds;
+                    this.scannerDebug('ACE response received', {
+                        scannerId: this.scannerMenu.id,
+                        channelId: this.scannerMenu.state?.channelId ?? null,
+                        allowedCount: event.profileIds?.length ?? 0,
+                        selectedChannelAllowed: event.profileIds?.includes(this.scannerMenu.state?.channelId) ?? false,
+                    });
                     break;
                 case 'setEmergencyCall':
                     this.setEmergencyCall(event.enabled, event);
@@ -712,6 +735,17 @@ export default {
                     });
                     break;
                 case 'chatterSourcesUpdate':
+                    if (this.debug.enabled) {
+                        const channelIds = Array.isArray(event.channelIds) ? event.channelIds : [];
+                        const channelKey = JSON.stringify(channelIds);
+                        if (channelKey !== this.debug.lastScannerChannelKey) {
+                            this.debug.lastScannerChannelKey = channelKey;
+                            this.scannerDebug('scanner channels forwarded to chatter', {
+                                channelIds,
+                                chatterFrameReady: !!getRadioFrameEl('chatter')?.contentWindow,
+                            });
+                        }
+                    }
                     this.postChatterFrame({
                         type: 'set_audio_source_positions',
                         sources: event.sources,
@@ -795,6 +829,8 @@ export default {
                     console.log('radio connected');
                     this.$store.commit('setConnected', { connected: true, identity: event.identity });
                     this.$store.commit('setRadioConfig', event.config);
+                    this.scannerDebugConfig('radio frame connected', event.config);
+                    if (this.scannerMenu.open) this.requestScannerProfilePerms();
                     this.postRadioFrame({ type: 'ptt', state: this.pttActive && this.radioPower });
                     this.publishStreamDeckSnapshot();
                     this.onStandaloneConnected();
@@ -818,6 +854,8 @@ export default {
                     break;
                 case 'config_updated':
                     this.$store.commit('setRadioConfig', event.config);
+                    this.scannerDebugConfig('radio frame config updated', event.config);
+                    if (this.scannerMenu.open) this.requestScannerProfilePerms();
                     this.updateGamestate();
                     this.publishStreamDeckSnapshot();
                     break;
@@ -876,11 +914,21 @@ export default {
         onChatterFrameEvent(event) {
             switch (event.type) {
                 case 'radio_connected':
+                    this.scannerDebugConfig('chatter frame connected', event.config);
                     this.postClient({ type: 'chatterInit' });
                 case 'config_updated':
+                    if (event.type === 'config_updated')
+                        this.scannerDebugConfig('chatter frame config updated', event.config);
                     this.$store.commit('setChatterConfig', event.config);
                     this.postClient({ type: 'setChatterConfig', config: event.config }, 'scanners');
                     this.requestScannerProfilePerms();
+                    break;
+                case 'listener_access_denied':
+                    this.scannerMenu.open = false;
+                    this.notifyPlayer(
+                        event.error || 'Radio scanners require a Sonoran Radio Pro subscription.',
+                        '~r~'
+                    );
                     break;
             }
         },
@@ -1171,6 +1219,10 @@ export default {
             const profiles = this.$store.getters.chatterProfilesSorted.filter(x =>
                 x.visibility === 'public' || this.scannerMenu.allowedProfileIds.includes(x.id)
             );
+            if (!profiles.length) {
+                this.scannerDebugState('channel cycle blocked: no selectable profiles');
+                return;
+            }
             const chId = this.scannerMenu.state.channelId || this.$store.getters.chatterDefaultProfileId;
             const idx = profiles.findIndex(x => x.id === chId) || 0;
 
@@ -1226,7 +1278,14 @@ export default {
             }
         },
         requestScannerProfilePerms() {
-            const profiles = this.$store.state.chatterConfig?.profiles || [];
+            const profiles = this.$store.getters.chatterProfilesSorted;
+            this.scannerDebug('requesting scanner ACE permissions', {
+                scannerId: this.scannerMenu.id,
+                channelId: this.scannerMenu.state?.channelId ?? null,
+                profileSource: this.$store.state.chatterConfig?.profiles?.length ? 'chatter' : 'radio',
+                profileCount: profiles.length,
+                selectedChannelPresent: profiles.some(x => x.id === this.scannerMenu.state?.channelId),
+            });
             this.postClient({
                 type: 'requestProfilePerms',
                 profiles: profiles.map(x => ({
@@ -1234,6 +1293,41 @@ export default {
                     displayName: x.displayName,
                 })),
             }, 'scanners');
+        },
+        scannerDebug(stage, details = {}) {
+            if (!this.debug.enabled) return;
+            console.log(`[scanner dbg] ${stage} ${JSON.stringify(details)}`);
+        },
+        scannerDebugConfig(stage, config) {
+            const profiles = Array.isArray(config?.profiles) ? config.profiles : [];
+            const channelId = this.scannerMenu.state?.channelId ?? null;
+            this.scannerDebug(stage, {
+                scannerId: this.scannerMenu.id,
+                channelId,
+                profileCount: profiles.length,
+                defaultProfileId: config?.defaultProfileId ?? null,
+                selectedChannelPresent: profiles.some(x => x.id === channelId),
+            });
+        },
+        scannerDebugState(stage) {
+            const chatterProfiles = this.$store.state.chatterConfig?.profiles || [];
+            const radioProfiles = this.$store.state.radioConfig?.profiles || [];
+            const selectedProfiles = this.$store.getters.chatterProfilesSorted;
+            const channelId = this.scannerMenu.state?.channelId ?? null;
+            this.scannerDebug(stage, {
+                scannerId: this.scannerMenu.id,
+                powered: this.scannerMenu.state?.powered ?? null,
+                channelId,
+                profileSource: chatterProfiles.length ? 'chatter' : 'radio',
+                chatterProfileCount: chatterProfiles.length,
+                radioProfileCount: radioProfiles.length,
+                selectedProfileCount: selectedProfiles.length,
+                channelInChatterConfig: chatterProfiles.some(x => x.id === channelId),
+                channelInRadioConfig: radioProfiles.some(x => x.id === channelId),
+                channelInSelectedProfiles: selectedProfiles.some(x => x.id === channelId),
+                allowedProfileCount: this.scannerMenu.allowedProfileIds.length,
+                selectedChannelAllowed: this.scannerMenu.allowedProfileIds.includes(channelId),
+            });
         },
         onStandaloneConnected() {
             this.updateGamestate();

@@ -58,10 +58,31 @@ WarningCodes = {
 	['WRN_MOBILE_REPEATERS_CONFIG_MIGRATED'] = {
 		code = 'WRN-216',
 		message = 'Legacy Config.repeaterVehicleSpawncodes entries were migrated to mobileRepeaters.json.'
+	},
+	['WRN_LISTENER_PRO_REQUIRED'] = {
+		code = 'WRN-217',
+		message = 'Nearby radio chatter and scanners are disabled because they require a Sonoran Radio Pro subscription.'
 	}
 }
 
 ErrorCodes = {
+	['ERR_SUPPORT_INVALID_ID'] = {
+		code = 'ERR-124',
+		message = 'The support ticket ID is invalid.'
+	},
+	['ERR_SUPPORT_COLLECT_FAILED'] = {
+		code = 'ERR-125',
+		message = 'Support diagnostics could not be collected.'
+	},
+	['ERR_SUPPORT_TOO_LARGE'] = {
+		code = 'ERR-126',
+		message = 'Support diagnostics exceed the upload size limit.'
+	},
+	['ERR_SUPPORT_UPLOAD_FAILED'] = {
+		code = 'ERR-127',
+		message = 'Support diagnostics could not be uploaded.'
+	},
+
 	['ERR_OX_LIB_NOT_STARTED'] = {
 		code = 'ERR-101',
 		message = 'ox_lib must be started before this resource.'
@@ -277,5 +298,5 @@ function formatStructuredLogMessage(keyOrMessage, message)
 	if resolvedMessage == nil or resolvedMessage == '' then
 		resolvedMessage = definition.message
 	end
-	return ('[%s] %s'):format(definition.code, tostring(resolvedMessage))
+	return ('[%s] %s Docs: https://sonoranradio.com/error/%s'):format(definition.code, tostring(resolvedMessage), definition.code)
 end

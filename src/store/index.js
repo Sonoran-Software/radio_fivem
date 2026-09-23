@@ -60,7 +60,10 @@ export default new Vuex.Store({
             return getters.freqXmit && freqToString(getters.freqXmit);
         },
         chatterProfilesSorted(state) {
-            const profiles = state.chatterConfig?.profiles || [];
+            const config = state.chatterConfig?.profiles?.length
+                ? state.chatterConfig
+                : state.radioConfig;
+            const profiles = config?.profiles || [];
             return [...profiles].sort((a, b) => {
                 const an = typeof a.orderIndex === 'number' ? a.orderIndex : Infinity;
                 const bn = typeof b.orderIndex === 'number' ? b.orderIndex : Infinity;
@@ -68,11 +71,14 @@ export default new Vuex.Store({
             });
         },
         chatterDefaultProfileId(state) {
-            if (typeof state.chatterConfig?.defaultProfileId === 'number')
-                return state.chatterConfig.defaultProfileId;
-            else if (state.chatterConfig?.profiles.length)
-                return state.chatterConfig?.profiles[0].id;
-            return 0; // either no channels exists, or the chatterConfig has not loaded yet
+            const config = state.chatterConfig?.profiles?.length
+                ? state.chatterConfig
+                : state.radioConfig;
+            if (typeof config?.defaultProfileId === 'number')
+                return config.defaultProfileId;
+            else if (config?.profiles.length)
+                return config.profiles[0].id;
+            return 0; // either no channels exist, or the config has not loaded yet
         },
     },
     mutations: {
