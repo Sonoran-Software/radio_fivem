@@ -4,9 +4,13 @@ Sonoran Radio's FiveM Resource
 
 ## Custom radio frames
 
-Custom frames are managed in the Radio web panel's customization menu. The
-resource retrieves those community frames from the Radio backend and refreshes
-them every five minutes.
+Custom frames are managed in the Radio web panel's Customize > Overlay menu.
+The resource retrieves those community frames from the Radio backend on startup
+and refreshes them every five minutes. Saving an overlay in the panel also sends
+an authenticated `frames_updated` notification to configured game-server push
+URLs. The resource immediately refetches frames and updates connected players.
+Player permission checks use the cache without making API requests. Failed
+refreshes retain the last successful cache, and polling recovers missed notifications.
 
 On startup, the resource safely migrates folders under `skins/`:
 

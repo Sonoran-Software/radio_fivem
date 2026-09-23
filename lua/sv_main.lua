@@ -6,6 +6,7 @@ local QBCore = nil
 local MessageBuffer = {}
 local DebugBuffer = {}
 local ErrorBuffer = {}
+local SupportErrorBuffer = {}
 local tunnels = {}
 local geoChannels = {}
 scanners = {}
@@ -19,6 +20,50 @@ local communityChannelsCache = nil
 local communityChannelsCacheAt = 0
 local communityChannelsRawCache = nil
 local cadTowerSyncTracker = {}
+
+local SUBSCRIPTION_CACHE_MS = 300000
+local subscriptionLevel = 0
+
+local function publishSubscription(level)
+	level = tonumber(level) or 0
+	local changed = subscriptionLevel ~= level
+	subscriptionLevel = level
+	Config.subscription = subscriptionLevel
+
+	if clientConfig then
+		clientConfig.subscription = subscriptionLevel
+	end
+
+	if changed then
+		TriggerClientEvent('SonoranRadio::SubscriptionUpdated', -1, subscriptionLevel)
+	end
+end
+
+function SonoranRadioGetSubscription()
+	return subscriptionLevel
+end
+
+function SonoranRadioHasSubscription(minimumLevel)
+	return subscriptionLevel >= (tonumber(minimumLevel) or 0)
+end
+
+function RefreshSonoranRadioSubscription()
+	local refresh = promise.new()
+	exports['sonoranradio']:performApiRequest({}, 'GET-SERVER-SUBSCRIPTION', function(data, success)
+		if success then
+			local decoded = type(data) == 'string' and json.decode(data) or data
+			local level = decoded and tonumber(decoded.subscription)
+			if level ~= nil then
+				publishSubscription(level)
+			else
+				warnLog('WRN_API_REQUEST_FAILED', 'Radio API request failed (GET-SERVER-SUBSCRIPTION): invalid subscription response')
+			end
+		end
+
+		refresh:resolve(SonoranRadioGetSubscription())
+	end)
+	return refresh
+end
 local cadLiveMapSyncFlushIntervalMs = 60000
 local cadLiveMapSyncMaxBatchSize = 29
 local cadLiveMapSyncState = {
@@ -781,8 +826,11 @@ SonoranRadio Help
     help - shows this message
 	debugmode - Toggles debugging mode
 	getchannels - fetch community channels (add "raw" to print full JSON)
+    support <ticket ID> - upload diagnostics requested by support
     update - attempt to update the radio script
 ]])
+	elseif args[1] == 'support' then
+		UploadRadioSupportLogs(args[2])
 	elseif args[1] == 'getchannels' then
 		getCommunityChannelsCached(function(statusCode, payload, raw)
 			if statusCode ~= 200 or not payload then
@@ -815,40 +863,41 @@ end, true)
 
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
-	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(source, 'sonoranradio.use')
-	local framePermissions = checkFramePermissions(source)
-	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(source, 'sonoranradio.radiousers')
-	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(source, 'sonoranradio.guest')
+	local playerId = source
+	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(playerId, 'sonoranradio.use')
+	local framePermissions = checkFramePermissions(playerId)
+	local allowedMiniRadio = not Config.acePermsForRadioUsers or IsPlayerAceAllowed(playerId, 'sonoranradio.radiousers')
+	local allowedGuest = not Config.acePermsForRadioGuests or IsPlayerAceAllowed(playerId, 'sonoranradio.guest')
 	if radioAceAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeRadio', source, framePermissions, allowedMiniRadio, allowedGuest, getBackendFrameDefinitions(), getBackendFrameAliases())
 	end
 	if acePermsForTowerRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
-			TriggerClientEvent('SonoranRadio::AuthorizeTowers', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
+			TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeTowers', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 	end
 	if acePermsForServerRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repairservers') then
-			TriggerClientEvent('SonoranRadio::AuthorizeRacks', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repairservers') then
+			TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeRacks', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 	end
 	if acePermsForAntennaRepair then
-		if IsPlayerAceAllowed(source, 'sonoranradio.repair') then
-			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
+			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', playerId)
 		end
 	else
-		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', source)
+		TriggerClientEvent('SonoranRadio::AuthorizeAntennas', playerId)
 	end
 
-	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(source, 'sonoranradio.scanner')
+	local scannersAllowed = not Config.acePermsForScanners or IsPlayerAceAllowed(playerId, 'sonoranradio.scanner')
 	if scannersAllowed then
-		TriggerClientEvent('SonoranRadio::AuthorizeScanners', source, true)
+		TriggerClientEvent('SonoranRadio::AuthorizeScanners', playerId, true)
 	end
-	sendGeoPerms(source)
+	sendGeoPerms(playerId)
 end)
 
 local function CopyFile(old_path, new_path)
@@ -1050,6 +1099,10 @@ local function createClientConfig()
 	Citizen.CreateThreadNow(function()
 		-- we need Config.serverId valid before creating the client config
 		Citizen.Await(initConfigServerId())
+		Citizen.Await(RefreshSonoranRadioSubscription())
+		if Config.chatter ~= false and not SonoranRadioHasSubscription(2) then
+			warnLog('WRN_LISTENER_PRO_REQUIRED')
+		end
 
 		-- create the client config
 		local clConfig = {}
@@ -1211,6 +1264,12 @@ AddEventHandler('onResourceStart', function(resourceName)
 	-- wait for config to be initialized (for roomId to be present)
 	-- this needs to be done before SET-SERVER-SPEAKERS
 	local clientConfig = Citizen.Await(initConfigPromise) -- wait for config to be initialized (for roomId to be present)
+	Citizen.CreateThread(function()
+		while true do
+			Citizen.Wait(SUBSCRIPTION_CACHE_MS)
+			Citizen.Await(RefreshSonoranRadioSubscription())
+		end
+	end)
 
 	-- The backend is authoritative for GEO and degradation zones. Push events
 	-- provide immediate updates; this periodic read repairs any missed event.
@@ -1420,21 +1479,7 @@ RegisterNetEvent('SonoranRadio:GeoZone:DeleteZone', function(zoneName)
 	mutateZoneApi('DELETE-ZONE', 'geo', zoneName)
 end)
 
-AddEventHandler('SonoranRadio::core:writeLog', function(level, codeOrMessage, message)
-	if level == 'debug' then
-		debugLog(message or codeOrMessage)
-	elseif level == 'info' then
-		infoLog(message or codeOrMessage)
-	elseif level == 'error' then
-		sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
-	elseif level == 'warn' then
-		sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
-	else
-		debugLog(message or codeOrMessage)
-	end
-end)
-
-local function sendConsole(level, color, message)
+local function sendConsole(level, color, message, codeKey)
 	local debugging = true
 	if Config ~= nil then
 		debugging = (Config.debug == true and Config.debug ~= 'false')
@@ -1447,6 +1492,18 @@ local function sendConsole(level, color, message)
 	end
 	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
 		table.insert(ErrorBuffer, 1, msg)
+		local definition = getStructuredLogDefinition(codeKey)
+		table.insert(SupportErrorBuffer, 1, {
+			timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+			level = level,
+			key = codeKey,
+			code = definition and definition.code or nil,
+			message = message,
+			source = source,
+			actionTraceText = payload,
+			docs = definition and ('https://sonoranradio.com/error/' .. definition.code) or nil
+		})
+		if #SupportErrorBuffer > 250 then table.remove(SupportErrorBuffer) end
 	end
 	if level == 'DEBUG' and IsDuplicityVersion() then
 		if #DebugBuffer > 50 then
@@ -1463,25 +1520,60 @@ local function sendConsole(level, color, message)
 	end
 end
 
+function GetSupportRuntimeInfo()
+    return {
+        initialized = Config and Config.init == true,
+        criticalApiError = critError,
+        subscriptionLevel = subscriptionLevel,
+        geoZones = geoChannels,
+        degradeZones = tunnels,
+        towerCount = type(Towers) == 'table' and #Towers or 0,
+        rackCount = type(Servers) == 'table' and #Servers or 0,
+        cellRepeaterCount = type(CellRepeaters) == 'table' and #CellRepeaters or 0
+    }
+end
+
+function getSupportErrorBuffer()
+	return SupportErrorBuffer
+end
+
+function getDebugBuffer()
+	return DebugBuffer
+end
+
 function debugLog(message)
 	sendConsole('DEBUG', '^7', message)
 end
 
 function logError(err, msg)
-	sendConsole('ERROR', '^1', formatStructuredLogMessage(err, msg))
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(err, msg), err)
 end
 
 function errorLog(codeOrMessage, message)
-	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message))
+	sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
 end
 
 function warnLog(codeOrMessage, message)
-	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message))
+	sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
 end
 
 function infoLog(message)
 	sendConsole('INFO', '^5', message)
 end
+
+AddEventHandler('SonoranRadio::core:writeLog', function(level, codeOrMessage, message)
+	if level == 'debug' then
+		debugLog(message or codeOrMessage)
+	elseif level == 'info' then
+		infoLog(message or codeOrMessage)
+	elseif level == 'error' then
+		sendConsole('ERROR', '^1', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
+	elseif level == 'warn' then
+		sendConsole('WARNING', '^3', formatStructuredLogMessage(codeOrMessage, message), codeOrMessage)
+	else
+		debugLog(message or codeOrMessage)
+	end
+end)
 
 function serverNameChange(data)
 	local postData = {
