@@ -177,6 +177,27 @@ class FrameCacheTests(unittest.TestCase):
             assert(requests == 1)
         ''')
 
+    def test_ordered_vehicle_layouts_preserve_class_precedence(self):
+        self.lua.execute('''
+            response = {frames = {{
+                id = 1,
+                body = {image = 'portable'}, screen = {},
+                vehicleLayouts = {
+                    {body = {image = 'first'}, screen = {}, vehicleClasses = {18}},
+                    {body = {image = 'aircraft'}, screen = {}, vehicleClasses = {15, 16}},
+                    {body = {image = 'second'}, screen = {}, vehicleClasses = {18}}
+                }
+            }}}
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            local layouts = getBackendFrameDefinitions()['frame:1'].frames
+            assert(#layouts == 4)
+            assert(layouts[2].body.image == 'first' and layouts[2].vehicleClasses[1] == 18)
+            assert(layouts[3].body.image == 'aircraft' and layouts[3].vehicleClasses[1] == 15)
+            assert(layouts[4].body.image == 'second' and layouts[4].vehicleClasses[1] == 18)
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

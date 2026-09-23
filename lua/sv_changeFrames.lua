@@ -71,24 +71,39 @@ local function buildBackendFrameCache(frames)
 					screen = layout.screen
 				}
 			}
-			local variants = type(layout.variants) == 'table' and layout.variants or {}
-			if type(variants.vehicle) == 'table' and type(variants.vehicle.body) == 'table' and type(variants.vehicle.screen) == 'table' then
-				table.insert(frameLayouts, {
-					type = 'vehicle',
-					vehicleClasses = type(variants.vehicle.vehicleClasses) == 'table' and variants.vehicle.vehicleClasses or DEFAULT_VEHICLE_CLASSES,
-					body = variants.vehicle.body,
-					controls = type(variants.vehicle.controls) == 'table' and variants.vehicle.controls or {},
-					screen = variants.vehicle.screen
-				})
-			end
-			if type(variants.aircraft) == 'table' and type(variants.aircraft.body) == 'table' and type(variants.aircraft.screen) == 'table' then
-				table.insert(frameLayouts, {
-					type = 'vehicle',
-					vehicleClasses = type(variants.aircraft.vehicleClasses) == 'table' and variants.aircraft.vehicleClasses or DEFAULT_AIRCRAFT_CLASSES,
-					body = variants.aircraft.body,
-					controls = type(variants.aircraft.controls) == 'table' and variants.aircraft.controls or {},
-					screen = variants.aircraft.screen
-				})
+			local orderedVehicleLayouts = layout.vehicleLayouts
+			if type(orderedVehicleLayouts) == 'table' then
+				for _, vehicleLayout in ipairs(orderedVehicleLayouts) do
+					if type(vehicleLayout) == 'table' and type(vehicleLayout.body) == 'table' and type(vehicleLayout.screen) == 'table' then
+						table.insert(frameLayouts, {
+							type = 'vehicle',
+							vehicleClasses = vehicleLayout.vehicleClasses,
+							body = vehicleLayout.body,
+							controls = type(vehicleLayout.controls) == 'table' and vehicleLayout.controls or {},
+							screen = vehicleLayout.screen
+						})
+					end
+				end
+			else
+				local variants = type(layout.variants) == 'table' and layout.variants or {}
+				if type(variants.vehicle) == 'table' and type(variants.vehicle.body) == 'table' and type(variants.vehicle.screen) == 'table' then
+					table.insert(frameLayouts, {
+						type = 'vehicle',
+						vehicleClasses = type(variants.vehicle.vehicleClasses) == 'table' and variants.vehicle.vehicleClasses or DEFAULT_VEHICLE_CLASSES,
+						body = variants.vehicle.body,
+						controls = type(variants.vehicle.controls) == 'table' and variants.vehicle.controls or {},
+						screen = variants.vehicle.screen
+					})
+				end
+				if type(variants.aircraft) == 'table' and type(variants.aircraft.body) == 'table' and type(variants.aircraft.screen) == 'table' then
+					table.insert(frameLayouts, {
+						type = 'vehicle',
+						vehicleClasses = type(variants.aircraft.vehicleClasses) == 'table' and variants.aircraft.vehicleClasses or DEFAULT_AIRCRAFT_CLASSES,
+						body = variants.aircraft.body,
+						controls = type(variants.aircraft.controls) == 'table' and variants.aircraft.controls or {},
+						screen = variants.aircraft.screen
+					})
+				end
 			end
 			for _, legacyFrame in ipairs(type(layout.fivemLegacyFrames) == 'table' and layout.fivemLegacyFrames or {}) do
 				if type(legacyFrame) == 'table' and (legacyFrame.type == 'hud' or legacyFrame.type == 'scanner') then
