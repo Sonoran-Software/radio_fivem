@@ -38,6 +38,7 @@ class FrameMigrationRetryTests(unittest.TestCase):
             LoadResourceFile = function() return 'image bytes' end
             GetPlayers = function() return {} end
             TriggerClientEvent = function() end
+            AddEventHandler = function() end
             warnLog = function() end
             infoLog = function() end
             debugLog = function() end

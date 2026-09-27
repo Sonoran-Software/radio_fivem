@@ -4,6 +4,7 @@ local BACKEND_FRAME_REFRESH_SECONDS = 30
 local backendFrameDefinitions = {}
 local backendFrameIds = {}
 local backendFrameAliases = {}
+local backendFramePermissionsByPlayer = {}
 local backendFramesLastAttempt = 0
 local backendFramesRefreshing = false
 local backendFramesRefreshPending = false
@@ -53,6 +54,26 @@ local function decodeBackendFrames(data)
 		return nil
 	end
 	return data.frames
+end
+
+local function tablesEqual(left, right)
+	if type(left) ~= type(right) then
+		return false
+	end
+	if type(left) ~= 'table' then
+		return left == right
+	end
+	for key, value in pairs(left) do
+		if not tablesEqual(value, right[key]) then
+			return false
+		end
+	end
+	for key in pairs(right) do
+		if left[key] == nil then
+			return false
+		end
+	end
+	return true
 end
 
 local function buildBackendFrameCache(frames)
@@ -121,9 +142,15 @@ local function buildBackendFrameCache(frames)
 		end
 	end
 
-	backendFrameDefinitions = definitions
-	backendFrameIds = ids
-	backendFrameAliases = aliases
+	local changed = not tablesEqual(backendFrameDefinitions, definitions)
+		or not tablesEqual(backendFrameIds, ids)
+		or not tablesEqual(backendFrameAliases, aliases)
+	if changed then
+		backendFrameDefinitions = definitions
+		backendFrameIds = ids
+		backendFrameAliases = aliases
+	end
+	return changed
 end
 
 function refreshBackendFrames(force)
@@ -153,24 +180,35 @@ function refreshBackendFrames(force)
 				return
 			end
 
-			buildBackendFrameCache(frames)
+			local definitionsChanged = buildBackendFrameCache(frames)
 			refreshed = true
 
+			local currentPermissions = {}
+			local knownFrames = getAllAvailableFrames()
 			for _, player in ipairs(GetPlayers()) do
 				local playerId = tonumber(player) or player
-				TriggerClientEvent(
-					'SonoranRadio::BackendFramesUpdated',
-					playerId,
-					checkFramePermissions(playerId),
-					backendFrameDefinitions,
-					backendFrameAliases
-				)
+				local allowedFrames = checkFramePermissions(playerId, knownFrames)
+				currentPermissions[playerId] = allowedFrames
+				if definitionsChanged or not tablesEqual(backendFramePermissionsByPlayer[playerId], allowedFrames) then
+					TriggerClientEvent(
+						'SonoranRadio::BackendFramesUpdated',
+						playerId,
+						allowedFrames,
+						backendFrameDefinitions,
+						backendFrameAliases
+					)
+				end
 			end
+			backendFramePermissionsByPlayer = currentPermissions
 		end)
 	until not backendFramesRefreshPending
 	backendFramesRefreshing = false
 	return refreshed
 end
+
+AddEventHandler('playerDropped', function()
+	backendFramePermissionsByPlayer[source] = nil
+end)
 
 -- Player and admin lookups only read the cache; polling and save notifications refresh it.
 function getBackendFrameDefinitions()
@@ -178,7 +216,6 @@ function getBackendFrameDefinitions()
 end
 
 function getBackendFrameAliases()
-	refreshBackendFrames(false)
 	return backendFrameAliases
 end
 
@@ -209,11 +246,8 @@ local function addDepartmentFrames(allowedFrames, department)
 	end
 end
 
-function checkFramePermissions(player)
-	local installedFrames = exports.sonoranradio:GetAvailableFrames(GetResourcePath('sonoranradio') .. '/skins')
-	local knownFrames = {}
-	appendUnique(knownFrames, installedFrames)
-	appendUnique(knownFrames, backendFrameIds)
+function checkFramePermissions(player, knownFrames)
+	knownFrames = knownFrames or getAllAvailableFrames()
 	local framesConfig = Config.frames
 	local allowedFrames = {}
 
