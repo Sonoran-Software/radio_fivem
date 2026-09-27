@@ -715,17 +715,24 @@ export default {
                     this.positions = positions;
                     break;
                 case 'setSkins':
-                case 'setCurrentSkin':
-                    if (event.skinDefinitions) this.installSkinDefinitions(event.skinDefinitions);
-                    if (event.skins) // update available skins
-                    if (event.skins !== this.selectSkinIds) {
-                        this.selectSkinIds = event.skins;
-                        this.updateAvailableSkins();
-                    } else {
+                case 'setCurrentSkin': {
+                    const changedDefinitions = event.skinDefinitions
+                        ? this.installSkinDefinitions(event.skinDefinitions)
+                        : new Set();
+                    const skinsChanged = Array.isArray(event.skins) && (
+                        event.skins.length !== this.selectSkinIds.length ||
+                        event.skins.some((skinId, i) => skinId !== this.selectSkinIds[i])
+                    );
+                    if (skinsChanged) {
                         this.selectSkinIds = event.skins;
                     }
-                    if (event.skin) this.selectSkin(event.skin);
+                    if (skinsChanged || changedDefinitions.size > 0) {
+                        this.updateAvailableSkins();
+                    }
+                    if (event.skin && (this.curSkin?.id !== event.skin || changedDefinitions.has(event.skin)))
+                        this.selectSkin(event.skin);
                     break;
+                }
                 case 'chatterCameraUpdate':
                     this.postChatterFrame({
                         type: 'set_audio_listener_orientation',
@@ -1020,11 +1027,18 @@ export default {
             return skinData;
         },
         installSkinDefinitions(definitions) {
-            if (!definitions || typeof definitions !== 'object' || Array.isArray(definitions)) return;
+            const changed = new Set();
+            if (!definitions || typeof definitions !== 'object' || Array.isArray(definitions)) return changed;
             for (const [skinId, skin] of Object.entries(definitions)) {
                 if (!skin || typeof skin !== 'object' || !Array.isArray(skin.frames)) continue;
-                this.$set(this.skinCache, skinId, { ...skin, id: skinId });
+                const nextSkin = { ...skin, id: skinId };
+                const cached = this.skinCache[skinId];
+                if (cached && !(cached instanceof Promise) && JSON.stringify(cached) === JSON.stringify(nextSkin))
+                    continue;
+                this.$set(this.skinCache, skinId, nextSkin);
+                changed.add(skinId);
             }
+            return changed;
         },
         querySkin(skinId) {
             if (this.skinCache[skinId] instanceof Promise) return this.skinCache[skinId];

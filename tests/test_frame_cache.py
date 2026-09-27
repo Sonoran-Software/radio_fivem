@@ -29,6 +29,9 @@ class FrameCacheTests(unittest.TestCase):
             TriggerClientEvent = function(name, player, frames, definitions)
                 table.insert(sent, {name = name, player = player, frames = frames, definitions = definitions})
             end
+            AddEventHandler = function(name, fn)
+                if name == 'playerDropped' then playerDropHandler = fn end
+            end
             warnLog = function() end
             debugLog = function() end
             errorLog = function(message) error(message) end
@@ -56,6 +59,7 @@ class FrameCacheTests(unittest.TestCase):
             assert(#checkFramePermissions(42) == 1)
             assert(#getAllAvailableFrames() == 1)
             assert(next(getBackendFrameDefinitions()) == nil)
+            assert(next(getBackendFrameAliases()) == nil)
             assert(not isKnownFrame('frame:1'))
             assert(requests == 0)
             local ok, delay = coroutine.resume(refreshThread)
@@ -70,6 +74,8 @@ class FrameCacheTests(unittest.TestCase):
             assert(getBackendFrameDefinitions()['frame:1'])
             assert(isKnownFrame('frame:1'))
             assert(requests == 1)
+            now = now + 300
+            assert(getBackendFrameAliases() and requests == 1)
             assert(sent[1].player == 42 and sent[1].definitions['frame:1'])
         ''')
 
@@ -106,6 +112,73 @@ class FrameCacheTests(unittest.TestCase):
             pushHandlers.frames_updated({})
             assert(requests == 3 and isKnownFrame('frame:2') and #sent == 2)
         """)
+
+    def test_unchanged_poll_skips_broadcast_but_definition_edit_reaches_client(self):
+        self.lua.execute('''
+            response = {frames = {{id = 1, body = {image = 'old'}, screen = {}}}}
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(#sent == 1)
+
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(requests == 2 and #sent == 1)
+
+            response = {frames = {{id = 1, body = {image = 'new'}, screen = {}}}}
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(#sent == 2 and sent[2].definitions['frame:1'].frames[1].body.image == 'new')
+        ''')
+
+    def test_permission_change_updates_only_affected_player(self):
+        self.lua.execute('''
+            Config.frames = {permissionMode = 'ace', departments = {
+                dispatch = {allowedFrames = {'frame:1'}, permissions = {ace = {'radio.dispatch'}}}
+            }}
+            local getAvailableFrames = exports.sonoranradio.GetAvailableFrames
+            frameScans = 0
+            exports.sonoranradio.GetAvailableFrames = function(...)
+                frameScans = frameScans + 1
+                return getAvailableFrames(...)
+            end
+            aceAllowed = { [42] = false, [43] = false }
+            IsPlayerAceAllowed = function(player) return aceAllowed[player] end
+            GetPlayers = function() return {'42', '43'} end
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(#sent == 2 and frameScans == 1)
+
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(#sent == 2 and frameScans == 2)
+
+            aceAllowed[42] = true
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(#sent == 3 and sent[3].player == 42)
+            assert(#sent[3].frames == 1 and sent[3].frames[1] == 'frame:1')
+
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(#sent == 3)
+        ''')
+
+    def test_reused_player_id_gets_fresh_update_after_disconnect(self):
+        self.lua.execute('''
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(coroutine.resume(refreshThread))
+            assert(#sent == 1)
+            source = 42
+            playerDropHandler()
+            source = nil
+
+            now = now + 30
+            assert(refreshBackendFrames(false))
+            assert(#sent == 2 and sent[2].player == 42)
+        ''')
 
     def test_push_during_fetch_queues_one_followup(self):
         self.lua.execute("""
@@ -172,9 +245,9 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute('''
             source = 42
             permissionHandler()
-            assert(#sent == 6)
+            assert(#sent == 5)
             for _, event in ipairs(sent) do assert(event.player == 42) end
-            assert(requests == 1)
+            assert(requests == 0)
         ''')
 
     def test_ordered_vehicle_layouts_preserve_class_precedence(self):
