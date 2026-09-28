@@ -1432,6 +1432,7 @@ function initClient()
 			standaloneId = comId,
 			roomId = Config.serverId,
 			standaloneUrl = Config.radioUrl,
+			forceGuestLogin = Config.forceGuestLogin == true,
 			defaultEscapeMode = Config.defaultEscapeMode,
 			chatter = chatter,
 			subscription = subscriptionLevel,
@@ -1522,6 +1523,10 @@ function initClient()
 		if data.type == 'radioConnected' then
 			if data.config then
 				radioConfigCache = data.config
+			end
+			if Config.forceGuestLogin == true then
+				cb('OK')
+				return
 			end
 			if not (data.config and data.config.myself and not calledSyncAcePerms) then
 				cb('OK')

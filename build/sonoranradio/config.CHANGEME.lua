@@ -16,6 +16,7 @@ Config.towerRepairTimer = 20 -- Time in seconds to repair towers
 Config.rackRepairTimer = 15  -- Time in seconds to repair server racks
 Config.antennaRepairTimer = 15 -- Time in seconds to repair cell repeater antennas
 Config.acePermSync = false -- Sync radio community auto-approval and permissions with ace permissions
+Config.forceGuestLogin = false -- Automatically log all authorized radio users in as guests, with guest permissions from ACE (no Sonoran login)
 Config.acePermsForServerRepair = false -- Restrict repairs for servers to an ace permission
 Config.acePermsForTowerRepair = false -- Restrict repairs for towers to an ace permission
 Config.acePermsForAntennaRepair = false -- Restrict repairs for cell repeater antennas to an ace permission

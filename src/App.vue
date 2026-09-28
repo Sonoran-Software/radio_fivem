@@ -73,6 +73,7 @@
                         :query="{
                             roomId: standaloneRoomId,
                             guestok: allowedGuest,
+                            forceGuestLogin: forceGuestLogin ? '1' : null,
                         }"
                         iframe-persistent
                     />
@@ -141,6 +142,7 @@ export default {
             inVehicleClass: -1,
             towerQuality: 1.0,
             allowedGuest: false,
+            forceGuestLogin: false,
 
             isJammed : false,
             jammerStrength : 0.0,
@@ -584,6 +586,7 @@ export default {
                     this.standaloneServerId = event.standaloneId;
                     this.standaloneRoomId = event.roomId;
                     this.standaloneUrl = event.standaloneUrl;
+                    this.forceGuestLogin = event.forceGuestLogin === true;
                     this.escapeMode = localStorage.getItem('escape_mode') || event.defaultEscapeMode || 'keep';
                     this.chatterFeatureEnabled = event.chatter;
                     this.subscription = Number(event.subscription) || 0;
