@@ -18,20 +18,26 @@ URLs. The resource immediately refetches frames and updates connected players.
 Player permission checks use the cache without making API requests. Failed
 refreshes retain the last successful cache, and polling recovers missed notifications.
 
-Existing folders under `skins/` remain available as read-only legacy skins, so
-upgrading does not remove a community's current custom work. `Config.frames`
-continues to control per-player frame access for both local and backend-managed
-frames. Use the local folder name for an installed skin and `frame:<id>` for
-a backend frame, such as `frame:1`. With `permissionMode = 'none'`, all
-available local and backend frames are selectable.
+On startup, the resource safely migrates folders under `skins/`:
 
-There is no automatic upload migration because a legacy skin may contain local
-images and several portable, vehicle, HUD, or scanner layouts, while a managed
-frame is one portable layout. To move a legacy portable frame into the managed
-system, upload its body image in the customization menu and use the menu's
-`skin.json` import option. Keep the legacy folder until the managed frame has
-been verified in game; it can then be removed manually if it is no longer
-needed.
+1. Every skin config is validated and each local frame image is uploaded.
+2. The on-foot, vehicle, and aircraft layouts are merged into one managed frame.
+   FiveM-only HUD and scanner layouts are retained with that frame as legacy
+   extras so the migration does not remove existing behavior.
+3. A fresh backend read verifies an alias for every original skin folder.
+4. Only after verification, `skins/` is renamed to `skins_old` (or the next
+   available numbered suffix). Any validation, upload, API, or verification
+   failure leaves `skins/` untouched so the migration can be retried safely.
+
+The backend merge is idempotent and keys each migrated frame by its original
+folder name, so restarting does not create duplicates. Content-hashed image
+uploads are also safe to repeat.
+
+`Config.frames` remains the source of FiveM per-player frame permissions. An
+existing folder entry such as `default` automatically resolves to its migrated
+backend frame, so communities do not need to rewrite permission groups during
+the upgrade. New managed frames can be referenced explicitly as `frame:<id>`.
+With `permissionMode = 'none'`, every available managed frame is selectable.
 
 ## Mobile vehicle repeaters
 
