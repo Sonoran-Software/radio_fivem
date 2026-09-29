@@ -2,6 +2,12 @@
 
 Sonoran Radio's FiveM Resource
 
+## Automatic guest login
+
+Set `Config.forceGuestLogin = true` in `config.lua` to automatically sign radio users in as guests when they open the radio. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.
+
+Guest permissions come from the player's ACE permissions in this mode, including `sonoranradio.channel.<channel id>` (or `sonoranradio.channel.<channel name>`) for nonpublic channels. This works even when `Config.acePermSync = false`; that setting still controls Sonoran account syncing in normal mode. `Config.acePermsForRadio` and `Config.acePermsForRadioGuests` continue to restrict access through `sonoranradio.use` and `sonoranradio.guest` when enabled. Grant those ACEs to every intended radio user if you enable the corresponding restrictions.
+
 ## Custom radio frames
 
 Custom frames are managed in the Radio web panel's Customize > Overlay menu.
