@@ -14,7 +14,7 @@ const frames = {};
  * @param {string} src
  * @returns {void}
  */
-function push(key, el, src) {
+function push(key, el, src, expanded = false) {
     let frameData = frames[key];
 
     // create frame if not exists
@@ -39,18 +39,29 @@ function push(key, el, src) {
     if (!el) {
         frameEl.style.opacity = '0%';
         frameEl.style.pointerEvents = 'none';
+        frameEl.style.zIndex = '';
         return;
     }
     frameEl.style.pointerEvents = 'auto';
 
-    // scale iframe based on guide font size
+    // The ordinary radio viewport follows the skin's screen. Settings use the
+    // entire radio body, matching the desktop overlay's available viewport.
+    const boundsEl = expanded ? el.closest('.radio-frame') || el : el;
     const elStyles = window.getComputedStyle(el);
     const bodyStyles = window.getComputedStyle(document.body);
-    const scale = parseFloat(elStyles.fontSize) / parseFloat(bodyStyles.fontSize);
-    frameEl.style.transform = `scale(${scale})`;
+    const scale = expanded ? 1 : parseFloat(elStyles.fontSize) / parseFloat(bodyStyles.fontSize);
+    frameEl.style.transform = expanded ? '' : `scale(${scale})`;
+    frameEl.style.zIndex = expanded ? '1000' : '';
 
     // line up frame to guide
-    const rect = el.getBoundingClientRect();
+    const bodyRect = boundsEl.getBoundingClientRect();
+    // A bottom-anchored radio can be taller than the game viewport. Keep the
+    // settings header reachable while covering the visible part of its body.
+    const left = expanded ? Math.max(0, Math.min(bodyRect.left, window.innerWidth)) : bodyRect.left;
+    const top = expanded ? Math.max(0, Math.min(bodyRect.top, window.innerHeight)) : bodyRect.top;
+    const right = expanded ? Math.max(left, Math.min(bodyRect.right, window.innerWidth)) : bodyRect.right;
+    const bottom = expanded ? Math.max(top, Math.min(bodyRect.bottom, window.innerHeight)) : bodyRect.bottom;
+    const rect = { left, top, width: right - left, height: bottom - top };
     frameEl.style.top = `${rect.top}px`;
     frameEl.style.left = `${rect.left}px`;
     frameEl.style.width = `${rect.width / scale}px`;
@@ -100,16 +111,21 @@ export default {
         query: { type: Object, default: () => ({}) },
         visible: { type: Boolean, default: false },
         iframePersistent: { type: Boolean, default: false },
+        expanded: { type: Boolean, default: false },
     },
     data: () => ({
         interval: null,
         lastGuide: null,
+        lastBody: null,
+        lastViewport: null,
         cacheBust,
     }),
     mounted() {
-        push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
+        push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc, this.expanded);
         this.interval = setInterval(() => this.intervalRefresh(), 50);
         this.lastGuide = this.$refs['guide'].getBoundingClientRect();
+        this.lastBody = this.$refs.guide.closest('.radio-frame')?.getBoundingClientRect();
+        this.lastViewport = [window.innerWidth, window.innerHeight];
     },
     beforeDestroy() {
         clearInterval(this.interval);
@@ -139,9 +155,13 @@ export default {
     },
     watch: {
         frameSrc() {
+            this.$emit('source-change');
             this.flush();
         },
         shouldBeVisible() {
+            this.flush();
+        },
+        expanded() {
             this.flush();
         },
     },
@@ -152,19 +172,30 @@ export default {
                 const setTo = Date.now();
                 this.cacheBust = cacheBust = setTo;
             }
-            push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc);
+            push(this.feature, this.shouldBeVisible ? this.$refs.guide : null, this.frameSrc, this.expanded);
         },
         intervalRefresh() {
             if (!this.shouldBeVisible) return;
             const threshold = 0.5; // 0.5px
             const guide = this.$refs['guide'].getBoundingClientRect();
+            const body = this.expanded ? this.$refs.guide.closest('.radio-frame')?.getBoundingClientRect() : null;
+            const viewport = [window.innerWidth, window.innerHeight];
 
             // constantly check if the guide has moved
             const needsFlush = Math.abs(guide.top - this.lastGuide.top) > threshold
                 || Math.abs(guide.left - this.lastGuide.left) > threshold
                 || Math.abs(guide.width - this.lastGuide.width) > threshold
-                || Math.abs(guide.height - this.lastGuide.height) > threshold;
+                || Math.abs(guide.height - this.lastGuide.height) > threshold
+                || (body && (!this.lastBody
+                    || Math.abs(body.top - this.lastBody.top) > threshold
+                    || Math.abs(body.left - this.lastBody.left) > threshold
+                    || Math.abs(body.width - this.lastBody.width) > threshold
+                    || Math.abs(body.height - this.lastBody.height) > threshold))
+                || (this.expanded && (viewport[0] !== this.lastViewport[0]
+                    || viewport[1] !== this.lastViewport[1]));
             this.lastGuide = guide;
+            this.lastBody = body;
+            this.lastViewport = viewport;
             // flush if moved
             if (needsFlush) this.flush();
         },
