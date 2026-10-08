@@ -205,6 +205,7 @@ end
 RegisterNetEvent('SonoranRadio::SyncAcePerms', function(accId, profiles, authorize)
 	local src = source
 	if src == nil then return end -- don't allow from server
+	if Config.forceGuestLogin == true then return end -- guest-only servers do not sync Sonoran accounts
 	if not Config.acePermSync then return end -- feature disabled
 	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then return end -- access denied
 
@@ -226,6 +227,7 @@ end)
 RegisterNetEvent('SonoranRadio::SyncPlayerDisplayName', function(accId)
 	local src = source
 	if src == nil then return end
+	if Config.forceGuestLogin == true then return end
 	if Config.syncPlayerNameToRadio ~= true then return end
 	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then return end
 
@@ -276,13 +278,16 @@ end)
 RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
 	local src = source
 	if src == nil then return end
+	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then
+		return
+	end
 	if Config.acePermsForRadioGuests and not IsPlayerAceAllowed(src, 'sonoranradio.guest') then
 		return
 	end
 
 	local permission = 0
 	local profilePerms = {}
-	if Config.acePermSync then
+	if Config.acePermSync or Config.forceGuestLogin == true then
 		permission = calculateRadioPerm(src)
 		profilePerms = calculateRadioProfilePerms(src, getRadioProfileInfos())
 	end
