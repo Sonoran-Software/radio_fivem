@@ -266,7 +266,10 @@ export default {
         },
         activeRadioScreenStyle() {
             const style = this.activeRadioFrame?.screen?.style;
-            return ['text', 'modern', 'mobi'].includes(style) ? style : 'modern';
+            return ['text', 'modern', 'mobi', 'custom'].includes(style) ? style : 'modern';
+        },
+        activeRadioScreenCustom() {
+            return this.activeRadioFrame?.screen?.custom ?? null;
         },
         activeScannerFrame() {
             if (!this.scannerMenu.open) return null;
@@ -372,6 +375,12 @@ export default {
         },
         activeRadioScreenStyle() {
             this.updateRadioScreenStyle();
+        },
+        activeRadioScreenCustom: {
+            handler() {
+                this.updateRadioScreenStyle();
+            },
+            deep: true,
         },
         isPanicking(status) {
             this.postClient({
@@ -834,7 +843,11 @@ export default {
             this.postRadioFrame({ type: 'ptt', state: active });
         },
         updateRadioScreenStyle() {
-            this.postRadioFrame({ type: 'screen_style', style: this.activeRadioScreenStyle });
+            this.postRadioFrame({
+                type: 'screen_style',
+                style: this.activeRadioScreenStyle,
+                custom: this.activeRadioScreenCustom,
+            });
         },
         onRadioFrameEvent(event) {
             switch (event.type) {
