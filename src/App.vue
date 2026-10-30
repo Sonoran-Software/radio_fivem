@@ -75,7 +75,9 @@
                             guestok: allowedGuest,
                             forceGuestLogin: forceGuestLogin ? '1' : null,
                         }"
+                        :expanded="radioSettingsOpen"
                         iframe-persistent
+                        @source-change="radioSettingsOpen = false"
                     />
                 </primary-screen>
             </skin-body-component>
@@ -137,6 +139,7 @@ export default {
             showRadio: false,
             showTopRadio: false,
             radioPower: false,
+            radioSettingsOpen: false,
             escapeMode: "keep",
             nextPrevMode: 'preset',
             inVehicleClass: -1,
@@ -263,7 +266,10 @@ export default {
         },
         activeRadioScreenStyle() {
             const style = this.activeRadioFrame?.screen?.style;
-            return ['text', 'modern', 'mobi'].includes(style) ? style : 'modern';
+            return ['text', 'modern', 'mobi', 'custom'].includes(style) ? style : 'modern';
+        },
+        activeRadioScreenCustom() {
+            return this.activeRadioFrame?.screen?.custom ?? null;
         },
         activeScannerFrame() {
             if (!this.scannerMenu.open) return null;
@@ -369,6 +375,12 @@ export default {
         },
         activeRadioScreenStyle() {
             this.updateRadioScreenStyle();
+        },
+        activeRadioScreenCustom: {
+            handler() {
+                this.updateRadioScreenStyle();
+            },
+            deep: true,
         },
         isPanicking(status) {
             this.postClient({
@@ -824,7 +836,11 @@ export default {
             this.postRadioFrame({ type: 'ptt', state: active });
         },
         updateRadioScreenStyle() {
-            this.postRadioFrame({ type: 'screen_style', style: this.activeRadioScreenStyle });
+            this.postRadioFrame({
+                type: 'screen_style',
+                style: this.activeRadioScreenStyle,
+                custom: this.activeRadioScreenCustom,
+            });
         },
         onRadioFrameEvent(event) {
             switch (event.type) {
@@ -841,8 +857,12 @@ export default {
                     break;
                 case "radio_disconnected":
                     this.pttActive = false;
+                    this.radioSettingsOpen = false;
                     this.$store.commit('setConnected', { connected: false });
                     this.publishStreamDeckSnapshot(this.getStreamDeckDefaultSnapshot());
+                    break;
+                case 'settings_overlay':
+                    this.radioSettingsOpen = !!event.open;
                     break;
                 case "pending_approval":
                     this.postClient({ type: 'radioNeedsAuth', accId: event.accId });
@@ -1136,6 +1156,7 @@ export default {
             this.postRadioFrame({ type: 'skin_options', options: this.selectSkinOptions(), current: this.curSkin?.id })
         },
         refreshScreen() {
+            this.radioSettingsOpen = false;
             // Get all <standalone-frame> references (emergency call frame, chatter frame, radio viewer frame)
             const standaloneFrames = this.$refs.standaloneFrame;
             if (Array.isArray(standaloneFrames)) {
@@ -1203,6 +1224,7 @@ export default {
             );
 
             if (this.radioPower) return;
+            this.radioSettingsOpen = false;
             this.setPttState(false);
             // we need to remove the frame to "disconnect" from the radio
             // normally the iframe persists because it is only hidden, not disconnected
