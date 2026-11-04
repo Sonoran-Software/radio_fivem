@@ -1024,7 +1024,6 @@ local function initConfigServerId()
 				['roomId'] = roomId,
 				['serverPort'] = GetConvarInt('netPort', 30120),
 				['overridePushUrl'] = overridePushUrl,
-				['nickname'] = GetConvar('sv_projectName', 'Server w/ Sonoran Radio'),
 			}, 'SET-SERVER-IP', function(data, success)
 				if not success then
 					if attempt >= maxAttempts then
