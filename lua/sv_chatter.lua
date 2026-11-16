@@ -82,12 +82,27 @@ Citizen.CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('Chatter:clientChatterSync', function()
-	local source = source
-	while #chatterConfig == 0 do
-		Wait(10)
+local pendingChatterSync = {}
+AddEventHandler('SonoranRadio::ChatterConfigReady', function()
+	for playerId in pairs(pendingChatterSync) do
+		if GetPlayerName(playerId) then
+			TriggerClientEvent('Chatter:clientChatterSync_c', playerId, chatterConfig)
+		end
 	end
-	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
+	pendingChatterSync = {}
+end)
+
+AddEventHandler('playerDropped', function()
+	pendingChatterSync[source] = nil
+end)
+
+RegisterNetEvent('Chatter:clientChatterSync', function()
+	local playerId = source
+	if chatterConfig == nil then
+		pendingChatterSync[playerId] = true
+		return
+	end
+	TriggerClientEvent('Chatter:clientChatterSync_c', playerId, chatterConfig)
 end)
 
 RegisterNetEvent('Chatter:saveChatterConfig', function(config)

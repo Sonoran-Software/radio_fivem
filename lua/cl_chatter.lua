@@ -339,9 +339,6 @@ function initChatter()
 			Wait(10)
 		end
 		TriggerServerEvent('Chatter:clientChatterSync')
-		while #chatterConfig == 0 do
-			Wait(50)
-		end
 	end)
 	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfigServer)
 		chatterConfig = chatterConfigServer

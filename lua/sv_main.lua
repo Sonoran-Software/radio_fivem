@@ -12,7 +12,9 @@ local geoChannels = {}
 scanners = {}
 local panicStates = {}
 local critError = false
-chatterConfig = {}
+-- Nil means the earpiece configuration has not finished loading. An empty
+-- table is a valid loaded configuration.
+chatterConfig = nil
 local clientConfig
 local sirens = {}
 local DevEvents = DeveloperEvents or {}
@@ -1254,6 +1256,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 		SaveJsonConfig('earpieces.json', luaConfig)
 		chatterConfig = luaConfig
 	end
+	TriggerEvent('SonoranRadio::ChatterConfigReady')
 
 	DebugPrint('Loaded chatterConfig ' .. json.encode(chatterConfig))
 	if Config.chatterExclusion then
