@@ -67,7 +67,8 @@ function initToneboard()
     end
 
     RegisterNetEvent('SonoranRadio:SyncSpeakers')
-    AddEventHandler('SonoranRadio:SyncSpeakers', function(SpeakersServer)
+    AddEventHandler('SonoranRadio:SyncSpeakers', function(SpeakersServer, revision)
+        if not ApplyRadioPlacementRevision('speakers', revision) then return end
         -- make sure all speakers are cleared before we sync
         for i = 1, #speakers do DestroySpeaker(speakers[i]) end
 
@@ -79,7 +80,6 @@ function initToneboard()
     CreateThread(function()
         while not NetworkIsPlayerActive(PlayerId()) do Wait(10) end
         TriggerServerEvent('SonoranRadio::SyncSpeakers')
-        while #speakers == 0 do Wait(50) end
         while true do
             local pCoords = GetEntityCoords(GetPlayerPed(-1))
             for i = 1, #speakers do

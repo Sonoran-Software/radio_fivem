@@ -15,7 +15,7 @@ end
 
 local function normalizeModelHash(value)
 	if type(value) == 'number' then
-		return math.floor(value)
+		return NormalizeRadioModelHash(value)
 	end
 	if type(value) ~= 'string' then
 		return nil
@@ -28,9 +28,9 @@ local function normalizeModelHash(value)
 
 	local numericHash = tonumber(cleaned)
 	if numericHash then
-		return math.floor(numericHash)
+		return NormalizeRadioModelHash(numericHash)
 	end
-	return GetHashKey(cleaned)
+	return NormalizeRadioModelHash(GetHashKey(cleaned))
 end
 
 local function normalizeVehicleConfig(entry)
@@ -148,7 +148,7 @@ local function getVehicleRepeaterConfig(vehicle)
 	if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
 		return nil
 	end
-	local modelHash = GetEntityModel(vehicle)
+	local modelHash = NormalizeRadioModelHash(GetEntityModel(vehicle))
 	for _, vehicleConfig in ipairs(mobileRepeaterConfig.vehicles) do
 		if vehicleConfig.modelHash == modelHash then
 			return vehicleConfig
@@ -207,14 +207,7 @@ local function startActiveRepeaterTracker()
 	end)
 end
 
-function InitMobileRepeaters()
-	if mobileRepeatersInitialized then
-		return
-	end
-	mobileRepeatersInitialized = true
-	startActiveRepeaterTracker()
-
-	local loaded = LoadJsonConfig(mobileRepeaterConfigFile)
+local function normalizeSavedMobileRepeaters(loaded)
 	local loadedVehicles = loaded.vehicles
 	local changed = false
 	if type(loadedVehicles) ~= 'table' then
@@ -242,11 +235,25 @@ function InitMobileRepeaters()
 		changed = true
 	end
 
-	mobileRepeaterConfig = {
+	return {
 		version = 1,
 		migratedFromConfig = migratedFromConfig,
 		vehicles = vehicles
-	}
+	}, changed, migratedCount
+end
+
+function NormalizeRadioMobileRepeaterImport(loaded)
+	local config = normalizeSavedMobileRepeaters(loaded)
+	return config.vehicles
+end
+
+function InitMobileRepeaters()
+	if mobileRepeatersInitialized then return end
+	mobileRepeatersInitialized = true
+	startActiveRepeaterTracker()
+
+	local changed, migratedCount
+	mobileRepeaterConfig, changed, migratedCount = normalizeSavedMobileRepeaters(LoadJsonConfig(mobileRepeaterConfigFile))
 
 	local saved = true
 	if changed then

@@ -8,6 +8,7 @@ local defaults = assert(load(source, '@lua/config/defaults.lua', 't', {}))()
 
 local migrating = false
 local startupFinished = false
+local managedSettingsActive = false
 
 -- Match the published shape for downloads and backups. During an import, copy
 -- only documented fields and let the API fill missing values from its defaults.
@@ -268,10 +269,12 @@ function InitializeManagedRadioSettings()
 		end
 		markManaged(scope)
 		applySettings(document.settings)
+		managedSettingsActive = true
 	elseif document and not managed then
 		print('[SonoranRadio] Legacy settings are active. Run sonoranradio migrate in the server console to import them.')
 	elseif cached and (response.status == 0 or response.status == 200 or response.status == 429 or response.status >= 500) then
 		applySettings(cached.settings)
+		managedSettingsActive = true
 		print('[SonoranRadio] The settings service is unavailable. Using the last verified local settings.')
 	elseif managed then
 		print(('[SonoranRadio] Managed settings could not be loaded (HTTP %d). Check the community and server settings, then restart.'):format(response.status))
@@ -282,6 +285,10 @@ function InitializeManagedRadioSettings()
 
 	startupFinished = true
 	return true
+end
+
+function GetManagedRadioPlacementScope()
+	if managedSettingsActive then return getScope() end
 end
 
 local function equalData(a, b)

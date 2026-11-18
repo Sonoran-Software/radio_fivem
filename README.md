@@ -21,6 +21,18 @@ If Radio is temporarily unavailable, a managed resource can use the last verifie
 same community and room. A managed installation with no verified settings waits for a working
 connection and restart.
 
+## FiveM placements
+
+Select a Radio server under **Admin > Game Integration > FiveM Placements**. Edit towers,
+server racks, fixed repeaters, speakers, scanners, static jammers, earpieces, and mobile
+repeater vehicles in their respective sections. Restart the resource to load portal edits.
+
+On startup in managed mode, the resource imports existing placement files for collections
+that have yet to be configured. The original files are preserved. A scoped
+`sonoranradio-placements.json` snapshot backs up the last verified settings during outages.
+The existing in-game editors use the same saved collections. If a portal edit changed a
+collection since startup, restart before saving further changes to that collection in game.
+
 ## Automatic guest login
 
 Enable **Force guest login** in FiveM Settings to automatically sign radio users in as guests when they open the radio. Legacy installations use `Config.forceGuestLogin`. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.

@@ -20,6 +20,21 @@ function shallowcopy(orig)
 	return copy
 end
 
+RadioPlacementRevisions = {}
+
+function ApplyRadioPlacementRevision(section, revision)
+	local current = RadioPlacementRevisions[section]
+	if current ~= nil and (type(revision) ~= 'number' or revision < current) then return false end
+	RadioPlacementRevisions[section] = revision
+	return true
+end
+
+function NormalizeRadioModelHash(value)
+	local hash = math.tointeger(tonumber(value) or 0)
+	if not hash or hash == 0 or hash < -0x80000000 or hash > 0xffffffff then return nil end
+	return ((hash + 0x80000000) & 0xffffffff) - 0x80000000
+end
+
 function DebugPrint(...)
 	if (Config.debug) then
 		print('Sonoran Radio - Debug', ...)

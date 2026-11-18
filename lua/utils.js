@@ -102,13 +102,13 @@
         req.end();
     });
 
-    exports("SaveManagedRadioSettings", (contents) => {
+    function saveManagedConfiguration(fileName, sizeLimit, contents) {
         const resource = GetCurrentResourceName();
         const invoking = GetInvokingResource();
         if ((invoking && invoking !== resource) || typeof contents !== "string" ||
-            Buffer.byteLength(contents) > 96 * 1024) return false;
+            Buffer.byteLength(contents) > sizeLimit) return false;
 
-        const file = path.join(GetResourcePath(resource), "sonoranradio-settings.json");
+        const file = path.join(GetResourcePath(resource), fileName);
         const temporary = file + "." + require("crypto").randomBytes(8).toString("hex") + ".tmp";
         try {
             fs.writeFileSync(temporary, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
@@ -119,7 +119,11 @@
         } finally {
             try { fs.unlinkSync(temporary); } catch { /* no temporary file remains after a successful rename */ }
         }
-    });
+    }
+    exports("SaveManagedRadioSettings", (contents) =>
+        saveManagedConfiguration("sonoranradio-settings.json", 96 * 1024, contents));
+    exports("SaveManagedRadioPlacements", (contents) =>
+        saveManagedConfiguration("sonoranradio-placements.json", 640 * 1024, contents));
 
     // Synchronously read only top‑level directories under skins/
     function getAvailableFrames(skinsDir) {

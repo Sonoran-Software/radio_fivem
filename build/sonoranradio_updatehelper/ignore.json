@@ -1,6 +1,7 @@
 [
     "sonoranradio/config.lua",
     "sonoranradio/sonoranradio-settings.json",
+    "sonoranradio/sonoranradio-placements.json",
     "sonoranradio/towers.json",
     "sonoranradio/skins/**/*"
 ]

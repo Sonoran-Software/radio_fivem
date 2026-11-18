@@ -5,9 +5,9 @@ const { join, resolve } = require('node:path');
 const { test } = require('node:test');
 const { runInNewContext } = require('node:vm');
 
-test('managed settings cache is replaced atomically by its owning resource', (t) => {
-    const folder = fs.mkdtempSync(join(tmpdir(), 'radio-fivem-settings-'));
-    const file = join(folder, 'sonoranradio-settings.json');
+function verifyManagedCache(t, exportName, fileName) {
+    const folder = fs.mkdtempSync(join(tmpdir(), 'radio-fivem-config-'));
+    const file = join(folder, fileName);
     t.after(() => {
         if (fs.existsSync(file)) fs.unlinkSync(file);
         fs.rmdirSync(folder);
@@ -33,7 +33,7 @@ test('managed settings cache is replaced atomically by its owning resource', (t)
         Buffer,
     }, { filename: script });
 
-    const save = registered.SaveManagedRadioSettings;
+    const save = registered[exportName];
     assert.equal(save('{"revision":1}'), true);
     invokingResource = 'unrelated';
     assert.equal(save('{"revision":2}'), false);
@@ -41,8 +41,14 @@ test('managed settings cache is replaced atomically by its owning resource', (t)
     interruptRename = true;
     assert.equal(save('{"revision":2}'), false);
     assert.equal(fs.readFileSync(file, 'utf8'), '{"revision":1}');
-    assert.deepEqual(fs.readdirSync(folder), ['sonoranradio-settings.json']);
+    assert.deepEqual(fs.readdirSync(folder), [fileName]);
     interruptRename = false;
     assert.equal(save('{"revision":2}'), true);
     assert.equal(fs.readFileSync(file, 'utf8'), '{"revision":2}');
-});
+}
+
+test('managed settings cache is replaced atomically by its owning resource', (t) =>
+    verifyManagedCache(t, 'SaveManagedRadioSettings', 'sonoranradio-settings.json'));
+
+test('managed placements cache is replaced atomically by its owning resource', (t) =>
+    verifyManagedCache(t, 'SaveManagedRadioPlacements', 'sonoranradio-placements.json'));

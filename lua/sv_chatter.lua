@@ -97,31 +97,59 @@ startChatterWorker(function()
 end)
 
 registerChatterEvent('Chatter:clientChatterSync', function()
-	local source = source
-	while #chatterConfig == 0 do
-		Wait(10)
+	local src = source
+	if AwaitRadioPlacements() then
+		TriggerClientEvent('Chatter:clientChatterSync_c', src, chatterConfig, GetPortalRadioPlacementRevision('earpieces.json'))
 	end
-	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
 end)
 
-registerChatterEvent('Chatter:saveChatterConfig', function(config)
+registerChatterEvent('Chatter:saveChatterConfig', function(config, expectedRevision)
+	local src = source
+	if not CanManageRadioPlacements(src) or type(config) ~= 'table' then return end
+	if not MatchesRadioPlacementRevision('earpieces.json', expectedRevision) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Earpieces changed. Try again with the current placements.')
+		return TriggerClientEvent('Chatter:clientChatterSync_c', src, chatterConfig, GetPortalRadioPlacementRevision('earpieces.json'))
+	end
+	if not SaveJsonConfig('earpieces.json', config) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Earpieces could not be saved. Check the server log.')
+		TriggerClientEvent('Chatter:clientChatterSync_c', src, chatterConfig, GetPortalRadioPlacementRevision('earpieces.json'))
+		return
+	end
 	chatterConfig = config
-	SaveJsonConfig('earpieces.json', chatterConfig)
-	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
+	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig, GetPortalRadioPlacementRevision('earpieces.json'))
+	TriggerClientEvent('chat:addMessage', src, { args = { 'Sonoran Radio', 'Earpieces saved.' } })
 end)
 
 -- scanners across the entire server
 local staticScanners
 local globalScanners = {}
 registerChatterEvent('SonoranRadio::pushScanner', function(id, data)
-	for _, scanner in ipairs(staticScanners or {}) do
+	local src = source
+	if not staticScanners or type(data) ~= 'table' or (type(id) ~= 'string' and type(id) ~= 'number') then return end
+	if Config.acePermsForScanners and not IsPlayerAceAllowed(src, 'sonoranradio.scanner') then return end
+	for index, scanner in ipairs(staticScanners) do
 		if scanner.Id == id then
-			local previousChannelId = scanner.ChannelId
-			scanner.ChannelId = data.channelId
-			if not SaveJsonConfig('scanners.json', staticScanners) then
-				scanner.ChannelId = previousChannelId
-				return TriggerClientEvent('SonoranRadio::DisplayError', source, 'An error prevents your changes from saving (see server log for more)')
+			local requested = data.channelId
+			if type(requested) == 'number' then
+				if requested < 0 or requested > 9007199254740991 or requested % 1 ~= 0 then return end
+			elseif type(requested) ~= 'string' or #requested > 100 or not requested:match('^[%w_.:@+-]+$') then
+				return
 			end
+			local ped = GetPlayerPed(src)
+			if ped == 0 then return end
+			local player = GetEntityCoords(ped)
+			local pos = scanner.PropPosition
+			local dx, dy, dz = player.x - pos.x, player.y - pos.y, (player.z - pos.z) * 0.5
+			if dx * dx + dy * dy + dz * dz > 25 then return end
+			local updated = shallowcopy(scanner)
+			updated.ChannelId = requested
+			local proposed = shallowcopy(staticScanners)
+			proposed[index] = updated
+			if requested ~= scanner.ChannelId and not SaveJsonConfig('scanners.json', proposed) then
+				return TriggerClientEvent('SonoranRadio::DisplayError', src, 'The scanner channel could not be saved. Check the server log.')
+			end
+			staticScanners = proposed
+			data = { powered = data.powered ~= false, channelId = requested, pos = vec3(pos.x, pos.y, pos.z) }
 			break
 		end
 	end
@@ -146,6 +174,7 @@ end
 
 registerChatterEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
 	local src = source
+	if not CanManageRadioPlacements(src) then return end
 	local scannerInfo = {
 		Id = uuid(),
 		Note = note,
@@ -176,6 +205,7 @@ registerChatterEvent('SonoranRadio::SpawnStaticScanner', function(propModel, pro
 end)
 registerChatterEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosition)
 	local src = source
+	if not CanManageRadioPlacements(src) then return end
 
 	-- update the scanners.json
 	local newStaticScanners = {}
@@ -204,6 +234,7 @@ registerChatterEvent('SonoranRadio::MoveStaticScanner', function(scannerId, prop
 end)
 registerChatterEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
 	local src = source
+	if not CanManageRadioPlacements(src) then return end
 
 	-- remove from the scanners.json
 	local newStaticScanners = {}

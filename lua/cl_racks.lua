@@ -40,6 +40,7 @@ function initRacks()
 
 	-- returns a value from 0-1 representing the percentage of active dishes
 	function GetrackCapacity(tower)
+		if tower.Powered == false then return 0.0 end
 		if #tower.serverStatus < 1 then
 			return 1.0
 		end
@@ -264,7 +265,8 @@ function initRacks()
 		Event to sync racks between server and clients
 	]]
 	RegisterNetEvent('RadioRacks:SyncRacks')
-	AddEventHandler('RadioRacks:SyncRacks', function(racksFromServer)
+	AddEventHandler('RadioRacks:SyncRacks', function(racksFromServer, revision)
+		if not ApplyRadioPlacementRevision('racks', revision) then return end
 		-- make sure all racks are cleared before we sync
 		for i = 1, #racks do
 			DestroyRack(racks[i])
@@ -294,12 +296,13 @@ function initRacks()
 		Event to set a server status
 	]]
 	RegisterNetEvent('RadioRacks:SetServerStatus')
-	AddEventHandler('RadioRacks:SetServerStatus', function(rackId, serverStatus)
+	AddEventHandler('RadioRacks:SetServerStatus', function(rackId, serverStatus, powered)
 		local rack = GetRackFromId(rackId)
 		if not rack then
 			return
 		end
 		rack.serverStatus = serverStatus
+		if powered ~= nil then rack.Powered = powered end
 		SyncServerStatus(rack, true)
 	end)
 
@@ -308,9 +311,6 @@ function initRacks()
 			Wait(10)
 		end
 		TriggerServerEvent('RadioRacks:clientRackSync')
-		while #racks == 0 do
-			Wait(50)
-		end
 
 		DecorRegister('sonrad_server', 3)
 	end)

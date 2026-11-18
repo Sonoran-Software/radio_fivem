@@ -861,6 +861,8 @@ local defaultJsonConfigFiles = {
 	['mobileRepeaters.json'] = 'mobileRepeaters.DEFAULT.json',
 }
 function LoadJsonConfig(file)
+	local managed = GetPortalRadioPlacement(file)
+	if managed ~= nil then return managed end
 	local resourceName = GetCurrentResourceName()
 	local fileData = LoadResourceFile(resourceName, file)
 	if not fileData then
@@ -882,6 +884,8 @@ function LoadJsonConfig(file)
 	return json.decode(fileData) or {}
 end
 function SaveJsonConfig(file, obj)
+	local managed = SavePortalRadioPlacement(file, obj)
+	if managed ~= nil then return managed end
 	local resourceName = GetCurrentResourceName()
 	local contents = json.encode(obj, { indent = true })
 	local success = SaveResourceFile(resourceName, file, contents, -1)
@@ -1063,6 +1067,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	local registered = pcall(function() Citizen.Await(initConfigServerId()) end)
 	if not registered or not InitializeManagedRadioSettings() then return end
+	InitializeManagedRadioPlacements()
 	Config.init = true
 
 	getInventory()
@@ -1074,58 +1079,24 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 	local initConfigPromise = createClientConfig()
 
-	-- initialize towers
-	local towers = LoadJsonConfig('towers.json')
-	for i = 1, #towers do
-		if towers[i].type == 'radioTower' then
-			local obj = shallowcopy(RadioTower)
-			if towers[i].Id == nil then
-				obj.Id = uuid()
-			else
-				obj.Id = towers[i].Id
+	local signalPlacements = {
+		radioTower = { entries = Towers, defaults = RadioTower },
+		serverRack = { entries = Servers, defaults = RadioRacks },
+		cellRepeater = { entries = CellRepeaters, defaults = CellRepeater }
+	}
+	for _, saved in ipairs(LoadJsonConfig('towers.json')) do
+		local placement = signalPlacements[saved.type]
+		if placement then
+			local obj = shallowcopy(placement.defaults)
+			obj.Id = saved.Id or uuid()
+			obj.PropPosition = vec3(saved.PropPosition.x, saved.PropPosition.y, saved.PropPosition.z)
+			for _, field in ipairs({ 'Swankiness', 'Range', 'Destruction', 'NotPhysical', 'Powered', 'heading',
+				'DishStatus', 'serverStatus', 'AntennaStatus' }) do
+				if saved[field] ~= nil then obj[field] = saved[field] end
 			end
-			-- obj.Id = uuid()
-			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
-			obj.Swankiness = towers[i].Swankiness
-			obj.Range = towers[i].Range
-			obj.Destruction = towers[i].Destruction
-			obj.heading = towers[i].heading or 0.0
-
-			DebugPrint('setting up tower', json.encode(obj))
-			table.insert(Towers, obj)
-		elseif towers[i].type == 'serverRack' then
-			local obj = shallowcopy(RadioRacks)
-			if towers[i].Id == nil then
-				obj.Id = uuid()
-			else
-				obj.Id = towers[i].Id
-			end
-			-- obj.Id = uuid()
-			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
-			obj.Swankiness = towers[i].Swankiness
-			obj.Range = towers[i].Range
-			obj.Destruction = towers[i].Destruction
-			obj.serverStatus = towers[i].serverStatus
-			obj.heading = towers[i].heading or 0.0
-			DebugPrint('setting up rack', json.encode(obj))
-			table.insert(Servers, obj)
-		elseif towers[i].type == 'cellRepeater' then
-			local obj = shallowcopy(CellRepeaters)
-			if towers[i].Id == nil then
-				obj.Id = uuid()
-			else
-				obj.Id = towers[i].Id
-			end
-			-- obj.Id = uuid()
-			obj.PropPosition = vec3(towers[i].PropPosition.x, towers[i].PropPosition.y, towers[i].PropPosition.z)
-			obj.heading = towers[i].heading
-			obj.Swankiness = towers[i].Swankiness
-			obj.Range = towers[i].Range
-			obj.Destruction = towers[i].Destruction
-			obj.AntennaStatus = towers[i].AntennaStatus
-			obj.heading = towers[i].heading or 0.0
-			DebugPrint('setting up cell repeater', json.encode(obj))
-			table.insert(CellRepeaters, obj)
+			if obj.DishStatus then obj.DishStatus = { table.unpack(obj.DishStatus) } end
+			if obj.serverStatus then obj.serverStatus = { table.unpack(obj.serverStatus) } end
+			table.insert(placement.entries, obj)
 		end
 	end
 
@@ -1139,9 +1110,8 @@ AddEventHandler('onResourceStart', function(resourceName)
 			obj.Id = spkrs[i].Id
 		end
 		obj.PropPosition = vec3(spkrs[i].PropPosition.x, spkrs[i].PropPosition.y, spkrs[i].PropPosition.z)
-		obj.heading = spkrs[i].heading
+		obj.heading = spkrs[i].heading or 0
 		obj.Range = spkrs[i].Range
-		obj.Id = spkrs[i].Id
 		obj.type = spkrs[i].type
 		obj.Label = spkrs[i].Label
 		obj.group = spkrs[i].group or ''
@@ -1157,38 +1127,15 @@ AddEventHandler('onResourceStart', function(resourceName)
 	end
 
 	-- initialize chatter earpieces
-	local chatter = LoadJsonConfig('earpieces.json')
-	local luaConfig = {}
-	-- Function to check if a config item exists in the JSON
-	local function isConfigInJson(jsonTable, configItem)
-		for _, item in ipairs(jsonTable) do
-			if item.componentId == configItem.componentId and item.drawableId == configItem.drawableId then
-				return true -- Found, no need to add
-			end
-		end
-		return false -- Not found
-	end
-
-	-- Add missing Config.chatterExclusions to the chatter JSON
-	local updated = false
-	for _, exclusion in ipairs(Config.chatterExclusions or {}) do
-		if not isConfigInJson(chatter, exclusion) then
-			table.insert(luaConfig, exclusion)
-			updated = true
-		end
-	end
-	chatterConfig = chatter
-	-- Save updated earpieces.json if changes were made
-	if updated then
-		warnLog('WRN_CHATTER_EXCLUSIONS_OVERWRITE_DEPRECATED', 'Overwritting earpieces.json with Config.chatterExclusions. Config.chatterExclusions has been depreciated. Please remove this from your config.lua file to prevent any future overwrites. Please see https://sonoran.link/earpiecemigration for more')
-		SaveJsonConfig('earpieces.json', luaConfig)
-		chatterConfig = luaConfig
+	local managedEarpieces = GetPortalRadioPlacement('earpieces.json')
+	chatterConfig = managedEarpieces or LoadJsonConfig('earpieces.json')
+	if not managedEarpieces and AddLegacyRadioEarpieces(chatterConfig) then
+		warnLog('WRN_CHATTER_EXCLUSIONS_DEPRECATED')
+		SaveJsonConfig('earpieces.json', chatterConfig)
 	end
 
 	DebugPrint('Loaded chatterConfig ' .. json.encode(chatterConfig))
-	if Config.chatterExclusion then
-		warnLog('WRN_CHATTER_EXCLUSIONS_DEPRECATED', 'Config.chatterExclusions is deprecated. Please use earpieces.json or /radiomenu in game to manage chatter exclusions.')
-	end
+	MarkRadioPlacementsLoaded()
 
 	-- wait for config to be initialized (for roomId to be present)
 	-- this needs to be done before SET-SERVER-SPEAKERS
@@ -1245,7 +1192,21 @@ end)
 
 exports('performApiRequest', performApiRequest)
 
-RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
+local function syncSignalPlacements(target)
+	local revision = GetPortalRadioPlacementRevision('towers.json')
+	TriggerClientEvent('RadioTower:SyncTowers', target, Towers, revision)
+	TriggerClientEvent('RadioRacks:SyncRacks', target, Servers, revision)
+	TriggerClientEvent('CellRepeater:SyncCellRepeaters', target, CellRepeaters, revision)
+end
+
+RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks, expectedRevision)
+	local src = source
+	if not CanManageRadioPlacements(src) then return end
+	if not MatchesRadioPlacementRevision('towers.json', expectedRevision) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Towers changed. Try again with the current placements.')
+		return syncSignalPlacements(src)
+	end
+	if type(cell) ~= 'table' or type(towers) ~= 'table' or type(racks) ~= 'table' then return end
 	-- Strip client-only fields (entity handles, blip handles, spawn state) that must
 	-- not be stored on the server or forwarded to other clients, where the handle
 	-- values would be meaningless or could accidentally match unrelated local objects.
@@ -1255,50 +1216,56 @@ RegisterNetEvent('SonoranRadio::MoveProp', function(cell, towers, racks)
 			t[field] = nil
 		end
 	end
-	for _, t in ipairs(towers) do stripClientFields(t) end
-	for _, t in ipairs(racks) do stripClientFields(t) end
-	for _, t in ipairs(cell) do stripClientFields(t) end
-
-	DebugPrint('Processing towers to file ' .. json.encode(towers))
-	DebugPrint('Processing racks to file ' .. json.encode(racks))
-	DebugPrint('Processing cell to file ' .. json.encode(cell))
-	local saveData = {};
-	for _, t in ipairs(towers) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
+	local saveData = {}
+	local sections = {
+		{ incoming = towers, placed = {}, expected = 'radioTower' },
+		{ incoming = racks, placed = {}, expected = 'serverRack' },
+		{ incoming = cell, placed = {}, expected = 'cellRepeater' }
+	}
+	for _, section in ipairs(sections) do
+		for _, entry in ipairs(section.incoming) do
+			if type(entry) ~= 'table' or entry.type ~= section.expected then return end
+			if not entry.DontSaveMe then
+				stripClientFields(entry)
+				table.insert(saveData, entry)
+				table.insert(section.placed, entry)
+			end
 		end
 	end
-	for _, t in ipairs(racks) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
-		end
+	if not SaveJsonConfig('towers.json', saveData) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Towers could not be saved. Check the server log.')
+		return syncSignalPlacements(src)
 	end
-	for _, t in ipairs(cell) do
-		if not t.DontSaveMe then
-			table.insert(saveData, t)
+	local function keepLivePlacements(nextEntries, current)
+		for _, entry in ipairs(current) do
+			if entry.DontSaveMe then table.insert(nextEntries, entry) end
 		end
+		return nextEntries
 	end
-	SaveJsonConfig('towers.json', saveData)
-	DebugPrint('Saved towers to file ' .. json.encode(saveData))
-	Towers = towers
-	Servers = racks
-	CellRepeaters = cell
-	TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
-	TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
-	TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+	Towers = keepLivePlacements(sections[1].placed, Towers)
+	Servers = keepLivePlacements(sections[2].placed, Servers)
+	CellRepeaters = keepLivePlacements(sections[3].placed, CellRepeaters)
+	syncSignalPlacements(-1)
 	SyncSonoranCadLiveMap()
 end)
 
-RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
-	DebugPrint('Processing speakers to file ' .. json.encode(speakers))
-	local saveData = {};
-	for _, t in ipairs(speakers) do
-		t.Handle = nil -- Remove the key 'handle'
-		t.Spawned = nil -- Remove the key 'spawned'
-		table.insert(saveData, t)
+RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers, expectedRevision)
+	local src = source
+	if not CanManageRadioPlacements(src) or type(speakers) ~= 'table' then return end
+	if not MatchesRadioPlacementRevision('speakers.json', expectedRevision) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Speakers changed. Try again with the current placements.')
+		return TriggerClientEvent('SonoranRadio:SyncSpeakers', src, Speakers, GetPortalRadioPlacementRevision('speakers.json'))
 	end
-	SaveJsonConfig('speakers.json', saveData)
-	DebugPrint('Saved speakers to file ' .. json.encode(saveData))
+	for _, speaker in ipairs(speakers) do
+		if type(speaker) ~= 'table' then return end
+		speaker.Handle = nil
+		speaker.Spawned = nil
+	end
+	if not SaveJsonConfig('speakers.json', speakers) then
+		TriggerClientEvent('SonoranRadio::DisplayError', src, 'Speakers could not be saved. Check the server log.')
+		TriggerClientEvent('SonoranRadio:SyncSpeakers', src, Speakers, GetPortalRadioPlacementRevision('speakers.json'))
+		return
+	end
 	Speakers = speakers
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
@@ -1316,7 +1283,7 @@ RegisterNetEvent('SonoranRadio::MoveSpeaker', function(speakers)
 			errorLog('ERR_SERVER_SPEAKERS_SET_FAILED', 'Failed to set server speakers for radio service. Please check your configuration.')
 		end
 	end)
-	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers)
+	TriggerClientEvent('SonoranRadio:SyncSpeakers', -1, Speakers, GetPortalRadioPlacementRevision('speakers.json'))
 end)
 
 

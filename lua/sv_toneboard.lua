@@ -22,10 +22,8 @@ end)
 RegisterNetEvent('SonoranRadio::SyncSpeakers')
 AddEventHandler('SonoranRadio::SyncSpeakers', function()
 	local source = source
-	while #Speakers == 0 do
-		Wait(10)
-	end
-	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, Speakers)
+	if not AwaitRadioPlacements() then return end
+	TriggerClientEvent('SonoranRadio:SyncSpeakers', source, Speakers, GetPortalRadioPlacementRevision('speakers.json'))
 	local locations = {}
 	for _, speaker in ipairs(Speakers) do
 		table.insert(locations, {

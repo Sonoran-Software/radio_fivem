@@ -5,10 +5,10 @@ local function getConfiguredModelHash(vehicleConfig)
 		return nil
 	end
 	if vehicleConfig.modelHash ~= nil then
-		return tonumber(vehicleConfig.modelHash)
+		return NormalizeRadioModelHash(vehicleConfig.modelHash)
 	end
 	if type(vehicleConfig.model) == 'string' and vehicleConfig.model ~= '' then
-		return GetHashKey(vehicleConfig.model)
+		return NormalizeRadioModelHash(GetHashKey(vehicleConfig.model))
 	end
 	return nil
 end
@@ -17,7 +17,7 @@ function isRegisteredVehicle(vehicle)
 	if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
 		return false
 	end
-	local modelHash = GetEntityModel(vehicle)
+	local modelHash = NormalizeRadioModelHash(GetEntityModel(vehicle))
 	for _, vehicleConfig in ipairs(MobileRepeaterVehicles) do
 		if getConfiguredModelHash(vehicleConfig) == modelHash then
 			return true
@@ -30,7 +30,7 @@ function getVehicleConfig(vehicle)
 	if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
 		return false
 	end
-	local modelHash = GetEntityModel(vehicle)
+	local modelHash = NormalizeRadioModelHash(GetEntityModel(vehicle))
 	for _, vehicleConfig in ipairs(MobileRepeaterVehicles) do
 		if getConfiguredModelHash(vehicleConfig) == modelHash then
 			return vehicleConfig
