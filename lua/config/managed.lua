@@ -2,19 +2,10 @@ local resourceName = GetCurrentResourceName()
 local cacheFile = 'sonoranradio-settings.json'
 local maxBytes = 96 * 1024
 local schemaVersion = 1
+local defaultApiUrl = 'https://api.sonoranradio.com/'
 local source = assert(LoadResourceFile(resourceName, 'lua/config/defaults.lua'))
 local defaults = assert(load(source, '@lua/config/defaults.lua', 't', {}))()
 
--- Fresh packages carry only bootstrap values. Older configurations keep their
--- own defaults until they explicitly adopt portal settings.
-if type(Config) == 'table' then
-	for key, value in pairs(defaults) do
-		if Config[key] == nil and (Config.managedSettings == true or key == 'radioJammers') then
-			Config[key] = value
-		end
-	end
-	if Config.heavySignalDegradeInWater == nil then Config.heavySignalDegradeInWater = true end
-end
 local migrating = false
 local startupFinished = false
 
@@ -102,6 +93,38 @@ jammerShape.itemName = optionalText
 jammerShape.poweredItemName = optionalText
 shape.radioJammers.jammers = collection(jammerShape, true, 64)
 
+local function usesManagedSettingsByDefault()
+	if type(Config) ~= 'table' then return false end
+	if Config.managedSettings ~= nil then return Config.managedSettings == true end
+	-- Inspect the original file before filling defaults. Existing gameplay settings
+	-- stay active until the operator explicitly migrates them.
+	for key in pairs(shape) do
+		local value = Config[key]
+		if value ~= nil then
+			if key ~= 'notifications' or type(value) ~= 'table' then return false end
+			-- A local callback can coexist with portal-controlled notification settings.
+			for option in pairs(shape.notifications) do
+				if value[option] ~= nil then return false end
+			end
+		end
+	end
+	return true
+end
+
+local managedByDefault = usesManagedSettingsByDefault()
+if type(Config) == 'table' then
+	if Config.apiUrl == nil then Config.apiUrl = defaultApiUrl end
+	if Config.radioUrl == nil then Config.radioUrl = 'https://sonoranradio.com' end
+	if Config.debug == nil then Config.debug = false end
+	if managedByDefault and Config.allowAutoUpdate == nil then Config.allowAutoUpdate = true end
+	for key, value in pairs(defaults) do
+		if Config[key] == nil and (managedByDefault or key == 'radioJammers') then
+			Config[key] = value
+		end
+	end
+	if Config.heavySignalDegradeInWater == nil then Config.heavySignalDegradeInWater = true end
+end
+
 local function collectSettings()
 	local incoming = {}
 	for key in pairs(shape) do incoming[key] = Config[key] end
@@ -156,7 +179,7 @@ local function getScope()
 	local serverId = Config and Config.comId
 	if type(serverId) == 'number' and math.tointeger(serverId) and serverId > 0 then serverId = tostring(serverId) end
 	local roomId = Config and math.tointeger(tonumber(Config.serverId) or 0)
-	local apiOrigin = Config and tostring(Config.apiUrl or 'https://api.sonoranradio.com/'):gsub('/+$', '')
+	local apiOrigin = Config and tostring(Config.apiUrl or defaultApiUrl):gsub('/+$', '')
 	if type(serverId) ~= 'string' or not serverId:match('^[%w_-]+$') or #serverId > 128 or
 		not roomId or roomId < 1 or roomId > 2147483647 or
 		(not apiOrigin:match('^https://[%w.%-]+$') and not apiOrigin:match('^https://[%w.%-]+:%d+$')) or
@@ -218,7 +241,7 @@ local function markManaged(scope)
 end
 
 local function isManaged(scope)
-	return Config.managedSettings == true or GetResourceKvpString(scopeKey(scope)) == '1'
+	return managedByDefault or GetResourceKvpString(scopeKey(scope)) == '1'
 end
 
 -- Resolve startup settings after the Radio server ID is established and before
@@ -226,7 +249,7 @@ end
 function InitializeManagedRadioSettings()
 	local scope = getScope()
 	if not scope then
-		if Config.managedSettings == true then
+		if managedByDefault then
 			print('[SonoranRadio] Managed settings require valid credentials, a Radio server ID, and an HTTPS API origin.')
 			return false
 		end

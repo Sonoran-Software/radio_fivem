@@ -7,6 +7,7 @@ from lupa import LuaRuntime, lua_type
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOOTSTRAP = (ROOT / "build/sonoranradio/config.CHANGEME.lua").read_text(encoding="utf-8")
 DEFAULTS = (ROOT / "lua/config/defaults.lua").read_text(encoding="utf-8")
 MANAGED = (ROOT / "lua/config/managed.lua").read_text(encoding="utf-8-sig")
 
@@ -23,6 +24,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.kvp = {}
         self.logs = []
         self.allow_write = True
+        self.api_origin = "https://api.sonoranradio.com"
         self.settings.toJSON = lambda value: json.dumps(self.from_lua(value))
         self.settings.parseJSON = lambda value: self.to_lua(json.loads(value))
         self.settings.loadFile = self.load_file
@@ -88,7 +90,7 @@ class ManagedSettingsTests(unittest.TestCase):
         return True
 
     def do_request(self, url, callback, method, body, headers, options):
-        self.assertTrue(url.startswith("https://api.sonoranradio.com/v2/servers/DEMO/rooms/"))
+        self.assertTrue(url.startswith(f"{self.api_origin}/v2/servers/DEMO/rooms/"))
         self.assertEqual(headers.Authorization, "Bearer PRIVATE-KEY")
         self.assertEqual(headers["X-FiveM-Resource-Version"], "5.0.0")
         self.assertFalse(options.followLocation)
@@ -103,11 +105,11 @@ class ManagedSettingsTests(unittest.TestCase):
         else:
             callback(status, json.dumps(value) if value is not None else None)
 
-    def start(self, *, managed=False, room=1, local=None):
-        self.settings.Config = self.to_lua(dict(
-            comId="demo", serverId=room, apiKey="PRIVATE-KEY", managedSettings=managed,
-            **(local or {}),
-        ))
+    def start(self, *, managed=None, room=1, local=None):
+        config = dict(comId="demo", serverId=room, apiKey="PRIVATE-KEY", **(local or {}))
+        if managed is not None:
+            config["managedSettings"] = managed
+        self.settings.Config = self.to_lua(config)
         self.lua.execute(MANAGED)
         return self.settings.InitializeManagedRadioSettings()
 
@@ -118,13 +120,63 @@ class ManagedSettingsTests(unittest.TestCase):
                 "settings": settings}
 
     def test_new_server_reads_defaults_and_caches_a_scoped_copy(self):
+        self.lua.execute(BOOTSTRAP)
+        self.assertIn("Config.serverId = nil", BOOTSTRAP)
+        self.assertEqual(set(self.settings.Config.keys()), {"comId", "apiKey"})
+        self.settings.Config.comId = "demo"
+        self.settings.Config.apiKey = "PRIVATE-KEY"
+        self.settings.Config.serverId = 1
         self.responses = [(200, self.snapshot(False, forceGuestLogin=True))]
-        self.assertTrue(self.start(managed=True))
+        self.lua.execute(MANAGED)
+        self.assertTrue(self.settings.InitializeManagedRadioSettings())
         self.assertTrue(self.settings.Config.forceGuestLogin)
+        self.assertEqual(self.settings.Config.apiUrl, self.api_origin + "/")
+        self.assertEqual(self.settings.Config.radioUrl, "https://sonoranradio.com")
+        self.assertTrue(self.settings.Config.allowAutoUpdate)
         self.assertEqual(json.loads(self.cache)["scope"]["roomId"], 1)
         self.assertIsNone(self.settings.Config.defaultSkinId)
         self.assertEqual(self.requests, [("GET", "")])
         self.assertEqual(self.get_modes, ["managed"])
+
+    def test_bootstrap_preserves_explicit_host_overrides_and_local_notification_callback(self):
+        self.api_origin = "https://staging-api.dev.sonoranradio.com"
+        self.lua.execute(BOOTSTRAP)
+        self.lua.execute("""
+            Config.comId = 'demo'
+            Config.apiKey = 'PRIVATE-KEY'
+            Config.serverId = 1
+            Config.apiUrl = 'https://staging-api.dev.sonoranradio.com/'
+            Config.radioUrl = 'https://staging.dev.sonoranradio.com'
+            Config.allowAutoUpdate = false
+            Config.notifications = { custom = function() return 'portalCallbackSecret' end }
+        """)
+        snapshot = self.snapshot(True, 1)
+        snapshot["settings"]["notifications"]["type"] = "custom"
+        self.responses = [(200, snapshot)]
+        self.lua.execute(MANAGED)
+        self.assertTrue(self.settings.InitializeManagedRadioSettings())
+        self.assertEqual(self.get_modes, ["managed"])
+        self.assertEqual(self.settings.Config.apiUrl, self.api_origin + "/")
+        self.assertEqual(self.settings.Config.radioUrl, "https://staging.dev.sonoranradio.com")
+        self.assertFalse(self.settings.Config.allowAutoUpdate)
+        self.assertEqual(self.settings.Config.notifications.custom(), "portalCallbackSecret")
+        self.assertEqual(json.loads(self.cache)["scope"]["origin"], self.api_origin)
+
+    def test_legacy_setting_preserves_opt_in_and_local_value(self):
+        self.responses = [(200, self.snapshot(True, 1, chatter=True))]
+        self.assertTrue(self.start(local={"chatter": False}))
+        self.assertFalse(self.settings.Config.chatter)
+        self.assertIsNone(self.settings.Config.allowAutoUpdate)
+        self.assertIsNone(self.cache)
+        self.assertEqual(self.get_modes, ["legacy"])
+
+    def test_optional_legacy_skin_and_explicit_flag_preserve_legacy_mode(self):
+        self.responses = [(200, self.snapshot(True, 1)), (200, self.snapshot(True, 1))]
+        self.assertTrue(self.start(local={"defaultSkinId": "custom-skin"}))
+        self.assertEqual(self.settings.Config.defaultSkinId, "custom-skin")
+        self.assertTrue(self.start(managed=False))
+        self.assertIsNone(self.cache)
+        self.assertEqual(self.get_modes, ["legacy", "legacy"])
 
     def test_legacy_uses_local_settings_until_migrated_then_applies_on_restart(self):
         remote = self.snapshot(True, 1, defaultEscapeMode="hide")
@@ -155,7 +207,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertTrue(self.settings.Config.forceGuestLogin, "migration must not replace running settings")
         self.assertEqual(json.loads(self.cache)["document"]["revision"], 1)
         self.responses = [(200, remote)]
-        self.assertTrue(self.start())
+        self.assertTrue(self.start(managed=False, local={"forceGuestLogin": True}))
         self.assertFalse(self.settings.Config.forceGuestLogin)
         self.assertEqual(self.settings.Config.defaultEscapeMode, "hide")
         self.assertEqual(self.get_modes, ["legacy", "legacy", "legacy", "managed"])
@@ -164,7 +216,7 @@ class ManagedSettingsTests(unittest.TestCase):
         remote = self.snapshot(True, 1)
         self.responses = [(200, self.snapshot(False)), (200, self.snapshot(False)),
                           (200, remote), (503, None)]
-        self.assertTrue(self.start())
+        self.assertTrue(self.start(local={"forceGuestLogin": True}))
         self.settings.MigrateRadioSettings()
         self.assertIsNone(self.cache)
         self.assertFalse(self.kvp)

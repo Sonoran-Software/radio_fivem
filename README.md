@@ -5,9 +5,9 @@ Sonoran Radio's FiveM Resource
 ## Configure FiveM in Radio Admin
 
 For a new server, download its package from **Admin > Game Integration > FiveM Installation**.
-The download links the community and selected Radio server. You can change declarative settings
-in **FiveM Settings** and apply them by rerunning your installation command or restarting the
-`sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
+The generated `config.lua` contains your community ID, API key, and selected Radio server ID.
+Change gameplay settings in **FiveM Settings** and apply them by rerunning your installation command
+or restarting the `sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
 
 Existing installations can run `sonoranradio migrate` in the FiveM server console. The command
 imports declarative settings from the running resource, verifies the saved version, and writes a
@@ -15,8 +15,8 @@ single local `sonoranradio-settings.json` backup. It leaves your original config
 and does not replace settings that already exist in the portal. Restart the resource to apply
 the migrated settings.
 
-Keep the bootstrap credentials, local custom Lua callbacks, API overrides, and updater controls
-on the server. Live placements and in-game editors still use their own local data.
+Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
+callbacks are optional. Live placements and in-game editors use their own local data.
 If Radio is temporarily unavailable, a managed resource can use the last verified backup for the
 same community and room. A managed installation with no verified settings waits for a working
 connection and restart.
