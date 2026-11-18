@@ -1,4 +1,18 @@
-if not Config or Config.chatter == false then return end -- if chatter is disabled, skip this script
+local function chatterEnabled()
+	return Config and Config.init and Config.chatter ~= false
+end
+
+local function registerChatterEvent(name, handler)
+	RegisterNetEvent(name, function(...)
+		if chatterEnabled() then handler(...) end
+	end)
+end
+
+local function startChatterWorker(handler)
+	AddEventHandler('SonoranRadio::Internal::SettingsReady', function()
+		if chatterEnabled() then Citizen.CreateThread(handler) end
+	end)
+end
 
 local radioStates = {}
 local lastRadioStatesPush = 0
@@ -47,7 +61,7 @@ local function pushRadioStates()
 	end)
 end
 
-RegisterNetEvent('SonoranRadio::SetRadioState', function(state)
+registerChatterEvent('SonoranRadio::SetRadioState', function(state)
 	radioStates[source] = {state = state, lastUpdate = GetGameTimer()}
 	pushRadioStates()
 	local sanitized = DevEvents.sanitize and DevEvents.sanitize(state) or state
@@ -59,7 +73,7 @@ RegisterNetEvent('SonoranRadio::SetRadioState', function(state)
 	end
 end)
 
-Citizen.CreateThread(function()
+startChatterWorker(function()
 	local MAX_AGE = 30000
 
 	while true do
@@ -82,7 +96,7 @@ Citizen.CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('Chatter:clientChatterSync', function()
+registerChatterEvent('Chatter:clientChatterSync', function()
 	local source = source
 	while #chatterConfig == 0 do
 		Wait(10)
@@ -90,7 +104,7 @@ RegisterNetEvent('Chatter:clientChatterSync', function()
 	TriggerClientEvent('Chatter:clientChatterSync_c', source, chatterConfig)
 end)
 
-RegisterNetEvent('Chatter:saveChatterConfig', function(config)
+registerChatterEvent('Chatter:saveChatterConfig', function(config)
 	chatterConfig = config
 	SaveJsonConfig('earpieces.json', chatterConfig)
 	TriggerClientEvent('Chatter:clientChatterSync_c', -1, chatterConfig)
@@ -99,7 +113,7 @@ end)
 -- scanners across the entire server
 local staticScanners
 local globalScanners = {}
-RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
+registerChatterEvent('SonoranRadio::pushScanner', function(id, data)
 	for _, scanner in ipairs(staticScanners or {}) do
 		if scanner.Id == id then
 			local previousChannelId = scanner.ChannelId
@@ -115,7 +129,7 @@ RegisterNetEvent('SonoranRadio::pushScanner', function(id, data)
 	globalScanners[id] = data
 	TriggerLatentClientEvent('SonoranRadio::receiveScanners', -1, 10000, globalScanners)
 end)
-RegisterNetEvent('SonoranRadio::requestScanners', function()
+registerChatterEvent('SonoranRadio::requestScanners', function()
 	TriggerLatentClientEvent('SonoranRadio::receiveScanners', source, 10000, globalScanners, staticScanners)
 end)
 
@@ -130,7 +144,7 @@ function initStaticScanners(s)
 	end
 end
 
-RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
+registerChatterEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPosition, note)
 	local src = source
 	local scannerInfo = {
 		Id = uuid(),
@@ -160,7 +174,7 @@ RegisterNetEvent('SonoranRadio::SpawnStaticScanner', function(propModel, propPos
 	}
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
 end)
-RegisterNetEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosition)
+registerChatterEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosition)
 	local src = source
 
 	-- update the scanners.json
@@ -188,7 +202,7 @@ RegisterNetEvent('SonoranRadio::MoveStaticScanner', function(scannerId, propPosi
 	end
 	TriggerClientEvent('SonoranRadio::receiveScanners', -1, globalScanners, staticScanners)
 end)
-RegisterNetEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
+registerChatterEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
 	local src = source
 
 	-- remove from the scanners.json
@@ -209,7 +223,7 @@ RegisterNetEvent('SonoranRadio::DeleteStaticScanner', function(scannerId)
 end)
 
 -- check for radio scanners and add metadata if needed
-Citizen.CreateThread(function()
+startChatterWorker(function()
 	local function genId()
 		local id
 		repeat
@@ -281,7 +295,7 @@ Citizen.CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
+registerChatterEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos)
 	local allowedProfileIds = {}
 	for _, info in ipairs(profileInfos or {}) do
 		local allowed =
@@ -299,7 +313,7 @@ RegisterNetEvent('SonoranRadio::checkScannerProfilePerms', function(profileInfos
 	))
 	TriggerClientEvent('SonoranRadio::allowScannerProfiles', source, allowedProfileIds)
 end)
-Citizen.CreateThread(function()
+startChatterWorker(function()
 	local aceCache = {}
 	AddEventHandler('playerDropped', function()
 		-- Player IDs can be reused; a new connection must receive its own authorization.
@@ -323,7 +337,7 @@ Citizen.CreateThread(function()
 	end
 end)
 
-Citizen.CreateThread(function()
+startChatterWorker(function()
 	local oxScannerHookRegistered = false
 	local function registerOxScannerHook()
 		if oxScannerHookRegistered or inventoryEnum ~= 2 then

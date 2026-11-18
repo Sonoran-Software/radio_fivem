@@ -1,7 +1,4 @@
-local acePermsForRadio = false
-local acePermsForTowerRepair = false
-local acePermsForServerRepair = false
-local acePermsForAntennaRepair = false
+local startEnforcedInventory
 local QBCore = nil
 local MessageBuffer = {}
 local DebugBuffer = {}
@@ -364,87 +361,6 @@ else
 			TriggerClientEvent('SonoranRadio::PlayerRevive', playerid) -- This event will revive the player
 		end)
 	end
-	if Config.acePermsForRadio ~= nil then
-		acePermsForRadio = Config.acePermsForRadio
-	end
-
-	if Config.acePermsForTowerRepair ~= nil then
-		acePermsForTowerRepair = Config.acePermsForTowerRepair
-	end
-
-	if Config.acePermsForServerRepair ~= nil then
-		acePermsForServerRepair = Config.acePermsForServerRepair
-	end
-	if Config.heavySignalDegradeInWater == nil then
-		Config.heavySignalDegradeInWater = true
-	end
-	if not Config.radioJammers or Config.radioJammers == nil then
-		Config.radioJammers = {
-			enabled = true, -- Enable or disable radio jammers
-			menuCommand = 'jammers', -- Subcommand to open the jammers menu | e.g. /sonoranradio jammers
-			toggleRange = 3.0, -- Distance in meters required to toggle a jammer on/off
-			permissionMode = 'none', -- ace, qbcore, esx or none
-			acePermission = 'sonoranradio.jammers', -- ACE permission required to use jammers
-			allowedJobs = { -- Jobs that can use jammers | Requires permission mode to be set to 'qbcore' or 'esx'
-				['hacker'] = {
-					grades = { -- Job grades that can use jammers
-						1,
-						2,
-						3
-					}
-				}
-			},
-			jammers = {
-				-- Define jammers here
-				-- Example:
-				{
-					name = 'Hand Held Jammer', -- Name of the jammer
-					model = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer
-					offModel = 'm23_2_prop_m32_hackdevice_01a', -- Model name for the jammer when off | Optional
-					range = 25, -- Range of the jammer in meters
-					strength = 0.5, -- Strength of the jammer (0.0 to 1.0)
-					permission = 'sonoranradio.jammer_handheld', -- ACE permission required to use this jammer | Optional
-					-- If permission is not set, the jammer will be available to all players that can access the jammers menu
-					type = 'handheld', -- Type of jammer (handheld or static)
-					itemName = 'sonoran_radio_jammer_handheld', -- Item name for the jammer (if Config.enforceRadioItem is true)
-					poweredItemName = 'sonoran_radio_jammer_handheld_on' -- Optional item that replaces the base item while the jammer is powered on
-				},
-				{
-					name = 'Suitcase Jammer', -- Name of the jammer
-					model = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer
-					offModel = 'ch_prop_ch_mobile_jammer_01x', -- Model name for the jammer when off | Optional
-					range = 100, -- Range of the jammer in meters
-					strength = 0.8, -- Strength of the jammer (0.0 to 1.0)
-					permission = '', -- ACE permission required to use this jammer | Optional
-					-- If permission is not set, the jammer will be available to all players that can access the jammers menu
-					type = 'static', -- Type of jammer (handheld or static)
-					itemName = 'sonoran_radio_jammer_suitcase' -- Item name for the jammer (if Config.enforceRadioItem is true)
-				},
-				{
-					name = 'Case Jammer', -- Name of the jammer
-					model = 'h4_prop_h4_jammer_01a', -- Model name for the jammer
-					offModel = 'h4_prop_h4_jammer_01a', -- Model name for the jammer when off | Optional
-					range = 200, -- Range of the jammer in meters
-					strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
-					permission = '', -- ACE permission required to use this jammer | Optional
-					-- If permission is not set, the jammer will be available to all players that can
-					type = 'static', -- Type of jammer (handheld or static)
-					itemName = 'sonoran_radio_jammer_case' -- Item name for the jammer (if Config.enforceRadioItem is true)
-				},
-				{
-					name = 'Satelite Jammer', -- Name of the jammer
-					model = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer
-					offModel = 'm23_2_prop_m32_jammer_01a', -- Model name for the jammer when off | Optional
-					range = 300, -- Range of the jammer in meters
-					strength = 1.0, -- Strength of the jammer (0.0 to 1.0)
-					permission = '', -- ACE permission required to use this jammer | Optional
-					-- If permission is not set, the jammer will be available to all players that can
-					type = 'static', -- Type of jammer (handheld or static)
-					itemName = 'sonoran_radio_jammer_satelite' -- Item name for the jammer (if Config.enforceRadioItem is true)
-				}
-			}
-		}
-		end
 	local enforcedInventoryItemsInitialized = false
 	local function setupEnforcedInventoryItems()
 		if enforcedInventoryItemsInitialized or not Config.enforceRadioItem then
@@ -667,7 +583,8 @@ else
 		end
 	end
 
-	if Config.enforceRadioItem then
+	startEnforcedInventory = function()
+		if not Config.enforceRadioItem then return end
 		Citizen.CreateThread(function()
 			if waitForFrameworkInventory() then
 				setupEnforcedInventoryItems()
@@ -827,8 +744,11 @@ SonoranRadio Help
 	debugmode - Toggles debugging mode
 	getchannels - fetch community channels (add "raw" to print full JSON)
     support <ticket ID> - upload diagnostics requested by support
+    migrate - import local settings into Radio Admin and back them up locally
     update - attempt to update the radio script
 ]])
+	elseif args[1] == 'migrate' then
+		MigrateRadioSettings()
 	elseif args[1] == 'support' then
 		UploadRadioSupportLogs(args[2])
 	elseif args[1] == 'getchannels' then
@@ -863,6 +783,7 @@ end, true)
 
 RegisterNetEvent('SonoranRadio::CheckPermissions')
 AddEventHandler('SonoranRadio::CheckPermissions', function()
+	if not Config or not Config.init then return end
 	local playerId = source
 	local radioAceAllowed = not Config.acePermsForRadio or IsPlayerAceAllowed(playerId, 'sonoranradio.use')
 	local framePermissions = checkFramePermissions(playerId)
@@ -871,21 +792,21 @@ AddEventHandler('SonoranRadio::CheckPermissions', function()
 	if radioAceAllowed then
 		TriggerClientEvent('SonoranRadio::AuthorizeRadio', playerId, framePermissions, allowedMiniRadio, allowedGuest, getBackendFrameDefinitions(), getBackendFrameAliases())
 	end
-	if acePermsForTowerRepair then
+	if Config.acePermsForTowerRepair then
 		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
 			TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 		end
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeTowers', playerId)
 	end
-	if acePermsForServerRepair then
+	if Config.acePermsForServerRepair then
 		if IsPlayerAceAllowed(playerId, 'sonoranradio.repairservers') then
 			TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 		end
 	else
 		TriggerClientEvent('SonoranRadio::AuthorizeRacks', playerId)
 	end
-	if acePermsForAntennaRepair then
+	if Config.acePermsForAntennaRepair then
 		if IsPlayerAceAllowed(playerId, 'sonoranradio.repair') then
 			TriggerClientEvent('SonoranRadio::AuthorizeAntennas', playerId)
 		end
@@ -1008,7 +929,6 @@ local function initConfigServerId()
 			Config.serverId = val
 			SetResourceKvpInt('standalone_serverId', val) -- save the roomId to the resource KVP as a backup
 			setSonoranRadioClientRoomId(val) -- set the API client's room id
-			Config.init = true
 		end
 
 		-- to create the client config, we must wait for the server-ip to be set so
@@ -1042,7 +962,6 @@ local function initConfigServerId()
 					-- but keep retrying in the background so the server IP eventually gets updated
 					if attempt == 1 and roomId ~= nil then
 						warnLog('WRN_SERVER_IP_USING_EXISTING_ROOM', 'Failed to set server IP for radio service, but using existing roomId (' .. roomId .. '). Retrying in background...')
-						Config.init = true
 						useRoomId(roomId)
 						resolved = true
 						d:resolve(Config.serverId)
@@ -1058,6 +977,14 @@ local function initConfigServerId()
 					errorLog('ERR_SERVER_IP_INVALID_ROOM', 'Failed to set server IP for radio service: invalid roomId returned.')
 					if not resolved then
 						d:reject('invalid roomId returned')
+					end
+					return
+				end
+				-- A background registration retry must not change the room after
+				-- its resource settings were loaded. Restart to switch rooms.
+				if resolved then
+					if resolvedRoomId ~= Config.serverId then
+						warnLog('WRN_SERVER_ID_CHANGED')
 					end
 					return
 				end
@@ -1080,10 +1007,8 @@ local function initConfigServerId()
 				end
 
 				useRoomId(resolvedRoomId)
-				if not resolved then
-					resolved = true
-					d:resolve(Config.serverId)
-				end
+				resolved = true
+				d:resolve(Config.serverId)
 			end)
 		end
 		tryRequest()
@@ -1097,8 +1022,6 @@ end
 local function createClientConfig()
 	local d = promise.new()
 	Citizen.CreateThreadNow(function()
-		-- we need Config.serverId valid before creating the client config
-		Citizen.Await(initConfigServerId())
 		Citizen.Await(RefreshSonoranRadioSubscription())
 		if Config.chatter ~= false and not SonoranRadioHasSubscription(2) then
 			warnLog('WRN_LISTENER_PRO_REQUIRED')
@@ -1106,8 +1029,9 @@ local function createClientConfig()
 
 		-- create the client config
 		local clConfig = {}
+		local serverOnly = { apiKey = true, pushUrl = true, overridePushUrl = true, init = true, managedSettings = true }
 		for k, v in pairs(Config) do
-			if k ~= 'apiKey' and k ~= 'pushUrl' and k ~= 'init' and type(v) ~= 'function' then -- filter out sensitive/server-only data
+			if not serverOnly[k] and type(v) ~= 'function' then
 				clConfig[k] = v
 			end
 		end
@@ -1137,9 +1061,14 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 	SetConvar('sonoranradio_communityID', tostring(Config.comId))
 
-	Config.init = false
+	local registered = pcall(function() Citizen.Await(initConfigServerId()) end)
+	if not registered or not InitializeManagedRadioSettings() then return end
+	Config.init = true
+
 	getInventory()
 	getFramework()
+	startEnforcedInventory()
+	TriggerEvent('SonoranRadio::Internal::SettingsReady')
 	if type(InitMobileRepeaters) == 'function' then
 		InitMobileRepeaters()
 	end

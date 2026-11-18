@@ -72,7 +72,7 @@ local function handheldJammerPayload(id, entry)
 end
 
 local function isJammerEnabled()
-    return Config.radioJammers and Config.radioJammers.enabled ~= false
+    return Config and Config.init and Config.radioJammers and Config.radioJammers.enabled ~= false
 end
 
 local function jammerConfigList()

@@ -8,6 +8,7 @@ version '$RESOURCE_VERSION'
 
 server_script 'config.lua'
 server_script 'lua/utils.js'
+server_script 'lua/config/managed.lua'
 server_script 'lua/update/unzip.js'
 server_script 'lua/update/updater.lua'
 server_script 'lua/sonoran/init.lua'

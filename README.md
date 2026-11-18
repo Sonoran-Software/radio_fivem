@@ -2,15 +2,34 @@
 
 Sonoran Radio's FiveM Resource
 
+## Configure FiveM in Radio Admin
+
+For a new server, download its package from **Admin > Game Integration > FiveM Installation**.
+The download links the community and selected Radio server. You can change declarative settings
+in **FiveM Settings** and apply them by rerunning your installation command or restarting the
+`sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
+
+Existing installations can run `sonoranradio migrate` in the FiveM server console. The command
+imports declarative settings from the running resource, verifies the saved version, and writes a
+single local `sonoranradio-settings.json` backup. It leaves your original configuration untouched
+and does not replace settings that already exist in the portal. Restart the resource to apply
+the migrated settings.
+
+Keep the bootstrap credentials, local custom Lua callbacks, API overrides, and updater controls
+on the server. Live placements and in-game editors still use their own local data.
+If Radio is temporarily unavailable, a managed resource can use the last verified backup for the
+same community and room. A managed installation with no verified settings waits for a working
+connection and restart.
+
 ## Automatic guest login
 
-Set `Config.forceGuestLogin = true` in `config.lua` to automatically sign radio users in as guests when they open the radio. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.
+Enable **Force guest login** in FiveM Settings to automatically sign radio users in as guests when they open the radio. Legacy installations use `Config.forceGuestLogin`. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.
 
 Guest permissions come from the player's ACE permissions in this mode, including `sonoranradio.channel.<channel id>` (or `sonoranradio.channel.<channel name>`) for nonpublic channels. This works even when `Config.acePermSync = false`; that setting still controls Sonoran account syncing in normal mode. `Config.acePermsForRadio` and `Config.acePermsForRadioGuests` continue to restrict access through `sonoranradio.use` and `sonoranradio.guest` when enabled. Grant those ACEs to every intended radio user if you enable the corresponding restrictions.
 
 ## Custom radio frames
 
-Custom frames are managed in the Radio web panel's Customize > Overlay menu.
+Custom frames are managed under **Admin > Overlay** in the Radio web panel.
 The resource retrieves those community frames from the Radio backend on startup
 and refreshes them every five minutes. Saving an overlay in the panel also sends
 an authenticated `frames_updated` notification to configured game-server push

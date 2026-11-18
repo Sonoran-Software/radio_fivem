@@ -171,6 +171,7 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute(source[start:end])
         self.lua.execute('''
             source = 42
+            Config.init = true
             permissionHandler()
             assert(#sent == 6)
             for _, event in ipairs(sent) do assert(event.player == 42) end

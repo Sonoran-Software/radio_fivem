@@ -3,6 +3,8 @@
 /dist*
 /bkup*
 /config.lua
+/sonoranradio-settings.json
+/sonoranradio-settings.json.*.tmp
 /towers.json
 /speakers.json
 /tunnels.json

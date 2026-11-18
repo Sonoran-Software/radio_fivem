@@ -41,6 +41,12 @@ function showNotification(notification, urgent)
 	DrawNotification(urgent, true)
 end
 
+local function escapeNotificationHtml(value)
+	return (tostring(value):gsub('[&<>\"\']', {
+		['&'] = '&amp;', ['<'] = '&lt;', ['>'] = '&gt;', ['"'] = '&quot;', ["'"] = '&#39;',
+	}))
+end
+
 function notifyClient(notification, urgent, colorCode)
 	local notifications = (Config and Config.notifications) or {}
 	local configuredType = notifications.type or 'native'
@@ -83,7 +89,7 @@ function notifyClient(notification, urgent, colorCode)
 	if notificationType == 'native' then
 		showNotification(('~b~%s~w~%s'):format(prefix, formattedNotification), urgent)
 	elseif notificationType == 'okokNotify' then
-		exports['okokNotify']:Alert(title, '' .. plainNotification, 10000, 'info')
+		exports['okokNotify']:Alert(escapeNotificationHtml(title), escapeNotificationHtml(plainNotification), 10000, 'info')
 	elseif notificationType == 'ox_lib' then
 		if not lib then
 			if GetResourceState('ox_lib') ~= 'started' then
@@ -117,7 +123,7 @@ function notifyClient(notification, urgent, colorCode)
 	elseif notificationType == 'pNotify' then
 		print('Using pNotify for notifications')
 		TriggerEvent('pNotify:SendNotification', {
-			text = ('<b>%s</b><br>%s'):format(title, plainNotification),
+			text = ('<b>%s</b><br>%s'):format(escapeNotificationHtml(title), escapeNotificationHtml(plainNotification)),
 			type = 'info',
 			timeout = 5000,
 			layout = 'topRight'
@@ -141,8 +147,8 @@ function notifyClient(notification, urgent, colorCode)
 		notifications['custom'](plainNotification)
 	elseif notificationType == 'chat' then
 		TriggerEvent('chat:addMessage', {
-			template = ('<div class="chat-message sonoran-radio"><b>%s</b> {0}</div>'):format(title),
-			args = { plainNotification }
+			template = '<div class="chat-message sonoran-radio"><b>{0}</b> {1}</div>',
+			args = { title, plainNotification }
 		})
 	end
 end

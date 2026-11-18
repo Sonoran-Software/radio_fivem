@@ -62,6 +62,10 @@ WarningCodes = {
 	['WRN_LISTENER_PRO_REQUIRED'] = {
 		code = 'WRN-217',
 		message = 'Nearby radio chatter and scanners are disabled because they require a Sonoran Radio Pro subscription.'
+	},
+	['WRN_SERVER_ID_CHANGED'] = {
+		code = 'WRN-218',
+		message = 'Radio server registration returned a different ID. Restart the resource to reload its settings.'
 	}
 }
 

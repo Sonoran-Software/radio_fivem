@@ -13,7 +13,7 @@ class ForcedGuestLoginTests(unittest.TestCase):
         self.lua = LuaRuntime()
         self.lua.execute("""
             Config = {
-                comId = 'community', serverId = 'room',
+                comId = 'community', serverId = 'room', init = true,
                 forceGuestLogin = true, acePermSync = false,
                 acePermsForRadio = true, acePermsForRadioGuests = true,
             }
@@ -72,6 +72,14 @@ class ForcedGuestLoginTests(unittest.TestCase):
             ace['sonoranradio.guest'] = false
             handlers['SonoranRadio::CreateGuestToken']()
             assert(request == nil)
+        """)
+
+    def test_guest_tokens_wait_for_startup_settings(self):
+        self.lua.execute("""
+            Config.init = false
+            handlers['SonoranRadio::CreateGuestToken']()
+            handlers['SonoranRadio::CreateEmergencyCallToken']()
+            assert(request == nil and response == nil)
         """)
 
     def test_normal_mode_keeps_existing_guest_permission_behavior(self):

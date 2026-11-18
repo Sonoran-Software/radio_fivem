@@ -265,6 +265,7 @@ RegisterNetEvent('SonoranRadio::RequestMobileRepeaters', function()
 end)
 
 RegisterNetEvent('SonoranRadio::SaveMobileRepeaterVehicle', function(networkId, label, range)
+	if not mobileRepeatersInitialized then return end
 	local src = source
 	if not canManageMobileRepeaters(src) then
 		return sendConfigError(src, 'You do not have permission to configure mobile repeaters.')
@@ -305,6 +306,7 @@ RegisterNetEvent('SonoranRadio::SaveMobileRepeaterVehicle', function(networkId, 
 end)
 
 RegisterNetEvent('SonoranRadio::DeleteMobileRepeaterVehicle', function(modelHash)
+	if not mobileRepeatersInitialized then return end
 	local src = source
 	if not canManageMobileRepeaters(src) then
 		return sendConfigError(src, 'You do not have permission to configure mobile repeaters.')
@@ -340,7 +342,7 @@ RegisterNetEvent('SonoranRadio::DeleteMobileRepeaterVehicle', function(modelHash
 end)
 
 RegisterNetEvent('sonoranscripts::togglerepeater', function(networkId, enabled)
-	if Config.enableVehicleRepeaters ~= true then
+	if not mobileRepeatersInitialized or Config.enableVehicleRepeaters ~= true then
 		return
 	end
 	local src = source
@@ -362,7 +364,7 @@ RegisterNetEvent('sonoranscripts::togglerepeater', function(networkId, enabled)
 end)
 
 RegisterNetEvent('sonoranscripts::updatepos', function(networkId)
-	if Config.enableVehicleRepeaters ~= true then
+	if not mobileRepeatersInitialized or Config.enableVehicleRepeaters ~= true then
 		return
 	end
 	local src = source
