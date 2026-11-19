@@ -18,7 +18,8 @@ URLs. The resource immediately refetches frames and updates connected players.
 Player permission checks use the cache without making API requests. Failed
 refreshes retain the last successful cache, and polling recovers missed notifications.
 
-On startup, the resource safely migrates folders under `skins/`:
+Fresh installs use the frames from the Radio backend. If an existing install
+has a `skins/` folder, the resource safely migrates it on startup:
 
 1. Every skin config is validated and each local frame image is uploaded.
 2. The on-foot, vehicle, and aircraft layouts are merged into one managed frame.
