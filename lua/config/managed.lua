@@ -6,7 +6,6 @@ local source = assert(LoadResourceFile(resourceName, 'lua/config/defaults.lua'))
 local defaults = assert(load(source, '@lua/config/defaults.lua', 't', {}))()
 
 local migrating = false
-local migrationReadyForRestart = false
 local startupFinished = false
 local managedSettingsActive = false
 
@@ -303,7 +302,7 @@ function GetManagedRadioPlacementScope()
 end
 
 function CanWriteRadioPlacements()
-	return not migrating and not migrationReadyForRestart
+	return not migrating
 end
 
 local function equalData(a, b)
@@ -364,17 +363,18 @@ function MigrateRadioSettings()
 				warnLog('WRN_API_REQUEST_FAILED', 'Could not verify placement migration. The original configuration files were kept. Retry sonoranradio migrate.')
 				return
 			end
-			migrationReadyForRestart = true
-			if not SaveMigratedRadioConfigBackup(scope, document, placements, bootstrapOverrides) then
-				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
-				return
-			end
+			local backedUp = SaveMigratedRadioConfigBackup(scope, document, placements, bootstrapOverrides)
 			markManaged(scope)
-			local bootstrap = ('Config = {}\n\nConfig.comId = %q\nConfig.apiKey = %q\nConfig.serverId = %d\n'):format(
-				tostring(Config.comId), Config.apiKey, scope.roomId)
-			local cleaned, success = pcall(function()
-				return exports[resourceName]:ArchiveMigratedRadioConfig(originalConfig, bootstrap)
-			end)
+			ActivateMigratedRadioPlacements(scope, placements)
+			local cleaned = false
+			if backedUp then
+				local bootstrap = ('Config = {}\n\nConfig.comId = %q\nConfig.apiKey = %q\nConfig.serverId = %d\n'):format(
+					tostring(Config.comId), Config.apiKey, scope.roomId)
+				local ok, success = pcall(function()
+					return exports[resourceName]:ArchiveMigratedRadioConfig(originalConfig, bootstrap)
+				end)
+				cleaned = ok and success == true
+			end
 			local reported = managed
 			if not managed then
 				-- The earlier read verified the upload in legacy mode. Report the
@@ -383,7 +383,7 @@ function MigrateRadioSettings()
 				local acknowledged = response.status == 200 and readSettings(response.document)
 				reported = acknowledged and acknowledged.configured
 			end
-			if not cleaned or success ~= true then
+			if not cleaned then
 				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
 				return
 			end

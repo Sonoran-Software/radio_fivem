@@ -216,7 +216,7 @@ local function upsertState(entry)
 end
 
 local function saveJammers(src, nextJammers)
-    if not SaveJsonConfig('jammers.json', nextJammers) then
+    if not SaveRadioPlacements('jammers.json', nextJammers) then
         TriggerClientEvent('SonoranRadio::DisplayError', src, 'Jammers could not be saved. Check the server log.')
         return false
     end
@@ -405,9 +405,10 @@ local function removeHandheldByOwner(src, skipInventory)
 end
 
 function initStaticJammers(initialJammers)
+    for _, entry in ipairs(staticJammers) do
+        jammerState[entry.Id] = nil
+    end
     staticJammers = type(initialJammers) == 'table' and initialJammers or {}
-    dynamicJammers = {}
-    jammerState = {}
     for _, entry in ipairs(staticJammers) do
         if entry.Id == nil then entry.Id = uuid() end
         entry.PropPosition = entry.PropPosition or {}

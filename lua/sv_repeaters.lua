@@ -99,7 +99,7 @@ local function saveMobileRepeaters(vehicles)
 		migratedFromConfig = true,
 		vehicles = vehicles
 	}
-	if not SaveJsonConfig(mobileRepeaterConfigFile, nextConfig) then
+	if not SaveRadioPlacements(mobileRepeaterConfigFile, nextConfig) then
 		return false
 	end
 	mobileRepeaterConfig = nextConfig
@@ -247,17 +247,22 @@ function NormalizeRadioMobileRepeaterImport(loaded)
 	return config.vehicles
 end
 
+function ReloadMobileRepeaters()
+	mobileRepeaterConfig = normalizeSavedMobileRepeaters(LoadRadioPlacements(mobileRepeaterConfigFile))
+	syncMobileRepeaters(-1)
+end
+
 function InitMobileRepeaters()
 	if mobileRepeatersInitialized then return end
 	mobileRepeatersInitialized = true
 	startActiveRepeaterTracker()
 
 	local changed, migratedCount
-	mobileRepeaterConfig, changed, migratedCount = normalizeSavedMobileRepeaters(LoadJsonConfig(mobileRepeaterConfigFile))
+	mobileRepeaterConfig, changed, migratedCount = normalizeSavedMobileRepeaters(LoadRadioPlacements(mobileRepeaterConfigFile))
 
 	local saved = true
 	if changed then
-		saved = SaveJsonConfig(mobileRepeaterConfigFile, mobileRepeaterConfig)
+		saved = SaveRadioPlacements(mobileRepeaterConfigFile, mobileRepeaterConfig)
 	end
 	if migratedCount > 0 and saved then
 		warnLog('WRN_MOBILE_REPEATERS_CONFIG_MIGRATED', ('Migrated %d vehicle repeater configuration(s) to %s. Remove Config.repeaterVehicleSpawncodes and use /radiomenu for future changes.'):format(migratedCount, mobileRepeaterConfigFile))

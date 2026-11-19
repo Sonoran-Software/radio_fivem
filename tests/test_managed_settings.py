@@ -23,6 +23,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.cache = None
         self.legacy_files = {}
         self.requests = []
+        self.placement_requests = []
         self.get_modes = []
         self.responses = []
         self.kvp = {}
@@ -66,6 +67,10 @@ class ManagedSettingsTests(unittest.TestCase):
                 return {schemaVersion = 1, placements = placements}
             end
             AwaitRadioPlacements = function() return true end
+            ActivateMigratedRadioPlacements = function(_, document)
+                assert(not CanWriteRadioPlacements())
+                activatedPlacements = document
+            end
             PerformHttpRequest = function(...) doRequest(...) end
             promise = {
                 new = function()
@@ -126,11 +131,14 @@ class ManagedSettingsTests(unittest.TestCase):
     def do_request(self, url, callback, method, body, headers, options):
         self.assertTrue(url.startswith(f"{self.api_origin}/v2/servers/DEMO/rooms/"))
         self.assertEqual(headers.Authorization, "Bearer PRIVATE-KEY")
-        self.assertEqual(headers["X-FiveM-Resource-Version"], "5.0.0")
         self.assertFalse(options.followLocation)
-        if method == "GET":
-            self.get_modes.append(headers["X-FiveM-Settings-Mode"])
-        self.requests.append((method, body))
+        if "/fivem-placements" in url:
+            self.placement_requests.append((method, url, json.loads(body) if body else None))
+        else:
+            self.assertEqual(headers["X-FiveM-Resource-Version"], "5.0.0")
+            if method == "GET":
+                self.get_modes.append(headers["X-FiveM-Settings-Mode"])
+            self.requests.append((method, body))
         status, value = self.responses.pop(0)
         if status == "timeout":
             self.settings.timeout()
@@ -246,6 +254,11 @@ class ManagedSettingsTests(unittest.TestCase):
             function TriggerClientEvent(name, _, value)
                 if name == 'SonoranRadio::core::ReceiveEnvironment' then receivedConfig = value end
             end
+            TriggerLatentClientEvent = function(name, _, _, value, static)
+                if name == 'SonoranRadio::receiveScanners' then
+                    receivedScanners, receivedStaticScanners = value, static
+                end
+            end
             RegisterCommand = function() end
             IsDuplicityVersion = function() return true end
             GetConvar = function(_, fallback) return fallback end
@@ -255,6 +268,8 @@ class ManagedSettingsTests(unittest.TestCase):
             GetGameTimer = function() return 0 end
             GetResourceKvpInt = function() return 0 end
             SetResourceKvpInt = function() end
+            SetTimeout = function() end
+            IsPlayerAceAllowed = function(src, ace) return src == 42 and ace == 'command.radioMenu' end
             setSonoranRadioClientRoomId = function() end
             vec3 = function(x, y, z) return {x = x, y = y, z = z} end
             SaveResourceFile = function(_, name, data) saveFile(name, data); return true end
@@ -305,6 +320,69 @@ class ManagedSettingsTests(unittest.TestCase):
         self.boot_legacy_resource((404, None))
         self.assert_legacy_resource_started()
 
+    def test_migration_switches_the_running_world_to_backend_placement_saves(self):
+        self.boot_legacy_resource((200, self.snapshot(False)))
+        legacy_files = dict(self.legacy_files)
+        position = {"x": 10, "y": 20, "z": 30}
+        tower = {
+            "Id": "portal-tower", "type": "radioTower", "Range": 4500, "heading": 0,
+            "PropPosition": position, "Powered": True, "Destruction": True,
+            "NotPhysical": False, "Swankiness": 0, "DishStatus": ["alive"] * 4,
+        }
+        scanner = {
+            "Id": "portal-scanner", "Note": "Station", "Powered": True, "ChannelId": 0,
+            "PropPosition": {**position, "heading": 0, "exact": False},
+        }
+        placements = {
+            "schemaVersion": 1, "placements": {
+                kind: {"revision": 1, "entries": entries} for kind, entries in {
+                    "towers": [tower], "scanners": [scanner], "speakers": [], "jammers": [],
+                    "earpieces": [], "mobileRepeaters": [],
+                }.items()
+            },
+        }
+        remote = self.snapshot(True, 1)
+        self.responses = [(200, remote), (200, placements), (200, remote)]
+        self.lua.execute("""
+            Citizen.CreateThread = function(fn) fn() end
+            Towers[#Towers + 1] = {Id = 'temporary-tower', DontSaveMe = true}
+            MigrateRadioSettings()
+        """)
+        self.assertTrue(self.settings.CanWriteRadioPlacements())
+        self.assertEqual([t.Id for t in self.settings.Towers.values()], ["temporary-tower", "portal-tower"])
+        self.assertEqual(self.settings.receivedStaticScanners[1].Note, "Station")
+        self.assertEqual(self.settings.GetPortalRadioPlacementRevision("towers.json"), 1)
+
+        moved_tower = {**tower, "PropPosition": {**position, "x": 50}}
+        self.settings.towerDraft = self.to_lua([moved_tower])
+        self.responses = [(503, None), (200, {"revision": 2, "entries": [moved_tower]})]
+        self.lua.execute("""
+            source = 42
+            TriggerEvent('SonoranRadio::MoveProp', {}, towerDraft, {}, 1)
+            assert(Towers[2].PropPosition.x == 10)
+            TriggerEvent('SonoranRadio::MoveProp', {}, towerDraft, {}, 1)
+            assert(Towers[1].PropPosition.x == 50)
+            assert(Towers[2].Id == 'temporary-tower')
+        """)
+        for method, url, payload in self.placement_requests[-2:]:
+            self.assertEqual(method, "PATCH")
+            self.assertTrue(url.endswith("/rooms/1/fivem-placements/towers"))
+            self.assertEqual(payload, {"revision": 1, "entries": [moved_tower]})
+
+        moved = {**scanner, "PropPosition": {**scanner["PropPosition"], "x": 25}}
+        self.responses = [(200, {"revision": 2, "entries": [moved]})]
+        self.lua.execute("""
+            source = 42
+            TriggerEvent('SonoranRadio::MoveStaticScanner', 'portal-scanner',
+                {x = 25, y = 20, z = 30, heading = 0, exact = false})
+        """)
+        method, url, payload = self.placement_requests[-1]
+        self.assertEqual(method, "PATCH")
+        self.assertTrue(url.endswith("/rooms/1/fivem-placements/scanners"))
+        self.assertEqual(payload, {"revision": 1, "entries": [moved]})
+        self.assertEqual(self.legacy_files, legacy_files)
+        self.assertEqual(json.loads(self.cache)["placements"]["placements"]["scanners"]["revision"], 2)
+
     def test_legacy_uses_local_settings_until_migrated_then_applies_on_restart(self):
         remote = self.snapshot(True, 1, defaultEscapeMode="hide")
         self.responses = [(200, self.snapshot(False)), (200, self.snapshot(False)),
@@ -339,7 +417,8 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertEqual(len(self.archive_attempts), 1)
         self.lua.execute(self.config_file)
         self.assertEqual(set(self.settings.Config.keys()), {"comId", "apiKey", "serverId"})
-        self.assertFalse(self.settings.CanWriteRadioPlacements())
+        self.assertIsNotNone(self.settings.activatedPlacements)
+        self.assertTrue(self.settings.CanWriteRadioPlacements())
         self.responses = [(200, remote)]
         self.assertTrue(self.start(managed=False, local={"forceGuestLogin": True}))
         self.assertFalse(self.settings.Config.forceGuestLogin)
@@ -400,11 +479,12 @@ class ManagedSettingsTests(unittest.TestCase):
 
         self.settings.VerifyRadioPlacementMigration = placement_snapshot
         self.allow_write = False
-        self.responses = [(200, remote)]
+        self.responses = [(200, remote), (200, remote)]
         self.settings.MigrateRadioSettings()
         self.assertEqual(self.archive_attempts, [])
         self.assertIn("[WRN-220]", self.logs[-1])
-        self.assertFalse(self.settings.CanWriteRadioPlacements())
+        self.assertIsNotNone(self.settings.activatedPlacements)
+        self.assertTrue(self.settings.CanWriteRadioPlacements())
 
     def test_cleanup_permission_warning_allows_retry_and_preserves_host_overrides(self):
         self.api_origin = "https://staging-api.dev.sonoranradio.com"

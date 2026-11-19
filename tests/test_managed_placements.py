@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "lua/config/placements.lua").read_text(encoding="utf-8")
 BACKUP = (ROOT / "lua/config/backup.lua").read_text(encoding="utf-8")
 BACKUP_PATH = "lua/config/.configuration-cache.json"
+PRESETS_PATH = "lua/config/placement-defaults.json"
 KINDS = ("towers", "speakers", "jammers", "scanners", "earpieces", "mobileRepeaters")
 SPEAKER = {
     "Id": "speaker-1", "type": "speakerMediumWall",
@@ -48,6 +49,7 @@ class ManagedPlacementTests(unittest.TestCase):
         self.globals.log = self.logs.append
         self.lua.execute("""
             Config = { apiKey = 'SECRET', init = true }
+            CanWriteRadioPlacements = function() return true end
             GetManagedRadioPlacementScope = function() return scope end
             GetCurrentResourceName = function() return 'sonoranradio' end
             LoadResourceFile = function(_, path) return loadFile(path) end
@@ -136,6 +138,34 @@ class ManagedPlacementTests(unittest.TestCase):
         self.assertTrue(self.globals.SavePortalRadioPlacement("speakers.json", self.to_lua([SPEAKER])))
         self.assertEqual(self.requests[-1][2], {"revision": 0, "entries": [SPEAKER]})
         self.assertEqual(set(self.files), {BACKUP_PATH})
+
+    def test_startup_seeds_missing_collections_and_respects_legacy_files_and_portal_deletions(self):
+        self.files[PRESETS_PATH] = (ROOT / PRESETS_PATH).read_text(encoding="utf-8")
+        self.files["speakers.json"] = json.dumps([SPEAKER])
+        initial = document(towers=(2, []))
+        complete = document(towers=(2, []), speakers=(1, [SPEAKER]), jammers=(1, []),
+                            scanners=(1, []), earpieces=(1, []), mobileRepeaters=(1, []))
+        self.responses = [(200, initial), (200, complete)]
+        self.boot()
+        payload = self.requests[-1][2]["placements"]
+        self.assertNotIn("towers", payload)
+        self.assertEqual(payload["speakers"], [SPEAKER])
+        self.assertEqual(len(payload["scanners"]), 5)
+        self.assertEqual(len(payload["earpieces"]), 4)
+        self.assertEqual(payload["jammers"], {})
+        self.assertEqual(payload["mobileRepeaters"], {})
+        self.assertEqual(set(self.files), {PRESETS_PATH, "speakers.json", BACKUP_PATH})
+
+    def test_managed_startup_never_falls_back_to_writing_legacy_files(self):
+        self.files["speakers.json"] = json.dumps([SPEAKER])
+        self.responses = [(404, None)]
+        self.boot()
+        self.lua.execute("""
+            SaveResourceFile = function() error('managed placements must never write legacy JSON') end
+            assert(#LoadRadioPlacements('speakers.json') == 0)
+            assert(not SaveRadioPlacements('speakers.json', {}))
+        """)
+        self.assertEqual(json.loads(self.files["speakers.json"]), [SPEAKER])
 
     def test_cleanup_requires_a_fresh_backend_read_of_imported_placements(self):
         self.files["speakers.json"] = json.dumps([SPEAKER])

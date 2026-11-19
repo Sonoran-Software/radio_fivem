@@ -9,7 +9,7 @@ local kinds = {
 	{ kind = 'mobileRepeaters', file = 'mobileRepeaters.json', defaults = 'mobileRepeaters.DEFAULT.json' }
 }
 local files = {}
-for _, entry in ipairs(kinds) do files[entry.file] = entry.kind end
+for _, entry in ipairs(kinds) do files[entry.file] = entry end
 
 local fields = {
 	towers = { 'Id', 'type', 'heading', 'Range', 'Powered', 'Destruction', 'NotPhysical', 'Swankiness',
@@ -182,23 +182,34 @@ local function writeCache()
 	end
 end
 
-local function readLocalImport(entry)
+local function readLegacyFile(entry)
 	local raw = LoadResourceFile(resourceName, entry.file)
 	if raw == nil then raw = LoadResourceFile(resourceName, entry.defaults) end
+	return raw
+end
+
+local function readLocalImport(entry, defaults)
+	local raw = readLegacyFile(entry)
 	local value = raw == nil and {} or decode(raw)
 	if not value then return nil, false end
 	if entry.kind == 'mobileRepeaters' then value = NormalizeRadioMobileRepeaterImport(value) end
 	if entry.kind == 'earpieces' then AddLegacyRadioEarpieces(value) end
-	if raw == nil and next(value) == nil then return nil, true end
+	if raw == nil and next(value) == nil then
+		value = defaults and defaults[entry.kind]
+		if not value then return nil, true end
+	end
 	local projected = project(entry.kind, value)
 	return projected, projected ~= nil
 end
 
 local function importMissing(scope, document, verify)
+	-- Ship one immutable seed for fresh rooms. Real legacy files and saved
+	-- collections (including explicit empty lists) take precedence.
+	local defaults = not verify and decode(LoadResourceFile(resourceName, 'lua/config/placement-defaults.json'))
 	local pending = {}
 	for _, entry in ipairs(kinds) do
 		if document.placements[entry.kind].entries == nil then
-			local entries, valid = readLocalImport(entry)
+			local entries, valid = readLocalImport(entry, defaults)
 			if verify and not valid then return nil end
 			pending[entry.kind] = entries
 		end
@@ -264,28 +275,52 @@ function InitializeManagedRadioPlacements()
 		print('[SonoranRadio] Using the last verified placement backup.')
 		return
 	end
-	-- Older backends have no placements endpoint. Keep their local editor until
-	-- this room has a portal snapshot. Other failures must not accept local writes.
-	if response.status ~= 404 or cached then session = { scope = scope } end
-	print('[SonoranRadio] Portal placements are unavailable. Using the original placement files.')
+	session = { scope = scope }
+	print('[SonoranRadio] Portal placements are unavailable and there is no verified backup. Placement saves are disabled.')
+end
+
+function ActivateMigratedRadioPlacements(scope, document)
+	local previous = session and session.document
+	session = { scope = scope, document = document }
+	local changed = {}
+	for _, entry in ipairs(kinds) do
+		if not previous or previous.placements[entry.kind].revision ~= document.placements[entry.kind].revision then
+			changed[entry.kind] = true
+		end
+	end
+	if next(changed) then ReloadRadioPlacementRuntime(changed) end
 end
 
 function GetPortalRadioPlacement(file)
-	local kind = files[file]
-	local state = kind and session and session.document and session.document.placements[kind]
+	local entry = files[file]
+	local state = entry and session and session.document and session.document.placements[entry.kind]
 	if not state or not state.entries then return nil end
 	-- Startup and live edits mutate runtime objects independently of the snapshot.
 	local payload = encode(state.entries)
 	local copy = payload and decode(payload)
-	if kind == 'mobileRepeaters' and copy then
+	if entry.kind == 'mobileRepeaters' and copy then
 		return { version = 1, migratedFromConfig = true, vehicles = copy }
 	end
 	return copy
 end
 
+function LoadRadioPlacements(file)
+	local entry = assert(files[file], 'Unknown radio placement collection')
+	if session then
+		if entry.kind == 'mobileRepeaters' then
+			return GetPortalRadioPlacement(file) or { version = 1, migratedFromConfig = true, vehicles = {} }
+		end
+		return GetPortalRadioPlacement(file) or {}
+	end
+	local raw = readLegacyFile(entry)
+	if not raw then return {}, true end
+	local ok, value = pcall(json.decode, raw)
+	return ok and type(value) == 'table' and value or {}, true
+end
+
 function GetPortalRadioPlacementRevision(file)
-	local kind = files[file]
-	local state = kind and session and session.document and session.document.placements[kind]
+	local entry = files[file]
+	local state = entry and session and session.document and session.document.placements[entry.kind]
 	return state and state.revision
 end
 
@@ -296,8 +331,9 @@ function MatchesRadioPlacementRevision(file, expected)
 end
 
 function SavePortalRadioPlacement(file, entries)
-	local kind = files[file]
-	if not kind or not session then return nil end
+	local entry = files[file]
+	if not entry or not session then return nil end
+	local kind = entry.kind
 	if not session.document or writing[kind] or type(entries) ~= 'table' then return false end
 	if kind == 'mobileRepeaters' then entries = entries.vehicles end
 	local projected = project(kind, entries)
@@ -314,6 +350,24 @@ function SavePortalRadioPlacement(file, entries)
 	session.document.placements[kind] = saved
 	writeCache()
 	return true
+end
+
+function SaveRadioPlacements(file, entries)
+	if not CanWriteRadioPlacements() then return false end
+	local entry = assert(files[file], 'Unknown radio placement collection')
+	if session then return SavePortalRadioPlacement(file, entries) end
+
+	-- Only installations still on their legacy configuration write these files.
+	local contents = json.encode(entries, { indent = true })
+	local saved = SaveResourceFile(resourceName, entry.file, contents, -1)
+	if not saved and LoadResourceFile(resourceName, entry.defaults) then
+		warnLog('WRN_CONFIG_SAVE_FALLBACK', ('Could not save updated %s, trying to write changes to %s'):format(entry.file, entry.defaults))
+		saved = SaveResourceFile(resourceName, entry.defaults, contents, -1)
+	end
+	if not saved then
+		errorLog('ERR_CONFIG_SAVE_FAILED', ('Could not save updated %s. Changes are not saved'):format(entry.file))
+	end
+	return saved
 end
 
 function CanManageRadioPlacements(src)

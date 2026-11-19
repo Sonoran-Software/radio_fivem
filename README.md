@@ -14,8 +14,9 @@ while migration is pending. To switch to Radio Admin, run `sonoranradio migrate`
 server console. The command imports and verifies settings and placements, preserving collections
 already saved in Radio Admin. It then rewrites `config.lua` with the community ID, API key, and room ID,
 and moves the original config and obsolete JSON files to `lua/config/.legacy-configuration-*`.
-Refresh the status in Radio Admin to edit the migrated settings. The resource loads its managed
-settings on its next start. If local cleanup reports `WRN-220`, check write permissions and rerun
+Refresh the status in Radio Admin to edit the migrated settings. Placement changes go to Radio
+as soon as migration finishes. The resource loads its managed gameplay settings on its next
+start. If local cleanup reports `WRN-220`, check write permissions and rerun
 `sonoranradio migrate`.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
@@ -30,15 +31,16 @@ with legacy settings in `config.lua` returns it to legacy mode and shows the mig
 
 ## FiveM placements
 
-Select a Radio server under **Admin > Game Integration > FiveM Placements**. Edit towers,
-server racks, fixed repeaters, speakers, scanners, static jammers, earpieces, and mobile
-repeater vehicles in their respective sections. Restart the resource to load portal edits.
+Use `/radiomenu` to place and move towers, server racks, fixed repeaters, speakers, scanners,
+and static jammers, and to configure earpieces and mobile repeater vehicles. The managed
+resource saves those changes to Radio and updates its local backup after confirmation.
+**Admin > Game Integration > FiveM Placements** shows the saved entries for each server and
+lets admins delete them. Restart the resource to load a portal deletion.
 
-Migration imports legacy placement files for collections that have yet to be configured. A managed
-resource also checks for those files on startup. Fresh installations start with the placements
-configured for that server in Radio Admin.
-The existing in-game editors use the same saved collections. If a portal edit changed a
-collection since startup, restart before saving further changes to that collection in game.
+The resource seeds unconfigured collections on startup from legacy placement files or the
+bundled presets. Presets include towers, racks, a fixed repeater, speakers, scanners, and
+earpieces. Static jammers and mobile repeater vehicles start empty. Collections already
+saved to Radio take precedence, including empty collections.
 
 ## Automatic guest login
 
