@@ -14,8 +14,9 @@ while migration is pending. To switch to Radio Admin, run `sonoranradio migrate`
 server console. The command imports and verifies settings and placements, preserving collections
 already saved in Radio Admin. It then rewrites `config.lua` with the community ID, API key, and room ID,
 and moves the original config and obsolete JSON files to `lua/config/.legacy-configuration-*`.
-Refresh the status in Radio Admin to edit the migrated settings. Restart the resource to apply
-them in-game. If local cleanup reports `WRN-220`, check write permissions and rerun `sonoranradio migrate`.
+Refresh the status in Radio Admin to edit the migrated settings. The resource loads its managed
+settings on its next start. If local cleanup reports `WRN-220`, check write permissions and rerun
+`sonoranradio migrate`.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
 callbacks are optional. Migration retains supported host overrides in the server-only backup.

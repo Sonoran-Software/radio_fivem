@@ -326,6 +326,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings.MigrateRadioSettings()
         self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "POST", "GET", "GET"])
         self.assertEqual(self.get_modes, ["legacy", "legacy", "legacy", "managed"])
+        self.assertEqual(self.logs[-1], "[SonoranRadio] Settings migrated and backed up.")
         uploaded = json.loads(self.requests[2][1])["settings"]
         self.assertEqual(uploaded["notifications"], {"type": "custom"})
         self.assertEqual(uploaded["radioJammers"]["allowedJobs"], {"hacker": {"grades": [1, 3]}})
@@ -365,6 +366,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "GET"])
         self.assertEqual(self.get_modes, ["legacy", "legacy", "managed"])
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
+        self.assertEqual(self.logs[-1], "[SonoranRadio] Existing Radio Admin settings were verified and backed up.")
 
     def test_connection_refresh_failure_leaves_verified_migration_retryable(self):
         remote = self.snapshot(True, 1)
@@ -374,6 +376,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertTrue(self.start(local={"chatter": False}))
         self.settings.MigrateRadioSettings()
         self.assertIn("connection status could not be refreshed", self.logs[-1])
+        self.assertIn("Rerun sonoranradio migrate", self.logs[-1])
         self.assertEqual(self.get_modes[-1], "managed")
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
 

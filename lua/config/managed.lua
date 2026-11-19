@@ -388,13 +388,13 @@ function MigrateRadioSettings()
 				return
 			end
 			if not reported then
-				warnLog('WRN_API_REQUEST_FAILED', 'Settings were saved and backed up, but the Radio Admin connection status could not be refreshed. Restart sonoranradio to reconnect and apply the settings.')
+				warnLog('WRN_API_REQUEST_FAILED', 'Settings were saved and backed up, but the Radio Admin connection status could not be refreshed. Rerun sonoranradio migrate to retry.')
 				return
 			end
 			if before.configured then
-				return 'Existing Radio Admin settings were verified and backed up. Restart sonoranradio to apply them.'
+				return 'Existing Radio Admin settings were verified and backed up.'
 			end
-			return 'Settings migrated and backed up. Restart sonoranradio to apply them.'
+			return 'Settings migrated and backed up.'
 		end)
 		migrating = false
 		-- Details can contain server-supplied or local values; never print raw errors.
