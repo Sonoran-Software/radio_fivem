@@ -1,5 +1,6 @@
 """Managed-settings startup and migration tests for the FiveM resource."""
 import json
+from hashlib import sha256
 from pathlib import Path
 import unittest
 
@@ -27,11 +28,16 @@ class ManagedSettingsTests(unittest.TestCase):
         self.kvp = {}
         self.logs = []
         self.allow_write = True
+        self.allow_cleanup = True
+        self.archive_attempts = []
+        self.config_file = "Config = { chatter = true }\n"
         self.api_origin = "https://api.sonoranradio.com"
         self.settings.toJSON = lambda value: json.dumps(self.from_lua(value))
         self.settings.parseJSON = lambda value: self.to_lua(json.loads(value))
         self.settings.loadFile = self.load_file
         self.settings.writeCache = self.write_cache
+        self.settings.archiveConfig = self.archive_config
+        self.settings.keyFingerprint = lambda key: sha256(key.encode()).hexdigest() if key else None
         self.settings.getMark = self.kvp.get
         self.settings.setMark = self.kvp.__setitem__
         self.settings.doRequest = self.do_request
@@ -49,7 +55,17 @@ class ManagedSettingsTests(unittest.TestCase):
             }
             exports = { sonoranradio = {
                 WriteManagedRadioConfigBackup = function(_, value) return writeCache(value) end,
+                ArchiveMigratedRadioConfig = function(_, original, bootstrap) return archiveConfig(original, bootstrap) end,
+                GetRadioBootstrapKeyFingerprint = function(_, key) return keyFingerprint(key) end,
             } }
+            VerifyRadioPlacementMigration = function()
+                local placements = {}
+                for _, kind in ipairs({'towers', 'speakers', 'jammers', 'scanners', 'earpieces', 'mobileRepeaters'}) do
+                    placements[kind] = {revision = 0}
+                end
+                return {schemaVersion = 1, placements = placements}
+            end
+            AwaitRadioPlacements = function() return true end
             PerformHttpRequest = function(...) doRequest(...) end
             promise = {
                 new = function()
@@ -86,7 +102,17 @@ class ManagedSettingsTests(unittest.TestCase):
             return DEFAULTS
         if name == BACKUP_PATH:
             return self.cache
+        if name == "config.lua":
+            return self.config_file
         return self.legacy_files.get(name)
+
+    def archive_config(self, original, bootstrap):
+        self.assertEqual(original, self.config_file)
+        self.archive_attempts.append(bootstrap)
+        if not self.allow_cleanup:
+            return False
+        self.config_file = bootstrap
+        return True
 
     def write_cache(self, value):
         self.assertNotIn("PRIVATE-KEY", value)
@@ -307,6 +333,10 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertNotIn("PRIVATE-KEY", self.requests[2][1])
         self.assertTrue(self.settings.Config.forceGuestLogin, "migration must not replace running settings")
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
+        self.assertEqual(len(self.archive_attempts), 1)
+        self.lua.execute(self.config_file)
+        self.assertEqual(set(self.settings.Config.keys()), {"comId", "apiKey", "serverId"})
+        self.assertFalse(self.settings.CanWriteRadioPlacements())
         self.responses = [(200, remote)]
         self.assertTrue(self.start(managed=False, local={"forceGuestLogin": True}))
         self.assertFalse(self.settings.Config.forceGuestLogin)
@@ -332,6 +362,59 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings.MigrateRadioSettings()
         self.assertEqual([method for method, _ in self.requests], ["GET", "GET"])
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
+
+    def test_cleanup_waits_for_verified_placements_and_writable_backup(self):
+        remote = self.snapshot(True, 4)
+        self.responses = [(200, remote)]
+        self.assertTrue(self.start(local={"chatter": False}))
+        placement_snapshot = self.settings.VerifyRadioPlacementMigration
+        self.lua.execute("VerifyRadioPlacementMigration = function() return nil end")
+        self.responses = [(200, remote)]
+        self.settings.MigrateRadioSettings()
+        self.assertEqual(self.archive_attempts, [])
+        self.assertIsNone(self.cache)
+        self.assertTrue(self.settings.CanWriteRadioPlacements())
+
+        self.settings.VerifyRadioPlacementMigration = placement_snapshot
+        self.allow_write = False
+        self.responses = [(200, remote)]
+        self.settings.MigrateRadioSettings()
+        self.assertEqual(self.archive_attempts, [])
+        self.assertIn("[WRN-220]", self.logs[-1])
+        self.assertFalse(self.settings.CanWriteRadioPlacements())
+
+    def test_cleanup_permission_warning_allows_retry_and_preserves_host_overrides(self):
+        self.api_origin = "https://staging-api.dev.sonoranradio.com"
+        remote = self.snapshot(True, 4)
+        self.responses = [(200, remote), (200, remote)]
+        self.assertTrue(self.start(local={"chatter": False, "apiUrl": self.api_origin + "/",
+                                         "radioUrl": "https://staging.dev.sonoranradio.com",
+                                         "allowAutoUpdate": False}))
+        original = self.config_file
+        self.allow_cleanup = False
+        self.settings.MigrateRadioSettings()
+        self.assertEqual(self.config_file, original)
+        self.assertIn("[WRN-220]", self.logs[-1])
+        self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
+
+        self.allow_cleanup = True
+        self.responses = [(200, remote)]
+        self.settings.MigrateRadioSettings()
+        self.assertEqual(len(self.archive_attempts), 2)
+        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "GET"])
+        self.lua.execute(self.config_file)
+        self.assertEqual(set(self.settings.Config.keys()), {"comId", "apiKey", "serverId"})
+        self.lua.execute(MANAGED)
+        self.responses = [(200, remote)]
+        self.assertTrue(self.settings.InitializeManagedRadioSettings())
+        self.assertEqual(self.settings.Config.apiUrl, self.api_origin + "/")
+        self.assertEqual(self.settings.Config.radioUrl, "https://staging.dev.sonoranradio.com")
+        self.assertFalse(self.settings.Config.allowAutoUpdate)
+
+        self.lua.execute(self.config_file)
+        self.settings.Config.apiKey = "DIFFERENT-KEY"
+        self.lua.execute(MANAGED)
+        self.assertEqual(self.settings.Config.apiUrl, "https://api.sonoranradio.com/")
 
     def test_availability_fallback_ignores_late_response_and_wrong_room(self):
         original = self.snapshot(True, 2, acePermsForRadio=True)

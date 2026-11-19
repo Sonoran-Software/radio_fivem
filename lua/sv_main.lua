@@ -744,7 +744,7 @@ SonoranRadio Help
 	debugmode - Toggles debugging mode
 	getchannels - fetch community channels (add "raw" to print full JSON)
     support <ticket ID> - upload diagnostics requested by support
-    migrate - import local settings into Radio Admin and back them up locally
+    migrate - import settings and placements into Radio Admin and archive legacy configuration
     update - attempt to update the radio script
 ]])
 	elseif args[1] == 'migrate' then
@@ -883,6 +883,7 @@ function LoadJsonConfig(file)
 	return json.decode(fileData) or {}
 end
 function SaveJsonConfig(file, obj)
+	if not CanWriteRadioPlacements() then return false end
 	local managed = SavePortalRadioPlacement(file, obj)
 	if managed ~= nil then return managed end
 	local resourceName = GetCurrentResourceName()
@@ -1376,14 +1377,14 @@ local function sendConsole(level, color, message, codeKey)
 		debugging = (Config.debug == true and Config.debug ~= 'false')
 	end
 	local source = getStructuredLogSourceLabel(4)
-	local payload = appendStructuredLogBreadcrumbs(level, message, 4)
+	local definition = getStructuredLogDefinition(codeKey)
+	local payload = definition and definition.includeTrace == false and message or appendStructuredLogBreadcrumbs(level, message, 4)
 	local msg = ('[%s:%s%s^7]%s %s^0'):format(debugging and source or 'SonoranRadio', color, level, color, payload)
 	if (debugging and level == 'DEBUG') or (not debugging and level ~= 'DEBUG') or level == 'ERROR' or level == 'WARNING' or level == 'INFO' then
 		print(msg)
 	end
 	if (level == 'ERROR' or level == 'WARNING') and IsDuplicityVersion() then
 		table.insert(ErrorBuffer, 1, msg)
-		local definition = getStructuredLogDefinition(codeKey)
 		table.insert(SupportErrorBuffer, 1, {
 			timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ'),
 			level = level,

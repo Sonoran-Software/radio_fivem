@@ -102,13 +102,7 @@
         req.end();
     });
 
-    exports("WriteManagedRadioConfigBackup", (contents) => {
-        const resource = GetCurrentResourceName();
-        const invoking = GetInvokingResource();
-        if ((invoking && invoking !== resource) || typeof contents !== "string" ||
-            Buffer.byteLength(contents) > 768 * 1024) return false;
-
-        const file = path.join(GetResourcePath(resource), "lua", "config", ".configuration-cache.json");
+    function writeConfigFile(file, contents) {
         const temporary = file + "." + require("crypto").randomBytes(8).toString("hex") + ".tmp";
         try {
             fs.writeFileSync(temporary, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
@@ -118,6 +112,66 @@
             return false;
         } finally {
             try { fs.unlinkSync(temporary); } catch { /* no temporary file remains after a successful rename */ }
+        }
+    }
+
+    exports("WriteManagedRadioConfigBackup", (contents) => {
+        const resource = GetCurrentResourceName();
+        const invoking = GetInvokingResource();
+        if ((invoking && invoking !== resource) || typeof contents !== "string" ||
+            Buffer.byteLength(contents) > 768 * 1024) return false;
+
+        return writeConfigFile(path.join(GetResourcePath(resource), "lua", "config", ".configuration-cache.json"), contents);
+    });
+
+    exports("GetRadioBootstrapKeyFingerprint", (apiKey) =>
+        typeof apiKey === "string" && apiKey.length > 0 ? require("crypto").createHash("sha256").update(apiKey).digest("hex") : null);
+
+    const legacyConfigFiles = [
+        ...["towers", "speakers", "scanners", "jammers", "earpieces", "mobileRepeaters", "geochannels", "tunnels"]
+            .flatMap((name) => [`${name}.json`, `${name}.DEFAULT.json`]),
+        "sonoranradio-settings.json", "sonoranradio-placements.json",
+    ];
+
+    exports("ArchiveMigratedRadioConfig", (expectedConfig, bootstrap) => {
+        const resource = GetCurrentResourceName();
+        const invoking = GetInvokingResource();
+        if ((invoking && invoking !== resource) || typeof expectedConfig !== "string" ||
+            typeof bootstrap !== "string" || bootstrap.length === 0) return false;
+
+        const root = GetResourcePath(resource);
+        const configFile = path.join(root, "config.lua");
+        try {
+            const original = fs.readFileSync(configFile, "utf8");
+            if (original !== expectedConfig) return false;
+            const staleFiles = legacyConfigFiles.filter((name) => {
+                const file = path.join(root, name);
+                const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+                if (!stat) return false;
+                if (!stat.isFile()) throw new Error("Unsupported legacy configuration file");
+                fs.accessSync(file, fs.constants.R_OK);
+                return true;
+            });
+            const rewriteConfig = original !== bootstrap;
+            if (!rewriteConfig && staleFiles.length === 0) return true;
+
+            const archive = fs.mkdtempSync(path.join(root, "lua", "config", ".legacy-configuration-"));
+            if (rewriteConfig) {
+                fs.writeFileSync(path.join(archive, "config.lua"), original, { encoding: "utf8", mode: 0o600, flag: "wx" });
+                if (!writeConfigFile(configFile, bootstrap)) return false;
+            }
+
+            let complete = true;
+            for (const name of staleFiles) {
+                try {
+                    fs.renameSync(path.join(root, name), path.join(archive, name));
+                } catch {
+                    complete = false;
+                }
+            }
+            return complete;
+        } catch {
+            return false;
         }
     });
 

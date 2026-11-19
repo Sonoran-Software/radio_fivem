@@ -11,12 +11,15 @@ or restarting the `sonoranradio` resource. Startup reads the saved settings from
 
 Existing installations continue to start with their local `config.lua` and placement files
 while migration is pending. To switch to Radio Admin, run `sonoranradio migrate` in the FiveM
-server console. The command imports declarative settings from the running resource and verifies
-the saved version. It leaves your original configuration untouched and does not replace settings
-that already exist in the portal. Restart the resource to apply the migrated settings.
+server console. The command imports and verifies settings and placements, preserving collections
+already saved in Radio Admin. It then rewrites `config.lua` with the community ID, API key, and room ID,
+and moves the original config and obsolete JSON files to `lua/config/.legacy-configuration-*`.
+Restart to apply the migrated configuration. If local cleanup reports `WRN-220`, check write
+permissions and rerun `sonoranradio migrate`.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
-callbacks are optional.
+callbacks are optional. Migration retains supported host overrides in the server-only backup.
+Custom Lua callbacks are archived with the original config and stop running after restart.
 Startup saves verified settings and placements together in the server-only
 `lua/config/.configuration-cache.json`. If Radio is temporarily unavailable, the resource can
 use this backup for the same API origin, community, and room. A managed installation with no
@@ -30,9 +33,9 @@ Select a Radio server under **Admin > Game Integration > FiveM Placements**. Edi
 server racks, fixed repeaters, speakers, scanners, static jammers, earpieces, and mobile
 repeater vehicles in their respective sections. Restart the resource to load portal edits.
 
-On startup in managed mode, the resource imports existing placement files for collections
-that have yet to be configured. The original files are preserved. Fresh installations start
-with the placements configured for that server in Radio Admin.
+Migration imports legacy placement files for collections that have yet to be configured. A managed
+resource also checks for those files on startup. Fresh installations start with the placements
+configured for that server in Radio Admin.
 The existing in-game editors use the same saved collections. If a portal edit changed a
 collection since startup, restart before saving further changes to that collection in game.
 

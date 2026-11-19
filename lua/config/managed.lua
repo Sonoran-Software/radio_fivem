@@ -6,6 +6,7 @@ local source = assert(LoadResourceFile(resourceName, 'lua/config/defaults.lua'))
 local defaults = assert(load(source, '@lua/config/defaults.lua', 't', {}))()
 
 local migrating = false
+local migrationReadyForRestart = false
 local startupFinished = false
 local managedSettingsActive = false
 
@@ -116,7 +117,16 @@ local function usesManagedSettingsByDefault()
 end
 
 local managedByDefault = usesManagedSettingsByDefault()
+local bootstrapOverrides = {}
 if type(Config) == 'table' then
+	local saved = ReadMigratedRadioBootstrap(Config) or {}
+	for key, expectedType in pairs({
+		apiUrl = 'string', radioUrl = 'string', overridePushUrl = 'string', debug = 'boolean',
+		allowAutoUpdate = 'boolean', allowUpdateWithPlayers = 'boolean', enableCanary = 'boolean',
+	}) do
+		if Config[key] == nil and type(saved[key]) == expectedType then Config[key] = saved[key] end
+		if type(Config[key]) == expectedType then bootstrapOverrides[key] = Config[key] end
+	end
 	if Config.apiUrl == nil then Config.apiUrl = defaultApiUrl end
 	if Config.radioUrl == nil then Config.radioUrl = 'https://sonoranradio.com' end
 	if Config.debug == nil then Config.debug = false end
@@ -292,6 +302,10 @@ function GetManagedRadioPlacementScope()
 	if managedSettingsActive then return getScope() end
 end
 
+function CanWriteRadioPlacements()
+	return not migrating and not migrationReadyForRestart
+end
+
 local function equalData(a, b)
 	if type(a) ~= type(b) then return false end
 	if type(a) ~= 'table' then return a == b end
@@ -305,16 +319,17 @@ local function equalData(a, b)
 end
 
 function MigrateRadioSettings()
-	if migrating then return end
 	local scope = getScope()
-	if not startupFinished or not scope then
+	if not startupFinished or not scope or not AwaitRadioPlacements() then
 		print('[SonoranRadio] Finish starting the configured Radio server before migrating settings.')
 		return
 	end
 
+	if migrating then return end
 	migrating = true
 	Citizen.CreateThread(function()
 		local ok, err = pcall(function()
+			local originalConfig = LoadResourceFile(resourceName, 'config.lua')
 			local managed = isManaged(scope)
 			local current = request(scope, 'GET', managed)
 			local before = current.status == 200 and readSettings(current.document)
@@ -344,17 +359,37 @@ function MigrateRadioSettings()
 				end
 			end
 
-			if not SaveManagedRadioConfigBackup(scope, 'settings', document) then
-				return 'The portal settings are available, but the local backup could not be written. Fix the resource folder permissions and run the command again.'
+			local placements = VerifyRadioPlacementMigration(scope)
+			if not placements then
+				warnLog('WRN_API_REQUEST_FAILED', 'Could not verify placement migration. The original configuration files were kept. Retry sonoranradio migrate.')
+				return
+			end
+			migrationReadyForRestart = true
+			if not SaveMigratedRadioConfigBackup(scope, document, placements, bootstrapOverrides) then
+				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
+				return
 			end
 			markManaged(scope)
-			if before.configured then
-				return 'Settings already exist in the portal. No upload was sent. The verified settings were saved locally; restart sonoranradio to apply them.'
+			local bootstrap = ('Config = {}\n\nConfig.comId = %q\nConfig.apiKey = %q\nConfig.serverId = %d\n'):format(
+				tostring(Config.comId), Config.apiKey, scope.roomId)
+			local cleaned, success = pcall(function()
+				return exports[resourceName]:ArchiveMigratedRadioConfig(originalConfig, bootstrap)
+			end)
+			if not cleaned or success ~= true then
+				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
+				return
 			end
-			return 'Settings migrated and backed up. Manage them in Radio Admin and restart sonoranradio to apply them. Your original local configuration was preserved.'
+			if before.configured then
+				return 'Existing Radio Admin settings were verified and backed up. Restart sonoranradio to apply them.'
+			end
+			return 'Settings migrated and backed up. Restart sonoranradio to apply them.'
 		end)
 		migrating = false
 		-- Details can contain server-supplied or local values; never print raw errors.
-		print('[SonoranRadio] ' .. (ok and err or 'Configuration migration failed. The original configuration was preserved.'))
+		if not ok then
+			print('[SonoranRadio] Configuration migration could not be completed. The original configuration is available locally.')
+		elseif err then
+			print('[SonoranRadio] ' .. err)
+		end
 	end)
 end

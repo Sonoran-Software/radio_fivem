@@ -5,6 +5,8 @@
 /config.lua
 /lua/config/.configuration-cache.json
 /lua/config/.configuration-cache.json.*.tmp
+/lua/config/.legacy-configuration-*/
+/config.lua.*.tmp
 /sonoranradio-settings.json
 /sonoranradio-settings.json.*.tmp
 /sonoranradio-placements.json

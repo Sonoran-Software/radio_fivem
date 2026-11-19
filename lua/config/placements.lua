@@ -186,32 +186,45 @@ local function readLocalImport(entry)
 	local raw = LoadResourceFile(resourceName, entry.file)
 	if raw == nil then raw = LoadResourceFile(resourceName, entry.defaults) end
 	local value = raw == nil and {} or decode(raw)
-	if not value then return nil end
+	if not value then return nil, false end
 	if entry.kind == 'mobileRepeaters' then value = NormalizeRadioMobileRepeaterImport(value) end
 	if entry.kind == 'earpieces' then AddLegacyRadioEarpieces(value) end
-	if raw == nil and next(value) == nil then return nil end
-	return project(entry.kind, value)
+	if raw == nil and next(value) == nil then return nil, true end
+	local projected = project(entry.kind, value)
+	return projected, projected ~= nil
 end
 
-local function importMissing()
+local function importMissing(scope, document, verify)
 	local pending = {}
 	for _, entry in ipairs(kinds) do
-		if session.document.placements[entry.kind].entries == nil then
-			pending[entry.kind] = readLocalImport(entry)
+		if document.placements[entry.kind].entries == nil then
+			local entries, valid = readLocalImport(entry)
+			if verify and not valid then return nil end
+			pending[entry.kind] = entries
 		end
 	end
-	if next(pending) == nil then return end
+	if next(pending) == nil then return document end
 	local function import(payload)
-		local response = request(session.scope, 'POST', '/import', { placements = payload })
-		local document = response.status == 200 and readDocument(response.data)
-		if document then session.document = document end
-		return not not document, response.status
+		local response = request(scope, 'POST', '/import', { placements = payload })
+		local saved = response.status == 200 and readDocument(response.data)
+		if saved then document = saved end
+		return not not saved, response.status
 	end
 	local success, statusCode = import(pending)
-	if success then return end
+	if verify then
+		if not success then return nil end
+		local response = request(scope, 'GET', '')
+		local confirmed = response.status == 200 and readDocument(response.data)
+		if not confirmed then return nil end
+		for kind in pairs(pending) do
+			if confirmed.placements[kind].entries == nil then return nil end
+		end
+		return confirmed
+	end
+	if success then return document end
 	if statusCode ~= 400 then
 		print(('[SonoranRadio] Existing placements could not be imported (HTTP %d). Original files are preserved.'):format(statusCode))
-		return
+		return document
 	end
 	-- A malformed legacy file should not block unrelated entries.
 	for _, entry in ipairs(kinds) do
@@ -220,10 +233,18 @@ local function importMissing()
 			if not success then
 				print(('[SonoranRadio] %s could not be imported (HTTP %d). Its original file is preserved.'):format(
 					entry.file, statusCode))
-				if statusCode ~= 400 then return end
+				if statusCode ~= 400 then return document end
 			end
 		end
 	end
+	return document
+end
+
+function VerifyRadioPlacementMigration(scope)
+	if next(writing) then return nil end
+	local response = request(scope, 'GET', '')
+	local document = response.status == 200 and readDocument(response.data)
+	if document then return importMissing(scope, document, true) end
 end
 
 function InitializeManagedRadioPlacements()
@@ -232,8 +253,7 @@ function InitializeManagedRadioPlacements()
 	local response = request(scope, 'GET', '')
 	local document = response.status == 200 and readDocument(response.data)
 	if document then
-		session = { scope = scope, document = document }
-		importMissing()
+		session = { scope = scope, document = importMissing(scope, document) }
 		writeCache()
 		return
 	end

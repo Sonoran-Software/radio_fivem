@@ -70,6 +70,11 @@ WarningCodes = {
 	['WRN_SETTINGS_MIGRATION_AVAILABLE'] = {
 		code = 'WRN-219',
 		message = 'Legacy settings are active. Run sonoranradio migrate in the server console to import them into Radio Admin.'
+	},
+	['WRN_SETTINGS_CLEANUP_FAILED'] = {
+		code = 'WRN-220',
+		includeTrace = false,
+		message = 'Radio Admin verified the migration, but local cleanup is incomplete. Check resource folder permissions and rerun sonoranradio migrate.'
 	}
 }
 

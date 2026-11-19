@@ -142,6 +142,9 @@ def verify_radio_logger():
     assert len(buffer) == 3 and buffer[1].code == 'ERR-127'
     assert buffer[2].level == 'WARNING' and buffer[2].code == 'WRN-203'
     assert 'https://sonoranradio.com/error/ERR-106' in buffer[3].message
+    lua.execute("appendStructuredLogBreadcrumbs = function(_, message) return message .. '\\nTrace:' end")
+    g.warnLog('WRN_SETTINGS_CLEANUP_FAILED')
+    assert buffer[1].code == 'WRN-220' and buffer[1].message == buffer[1].actionTraceText
     for _ in range(300):
         g.errorLog('ERR_API_CREDENTIALS_MISSING', 'Credentials missing')
     assert len(g.getSupportErrorBuffer()) == 250

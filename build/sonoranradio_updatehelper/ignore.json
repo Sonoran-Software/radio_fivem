@@ -1,6 +1,7 @@
 [
     "sonoranradio/config.lua",
     "sonoranradio/lua/config/.configuration-cache.json",
+    "sonoranradio/lua/config/.legacy-configuration-*/**",
     "sonoranradio/sonoranradio-settings.json",
     "sonoranradio/sonoranradio-placements.json",
     "sonoranradio/towers.json",

@@ -137,6 +137,27 @@ class ManagedPlacementTests(unittest.TestCase):
         self.assertEqual(self.requests[-1][2], {"revision": 0, "entries": [SPEAKER]})
         self.assertEqual(set(self.files), {BACKUP_PATH})
 
+    def test_cleanup_requires_a_fresh_backend_read_of_imported_placements(self):
+        self.files["speakers.json"] = json.dumps([SPEAKER])
+        self.lua.execute(SOURCE)
+        imported = document(speakers=(1, [SPEAKER]))
+        self.responses = [(200, document()), (200, imported), (503, None)]
+        self.assertIsNone(self.globals.VerifyRadioPlacementMigration(self.globals.scope))
+        self.assertEqual([item[0] for item in self.requests], ["GET", "POST", "GET"])
+        self.assertEqual(json.loads(self.files["speakers.json"]), [SPEAKER])
+
+        self.responses = [(200, imported)]
+        verified = self.globals.VerifyRadioPlacementMigration(self.globals.scope)
+        self.assertEqual(self.to_python(verified)["placements"]["speakers"]["entries"], [SPEAKER])
+        self.assertEqual([item[0] for item in self.requests], ["GET", "POST", "GET", "GET"])
+
+    def test_cleanup_leaves_unconfigured_malformed_placement_files_for_retry(self):
+        self.files["speakers.json"] = "{broken"
+        self.lua.execute(SOURCE)
+        self.responses = [(200, document())]
+        self.assertIsNone(self.globals.VerifyRadioPlacementMigration(self.globals.scope))
+        self.assertEqual([item[0] for item in self.requests], ["GET"])
+
     def test_lua_only_legacy_placements_import_without_json_templates(self):
         earpieces = [{"componentId": 2, "drawableId": 1, "texture": [0]}]
         vehicles = [{"modelHash": -45, "label": "Command", "range": 150}]
