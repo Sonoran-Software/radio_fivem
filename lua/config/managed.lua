@@ -1,5 +1,4 @@
 local resourceName = GetCurrentResourceName()
-local cacheFile = 'sonoranradio-settings.json'
 local maxBytes = 96 * 1024
 local schemaVersion = 1
 local defaultApiUrl = 'https://api.sonoranradio.com/'
@@ -164,6 +163,8 @@ local function readSettings(value)
 	}
 end
 
+RegisterManagedRadioBackupSection('settings', 'sonoranradio-settings.json', readSettings)
+
 local function applySettings(settings)
 	local notificationHook = type(Config.notifications) == 'table' and Config.notifications.custom
 	for key in pairs(shape) do Config[key] = settings[key] end
@@ -222,20 +223,7 @@ end
 
 local function readCache(scope)
 	if GetResourceKvpString(scopeKey(scope)) == '0' then return nil end
-	local cached = decodeJson(LoadResourceFile(resourceName, cacheFile))
-	if not cached or type(cached.scope) ~= 'table' then return nil end
-	if cached.scope.community ~= scope.community or cached.scope.roomId ~= scope.roomId or
-		cached.scope.origin ~= scope.origin then return nil end
-	return readSettings(cached.document)
-end
-
-local function writeCache(scope, document)
-	local encoded = encodeJson({ scope = scope, document = document })
-	if not encoded then return false end
-	local ok, saved = pcall(function()
-		return exports[resourceName]:SaveManagedRadioSettings(encoded)
-	end)
-	return ok and saved == true
+	return ReadManagedRadioConfigBackup(scope, 'settings')
 end
 
 local function markManaged(scope)
@@ -273,7 +261,7 @@ function InitializeManagedRadioSettings()
 	end
 
 	if document and managed then
-		if not writeCache(scope, document) then
+		if not SaveManagedRadioConfigBackup(scope, 'settings', document) then
 			print('[SonoranRadio] Loaded portal settings. The server could not update the local settings backup.')
 		end
 		markManaged(scope)
@@ -352,7 +340,7 @@ function MigrateRadioSettings()
 				end
 			end
 
-			if not writeCache(scope, document) then
+			if not SaveManagedRadioConfigBackup(scope, 'settings', document) then
 				return 'The portal settings are available, but the local backup could not be written. Fix the resource folder permissions and run the command again.'
 			end
 			markManaged(scope)

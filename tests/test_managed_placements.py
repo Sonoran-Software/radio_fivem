@@ -9,6 +9,8 @@ from lupa import LuaRuntime, lua_type
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "lua/config/placements.lua").read_text(encoding="utf-8")
+BACKUP = (ROOT / "lua/config/backup.lua").read_text(encoding="utf-8")
+BACKUP_PATH = "lua/config/.configuration-cache.json"
 KINDS = ("towers", "speakers", "jammers", "scanners", "earpieces", "mobileRepeaters")
 SPEAKER = {
     "Id": "speaker-1", "type": "speakerMediumWall",
@@ -65,9 +67,10 @@ class ManagedPlacementTests(unittest.TestCase):
             }
             PerformHttpRequest = function(...) request(...) end
             exports = { sonoranradio = {
-                SaveManagedRadioPlacements = function(_, value) return saveBackup(value) end
+                WriteManagedRadioConfigBackup = function(_, value) return saveBackup(value) end
             } }
         """)
+        self.lua.execute(BACKUP)
 
     def to_lua(self, value):
         if isinstance(value, dict):
@@ -91,7 +94,7 @@ class ManagedPlacementTests(unittest.TestCase):
 
     def save_backup(self, value):
         self.assertNotIn("SECRET", value)
-        self.files["sonoranradio-placements.json"] = value
+        self.files[BACKUP_PATH] = value
         return True
 
     def boot(self):
@@ -132,7 +135,7 @@ class ManagedPlacementTests(unittest.TestCase):
         self.responses = [(200, {"revision": 1, "entries": [SPEAKER]})]
         self.assertTrue(self.globals.SavePortalRadioPlacement("speakers.json", self.to_lua([SPEAKER])))
         self.assertEqual(self.requests[-1][2], {"revision": 0, "entries": [SPEAKER]})
-        self.assertEqual(set(self.files), {"sonoranradio-placements.json"})
+        self.assertEqual(set(self.files), {BACKUP_PATH})
 
     def test_lua_only_legacy_placements_import_without_json_templates(self):
         earpieces = [{"componentId": 2, "drawableId": 1, "texture": [0]}]
@@ -153,20 +156,20 @@ class ManagedPlacementTests(unittest.TestCase):
         self.assertEqual(self.requests[-1][2], {"placements": {
             "earpieces": earpieces, "mobileRepeaters": vehicles,
         }})
-        self.assertEqual(set(self.files), {"sonoranradio-placements.json"})
+        self.assertEqual(set(self.files), {BACKUP_PATH})
 
     def test_write_conflict_leaves_original_and_success_updates_one_kind(self):
         self.responses = [(200, document(speakers=(5, [SPEAKER]), towers=(9, [])))]
         self.boot()
-        original_cache = self.files["sonoranradio-placements.json"]
+        original_cache = self.files[BACKUP_PATH]
         proposed = [dict(SPEAKER, Label="Updated")]
         self.responses = [(409, None), (200, {"revision": 6, "entries": proposed})]
         self.assertFalse(self.globals.SavePortalRadioPlacement("speakers.json", self.to_lua(proposed)))
-        self.assertEqual(self.files["sonoranradio-placements.json"], original_cache)
+        self.assertEqual(self.files[BACKUP_PATH], original_cache)
         self.assertTrue(self.globals.SavePortalRadioPlacement("speakers.json", self.to_lua(proposed)))
         self.assertEqual([item[2]["revision"] for item in self.requests if item[0] == "PATCH"], [5, 5])
         self.assertEqual(self.to_python(self.globals.GetPortalRadioPlacement("speakers.json")), proposed)
-        self.assertEqual(json.loads(self.files["sonoranradio-placements.json"])["document"]["placements"]["towers"]["revision"], 9)
+        self.assertEqual(json.loads(self.files[BACKUP_PATH])["placements"]["placements"]["towers"]["revision"], 9)
 
     def test_only_same_room_valid_backup_can_load_during_outage(self):
         self.responses = [(200, document(speakers=(5, [SPEAKER])))]

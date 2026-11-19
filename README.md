@@ -10,16 +10,16 @@ Change gameplay settings in **FiveM Settings** and apply them by rerunning your 
 or restarting the `sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
 
 Existing installations can run `sonoranradio migrate` in the FiveM server console. The command
-imports declarative settings from the running resource, verifies the saved version, and writes a
-single local `sonoranradio-settings.json` backup. It leaves your original configuration untouched
-and does not replace settings that already exist in the portal. Restart the resource to apply
-the migrated settings.
+imports declarative settings from the running resource and verifies the saved version. It leaves
+your original configuration untouched and does not replace settings that already exist in the
+portal. Restart the resource to apply the migrated settings.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
 callbacks are optional.
-If Radio is temporarily unavailable, a managed resource can use the last verified backup for the
-same community and room. A managed installation with no verified settings waits for a working
-connection and restart.
+Startup saves verified settings and placements together in the server-only
+`lua/config/.configuration-cache.json`. If Radio is temporarily unavailable, the resource can
+use this backup for the same API origin, community, and room. A managed installation with no
+verified settings waits for a working connection and restart.
 If saved settings are cleared in Radio, the next successful startup check on an installation
 with legacy settings in `config.lua` returns it to legacy mode and shows the migration warning.
 
@@ -31,8 +31,7 @@ repeater vehicles in their respective sections. Restart the resource to load por
 
 On startup in managed mode, the resource imports existing placement files for collections
 that have yet to be configured. The original files are preserved. Fresh installations start
-with the placements configured for that server in Radio Admin. A scoped
-`sonoranradio-placements.json` snapshot backs up the last verified placements during outages.
+with the placements configured for that server in Radio Admin.
 The existing in-game editors use the same saved collections. If a portal edit changed a
 collection since startup, restart before saving further changes to that collection in game.
 

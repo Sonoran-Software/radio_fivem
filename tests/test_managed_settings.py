@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = (ROOT / "build/sonoranradio/config.CHANGEME.lua").read_text(encoding="utf-8")
 DEFAULTS = (ROOT / "lua/config/defaults.lua").read_text(encoding="utf-8")
 MANAGED = (ROOT / "lua/config/managed.lua").read_text(encoding="utf-8-sig")
+BACKUP = (ROOT / "lua/config/backup.lua").read_text(encoding="utf-8")
+BACKUP_PATH = "lua/config/.configuration-cache.json"
 
 
 class ManagedSettingsTests(unittest.TestCase):
@@ -18,6 +20,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings = self.lua.globals()
         self.defaults = self.lua.execute(DEFAULTS)
         self.cache = None
+        self.legacy_files = {}
         self.requests = []
         self.get_modes = []
         self.responses = []
@@ -45,7 +48,7 @@ class ManagedSettingsTests(unittest.TestCase):
                 encode = function(value) return toJSON(value) end,
             }
             exports = { sonoranradio = {
-                SaveManagedRadioSettings = function(_, value) return writeCache(value) end,
+                WriteManagedRadioConfigBackup = function(_, value) return writeCache(value) end,
             } }
             PerformHttpRequest = function(...) doRequest(...) end
             promise = {
@@ -61,6 +64,7 @@ class ManagedSettingsTests(unittest.TestCase):
             print = function(line) recordLog(line) end
             warnLog = function(code) recordLog(formatStructuredLogMessage(code)) end
         """)
+        self.lua.execute(BACKUP)
 
     def from_lua(self, value):
         if lua_type(value) != "table":
@@ -80,7 +84,9 @@ class ManagedSettingsTests(unittest.TestCase):
     def load_file(self, name):
         if name == "lua/config/defaults.lua":
             return DEFAULTS
-        return self.cache
+        if name == BACKUP_PATH:
+            return self.cache
+        return self.legacy_files.get(name)
 
     def write_cache(self, value):
         self.assertNotIn("PRIVATE-KEY", value)
@@ -211,7 +217,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertNotIn("apiKey", uploaded)
         self.assertNotIn("PRIVATE-KEY", self.requests[2][1])
         self.assertTrue(self.settings.Config.forceGuestLogin, "migration must not replace running settings")
-        self.assertEqual(json.loads(self.cache)["document"]["revision"], 1)
+        self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
         self.responses = [(200, remote)]
         self.assertTrue(self.start(managed=False, local={"forceGuestLogin": True}))
         self.assertFalse(self.settings.Config.forceGuestLogin)
@@ -236,7 +242,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIsNone(self.cache)
         self.settings.MigrateRadioSettings()
         self.assertEqual([method for method, _ in self.requests], ["GET", "GET"])
-        self.assertEqual(json.loads(self.cache)["document"]["revision"], 4)
+        self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
 
     def test_availability_fallback_ignores_late_response_and_wrong_room(self):
         original = self.snapshot(True, 2, acePermsForRadio=True)
@@ -250,6 +256,48 @@ class ManagedSettingsTests(unittest.TestCase):
         self.responses = [(503, None)]
         self.assertFalse(self.start(managed=True, room=2))
 
+    def test_upgrade_combines_verified_settings_and_placements_in_one_backup(self):
+        self.lua.execute((ROOT / "lua/config/placements.lua").read_text(encoding="utf-8"))
+        scope = {"community": "DEMO", "roomId": 1, "origin": self.api_origin}
+        placements = {"schemaVersion": 1, "placements": {
+            kind: {"revision": 0} for kind in (
+                "towers", "speakers", "scanners", "jammers", "earpieces", "mobileRepeaters"
+            )
+        }}
+        placements["placements"]["earpieces"] = {"revision": 2, "entries": [
+            {"componentId": 2, "drawableId": 1, "texture": [0]}
+        ]}
+        self.legacy_files["sonoranradio-settings.json"] = json.dumps({
+            "scope": scope, "document": self.snapshot(True, 2, forceGuestLogin=True),
+        })
+        self.legacy_files["sonoranradio-placements.json"] = json.dumps({
+            "scope": scope, "document": placements,
+        })
+
+        self.responses = [(503, None)]
+        self.assertTrue(self.start(managed=True))
+        self.assertTrue(self.settings.Config.forceGuestLogin)
+
+        self.responses = [(200, self.snapshot(True, 3))]
+        self.assertTrue(self.start(managed=True))
+        backup = json.loads(self.cache)
+        self.assertEqual(backup["scope"], scope)
+        self.assertEqual(backup["settings"]["revision"], 3)
+        self.assertEqual(backup["placements"], placements)
+
+        self.settings.doRequest = lambda url, callback, *_: callback(503, None)
+        self.settings.InitializeManagedRadioPlacements()
+        self.assertEqual(self.settings.GetPortalRadioPlacementRevision("earpieces.json"), 2)
+        self.assertEqual(json.loads(self.cache), backup)
+
+        updated = {"revision": 3, "entries": [{"componentId": 2, "drawableId": 3, "texture": [0]}]}
+        self.settings.doRequest = lambda url, callback, *_: callback(200, json.dumps(updated))
+        self.assertTrue(self.settings.SavePortalRadioPlacement("earpieces.json", self.to_lua(updated["entries"])))
+        saved = json.loads(self.cache)
+        self.assertEqual(saved["settings"], backup["settings"])
+        self.assertEqual(saved["placements"]["placements"]["earpieces"], updated)
+        self.assertEqual(set(self.legacy_files), {"sonoranradio-settings.json", "sonoranradio-placements.json"})
+
     def test_permission_denial_fails_closed_even_with_backup(self):
         self.responses = [(200, self.snapshot(True, 1))]
         self.assertTrue(self.start(managed=True))
@@ -262,7 +310,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.responses = [(200, self.snapshot(False, 0))]
         self.assertTrue(self.start(managed=True))
         self.assertFalse(self.settings.Config.acePermsForRadio)
-        self.assertFalse(json.loads(self.cache)["document"]["configured"])
+        self.assertFalse(json.loads(self.cache)["settings"]["configured"])
 
     def test_backend_reset_allows_legacy_migration_again_without_local_cleanup(self):
         local = {"forceGuestLogin": True}
@@ -291,7 +339,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings.MigrateRadioSettings()
         self.assertEqual([method for method, _ in self.requests[-3:]], ["GET", "POST", "GET"])
         self.assertTrue(json.loads(self.requests[-2][1])["settings"]["forceGuestLogin"])
-        self.assertEqual(json.loads(self.cache)["document"]["revision"], 1)
+        self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
         self.responses = [(200, remigrated)]
         self.assertTrue(self.start(local=local))
         self.assertEqual(self.get_modes[-1], "managed")
@@ -312,7 +360,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertTrue(self.start(managed=True))
         self.assertEqual(self.settings.Config.frames.permissionMode, "ace")
         malformed_cache = json.loads(self.cache)
-        malformed_cache["document"] = valid
+        malformed_cache["settings"] = valid
         self.cache = json.dumps(malformed_cache)
         self.responses = [(503, None)]
         self.assertFalse(self.start(managed=True))
@@ -323,7 +371,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.responses = [(200, snapshot)]
         self.assertTrue(self.start(managed=True))
         self.assertEqual(self.settings.Config.notifications.type, "auto")
-        self.assertEqual(json.loads(self.cache)["document"]["settings"]["notifications"]["type"], "custom")
+        self.assertEqual(json.loads(self.cache)["settings"]["settings"]["notifications"]["type"], "custom")
 
 
 if __name__ == "__main__":

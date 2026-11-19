@@ -1,5 +1,4 @@
 local resourceName = GetCurrentResourceName()
-local cacheFile = 'sonoranradio-placements.json'
 local maxBytes = 640 * 1024
 local kinds = {
 	{ kind = 'towers', file = 'towers.json', defaults = 'towers.DEFAULT.json' },
@@ -154,6 +153,8 @@ local function readDocument(data)
 	return { schemaVersion = 1, placements = placements }
 end
 
+RegisterManagedRadioBackupSection('placements', 'sonoranradio-placements.json', readDocument)
+
 local function request(scope, method, suffix, value)
 	local body = value and encode(value)
 	if value and not body then return { status = 400 } end
@@ -175,19 +176,8 @@ local function request(scope, method, suffix, value)
 	return Citizen.Await(result)
 end
 
-local function readCache(scope)
-	local cached = decode(LoadResourceFile(resourceName, cacheFile))
-	if not cached or type(cached.scope) ~= 'table' or cached.scope.community ~= scope.community or
-		cached.scope.roomId ~= scope.roomId or cached.scope.origin ~= scope.origin then return nil end
-	return readDocument(cached.document)
-end
-
 local function writeCache()
-	local payload = encode({ scope = session.scope, document = session.document })
-	local success, saved = pcall(function()
-		return payload and exports[resourceName]:SaveManagedRadioPlacements(payload)
-	end)
-	if not success or not saved then
+	if not SaveManagedRadioConfigBackup(session.scope, 'placements', session.document) then
 		print('[SonoranRadio] The saved placements could not be backed up on disk.')
 	end
 end
@@ -248,7 +238,7 @@ function InitializeManagedRadioPlacements()
 		return
 	end
 
-	local cached = readCache(scope)
+	local cached = ReadManagedRadioConfigBackup(scope, 'placements')
 	if cached and (response.status == 0 or response.status == 200 or response.status == 429 or response.status >= 500) then
 		session = { scope = scope, document = cached }
 		print('[SonoranRadio] Using the last verified placement backup.')
