@@ -375,8 +375,20 @@ function MigrateRadioSettings()
 			local cleaned, success = pcall(function()
 				return exports[resourceName]:ArchiveMigratedRadioConfig(originalConfig, bootstrap)
 			end)
+			local reported = managed
+			if not managed then
+				-- The earlier read verified the upload in legacy mode. Report the
+				-- completed migration so Radio Admin can unlock the settings now.
+				local response = request(scope, 'GET', true)
+				local acknowledged = response.status == 200 and readSettings(response.document)
+				reported = acknowledged and acknowledged.configured
+			end
 			if not cleaned or success ~= true then
 				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
+				return
+			end
+			if not reported then
+				warnLog('WRN_API_REQUEST_FAILED', 'Settings were saved and backed up, but the Radio Admin connection status could not be refreshed. Restart sonoranradio to reconnect and apply the settings.')
 				return
 			end
 			if before.configured then

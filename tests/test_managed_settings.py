@@ -78,7 +78,7 @@ class ManagedSettingsTests(unittest.TestCase):
                 CreateThread = function(fn) fn() end,
             }
             print = function(line) recordLog(line) end
-            warnLog = function(code) recordLog(formatStructuredLogMessage(code)) end
+            warnLog = function(code, message) recordLog(formatStructuredLogMessage(code, message)) end
         """)
         self.lua.execute(BACKUP)
 
@@ -308,7 +308,7 @@ class ManagedSettingsTests(unittest.TestCase):
     def test_legacy_uses_local_settings_until_migrated_then_applies_on_restart(self):
         remote = self.snapshot(True, 1, defaultEscapeMode="hide")
         self.responses = [(200, self.snapshot(False)), (200, self.snapshot(False)),
-                          (200, remote), (200, remote)]
+                          (200, remote), (200, remote), (200, remote)]
         self.assertTrue(self.start(local={"defaultEscapeMode": "hide", "forceGuestLogin": True}))
         self.assertEqual(self.settings.Config.defaultEscapeMode, "hide")
         self.assertIsNone(self.cache)
@@ -324,7 +324,8 @@ class ManagedSettingsTests(unittest.TestCase):
             }
         """)
         self.settings.MigrateRadioSettings()
-        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "POST", "GET"])
+        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "POST", "GET", "GET"])
+        self.assertEqual(self.get_modes, ["legacy", "legacy", "legacy", "managed"])
         uploaded = json.loads(self.requests[2][1])["settings"]
         self.assertEqual(uploaded["notifications"], {"type": "custom"})
         self.assertEqual(uploaded["radioJammers"]["allowedJobs"], {"hacker": {"grades": [1, 3]}})
@@ -332,6 +333,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertNotIn("apiKey", uploaded)
         self.assertNotIn("PRIVATE-KEY", self.requests[2][1])
         self.assertTrue(self.settings.Config.forceGuestLogin, "migration must not replace running settings")
+        self.assertIsNone(self.settings.GetManagedRadioPlacementScope())
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
         self.assertEqual(len(self.archive_attempts), 1)
         self.lua.execute(self.config_file)
@@ -341,7 +343,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertTrue(self.start(managed=False, local={"forceGuestLogin": True}))
         self.assertFalse(self.settings.Config.forceGuestLogin)
         self.assertEqual(self.settings.Config.defaultEscapeMode, "hide")
-        self.assertEqual(self.get_modes, ["legacy", "legacy", "legacy", "managed"])
+        self.assertEqual(self.get_modes, ["legacy", "legacy", "legacy", "managed", "managed"])
 
     def test_failed_readback_preserves_local_settings_without_claiming_success(self):
         remote = self.snapshot(True, 1)
@@ -355,13 +357,31 @@ class ManagedSettingsTests(unittest.TestCase):
 
     def test_repeat_migration_never_overwrites_existing_portal_settings(self):
         remote = self.snapshot(True, 4)
-        self.responses = [(200, remote), (200, remote)]
+        self.responses = [(200, remote), (200, remote), (200, remote)]
         self.assertTrue(self.start(local={"acePermsForRadio": True}))
         self.assertTrue(self.settings.Config.acePermsForRadio)
         self.assertIsNone(self.cache)
         self.settings.MigrateRadioSettings()
-        self.assertEqual([method for method, _ in self.requests], ["GET", "GET"])
+        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "GET"])
+        self.assertEqual(self.get_modes, ["legacy", "legacy", "managed"])
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
+
+    def test_connection_refresh_failure_leaves_verified_migration_retryable(self):
+        remote = self.snapshot(True, 1)
+        unconfigured = self.snapshot(False)
+        self.responses = [(200, unconfigured), (200, unconfigured),
+                          (200, remote), (200, remote), (503, None)]
+        self.assertTrue(self.start(local={"chatter": False}))
+        self.settings.MigrateRadioSettings()
+        self.assertIn("connection status could not be refreshed", self.logs[-1])
+        self.assertEqual(self.get_modes[-1], "managed")
+        self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
+
+        self.responses = [(200, remote)]
+        self.settings.MigrateRadioSettings()
+        self.assertEqual(self.requests[-1][0], "GET")
+        self.assertEqual(self.get_modes[-1], "managed")
+        self.assertEqual(sum(method == "POST" for method, _ in self.requests), 1)
 
     def test_cleanup_waits_for_verified_placements_and_writable_backup(self):
         remote = self.snapshot(True, 4)
@@ -386,7 +406,7 @@ class ManagedSettingsTests(unittest.TestCase):
     def test_cleanup_permission_warning_allows_retry_and_preserves_host_overrides(self):
         self.api_origin = "https://staging-api.dev.sonoranradio.com"
         remote = self.snapshot(True, 4)
-        self.responses = [(200, remote), (200, remote)]
+        self.responses = [(200, remote), (200, remote), (200, remote)]
         self.assertTrue(self.start(local={"chatter": False, "apiUrl": self.api_origin + "/",
                                          "radioUrl": "https://staging.dev.sonoranradio.com",
                                          "allowAutoUpdate": False}))
@@ -395,13 +415,14 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings.MigrateRadioSettings()
         self.assertEqual(self.config_file, original)
         self.assertIn("[WRN-220]", self.logs[-1])
+        self.assertEqual(self.get_modes[-1], "managed")
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 4)
 
         self.allow_cleanup = True
         self.responses = [(200, remote)]
         self.settings.MigrateRadioSettings()
         self.assertEqual(len(self.archive_attempts), 2)
-        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "GET"])
+        self.assertEqual([method for method, _ in self.requests], ["GET", "GET", "GET", "GET"])
         self.lua.execute(self.config_file)
         self.assertEqual(set(self.settings.Config.keys()), {"comId", "apiKey", "serverId"})
         self.lua.execute(MANAGED)
@@ -507,10 +528,11 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertEqual(self.get_modes[-1], "legacy")
 
         remigrated = self.snapshot(True, 1, forceGuestLogin=True)
-        self.responses = [(200, unconfigured), (200, remigrated), (200, remigrated)]
+        self.responses = [(200, unconfigured), (200, remigrated), (200, remigrated), (200, remigrated)]
         self.settings.MigrateRadioSettings()
-        self.assertEqual([method for method, _ in self.requests[-3:]], ["GET", "POST", "GET"])
-        self.assertTrue(json.loads(self.requests[-2][1])["settings"]["forceGuestLogin"])
+        self.assertEqual([method for method, _ in self.requests[-4:]], ["GET", "POST", "GET", "GET"])
+        self.assertTrue(json.loads(self.requests[-3][1])["settings"]["forceGuestLogin"])
+        self.assertEqual(self.get_modes[-1], "managed")
         self.assertEqual(json.loads(self.cache)["settings"]["revision"], 1)
         self.responses = [(200, remigrated)]
         self.assertTrue(self.start(local=local))
