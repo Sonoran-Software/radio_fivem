@@ -264,6 +264,38 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertFalse(self.settings.Config.acePermsForRadio)
         self.assertFalse(json.loads(self.cache)["document"]["configured"])
 
+    def test_backend_reset_allows_legacy_migration_again_without_local_cleanup(self):
+        local = {"forceGuestLogin": True}
+        self.responses = [(200, self.snapshot(True, 2, forceGuestLogin=False))]
+        self.kvp["managed_config:https://api.sonoranradio.com:DEMO:1"] = "1"
+        self.assertTrue(self.start(local=local))
+        self.assertFalse(self.settings.Config.forceGuestLogin)
+        old_cache = self.cache
+
+        unconfigured = self.snapshot(False)
+        self.responses = [(200, unconfigured), (200, unconfigured)]
+        self.assertTrue(self.start(local=local))
+        self.assertTrue(self.settings.Config.forceGuestLogin)
+        self.assertIsNone(self.settings.GetManagedRadioPlacementScope())
+        self.assertIn("[WRN-219]", self.logs[-1])
+        self.assertEqual(self.get_modes, ["managed", "managed", "legacy"])
+        self.assertEqual(self.cache, old_cache)
+
+        self.responses = [(503, None)]
+        self.assertTrue(self.start(local=local))
+        self.assertTrue(self.settings.Config.forceGuestLogin)
+        self.assertEqual(self.get_modes[-1], "legacy")
+
+        remigrated = self.snapshot(True, 1, forceGuestLogin=True)
+        self.responses = [(200, unconfigured), (200, remigrated), (200, remigrated)]
+        self.settings.MigrateRadioSettings()
+        self.assertEqual([method for method, _ in self.requests[-3:]], ["GET", "POST", "GET"])
+        self.assertTrue(json.loads(self.requests[-2][1])["settings"]["forceGuestLogin"])
+        self.assertEqual(json.loads(self.cache)["document"]["revision"], 1)
+        self.responses = [(200, remigrated)]
+        self.assertTrue(self.start(local=local))
+        self.assertEqual(self.get_modes[-1], "managed")
+
     def test_new_server_without_network_or_verified_settings_fails_closed(self):
         self.responses = [(503, None)]
         self.assertFalse(self.start(managed=True))

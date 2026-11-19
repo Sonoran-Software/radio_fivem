@@ -221,6 +221,7 @@ local function request(scope, method, managed, body)
 end
 
 local function readCache(scope)
+	if GetResourceKvpString(scopeKey(scope)) == '0' then return nil end
 	local cached = decodeJson(LoadResourceFile(resourceName, cacheFile))
 	if not cached or type(cached.scope) ~= 'table' then return nil end
 	if cached.scope.community ~= scope.community or cached.scope.roomId ~= scope.roomId or
@@ -262,6 +263,14 @@ function InitializeManagedRadioSettings()
 	local managed = cached ~= nil or isManaged(scope)
 	local response = request(scope, 'GET', managed)
 	local document = response.status == 200 and readSettings(response.document)
+
+	if document and not document.configured and managed and not managedByDefault then
+		-- A verified backend reset makes the old backup ineligible during future outages.
+		SetResourceKvp(scopeKey(scope), '0')
+		managed = false
+		-- Report the corrected mode to Radio Admin after the initial managed request.
+		request(scope, 'GET', false)
+	end
 
 	if document and managed then
 		if not writeCache(scope, document) then
@@ -319,6 +328,9 @@ function MigrateRadioSettings()
 			local before = current.status == 200 and readSettings(current.document)
 			if not before then return 'Could not verify the portal configuration. Try again after checking your connection.' end
 			if managed and not before.configured then
+				if not managedByDefault then
+					return 'The saved portal settings were cleared. Restart sonoranradio before running the migration again.'
+				end
 				return 'This installation already uses portal defaults. There is no legacy configuration to import.'
 			end
 			local document = before

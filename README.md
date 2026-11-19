@@ -20,6 +20,8 @@ callbacks are optional.
 If Radio is temporarily unavailable, a managed resource can use the last verified backup for the
 same community and room. A managed installation with no verified settings waits for a working
 connection and restart.
+If saved settings are cleared in Radio, the next successful startup check on an installation
+with legacy settings in `config.lua` returns it to legacy mode and shows the migration warning.
 
 ## FiveM placements
 
