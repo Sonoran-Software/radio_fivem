@@ -9,10 +9,11 @@ The generated `config.lua` contains your community ID, API key, and selected Rad
 Change gameplay settings in **FiveM Settings** and apply them by rerunning your installation command
 or restarting the `sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
 
-Existing installations can run `sonoranradio migrate` in the FiveM server console. The command
-imports declarative settings from the running resource and verifies the saved version. It leaves
-your original configuration untouched and does not replace settings that already exist in the
-portal. Restart the resource to apply the migrated settings.
+Existing installations continue to start with their local `config.lua` and placement files
+while migration is pending. To switch to Radio Admin, run `sonoranradio migrate` in the FiveM
+server console. The command imports declarative settings from the running resource and verifies
+the saved version. It leaves your original configuration untouched and does not replace settings
+that already exist in the portal. Restart the resource to apply the migrated settings.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
 callbacks are optional.

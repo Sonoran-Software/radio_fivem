@@ -190,6 +190,95 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIsNone(self.cache)
         self.assertEqual(self.get_modes, ["legacy", "legacy"])
 
+    def boot_legacy_resource(self, response):
+        self.legacy_files["towers.json"] = json.dumps([{
+            "Id": "local-tower", "type": "radioTower", "Range": 4500,
+            "PropPosition": {"x": 10, "y": 20, "z": 30},
+        }])
+        self.legacy_files["speakers.json"] = json.dumps([{
+            "Id": "local-speaker", "type": "speakerLarge", "Label": "Local dispatch", "Range": 30,
+            "PropPosition": {"x": 10, "y": 20, "z": 30},
+        }])
+        self.settings.saveFile = self.legacy_files.__setitem__
+        self.lua.execute("""
+            Config = {
+                comId = 'demo', apiKey = 'PRIVATE-KEY', serverId = 1,
+                chatterExclusions = {{componentId = 2, drawableId = 7, texture = {0}}},
+                repeaterVehicleSpawncodes = {{modelHash = -45, label = 'Legacy unit', range = 150}},
+            }
+            local handlers = {}
+            function AddEventHandler(name, fn)
+                handlers[name] = handlers[name] or {}
+                table.insert(handlers[name], fn)
+            end
+            function RegisterNetEvent(name, fn)
+                if fn then AddEventHandler(name, fn) end
+            end
+            function TriggerEvent(name, ...)
+                for _, fn in ipairs(handlers[name] or {}) do fn(...) end
+            end
+            function TriggerClientEvent(name, _, value)
+                if name == 'SonoranRadio::core::ReceiveEnvironment' then receivedConfig = value end
+            end
+            RegisterCommand = function() end
+            IsDuplicityVersion = function() return true end
+            GetConvar = function(_, fallback) return fallback end
+            GetConvarInt = GetConvar
+            SetConvar = function() end
+            GetResourceState = function() return 'missing' end
+            GetGameTimer = function() return 0 end
+            GetResourceKvpInt = function() return 0 end
+            SetResourceKvpInt = function() end
+            setSonoranRadioClientRoomId = function() end
+            vec3 = function(x, y, z) return {x = x, y = y, z = z} end
+            SaveResourceFile = function(_, name, data) saveFile(name, data); return true end
+            Citizen.CreateThreadNow = function(fn) fn() end
+            Citizen.CreateThread = function() end
+            CreateThread = Citizen.CreateThread
+            setmetatable(exports, {__call = function() end})
+            local responses = {
+                ['SET-SERVER-IP'] = {roomId = 1},
+                ['GET-SERVER-SUBSCRIPTION'] = {subscription = 2},
+                ['GET-ZONES'] = {geoZones = {}, degradeZones = {}},
+                ['SET-SERVER-SPEAKERS'] = {},
+            }
+            exports.sonoranradio.performApiRequest = function(_, payload, endpoint, callback)
+                if endpoint == 'SET-SERVER-SPEAKERS' then sentSpeakers = payload.locations end
+                callback(json.encode(assert(responses[endpoint])), true)
+            end
+        """)
+        for path in (
+            "lua/config/managed.lua", "lua/config/placements.lua", "lua/sh_main.lua", "lua/sv_main.lua",
+            "lua/sv_towers.lua", "lua/sv_racks.lua", "lua/sv_cell.lua", "lua/sv_toneboard.lua",
+            "lua/sv_chatter.lua", "lua/sv_jammers.lua", "lua/sv_repeaters.lua",
+        ):
+            self.lua.execute((ROOT / path).read_text(encoding="utf-8-sig"))
+
+        self.responses = [response]
+        self.lua.execute("TriggerEvent('onResourceStart', 'sonoranradio')")
+
+    def assert_legacy_resource_started(self):
+        self.assertTrue(self.settings.Config.init)
+        self.assertTrue(self.settings.AwaitRadioPlacements())
+        self.assertIsNone(self.settings.receivedConfig.forceGuestLogin)
+        self.assertIsNone(self.settings.receivedConfig.apiKey)
+        self.assertEqual(self.settings.Towers[1].Range, 4500)
+        self.assertEqual(self.settings.sentSpeakers[1].label, "Local dispatch")
+        self.assertEqual(json.loads(self.legacy_files["mobileRepeaters.json"])["vehicles"][0]["label"], "Legacy unit")
+        self.assertEqual(json.loads(self.legacy_files["earpieces.json"])[0]["drawableId"], 7)
+        self.assertEqual(self.get_modes, ["legacy"])
+        self.assertEqual(self.requests, [("GET", "")])
+        self.assertIsNone(self.cache)
+
+    def test_resource_starts_with_legacy_lua_and_placement_files_before_migration(self):
+        self.boot_legacy_resource((200, self.snapshot(False, forceGuestLogin=True)))
+        self.assert_legacy_resource_started()
+        self.assertIn("WRN-219", [entry.code for entry in self.settings.getSupportErrorBuffer().values()])
+
+    def test_resource_starts_with_legacy_files_without_the_settings_endpoint(self):
+        self.boot_legacy_resource((404, None))
+        self.assert_legacy_resource_started()
+
     def test_legacy_uses_local_settings_until_migrated_then_applies_on_restart(self):
         remote = self.snapshot(True, 1, defaultEscapeMode="hide")
         self.responses = [(200, self.snapshot(False)), (200, self.snapshot(False)),

@@ -96,6 +96,10 @@ shape.radioJammers.jammers = collection(jammerShape, true, 64)
 local function usesManagedSettingsByDefault()
 	if type(Config) ~= 'table' then return false end
 	if Config.managedSettings ~= nil then return Config.managedSettings == true end
+	-- Older configs may only customize placements defined in Lua.
+	for _, entries in ipairs({ Config.chatterExclusions or {}, Config.repeaterVehicleSpawncodes or {} }) do
+		if type(entries) == 'table' and next(entries) then return false end
+	end
 	-- Inspect the original file before filling defaults. Existing gameplay settings
 	-- stay active until the operator explicitly migrates them.
 	for key in pairs(shape) do
