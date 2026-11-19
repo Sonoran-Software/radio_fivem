@@ -36,6 +36,7 @@ function initCell()
 	end
 	-- returns a value from 0-1 representing the percentage of active dishes
 	function GetCellRepeaterCapacity(cellRepeater)
+		if cellRepeater.Powered == false then return 0.0 end
 		local n = 0.0
 		if cellRepeater.AntennaStatus == 'alive' then
 			n = 1.0
@@ -97,7 +98,8 @@ function initCell()
 	end
 
 	RegisterNetEvent('CellRepeater:SyncCellRepeaters')
-	AddEventHandler('CellRepeater:SyncCellRepeaters', function(CellRepeatersServer)
+	AddEventHandler('CellRepeater:SyncCellRepeaters', function(CellRepeatersServer, revision)
+		if not ApplyRadioPlacementRevision('cellRepeaters', revision) then return end
 		-- make sure all CellRepeaters are cleared before we sync
 		for i = 1, #CellRepeaters do
 			DestroyCellRepeater(CellRepeaters[i])
@@ -149,12 +151,13 @@ function initCell()
 	end
 
 	RegisterNetEvent('CellRepeater:AntennaStatus')
-	AddEventHandler('CellRepeater:AntennaStatus', function(cellRepeaterId, AntennaStatus)
+	AddEventHandler('CellRepeater:AntennaStatus', function(cellRepeaterId, AntennaStatus, powered)
 		local cellRepeater = GetCellRepeaterFromId(cellRepeaterId)
 		if not cellRepeater then
 			return
 		end
 		cellRepeater.AntennaStatus = AntennaStatus
+		if powered ~= nil then cellRepeater.Powered = powered end
 		SyncAntennaStatus(cellRepeater, true)
 	end)
 
@@ -163,9 +166,6 @@ function initCell()
 			Wait(10)
 		end
 		TriggerServerEvent('CellRepeater:clientCellRepeatersync')
-		while #CellRepeaters == 0 do
-			Wait(50)
-		end
 		DecorRegister('sonrad_cellRepeater', 3)
 	end)
 

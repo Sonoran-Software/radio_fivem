@@ -72,7 +72,7 @@ local function handheldJammerPayload(id, entry)
 end
 
 local function isJammerEnabled()
-    return Config.radioJammers and Config.radioJammers.enabled ~= false
+    return Config and Config.init and Config.radioJammers and Config.radioJammers.enabled ~= false
 end
 
 local function jammerConfigList()
@@ -215,8 +215,13 @@ local function upsertState(entry)
     }
 end
 
-local function saveJammers()
-    SaveJsonConfig('jammers.json', staticJammers)
+local function saveJammers(src, nextJammers)
+    if not SaveRadioPlacements('jammers.json', nextJammers) then
+        TriggerClientEvent('SonoranRadio::DisplayError', src, 'Jammers could not be saved. Check the server log.')
+        return false
+    end
+    staticJammers = nextJammers
+    return true
 end
 
 local function findConfigJammer(name)
@@ -400,9 +405,10 @@ local function removeHandheldByOwner(src, skipInventory)
 end
 
 function initStaticJammers(initialJammers)
+    for _, entry in ipairs(staticJammers) do
+        jammerState[entry.Id] = nil
+    end
     staticJammers = type(initialJammers) == 'table' and initialJammers or {}
-    dynamicJammers = {}
-    jammerState = {}
     for _, entry in ipairs(staticJammers) do
         if entry.Id == nil then entry.Id = uuid() end
         entry.PropPosition = entry.PropPosition or {}
@@ -494,9 +500,10 @@ RegisterNetEvent('SonoranRadio::Request::SpawnJammer', function(selectedJammer, 
         Note = metadata and metadata.note or nil,
         Type = cfg.type or 'static'
     }
-    table.insert(staticJammers, jammerEntry)
+    local nextJammers = shallowcopy(staticJammers)
+    table.insert(nextJammers, jammerEntry)
+    if not saveJammers(src, nextJammers) then return end
     upsertState(jammerEntry)
-    saveJammers()
     pushJammers()
     TriggerClientEvent('SonoranRadio::Jammers::SpawnBroadcast', -1, {
         Id = jammerEntry.Id,
@@ -528,15 +535,21 @@ RegisterNetEvent('SonoranRadio::Request::MoveJammer', function(jammerId, propPos
 
     local previousPosition = sanitizePosition(entry.PropPosition or {})
 
+    entry = shallowcopy(entry)
+    entry.PropPosition = shallowcopy(entry.PropPosition)
     entry.PropPosition.x = tonumber(propPosition.x) or entry.PropPosition.x
     entry.PropPosition.y = tonumber(propPosition.y) or entry.PropPosition.y
     entry.PropPosition.z = tonumber(propPosition.z) or entry.PropPosition.z
     entry.PropPosition.heading = tonumber(propPosition.heading) or entry.PropPosition.heading or 0.0
     entry.PropPosition.exact = propPosition.exact == true
-    upsertState(entry)
-    if not isDynamic then
-        saveJammers()
+    if isDynamic then
+        dynamicJammers[index] = entry
+    else
+        local nextJammers = shallowcopy(staticJammers)
+        nextJammers[index] = entry
+        if not saveJammers(src, nextJammers) then return end
     end
+    upsertState(entry)
     local payload = staticJammerPayload(entry)
     pushJammers()
     emitDeveloperEvent('Jammer:Moved', {
@@ -560,8 +573,9 @@ RegisterNetEvent('SonoranRadio::Request::DeleteJammer', function(jammerId)
     if isDynamic then
         table.remove(dynamicJammers, index)
     else
-        table.remove(staticJammers, index)
-        saveJammers()
+        local nextJammers = shallowcopy(staticJammers)
+        table.remove(nextJammers, index)
+        if not saveJammers(src, nextJammers) then return end
     end
     jammerState[jammerId] = nil
     local payload = staticJammerPayload(entry)
@@ -888,11 +902,23 @@ RegisterNetEvent('SonoranRadio::Request::ToggleJammerPower', function(jammerId)
 
     local currentlyActive = entry.Active ~= false
     local newActive = not currentlyActive
+    entry = shallowcopy(entry)
     entry.Active = newActive
-    upsertState(entry)
-    if not isDynamic then
-        saveJammers()
+    if isDynamic then
+        dynamicJammers[index] = entry
+    else
+        local nextJammers = shallowcopy(staticJammers)
+        nextJammers[index] = entry
+        if not saveJammers(src, nextJammers) then
+            TriggerClientEvent('SonoranRadio::Jammers::ToggleResult', src, {
+                success = false,
+                reason = 'save_failed',
+                id = jammerId
+            })
+            return
+        end
     end
+    upsertState(entry)
     local payload = staticJammerPayload(entry)
     pushJammers()
     TriggerClientEvent('SonoranRadio::Jammers::ToggleBroadcast', -1, {

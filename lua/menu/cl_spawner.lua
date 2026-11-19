@@ -361,19 +361,7 @@ function initMenu()
 						end
 
 						table.insert(chatterConfig, finalConfig)
-						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
-						TriggerEvent('chat:addMessage', {
-							color = {
-								255,
-								0,
-								0
-							},
-							multiline = true,
-							args = {
-								'Earpiece Config',
-								'Config saved successfully'
-							}
-						})
+						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig, RadioPlacementRevisions.earpieces)
 
 						-- Reset selectedConfig
 						selectedConfig = {
@@ -433,19 +421,7 @@ function initMenu()
 							table.insert(finalConfig.texture, texture)
 						end
 						table.insert(chatterConfig, finalConfig)
-						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
-						TriggerEvent('chat:addMessage', {
-							color = {
-								255,
-								0,
-								0
-							},
-							multiline = true,
-							args = {
-								'Earpiece Config',
-								'Config saved successfully'
-							}
-						})
+						TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig, RadioPlacementRevisions.earpieces)
 
 						selectedConfig = {
 							componentId = nil,
@@ -462,19 +438,7 @@ function initMenu()
 					if WarMenu.IsMenuOpened(menuId) then
 						if WarMenu.Button("Remove Earpiece Item", "Confirm Removal") then
 							table.remove(chatterConfig, index)
-							TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig)
-							TriggerEvent('chat:addMessage', {
-								color = {
-									255,
-									0,
-									0
-								},
-								multiline = true,
-								args = {
-									'Earpiece Config',
-									'Earpiece removed successfully'
-								}
-							})
+							TriggerServerEvent('Chatter:saveChatterConfig', chatterConfig, RadioPlacementRevisions.earpieces)
 							WarMenu.OpenMenu('chatterMenu')
 						end
 						WarMenu.Display()
@@ -487,8 +451,9 @@ function initMenu()
 	end)
 
 	local function getConfiguredMobileRepeater(modelHash)
+		local lookupHash = NormalizeRadioModelHash(modelHash)
 		for _, vehicleConfig in ipairs(MobileRepeaterVehicles or {}) do
-			if tonumber(vehicleConfig.modelHash) == modelHash then
+			if lookupHash and NormalizeRadioModelHash(vehicleConfig.modelHash) == lookupHash then
 				return vehicleConfig
 			end
 		end
@@ -1141,7 +1106,9 @@ function initMenu()
 		state.lastCoordUpdate = nil
 		state.calculatedHeading = false
 
-		TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks)
+		local revision = RadioPlacementRevisions.towers
+		if revision ~= RadioPlacementRevisions.racks or revision ~= RadioPlacementRevisions.cellRepeaters then revision = nil end
+		TriggerServerEvent('SonoranRadio::MoveProp', CellRepeaters, Towers, racks, revision)
 	end
 
 	function deletingRadioRepeater()
@@ -2441,7 +2408,7 @@ function initMenu()
 		toneboardState.ogCoords = nil
 		toneboardState.lastCoordUpdate = nil
 		toneboardState.calculatedHeading = false
-		TriggerServerEvent('SonoranRadio::MoveSpeaker', speakers)
+		TriggerServerEvent('SonoranRadio::MoveSpeaker', speakers, RadioPlacementRevisions.speakers)
 	end
 
 	function toneboardMoveMenu()

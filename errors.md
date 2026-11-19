@@ -53,6 +53,8 @@ This file is the source-of-truth registry for structured log codes emitted by th
 | WRN-215 | WRN_CHATTER_EXCLUSIONS_DEPRECATED | `Config.chatterExclusions` is deprecated. | Move chatter exclusion management to `earpieces.json` or the in-game menu. |
 | WRN-216 | WRN_MOBILE_REPEATERS_CONFIG_MIGRATED | Legacy `Config.repeaterVehicleSpawncodes` entries were imported into `mobileRepeaters.json`. | Remove the deprecated `Config.repeaterVehicleSpawncodes` block and use `/radiomenu` for future changes. |
 | WRN-217 | WRN_LISTENER_PRO_REQUIRED | Nearby radio chatter and scanners were disabled because the community does not have a Pro subscription. | Upgrade the Radio community to Pro, or set `Config.chatter` to `false`. |
+| WRN-219 | WRN_SETTINGS_MIGRATION_AVAILABLE | This installation is still running its legacy local settings. | Run `sonoranradio migrate` in the server console, then refresh FiveM Settings in Radio Admin. |
+| WRN-220 | WRN_SETTINGS_CLEANUP_FAILED | Migration was verified, but the resource could not finish saving the backup or archiving the legacy configuration. | Check write permissions on the resource folder and rerun `sonoranradio migrate`. |
 
 ## Support uploads
 

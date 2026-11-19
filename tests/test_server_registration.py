@@ -52,7 +52,7 @@ class ServerRegistrationTests(unittest.TestCase):
             assert(request.nickname == nil and request.roomId == nil)
             assert(request.serverPort == 30121)
             assert(request.overridePushUrl == 'http://custom:30121/sonoranradio/events')
-            assert(Config.init and Config.serverId == 1)
+            assert(not Config.init and Config.serverId == 1)
             assert(savedRoom == 1 and clientRoom == 1 and resolved == 1)
             assert(savedConfig:find('Config.serverId = 1', 1, true))
         """)
@@ -65,7 +65,7 @@ class ServerRegistrationTests(unittest.TestCase):
                 self.lua.execute("""
                     initialize()
                     assert(request.roomId == 4 and request.nickname == nil)
-                    assert(Config.init and Config.serverId == 4)
+                    assert(not Config.init and Config.serverId == 4)
                     assert(savedRoom == 4 and clientRoom == 4 and resolved == 4)
                 """)
 

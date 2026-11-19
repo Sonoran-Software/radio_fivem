@@ -205,7 +205,7 @@ end
 RegisterNetEvent('SonoranRadio::SyncAcePerms', function(accId, profiles, authorize)
 	local src = source
 	if src == nil then return end -- don't allow from server
-	if Config.forceGuestLogin == true then return end -- guest-only servers do not sync Sonoran accounts
+	if not Config or not Config.init or Config.forceGuestLogin == true then return end -- guest-only servers do not sync Sonoran accounts
 	if not Config.acePermSync then return end -- feature disabled
 	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then return end -- access denied
 
@@ -227,7 +227,7 @@ end)
 RegisterNetEvent('SonoranRadio::SyncPlayerDisplayName', function(accId)
 	local src = source
 	if src == nil then return end
-	if Config.forceGuestLogin == true then return end
+	if not Config or not Config.init or Config.forceGuestLogin == true then return end
 	if Config.syncPlayerNameToRadio ~= true then return end
 	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then return end
 
@@ -265,6 +265,7 @@ end)
 -- called from the client when starting a 911 call
 -- creates a guest token and sends it back to the client
 RegisterNetEvent('SonoranRadio::CreateEmergencyCallToken', function()
+	if not Config or not Config.init then return end
 	local src = source
 	if src == nil then return end
 
@@ -276,6 +277,7 @@ end)
 -- called from the client after clicking "log in as guest"
 -- creates a guest token and sends it back to the client
 RegisterNetEvent('SonoranRadio::CreateGuestToken', function()
+	if not Config or not Config.init then return end
 	local src = source
 	if src == nil then return end
 	if Config.acePermsForRadio and not IsPlayerAceAllowed(src, 'sonoranradio.use') then

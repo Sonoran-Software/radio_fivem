@@ -10,6 +10,9 @@ lua54 'yes'
 
 server_script 'config.lua'
 server_script 'lua/utils.js'
+server_script 'lua/config/backup.lua'
+server_script 'lua/config/managed.lua'
+server_script 'lua/config/placements.lua'
 server_script 'lua/sonoran/init.lua'
 
 shared_script 'lua/**/sh_*.lua'

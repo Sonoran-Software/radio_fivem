@@ -340,7 +340,8 @@ function initChatter()
 		end
 		TriggerServerEvent('Chatter:clientChatterSync')
 	end)
-	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfigServer)
+	RegisterNetEvent('Chatter:clientChatterSync_c', function(chatterConfigServer, revision)
+		if not ApplyRadioPlacementRevision('earpieces', revision) then return end
 		chatterConfig = chatterConfigServer
 		for index, _ in ipairs(chatterConfig) do
 			if not WarMenu.DoesMenuExist('editItem_' .. index) then

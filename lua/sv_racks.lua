@@ -54,7 +54,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		for i = 1, #rack.serverStatus do
 			rack.serverStatus[i] = 'dead'
 		end
-		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
+		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus, rack.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -70,7 +70,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		for i = 1, #rack.serverStatus do
 			rack.serverStatus[i] = 'alive'
 		end
-		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus)
+		TriggerClientEvent('RadioRacks:SetServerStatus', -1, v, rack.serverStatus, rack.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetserverStatus', v, rack.serverStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -140,10 +140,8 @@ end)
 RegisterNetEvent('RadioRacks:clientRackSync')
 AddEventHandler('RadioRacks:clientRackSync', function()
 	local source = source
-	while #Servers == 0 do
-		Wait(10)
-	end
-	TriggerClientEvent('RadioRacks:SyncRacks', source, Servers)
+	if not AwaitRadioPlacements() then return end
+	TriggerClientEvent('RadioRacks:SyncRacks', source, Servers, GetPortalRadioPlacementRevision('towers.json'))
 	TriggerEvent('SonoranRadio:QueueCadTowerSync', 'racks')
 end)
 
@@ -209,7 +207,7 @@ AddEventHandler('RadioRacks:clientLocationVerify', function(coords, handshake)
 		rack.Destruction = true
 		rack.DestructionTimer = GetGameTimer()
 		Servers[idx] = rack
-		TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+		TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers, GetPortalRadioPlacementRevision('towers.json'))
 		TriggerClientEvent('RadioRacks:DestroyedRack', source, dist2)
 	end
 end)
@@ -268,7 +266,7 @@ AddEventHandler('onResourceStop', function(resource)
 
 	-- sync all Servers with all clients
 	if hadChange then
-		TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers)
+		TriggerClientEvent('RadioRacks:SyncRacks', -1, Servers, GetPortalRadioPlacementRevision('towers.json'))
 		SyncSonoranCadLiveMap()
 	end
 end)

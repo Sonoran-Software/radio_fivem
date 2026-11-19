@@ -229,7 +229,7 @@ class FrameCacheTests(unittest.TestCase):
     def test_authorization_keeps_original_connection_id(self):
         source = (ROOT / 'lua/sv_main.lua').read_text()
         start = source.index("RegisterNetEvent('SonoranRadio::CheckPermissions')")
-        end = source.index('\nlocal function CopyFile', start)
+        end = source.index('\n-- initialize a valid Config.serverId', start)
         self.lua.execute('''
             RegisterNetEvent = function() end
             AddEventHandler = function(_, fn) permissionHandler = fn end
@@ -244,6 +244,7 @@ class FrameCacheTests(unittest.TestCase):
         self.lua.execute(source[start:end])
         self.lua.execute('''
             source = 42
+            Config.init = true
             permissionHandler()
             assert(#sent == 5)
             for _, event in ipairs(sent) do assert(event.player == 42) end

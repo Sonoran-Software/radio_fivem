@@ -22,8 +22,12 @@ class ChatterConfigSyncTests(unittest.TestCase):
             RegisterNetEvent = function(name, handler) handlers[name] = handler end
             AddEventHandler = function(name, handler) events[name] = handler end
             GetPlayerName = function(playerId) return 'Player ' .. playerId end
-            TriggerClientEvent = function(name, playerId, config)
-                table.insert(sent, {name = name, playerId = playerId, config = config})
+            GetPortalRadioPlacementRevision = function(file)
+                assert(file == 'earpieces.json')
+                return 7
+            end
+            TriggerClientEvent = function(name, playerId, config, revision)
+                table.insert(sent, {name = name, playerId = playerId, config = config, revision = revision})
             end
             Wait = function() error('earpiece sync must not poll') end
         """)
@@ -38,11 +42,13 @@ class ChatterConfigSyncTests(unittest.TestCase):
             end
             assert(#sent == 0)
             chatterConfig = {}
+            Config.init = true
             events['SonoranRadio::ChatterConfigReady']()
             assert(#sent == 40)
             for _, event in ipairs(sent) do
                 assert(event.name == 'Chatter:clientChatterSync_c')
                 assert(event.config == chatterConfig and #event.config == 0)
+                assert(event.revision == 7)
             end
             source = 41
             handlers['Chatter:clientChatterSync']()
@@ -55,6 +61,7 @@ class ChatterConfigSyncTests(unittest.TestCase):
             handlers['Chatter:clientChatterSync']()
             events['playerDropped']()
             chatterConfig = {}
+            Config.init = true
             events['SonoranRadio::ChatterConfigReady']()
             assert(#sent == 0)
         """)

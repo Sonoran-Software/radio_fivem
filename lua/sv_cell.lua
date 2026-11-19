@@ -1,4 +1,4 @@
-local CellRepeater = {
+CellRepeater = {
 	-- whether the tower can be destroyed or not
 	Destruction = true,
 	NotPhysical = false,
@@ -52,7 +52,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		DebugPrint(json.encode(tower))
 		tower.Powered = false
         tower.AntennaStatus = 'dead'
-		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus)
+		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus, tower.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', v, tower.AntennaStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -66,7 +66,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		local tower = GetCellRepeatersFromId(v)
 		tower.Powered = true
         tower.AntennaStatus = 'alive'
-		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus)
+		TriggerClientEvent('CellRepeater:AntennaStatus', -1, v, tower.AntennaStatus, tower.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetAntennaStatus', v, tower.AntennaStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -126,10 +126,8 @@ end)
 RegisterNetEvent('CellRepeater:clientCellRepeatersync')
 AddEventHandler('CellRepeater:clientCellRepeatersync', function()
 	local source = source
-	while #CellRepeaters == 0 do
-		Wait(10)
-	end
-	TriggerClientEvent('CellRepeater:SyncCellRepeaters', source, CellRepeaters)
+	if not AwaitRadioPlacements() then return end
+	TriggerClientEvent('CellRepeater:SyncCellRepeaters', source, CellRepeaters, GetPortalRadioPlacementRevision('towers.json'))
 	TriggerEvent('SonoranRadio:QueueCadTowerSync', 'cell')
 end)
 
@@ -192,7 +190,7 @@ AddEventHandler('CellRepeater:clientLocationVerify', function(coords, handshake)
 		tower.Destruction = true
 		tower.DestructionTimer = GetGameTimer()
 		CellRepeaters[idx] = tower
-		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1)
+		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters, GetPortalRadioPlacementRevision('towers.json'))
 		TriggerClientEvent('CellRepeater:DestroyedTower', source, dist2)
 	end
 end)
@@ -251,7 +249,7 @@ AddEventHandler('onResourceStop', function(resource)
 
 	-- sync all CellRepeaters with all clients
 	if hadChange then
-		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters)
+		TriggerClientEvent('CellRepeater:SyncCellRepeaters', -1, CellRepeaters, GetPortalRadioPlacementRevision('towers.json'))
 		SyncSonoranCadLiveMap()
 	end
 end)

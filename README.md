@@ -2,15 +2,55 @@
 
 Sonoran Radio's FiveM Resource
 
+## Configure FiveM in Radio Admin
+
+For a new server, download its package from **Admin > Game Integration > FiveM Installation**.
+The generated `config.lua` contains your community ID, API key, and selected Radio server ID.
+Change gameplay settings in **FiveM Settings** and apply them by rerunning your installation command
+or restarting the `sonoranradio` resource. Startup reads the saved settings from Radio before initializing features.
+
+Existing installations continue to start with their local `config.lua` and placement files
+while migration is pending. To switch to Radio Admin, run `sonoranradio migrate` in the FiveM
+server console. The command imports and verifies settings and placements, preserving collections
+already saved in Radio Admin. It then rewrites `config.lua` with the community ID, API key, and room ID,
+and moves the original config and obsolete JSON files to `lua/config/.legacy-configuration-*`.
+Refresh the status in Radio Admin to edit the migrated settings. Placement changes go to Radio
+as soon as migration finishes. The resource loads its managed gameplay settings on its next
+start. If local cleanup reports `WRN-220`, check write permissions and rerun
+`sonoranradio migrate`.
+
+Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
+callbacks are optional. Migration retains supported host overrides in the server-only backup.
+Custom Lua callbacks are archived with the original config and stop running after restart.
+Startup saves verified settings and placements together in the server-only
+`lua/config/.configuration-cache.json`. If Radio is temporarily unavailable, the resource can
+use this backup for the same API origin, community, and room. A managed installation with no
+verified settings waits for a working connection and restart.
+If saved settings are cleared in Radio, the next successful startup check on an installation
+with legacy settings in `config.lua` returns it to legacy mode and shows the migration warning.
+
+## FiveM placements
+
+Use `/radiomenu` to place and move towers, server racks, fixed repeaters, speakers, scanners,
+and static jammers, and to configure earpieces and mobile repeater vehicles. The managed
+resource saves those changes to Radio and updates its local backup after confirmation.
+**Admin > Game Integration > FiveM Placements** shows the saved entries for each server and
+lets admins delete them. Restart the resource to load a portal deletion.
+
+The resource seeds unconfigured collections on startup from legacy placement files or the
+bundled presets. Presets include towers, racks, a fixed repeater, speakers, scanners, and
+earpieces. Static jammers and mobile repeater vehicles start empty. Collections already
+saved to Radio take precedence, including empty collections.
+
 ## Automatic guest login
 
-Set `Config.forceGuestLogin = true` in `config.lua` to automatically sign radio users in as guests when they open the radio. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.
+Enable **Force guest login** in FiveM Settings to automatically sign radio users in as guests when they open the radio. Legacy installations use `Config.forceGuestLogin`. They do not need a Sonoran account or an in-game login choice. Guest tokens still use the configured community ID and API key. The setting defaults to `false`.
 
 Guest permissions come from the player's ACE permissions in this mode, including `sonoranradio.channel.<channel id>` (or `sonoranradio.channel.<channel name>`) for nonpublic channels. This works even when `Config.acePermSync = false`; that setting still controls Sonoran account syncing in normal mode. `Config.acePermsForRadio` and `Config.acePermsForRadioGuests` continue to restrict access through `sonoranradio.use` and `sonoranradio.guest` when enabled. Grant those ACEs to every intended radio user if you enable the corresponding restrictions.
 
 ## Custom radio frames
 
-Custom frames are managed in the Radio web panel's Customize > Overlay menu.
+Custom frames are managed under **Admin > Overlay** in the Radio web panel.
 The resource retrieves those community frames from the Radio backend on startup
 and refreshes them every five minutes. Saving an overlay in the panel also sends
 an authenticated `frames_updated` notification to configured game-server push
@@ -50,4 +90,4 @@ Administrators with the existing `command.radioMenu` ACE can manage mobile repea
 
 All players can use `/radio repeater` to open an activation-only menu for a compatible current vehicle or attached trailer. Administrators can also use the activation control in **Mobile Repeater Vehicles**. The former global G keybind is no longer registered, so unrelated vehicle controls do not produce repeater compatibility warnings.
 
-The resource stores these entries in `mobileRepeaters.json`. On the first start after upgrading, any legacy `Config.repeaterVehicleSpawncodes` entries are imported once. After confirming the migration, remove that deprecated block from `config.lua`; future changes should be made through `/radiomenu`.
+Managed installations save these entries in **FiveM Placements**. Startup can import legacy `mobileRepeaters.json` and `Config.repeaterVehicleSpawncodes` entries when the portal collection is unconfigured. After confirming the migration, remove the deprecated block from `config.lua` and use Radio Admin or `/radiomenu` for future changes.

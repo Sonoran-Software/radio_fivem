@@ -1,0 +1,407 @@
+local resourceName = GetCurrentResourceName()
+local maxBytes = 96 * 1024
+local schemaVersion = 1
+local defaultApiUrl = 'https://api.sonoranradio.com/'
+local source = assert(LoadResourceFile(resourceName, 'lua/config/defaults.lua'))
+local defaults = assert(load(source, '@lua/config/defaults.lua', 't', {}))()
+
+local migrating = false
+local startupFinished = false
+local managedSettingsActive = false
+
+-- Match the published shape for downloads and backups. During an import, copy
+-- only documented fields and let the API fill missing values from its defaults.
+local function matchShape(value, model, complete)
+	if type(model) == 'function' then return model(value, complete) end
+	if type(value) ~= type(model) then return nil, false end
+	if type(value) == 'number' then return value, value == value and math.abs(value) ~= math.huge end
+	if type(value) ~= 'table' then return value, true end
+
+	local result = {}
+	for key, field in pairs(model) do
+		if complete or value[key] ~= nil then
+			local entry, valid = matchShape(value[key], field, complete)
+			if not valid then return nil, false end
+			result[key] = entry
+		end
+	end
+	if complete then
+		for key in pairs(value) do
+			if model[key] == nil then return nil, false end
+		end
+	end
+	return result, true
+end
+
+local function collection(model, list, limit)
+	return function(value, complete)
+		if type(value) ~= 'table' then return nil, false end
+		local result = {}
+		local count = 0
+		for key, item in pairs(value) do
+			count = count + 1
+			if count > limit then return nil, false end
+			if list then
+				if type(key) ~= 'number' or key < 1 or key % 1 ~= 0 then return nil, false end
+			elseif type(key) ~= 'string' or key == '' then
+				return nil, false
+			end
+			local entry, valid = matchShape(item, model, complete)
+			if not valid then return nil, false end
+			result[key] = entry
+		end
+		if list then
+			for index = 1, count do
+				if result[index] == nil then return nil, false end
+			end
+		end
+		return result, true
+	end
+end
+
+local function optionalText(value)
+	if value == nil or value == json.null then return nil, true end
+	return value, type(value) == 'string'
+end
+
+local function choices(values)
+	return function(value) return value, values[value] == true end
+end
+
+local shape = matchShape(defaults, defaults, true)
+local grades = collection(0, true, 64)
+local jobs = collection({ grades = grades }, false, 32)
+shape.defaultSkinId = optionalText
+shape.frames.permissionMode = choices({ ace = true, qbcore = true, qbox = true, esx = true, none = true })
+shape.frames.departments = collection({
+	label = '',
+	permissions = { jobs = jobs, ace = collection('', true, 64) },
+	allowedFrames = collection('', true, 64),
+}, false, 32)
+shape.radioJammers.permissionMode = choices({ ace = true, qbcore = true, esx = true, none = true })
+shape.radioJammers.allowedJobs = collection(function(value, complete)
+	-- Existing jammer configurations also accept a flat job grade list.
+	if not complete and type(value) == 'table' and value[1] ~= nil and value.grades == nil then
+		value = { grades = value }
+	end
+	return matchShape(value, { grades = grades }, complete)
+end, false, 32)
+local jammerShape = shape.radioJammers.jammers[1]
+jammerShape.type = choices({ handheld = true, static = true })
+jammerShape.offModel = optionalText
+jammerShape.itemName = optionalText
+jammerShape.poweredItemName = optionalText
+shape.radioJammers.jammers = collection(jammerShape, true, 64)
+
+local function usesManagedSettingsByDefault()
+	if type(Config) ~= 'table' then return false end
+	if Config.managedSettings ~= nil then return Config.managedSettings == true end
+	-- Older configs may only customize placements defined in Lua.
+	for _, entries in ipairs({ Config.chatterExclusions or {}, Config.repeaterVehicleSpawncodes or {} }) do
+		if type(entries) == 'table' and next(entries) then return false end
+	end
+	-- Inspect the original file before filling defaults. Existing gameplay settings
+	-- stay active until the operator explicitly migrates them.
+	for key in pairs(shape) do
+		local value = Config[key]
+		if value ~= nil then
+			if key ~= 'notifications' or type(value) ~= 'table' then return false end
+			-- A local callback can coexist with portal-controlled notification settings.
+			for option in pairs(shape.notifications) do
+				if value[option] ~= nil then return false end
+			end
+		end
+	end
+	return true
+end
+
+local managedByDefault = usesManagedSettingsByDefault()
+local bootstrapOverrides = {}
+if type(Config) == 'table' then
+	local saved = ReadMigratedRadioBootstrap(Config) or {}
+	for key, expectedType in pairs({
+		apiUrl = 'string', radioUrl = 'string', overridePushUrl = 'string', debug = 'boolean',
+		allowAutoUpdate = 'boolean', allowUpdateWithPlayers = 'boolean', enableCanary = 'boolean',
+	}) do
+		if Config[key] == nil and type(saved[key]) == expectedType then Config[key] = saved[key] end
+		if type(Config[key]) == expectedType then bootstrapOverrides[key] = Config[key] end
+	end
+	if Config.apiUrl == nil then Config.apiUrl = defaultApiUrl end
+	if Config.radioUrl == nil then Config.radioUrl = 'https://sonoranradio.com' end
+	if Config.debug == nil then Config.debug = false end
+	if managedByDefault and Config.allowAutoUpdate == nil then Config.allowAutoUpdate = true end
+	for key, value in pairs(defaults) do
+		if Config[key] == nil and (managedByDefault or key == 'radioJammers') then
+			Config[key] = value
+		end
+	end
+	if Config.heavySignalDegradeInWater == nil then Config.heavySignalDegradeInWater = true end
+end
+
+local function collectSettings()
+	local incoming = {}
+	for key in pairs(shape) do incoming[key] = Config[key] end
+	for _, key in ipairs({ 'heavySignalDegradeInWater', 'radioJammers' }) do
+		if type(incoming[key]) == 'boolean' then
+			incoming[key] = { enabled = incoming[key] }
+		end
+	end
+	return matchShape(incoming, shape, false)
+end
+
+local function decodeJson(raw)
+	if type(raw) ~= 'string' or #raw > maxBytes then return nil end
+	local ok, value = pcall(json.decode, raw)
+	if ok and type(value) == 'table' then return value end
+end
+
+local function encodeJson(value)
+	local ok, encoded = pcall(json.encode, value)
+	if ok and type(encoded) == 'string' and #encoded <= maxBytes then return encoded end
+end
+
+local function readSettings(value)
+	if type(value) ~= 'table' or value.schemaVersion ~= schemaVersion or
+		type(value.settings) ~= 'table' or type(value.configured) ~= 'boolean' or
+		type(value.revision) ~= 'number' or value.revision < 0 or
+		value.revision % 1 ~= 0 then return nil end
+
+	local settings, valid = matchShape(value.settings, shape, true)
+	if not valid then return nil end
+	return {
+		schemaVersion = schemaVersion,
+		configured = value.configured,
+		revision = value.revision,
+		settings = settings,
+	}
+end
+
+RegisterManagedRadioBackupSection('settings', 'sonoranradio-settings.json', readSettings)
+
+local function applySettings(settings)
+	local notificationHook = type(Config.notifications) == 'table' and Config.notifications.custom
+	for key in pairs(shape) do Config[key] = settings[key] end
+	if type(Config.defaultSkinId) ~= 'string' then Config.defaultSkinId = nil end
+	if type(notificationHook) == 'function' then
+		Config.notifications.custom = notificationHook
+	elseif Config.notifications.type == 'custom' then
+		Config.notifications.type = 'auto'
+		print('[SonoranRadio] Custom notifications require a local Lua callback; using automatic notifications.')
+	end
+end
+
+local function getScope()
+	local serverId = Config and Config.comId
+	if type(serverId) == 'number' and math.tointeger(serverId) and serverId > 0 then serverId = tostring(serverId) end
+	local roomId = Config and math.tointeger(tonumber(Config.serverId) or 0)
+	local apiOrigin = Config and tostring(Config.apiUrl or defaultApiUrl):gsub('/+$', '')
+	if type(serverId) ~= 'string' or not serverId:match('^[%w_-]+$') or #serverId > 128 or
+		not roomId or roomId < 1 or roomId > 2147483647 or
+		(not apiOrigin:match('^https://[%w.%-]+$') and not apiOrigin:match('^https://[%w.%-]+:%d+$')) or
+		type(Config.apiKey) ~= 'string' or Config.apiKey == '' or Config.apiKey == 'YOUR API KEY' or
+		Config.apiKey:find('[\r\n]') then
+		return nil
+	end
+	return {
+		community = serverId:upper(),
+		roomId = roomId,
+		origin = apiOrigin:lower(),
+	}
+end
+
+local function scopeKey(scope)
+	return ('managed_config:%s:%s:%d'):format(scope.origin, scope.community, scope.roomId)
+end
+
+local function request(scope, method, managed, body)
+	local completed = false
+	local result = promise.new()
+	local function finish(status, raw)
+		if completed then return end
+		completed = true
+		result:resolve({ status = tonumber(status) or 0, document = decodeJson(raw) })
+	end
+	local url = ('%s/v2/servers/%s/rooms/%d/fivem-settings'):format(scope.origin, scope.community, scope.roomId)
+	if method == 'POST' then url = url .. '/migrate' end
+	local headers = { Authorization = 'Bearer ' .. Config.apiKey, Accept = 'application/json' }
+	if method == 'GET' then headers['X-FiveM-Settings-Mode'] = managed and 'managed' or 'legacy' end
+	if body then headers['Content-Type'] = 'application/json' end
+	local version = GetResourceMetadata(resourceName, 'version', 0)
+	if version then headers['X-FiveM-Resource-Version'] = version end
+	Citizen.SetTimeout(8000, function() finish(0) end)
+	local sent = pcall(PerformHttpRequest, url, finish, method, body or '', headers, { followLocation = false })
+	if not sent then finish(0) end
+	return Citizen.Await(result)
+end
+
+local function readCache(scope)
+	if GetResourceKvpString(scopeKey(scope)) == '0' then return nil end
+	return ReadManagedRadioConfigBackup(scope, 'settings')
+end
+
+local function markManaged(scope)
+	SetResourceKvp(scopeKey(scope), '1')
+end
+
+local function isManaged(scope)
+	return managedByDefault or GetResourceKvpString(scopeKey(scope)) == '1'
+end
+
+-- Resolve startup settings after the Radio server ID is established and before
+-- the resource publishes settings or registers configuration-dependent features.
+function InitializeManagedRadioSettings()
+	local scope = getScope()
+	if not scope then
+		if managedByDefault then
+			print('[SonoranRadio] Managed settings require valid credentials, a Radio server ID, and an HTTPS API origin.')
+			return false
+		end
+		startupFinished = true
+		return true
+	end
+
+	local cached = readCache(scope)
+	local managed = cached ~= nil or isManaged(scope)
+	local response = request(scope, 'GET', managed)
+	local document = response.status == 200 and readSettings(response.document)
+
+	if document and not document.configured and managed and not managedByDefault then
+		-- A verified backend reset makes the old backup ineligible during future outages.
+		SetResourceKvp(scopeKey(scope), '0')
+		managed = false
+		-- Report the corrected mode to Radio Admin after the initial managed request.
+		request(scope, 'GET', false)
+	end
+
+	if document and managed then
+		if not SaveManagedRadioConfigBackup(scope, 'settings', document) then
+			print('[SonoranRadio] Loaded portal settings. The server could not update the local settings backup.')
+		end
+		markManaged(scope)
+		applySettings(document.settings)
+		managedSettingsActive = true
+	elseif document and not managed then
+		warnLog('WRN_SETTINGS_MIGRATION_AVAILABLE')
+	elseif cached and (response.status == 0 or response.status == 200 or response.status == 429 or response.status >= 500) then
+		applySettings(cached.settings)
+		managedSettingsActive = true
+		print('[SonoranRadio] The settings service is unavailable. Using the last verified local settings.')
+	elseif managed then
+		print(('[SonoranRadio] Managed settings could not be loaded (HTTP %d). Check the community and server settings, then restart.'):format(response.status))
+		return false
+	else
+		print('[SonoranRadio] The settings service could not be verified. Continuing with the existing local configuration.')
+	end
+
+	startupFinished = true
+	return true
+end
+
+function GetManagedRadioPlacementScope()
+	if managedSettingsActive then return getScope() end
+end
+
+function CanWriteRadioPlacements()
+	return not migrating
+end
+
+local function equalData(a, b)
+	if type(a) ~= type(b) then return false end
+	if type(a) ~= 'table' then return a == b end
+	for key, val in pairs(a) do
+		if not equalData(val, b[key]) then return false end
+	end
+	for key in pairs(b) do
+		if a[key] == nil then return false end
+	end
+	return true
+end
+
+function MigrateRadioSettings()
+	local scope = getScope()
+	if not startupFinished or not scope or not AwaitRadioPlacements() then
+		print('[SonoranRadio] Finish starting the configured Radio server before migrating settings.')
+		return
+	end
+
+	if migrating then return end
+	migrating = true
+	Citizen.CreateThread(function()
+		local ok, err = pcall(function()
+			local originalConfig = LoadResourceFile(resourceName, 'config.lua')
+			local managed = isManaged(scope)
+			local current = request(scope, 'GET', managed)
+			local before = current.status == 200 and readSettings(current.document)
+			if not before then return 'Could not verify the portal configuration. Try again after checking your connection.' end
+			if managed and not before.configured then
+				if not managedByDefault then
+					return 'The saved portal settings were cleared. Restart sonoranradio before running the migration again.'
+				end
+				return 'This installation already uses portal defaults. There is no legacy configuration to import.'
+			end
+			local document = before
+			if not before.configured then
+				local settings, valid = collectSettings()
+				if not valid then return 'A legacy setting has an invalid format. Check your local configuration and try again.' end
+				local encoded = encodeJson({ settings = settings })
+				if not encoded then return 'The legacy settings could not be serialized within the size limit.' end
+				local saved = request(scope, 'POST', managed, encoded)
+				local posted = saved.status == 200 and readSettings(saved.document)
+				if not posted or not posted.configured then
+					return ('The portal did not accept the migration (HTTP %d). The local files were preserved.'):format(saved.status)
+				end
+				local verified = request(scope, 'GET', managed)
+				document = verified.status == 200 and readSettings(verified.document)
+				if not document or not document.configured or document.revision ~= posted.revision or
+					not equalData(document.settings, posted.settings) then
+					return 'The upload could not be verified. Retry the command before restarting.'
+				end
+			end
+
+			local placements = VerifyRadioPlacementMigration(scope)
+			if not placements then
+				warnLog('WRN_API_REQUEST_FAILED', 'Could not verify placement migration. The original configuration files were kept. Retry sonoranradio migrate.')
+				return
+			end
+			local backedUp = SaveMigratedRadioConfigBackup(scope, document, placements, bootstrapOverrides)
+			markManaged(scope)
+			ActivateMigratedRadioPlacements(scope, placements)
+			local cleaned = false
+			if backedUp then
+				local bootstrap = ('Config = {}\n\nConfig.comId = %q\nConfig.apiKey = %q\nConfig.serverId = %d\n'):format(
+					tostring(Config.comId), Config.apiKey, scope.roomId)
+				local ok, success = pcall(function()
+					return exports[resourceName]:ArchiveMigratedRadioConfig(originalConfig, bootstrap)
+				end)
+				cleaned = ok and success == true
+			end
+			local reported = managed
+			if not managed then
+				-- The earlier read verified the upload in legacy mode. Report the
+				-- completed migration so Radio Admin can unlock the settings now.
+				local response = request(scope, 'GET', true)
+				local acknowledged = response.status == 200 and readSettings(response.document)
+				reported = acknowledged and acknowledged.configured
+			end
+			if not cleaned then
+				warnLog('WRN_SETTINGS_CLEANUP_FAILED')
+				return
+			end
+			if not reported then
+				warnLog('WRN_API_REQUEST_FAILED', 'Settings were saved and backed up, but the Radio Admin connection status could not be refreshed. Rerun sonoranradio migrate to retry.')
+				return
+			end
+			if before.configured then
+				return 'Existing Radio Admin settings were verified and backed up.'
+			end
+			return 'Settings migrated and backed up.'
+		end)
+		migrating = false
+		-- Details can contain server-supplied or local values; never print raw errors.
+		if not ok then
+			print('[SonoranRadio] Configuration migration could not be completed. The original configuration is available locally.')
+		elseif err then
+			print('[SonoranRadio] ' .. err)
+		end
+	end)
+end

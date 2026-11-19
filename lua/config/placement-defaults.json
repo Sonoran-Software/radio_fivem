@@ -1,0 +1,363 @@
+{
+  "towers": [
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "Range": 3000,
+      "Powered": true,
+      "type": "radioTower",
+      "PropPosition": {
+        "x": 600.1318969726562,
+        "y": 5555.09033203125,
+        "z": 716.75244140625
+      },
+      "Id": "77cb673a-8ce4-405a-af5b-1d4f441b2c34",
+      "DishStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "NotPhysical": false
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "Range": 2500,
+      "Powered": true,
+      "type": "radioTower",
+      "PropPosition": {
+        "x": -1632.01318359375,
+        "y": 3092.16259765625,
+        "z": 31.1669921875
+      },
+      "Id": "ac0981e0-18d4-48fa-a171-4dc6497dc50a",
+      "DishStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "NotPhysical": false
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "Range": 2000,
+      "Powered": true,
+      "type": "radioTower",
+      "PropPosition": {
+        "x": 1401.2703857421875,
+        "y": 2117.208740234375,
+        "z": 105.019775390625
+      },
+      "Id": "fda96c76-d041-483c-8542-a2e068844d4f",
+      "DishStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "NotPhysical": false
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "Range": 2500,
+      "Powered": true,
+      "type": "radioTower",
+      "PropPosition": {
+        "x": -1287.4285888671875,
+        "y": 1118.4527587890625,
+        "z": 280.5948486328125
+      },
+      "Id": "d29685ef-3e35-4771-ad6a-7897e1f36d75",
+      "DishStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "NotPhysical": false
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "Range": 3000,
+      "Powered": true,
+      "type": "radioTower",
+      "PropPosition": {
+        "x": 1408.5362548828125,
+        "y": -747.982421875,
+        "z": 67.2255859375
+      },
+      "Id": "aaf135f2-8e5e-46d0-ba69-1e39d590b681",
+      "DishStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "NotPhysical": false
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "serverStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "Range": 1500,
+      "NotPhysical": false,
+      "type": "serverRack",
+      "PropPosition": {
+        "x": -449.3999938964844,
+        "y": 6010.7001953125,
+        "z": 31.7061767578125
+      },
+      "heading": 315,
+      "Id": "4a00073a-0094-40ef-ad46-f2be7f022c66",
+      "Powered": true
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "serverStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "Range": 3000,
+      "NotPhysical": false,
+      "type": "serverRack",
+      "PropPosition": {
+        "x": 1851.3363037109375,
+        "y": 3690.698974609375,
+        "z": 34.2506103515625
+      },
+      "heading": 210,
+      "Id": "da2eb147-f9d3-4f15-82d8-26a16d192d2e",
+      "Powered": true
+    },
+    {
+      "DontSaveMe": false,
+      "Swankiness": 0,
+      "Destruction": true,
+      "serverStatus": [
+        "alive",
+        "alive",
+        "alive",
+        "alive",
+        "alive"
+      ],
+      "Range": 1500,
+      "NotPhysical": false,
+      "type": "serverRack",
+      "PropPosition": {
+        "x": 455.050537109375,
+        "y": -987.112060546875,
+        "z": 26.6680908203125
+      },
+      "heading": 90.70865631103516,
+      "Id": "fdaf13a5-7511-4b86-8522-a34a7f4dd8d0",
+      "Powered": true
+    },
+    {
+      "Swankiness": 0,
+      "Destruction": true,
+      "PropPosition": {
+        "x": -887.7362670898438,
+        "y": -2117.7099609375,
+        "z": 92.095947265625
+      },
+      "AntennaStatus": "alive",
+      "heading": 317.4803161621094,
+      "Id": "bd8038a3-4ab9-4675-9dc2-40204a95e3f2",
+      "Range": 2000,
+      "type": "cellRepeater"
+    }
+  ],
+  "speakers": [
+    {
+      "PropPosition": {
+        "x": 1691.8861083984375,
+        "y": 3582.573486328125,
+        "z": 39.11188888549805
+      },
+      "heading": 357.423439254781,
+      "Range": 40.0,
+      "Spawned": false,
+      "Id": "f063dc29-1f02-430d-a0d7-45f34261c114",
+      "Label": "Sandy Shores FD",
+      "Handle": 4537371,
+      "type": "speakerMediumWall"
+    },
+    {
+      "PropPosition": {
+        "x": 193.39004516601562,
+        "y": -1655.1846923828125,
+        "z": 32.66213226318359
+      },
+      "heading": 110.75390502929304,
+      "Range": 40.0,
+      "Spawned": false,
+      "Id": "5d61a184-b3ba-480b-9473-075495c833ad",
+      "Label": "Macdonald St ",
+      "Handle": 8489504,
+      "type": "speakerMediumWall"
+    },
+    {
+      "PropPosition": {
+        "x": 1193.7716064453125,
+        "y": -1463.73291015625,
+        "z": 37.68266296386719
+      },
+      "heading": 46.11469750976562,
+      "Range": 40.0,
+      "Spawned": false,
+      "Id": "abbd5c34-7afe-4146-86c8-70b8431be947",
+      "Label": "Capital Blvd ",
+      "Handle": 9378848,
+      "type": "speakerMediumWall"
+    },
+    {
+      "PropPosition": {
+        "x": -634.0253295898438,
+        "y": -116.65898132324219,
+        "z": 44.03133773803711
+      },
+      "heading": 230.60369091796048,
+      "Range": 50.0,
+      "Spawned": false,
+      "Id": "5fdb5586-80c8-4426-9beb-753ea674d31c",
+      "Label": "Rockford Dr ",
+      "Handle": 4008737,
+      "type": "speakerMediumWall"
+    },
+    {
+      "PropPosition": {
+        "x": -371.9297180175781,
+        "y": 6119.13134765625,
+        "z": 34.83037567138672
+      },
+      "heading": 543.9226927489888,
+      "Range": 40.0,
+      "Spawned": true,
+      "Id": "79901c52-67d7-4365-9781-625497565d17",
+      "Label": "Paleto Blvd ",
+      "Handle": 1625121,
+      "type": "speakerMediumWall"
+    }
+  ],
+  "jammers": [],
+  "scanners": [
+    {
+      "Id": "4980a4e4-1509-4bd1-81bd-24466d76a3a9",
+      "Note": "Sandy Sheriff Station",
+      "Powered": true,
+      "ChannelId": 0,
+      "PropPosition": {
+        "x": 1853.98,
+        "y": 3688.92,
+        "z": 34.38054,
+        "heading": 32.76,
+        "exact": false
+      }
+    },
+    {
+      "Id": "17c03514-2093-4038-b7fb-90bfa20035d8",
+      "Note": "Sandy Fire Station",
+      "Powered": true,
+      "ChannelId": 0,
+      "PropPosition": {
+        "x": 1690.17,
+        "y": 3588.58,
+        "z": 35.7267,
+        "heading": 118.03,
+        "exact": false
+      }
+    },
+    {
+      "Id": "024af307-bed7-4a93-8ca5-3783f4ed3030",
+      "Note": "Mission Row PD",
+      "Powered": true,
+      "ChannelId": 0,
+      "PropPosition": {
+        "x": 438.54,
+        "y": -978.92,
+        "z": 31.02462,
+        "heading": 270.73,
+        "exact": false
+      }
+    },
+    {
+      "Id": "c7cc6e13-e3e1-4d1c-8f29-bed65a3bac1d",
+      "Note": "Davis Fire Station",
+      "Powered": true,
+      "ChannelId": 0,
+      "PropPosition": {
+        "x": 204.57,
+        "y": -1663.83,
+        "z": 29.91371,
+        "heading": 224.93,
+        "exact": false
+      }
+    },
+    {
+      "Id": "bbcba18d-b03b-4187-a3e0-14ce6bb7f159",
+      "Note": "St Fiacre Hospital Fire Station",
+      "Powered": true,
+      "ChannelId": 0,
+      "PropPosition": {
+        "x": 1207.92,
+        "y": -1483.59,
+        "z": 34.97002,
+        "heading": 264.91,
+        "exact": false
+      }
+    }
+  ],
+  "earpieces": [
+    {
+      "componentId": 2,
+      "drawableId": 1,
+      "texture": [
+        0
+      ]
+    },
+    {
+      "componentId": 2,
+      "drawableId": 2,
+      "texture": [
+        0
+      ]
+    },
+    {
+      "componentId": 24,
+      "drawableId": 2,
+      "texture": [
+        0
+      ]
+    },
+    {
+      "componentId": 18,
+      "drawableId": 42,
+      "texture": [
+        0
+      ]
+    }
+  ],
+  "mobileRepeaters": []
+}

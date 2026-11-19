@@ -60,7 +60,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceDisabled', function(affectedDe
 		for i = 1, #tower.DishStatus do
 			tower.DishStatus[i] = 'dead'
 		end
-		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus)
+		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus, tower.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetDishStatus', v, tower.DishStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -76,7 +76,7 @@ AddEventHandler('SonoranScripts::PowerGrid::DeviceRepaired', function(affectedDe
 		for i = 1, #tower.DishStatus do
 			tower.DishStatus[i] = 'alive'
 		end
-		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus)
+		TriggerClientEvent('RadioTower:SetDishStatus', -1, v, tower.DishStatus, tower.Powered)
 		TriggerEvent('SonoranCAD::sonrad:SetDishStatus', v, tower.DishStatus)
 	end
 	SyncSonoranCadLiveMap()
@@ -140,10 +140,8 @@ AddEventHandler('RadioTower:clientTowerSync', function()
 			tostring(towerClientSyncDebugCounts[source])
 		)
 	)
-	while #Towers == 0 do
-		Wait(10)
-	end
-	TriggerLatentClientEvent('RadioTower:SyncTowers', source, 10000, Towers)
+	if not AwaitRadioPlacements() then return end
+	TriggerLatentClientEvent('RadioTower:SyncTowers', source, 10000, Towers, GetPortalRadioPlacementRevision('towers.json'))
 	TriggerEvent('SonoranRadio:QueueCadTowerSync', 'towers')
 end)
 
@@ -262,7 +260,7 @@ AddEventHandler('onResourceStop', function(resource)
 
 	-- sync all towers with all clients
 	if hadChange then
-		TriggerClientEvent('RadioTower:SyncTowers', -1, Towers)
+		TriggerClientEvent('RadioTower:SyncTowers', -1, Towers, GetPortalRadioPlacementRevision('towers.json'))
 		SyncSonoranCadLiveMap()
 	end
 end)

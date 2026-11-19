@@ -36,6 +36,7 @@ function initTowers()
 	end
 	-- returns a value from 0-1 representing the percentage of active dishes
 	function GetTowerCapacity(tower)
+		if tower.Powered == false then return 0.0 end
 		if #tower.DishStatus < 1 then
 			return 1.0
 		end
@@ -200,7 +201,8 @@ function initTowers()
 	end
 
 	RegisterNetEvent('RadioTower:SyncTowers')
-	AddEventHandler('RadioTower:SyncTowers', function(towers)
+	AddEventHandler('RadioTower:SyncTowers', function(towers, revision)
+		if not ApplyRadioPlacementRevision('towers', revision) then return end
 		-- make sure all towers are cleared before we sync
 		for i = 1, #Towers do
 			DestroyTower(Towers[i])
@@ -231,12 +233,13 @@ function initTowers()
 	end)
 
 	RegisterNetEvent('RadioTower:SetDishStatus')
-	AddEventHandler('RadioTower:SetDishStatus', function(towerId, dishStatus)
+	AddEventHandler('RadioTower:SetDishStatus', function(towerId, dishStatus, powered)
 		local tower = GetTowerFromId(towerId)
 		if not tower then
 			return
 		end
 		tower.DishStatus = dishStatus
+		if powered ~= nil then tower.Powered = powered end
 		SyncDishStatus(tower, true)
 	end)
 
@@ -245,10 +248,6 @@ function initTowers()
 			Wait(10)
 		end
 		TriggerServerEvent('RadioTower:clientTowerSync')
-		while #Towers == 0 do
-			Wait(50)
-		end
-
 		DecorRegister('sonrad_dish', 3)
 	end)
 

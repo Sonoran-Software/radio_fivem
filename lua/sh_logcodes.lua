@@ -62,6 +62,19 @@ WarningCodes = {
 	['WRN_LISTENER_PRO_REQUIRED'] = {
 		code = 'WRN-217',
 		message = 'Nearby radio chatter and scanners are disabled because they require a Sonoran Radio Pro subscription.'
+	},
+	['WRN_SERVER_ID_CHANGED'] = {
+		code = 'WRN-218',
+		message = 'Radio server registration returned a different ID. Restart the resource to reload its settings.'
+	},
+	['WRN_SETTINGS_MIGRATION_AVAILABLE'] = {
+		code = 'WRN-219',
+		message = 'Legacy settings are active. Run sonoranradio migrate in the server console to import them into Radio Admin.'
+	},
+	['WRN_SETTINGS_CLEANUP_FAILED'] = {
+		code = 'WRN-220',
+		includeTrace = false,
+		message = 'Radio Admin verified the migration, but local cleanup is incomplete. Check resource folder permissions and rerun sonoranradio migrate.'
 	}
 }
 
