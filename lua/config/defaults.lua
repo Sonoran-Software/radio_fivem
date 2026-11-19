@@ -147,9 +147,7 @@ defaults.frames = {
 
 -- Enable mobile repeaters
 defaults.enableVehicleRepeaters = true
--- Mobile repeater vehicles are configured from /radiomenu and saved in
--- mobileRepeaters.json. Existing defaults.repeaterVehicleSpawncodes entries are
--- imported automatically once, then managed by the menu.
+-- Configure mobile repeater vehicles in Radio Admin or /radiomenu.
 
 defaults.radioJammers = {
 	enabled = true, -- Enable or disable radio jammers

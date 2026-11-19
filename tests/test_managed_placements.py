@@ -49,7 +49,7 @@ class ManagedPlacementTests(unittest.TestCase):
             GetManagedRadioPlacementScope = function() return scope end
             GetCurrentResourceName = function() return 'sonoranradio' end
             LoadResourceFile = function(_, path) return loadFile(path) end
-            NormalizeRadioMobileRepeaterImport = function(raw) return raw.vehicles end
+            NormalizeRadioMobileRepeaterImport = function(raw) return raw.vehicles or {} end
             IsPlayerAceAllowed = function(src, ace) return src == 42 and ace == 'command.radioMenu' end
             print = function(value) log(value) end
             json = {
@@ -123,6 +123,37 @@ class ManagedPlacementTests(unittest.TestCase):
         self.assertEqual(self.to_python(self.globals.GetPortalRadioPlacement("mobileRepeaters.json")), {
             "version": 1, "migratedFromConfig": True, "vehicles": vehicles,
         })
+
+    def test_new_server_without_templates_can_save_a_first_placement(self):
+        self.responses = [(200, document())]
+        self.boot()
+        self.assertEqual([item[0] for item in self.requests], ["GET"])
+        self.assertTrue(self.globals.MatchesRadioPlacementRevision("speakers.json", 0))
+        self.responses = [(200, {"revision": 1, "entries": [SPEAKER]})]
+        self.assertTrue(self.globals.SavePortalRadioPlacement("speakers.json", self.to_lua([SPEAKER])))
+        self.assertEqual(self.requests[-1][2], {"revision": 0, "entries": [SPEAKER]})
+        self.assertEqual(set(self.files), {"sonoranradio-placements.json"})
+
+    def test_lua_only_legacy_placements_import_without_json_templates(self):
+        earpieces = [{"componentId": 2, "drawableId": 1, "texture": [0]}]
+        vehicles = [{"modelHash": -45, "label": "Command", "range": 150}]
+        self.globals.Config.chatterExclusions = self.to_lua(earpieces)
+        self.globals.Config.repeaterVehicleSpawncodes = self.to_lua(vehicles)
+        self.lua.execute("""
+            IsDuplicityVersion = function() return true end
+            RegisterNetEvent = function() end
+            AddEventHandler = function() end
+        """)
+        for path in ("lua/sh_main.lua", "lua/sv_repeaters.lua"):
+            self.lua.execute((ROOT / path).read_text(encoding="utf-8-sig"))
+        self.responses = [(200, document()), (200, document(
+            earpieces=(1, earpieces), mobileRepeaters=(1, vehicles),
+        ))]
+        self.boot()
+        self.assertEqual(self.requests[-1][2], {"placements": {
+            "earpieces": earpieces, "mobileRepeaters": vehicles,
+        }})
+        self.assertEqual(set(self.files), {"sonoranradio-placements.json"})
 
     def test_write_conflict_leaves_original_and_success_updates_one_kind(self):
         self.responses = [(200, document(speakers=(5, [SPEAKER]), towers=(9, [])))]

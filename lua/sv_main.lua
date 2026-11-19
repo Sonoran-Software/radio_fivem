@@ -869,18 +869,17 @@ function LoadJsonConfig(file)
 		local defaultFile = defaultJsonConfigFiles[file]
 		if not defaultFile then error('no default json config found for '..file) end
 
-		-- Rename default to proper config file for user
+		-- Upgraded installs can still have a legacy default file.
 		fileData = LoadResourceFile(resourceName, defaultFile)
+		if not fileData then return {} end
 		infoLog(('%s is not found, attempting to rename %s to %s'):format(file, defaultFile, file))
 		local success = CopyFile(GetResourcePath(resourceName)..'/'..defaultFile, GetResourcePath(resourceName)..'/'..file)
 		if success then
 			infoLog(('Successfully renamed %s to %s'):format(defaultFile, file))
 		else
 			warnLog('WRN_CONFIG_RENAME_FAILED', ('Failed to rename %s to %s'):format(defaultFile, file))
-			file = defaultFile -- when loading below, use the default file
 		end
 	end
-	fileData = LoadResourceFile(resourceName, file)
 	return json.decode(fileData) or {}
 end
 function SaveJsonConfig(file, obj)
@@ -889,17 +888,13 @@ function SaveJsonConfig(file, obj)
 	local resourceName = GetCurrentResourceName()
 	local contents = json.encode(obj, { indent = true })
 	local success = SaveResourceFile(resourceName, file, contents, -1)
-	if not success then
-		-- file could not be saved (permission issues probably)
-		-- try to write to default file with warning
-		local defaultFile = defaultJsonConfigFiles[file]
-		if not defaultFile then error('no default json config found for '..file) end
-		warnLog('WRN_CONFIG_SAVE_FALLBACK', ('Could not save updated %s, trying to write changes to %s (NOTE: If auto-update is enabled, this file will be replaced during an update)'):format(file, defaultFile))
+	local defaultFile = defaultJsonConfigFiles[file]
+	if not success and defaultFile and LoadResourceFile(resourceName, defaultFile) then
+		warnLog('WRN_CONFIG_SAVE_FALLBACK', ('Could not save updated %s, trying to write changes to %s'):format(file, defaultFile))
 		success = SaveResourceFile(resourceName, defaultFile, contents, -1)
 	end
 	if not success then
-		-- could not write to default file, write error
-		errorLog('ERR_CONFIG_SAVE_FAILED', ('Could not save updated %s. Changes are not saved'):format(defaultJsonConfigFiles[file]))
+		errorLog('ERR_CONFIG_SAVE_FAILED', ('Could not save updated %s. Changes are not saved'):format(file))
 	end
 	return success
 end

@@ -271,7 +271,7 @@ function InitializeManagedRadioSettings()
 		applySettings(document.settings)
 		managedSettingsActive = true
 	elseif document and not managed then
-		print('[SonoranRadio] Legacy settings are active. Run sonoranradio migrate in the server console to import them.')
+		warnLog('WRN_SETTINGS_MIGRATION_AVAILABLE')
 	elseif cached and (response.status == 0 or response.status == 200 or response.status == 429 or response.status >= 500) then
 		applySettings(cached.settings)
 		managedSettingsActive = true

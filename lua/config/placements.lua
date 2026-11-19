@@ -195,10 +195,11 @@ end
 local function readLocalImport(entry)
 	local raw = LoadResourceFile(resourceName, entry.file)
 	if raw == nil then raw = LoadResourceFile(resourceName, entry.defaults) end
-	local value = decode(raw)
+	local value = raw == nil and {} or decode(raw)
 	if not value then return nil end
 	if entry.kind == 'mobileRepeaters' then value = NormalizeRadioMobileRepeaterImport(value) end
 	if entry.kind == 'earpieces' then AddLegacyRadioEarpieces(value) end
+	if raw == nil and next(value) == nil then return nil end
 	return project(entry.kind, value)
 end
 

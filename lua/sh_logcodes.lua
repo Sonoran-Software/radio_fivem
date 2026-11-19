@@ -66,6 +66,10 @@ WarningCodes = {
 	['WRN_SERVER_ID_CHANGED'] = {
 		code = 'WRN-218',
 		message = 'Radio server registration returned a different ID. Restart the resource to reload its settings.'
+	},
+	['WRN_SETTINGS_MIGRATION_AVAILABLE'] = {
+		code = 'WRN-219',
+		message = 'Legacy settings are active. Run sonoranradio migrate in the server console to import them into Radio Admin.'
 	}
 }
 

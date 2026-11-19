@@ -16,7 +16,7 @@ and does not replace settings that already exist in the portal. Restart the reso
 the migrated settings.
 
 Keep the bootstrap credentials private on the server. Advanced host overrides and custom Lua
-callbacks are optional. Live placements and in-game editors use their own local data.
+callbacks are optional.
 If Radio is temporarily unavailable, a managed resource can use the last verified backup for the
 same community and room. A managed installation with no verified settings waits for a working
 connection and restart.
@@ -28,8 +28,9 @@ server racks, fixed repeaters, speakers, scanners, static jammers, earpieces, an
 repeater vehicles in their respective sections. Restart the resource to load portal edits.
 
 On startup in managed mode, the resource imports existing placement files for collections
-that have yet to be configured. The original files are preserved. A scoped
-`sonoranradio-placements.json` snapshot backs up the last verified settings during outages.
+that have yet to be configured. The original files are preserved. Fresh installations start
+with the placements configured for that server in Radio Admin. A scoped
+`sonoranradio-placements.json` snapshot backs up the last verified placements during outages.
 The existing in-game editors use the same saved collections. If a portal edit changed a
 collection since startup, restart before saving further changes to that collection in game.
 
@@ -80,4 +81,4 @@ Administrators with the existing `command.radioMenu` ACE can manage mobile repea
 
 All players can use `/radio repeater` to open an activation-only menu for a compatible current vehicle or attached trailer. Administrators can also use the activation control in **Mobile Repeater Vehicles**. The former global G keybind is no longer registered, so unrelated vehicle controls do not produce repeater compatibility warnings.
 
-The resource stores these entries in `mobileRepeaters.json`. On the first start after upgrading, any legacy `Config.repeaterVehicleSpawncodes` entries are imported once. After confirming the migration, remove that deprecated block from `config.lua`; future changes should be made through `/radiomenu`.
+Managed installations save these entries in **FiveM Placements**. Startup can import legacy `mobileRepeaters.json` and `Config.repeaterVehicleSpawncodes` entries when the portal collection is unconfigured. After confirming the migration, remove the deprecated block from `config.lua` and use Radio Admin or `/radiomenu` for future changes.

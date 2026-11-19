@@ -33,6 +33,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.settings.setMark = self.kvp.__setitem__
         self.settings.doRequest = self.do_request
         self.settings.recordLog = self.logs.append
+        self.lua.execute((ROOT / "lua/sh_logcodes.lua").read_text(encoding="utf-8"))
         self.lua.execute("""
             GetCurrentResourceName = function() return 'sonoranradio' end
             GetResourceMetadata = function() return '5.0.0' end
@@ -58,6 +59,7 @@ class ManagedSettingsTests(unittest.TestCase):
                 CreateThread = function(fn) fn() end,
             }
             print = function(line) recordLog(line) end
+            warnLog = function(code) recordLog(formatStructuredLogMessage(code)) end
         """)
 
     def from_lua(self, value):
@@ -137,6 +139,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIsNone(self.settings.Config.defaultSkinId)
         self.assertEqual(self.requests, [("GET", "")])
         self.assertEqual(self.get_modes, ["managed"])
+        self.assertEqual(self.logs, [])
 
     def test_bootstrap_preserves_explicit_host_overrides_and_local_notification_callback(self):
         self.api_origin = "https://staging-api.dev.sonoranradio.com"
@@ -169,6 +172,9 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIsNone(self.settings.Config.allowAutoUpdate)
         self.assertIsNone(self.cache)
         self.assertEqual(self.get_modes, ["legacy"])
+        self.assertEqual(len(self.logs), 1)
+        self.assertIn("[WRN-219]", self.logs[0])
+        self.assertIn("Run sonoranradio migrate in the server console", self.logs[0])
 
     def test_optional_legacy_skin_and_explicit_flag_preserve_legacy_mode(self):
         self.responses = [(200, self.snapshot(True, 1)), (200, self.snapshot(True, 1))]
